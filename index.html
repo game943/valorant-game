@@ -338,9 +338,9 @@ const fmtTime = t => { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) 
 /* ------------------------------ SETTINGS ------------------------------ */
 const settings = { sens: 1, diff: 'normal', vol: 0.6, ch: '#00ff9c', shadows: true };
 const DIFF = {
-  easy:   { react: 0.65, acc: 0.26, head: 0.10, turn: 4.5, fov: 0.45 },
-  normal: { react: 0.40, acc: 0.40, head: 0.20, turn: 7.5, fov: 0.30 },
-  hard:   { react: 0.24, acc: 0.56, head: 0.32, turn: 12,  fov: 0.15 },
+  easy:   { react: 0.80, acc: 0.16, head: 0.05, turn: 3.5, fov: 0.45 },
+  normal: { react: 0.55, acc: 0.26, head: 0.11, turn: 5.5, fov: 0.30 },
+  hard:   { react: 0.35, acc: 0.38, head: 0.20, turn: 9,   fov: 0.15 },
 };
 
 /* ------------------------------ WEAPONS ------------------------------ */
@@ -1403,11 +1403,12 @@ function playerFire() {
   const scoped = w.scope && adsT > .9, ads = !w.scope && adsT > .9;
   let spread = w.scope ? (scoped ? w.spread : w.noscope) : w.spread * (ads ? .7 : 1);
   spread += hs * w.move + (p.onGround ? 0 : .12);
-  if (w.auto) spread += Math.min(p.shotIdx, 12) * w.spread * 1.3 * (ads ? .8 : 1);
-  if (p.crouch && p.onGround) spread *= .85;
-  const climb = p.shotIdx >= 2 ? Math.min(p.recoil, .09) : 0;
-  const yawWob = p.shotIdx > 7 ? Math.sin(p.shotIdx * .8) * Math.min(p.recoil, .09) * .6 : 0;
-  p.recoil += w.recoil; p.shotIdx++;
+  const crouched = p.crouch && p.onGround;
+  if (w.auto) spread += Math.min(p.shotIdx, 10) * w.spread * .6 * (ads ? .8 : 1) * (crouched ? .5 : 1);
+  if (crouched) spread *= .55;
+  const climb = p.shotIdx >= 3 ? Math.min(p.recoil, .04) : 0;
+  const yawWob = p.shotIdx > 9 ? Math.sin(p.shotIdx * .8) * Math.min(p.recoil, .04) * .4 : 0;
+  p.recoil += w.recoil * .6 * (crouched ? .5 : 1) * (ads ? .8 : 1); p.shotIdx++;
   const ox = p.x, oy = eyeY(p), oz = p.z;
   const muz = new THREE.Vector3(.16, -.14, MUZZLE_Z[w.model]).applyMatrix4(camera.matrixWorld);
   let anyHit = false, anyHead = false, killed = false;
@@ -1467,7 +1468,7 @@ function updatePlayer(dt) {
   // 사격
   if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
   if (mouse[2] && w.model === 'knife' && !shopOpen && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
-  if (!mouse[0]) p.recoil = Math.max(0, p.recoil - dt * .5);
+  if (!mouse[0]) p.recoil = Math.max(0, p.recoil - dt * 1.2);
   // 조준
   const wantAds = mouse[2] && w.model !== 'knife' && w.model !== 'blades' && p.reloadT <= 0;
   adsT = clamp(adsT + (wantAds ? dt : -dt) * 7, 0, 1);
@@ -1600,10 +1601,11 @@ function botShoot(b, t) {
   const ex = b.x, ey = eyeY(b), ez = b.z, d = Math.hypot(t.x - ex, t.z - ez);
   let acc = D.acc * clamp(1.25 - d / 55, .3, 1.15);
   if (w.scope) acc = Math.min(.9, acc * 1.8);
-  if (Math.hypot(t.vx || 0, t.vz || 0) > 4) acc *= .75;
-  if (t.crouch) acc *= .9;
+  if (Math.hypot(t.vx || 0, t.vz || 0) > 4) acc *= .6;
+  if (t.crouch) acc *= .7;
   if (Math.hypot(b.vx, b.vz) > 1) acc *= .55;
-  if (w.auto) acc *= 1 - Math.min(.45, b.burst * .06);
+  if (w.auto) acc *= 1 - Math.min(.6, b.burst * .1);
+  if (b.burst <= 1 && b.engageT < 1) acc *= .6; // 첫 발은 덜 정확
   if (b.flashT > 0) acc *= .2;
   let hit = false, head = false;
   for (let k = 0; k < w.pellets; k++) {
@@ -2150,7 +2152,7 @@ function updateCamera(dt) {
   if (viewEnt === p) {
     eyeH += ((p.crouch ? 1.15 : 1.6) - eyeH) * Math.min(1, dt * 12);
     camera.position.set(p.x, p.y + eyeH, p.z);
-    const kick = Math.min(p.recoil, .09) * .35;
+    const kick = Math.min(p.recoil, .04) * .3;
     camera.rotation.set(p.pitch + kick, p.yaw, 0);
     camRig.yaw = p.yaw;
     const w = WEAPONS[curWeapon(p).key];
