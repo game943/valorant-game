@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -197,54 +197,54 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
   <div class="menuInner">
     <div>
       <div class="logo">VALOR<br><span>STRIKE</span></div>
-      <div class="sub">5대5 택티컬 슈터 · 요원 스킬 · 크레딧 경제 · 스파이크 설치/해체<br>공수 교대 · 연장전 · 궁극기 오브 · 무기 드랍 · 관전 · 미니맵</div>
-      <button class="btn primary" id="btnComp">경쟁전 시작 (13승제)</button>
-      <button class="btn" id="btnSwift">신속 플레이 (5승제)</button>
-      <button class="btn" id="btnHelp">조작법 보기</button>
+      <div class="sub">5v5 tactical shooter · Agent abilities · Credit economy · Spike plant/defuse<br>Side swap · Overtime · Ult orbs · Weapon drops · Spectating · Minimap</div>
+      <button class="btn primary" id="btnComp">Competitive (First to 13)</button>
+      <button class="btn" id="btnSwift">Swiftplay (First to 5)</button>
+      <button class="btn" id="btnHelp">Controls</button>
     </div>
     <div class="panel">
-      <h3>설정</h3>
-      <div class="row"><label>봇 난이도</label><div class="seg" id="diffSeg"><button data-v="easy">쉬움</button><button data-v="normal" class="on">보통</button><button data-v="hard">어려움</button></div></div>
-      <div class="row"><label>마우스 감도 <span id="sensVal" class="os">1.00</span></label><input type="range" id="sens" min="0.2" max="3" step="0.05" value="1"></div>
-      <div class="row"><label>볼륨 <span id="volVal" class="os">60</span></label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.6"></div>
-      <div class="row"><label>크로스헤어 색상</label><input type="color" id="chColor" value="#00ff9c"></div>
-      <div class="row"><label>그림자</label><div class="seg" id="shadowSeg"><button data-v="1" class="on">켜기</button><button data-v="0">끄기</button></div></div>
+      <h3>SETTINGS</h3>
+      <div class="row"><label>Bot Difficulty</label><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
+      <div class="row"><label>Sensitivity <span id="sensVal" class="os">1.00</span></label><input type="range" id="sens" min="0.2" max="3" step="0.05" value="1"></div>
+      <div class="row"><label>Volume <span id="volVal" class="os">60</span></label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.6"></div>
+      <div class="row"><label>Crosshair Color</label><input type="color" id="chColor" value="#00ff9c"></div>
+      <div class="row"><label>Shadows</label><div class="seg" id="shadowSeg"><button data-v="1" class="on">On</button><button data-v="0">Off</button></div></div>
       <div id="helpBox" class="hidden">
-        <h3 style="margin-top:16px">조작법</h3>
+        <h3 style="margin-top:16px">CONTROLS</h3>
         <div class="keys">
-          <span><b>WASD</b></span><span>이동</span>
-          <span><b>Shift</b></span><span>걷기 (발소리 없음)</span>
-          <span><b>Ctrl</b></span><span>앉기</span>
-          <span><b>Space</b></span><span>점프</span>
-          <span><b>좌클릭</b></span><span>사격 / 우클릭: 조준·스코프</span>
-          <span><b>R</b></span><span>재장전</span>
-          <span><b>1 2 3</b></span><span>주무기 / 보조무기 / 칼</span>
-          <span><b>C Q E</b></span><span>스킬</span>
-          <span><b>X</b></span><span>궁극기</span>
-          <span><b>4 (홀드)</b></span><span>스파이크 설치 / 해체</span>
-          <span><b>F</b></span><span>무기 줍기 · 궁극기 오브 획득</span>
-          <span><b>G</b></span><span>스파이크 버리기 (아군에게 전달)</span>
-          <span><b>B</b></span><span>상점 (구매 단계)</span>
-          <span><b>Tab</b></span><span>점수판</span>
-          <span><b>Esc</b></span><span>일시정지</span>
+          <span><b>WASD</b></span><span>Move</span>
+          <span><b>Shift</b></span><span>Walk (silent footsteps)</span>
+          <span><b>Ctrl</b></span><span>Crouch</span>
+          <span><b>Space</b></span><span>Jump</span>
+          <span><b>LMB</b></span><span>Fire / RMB: Aim · Scope</span>
+          <span><b>R</b></span><span>Reload</span>
+          <span><b>1 2 3</b></span><span>Primary / Sidearm / Knife</span>
+          <span><b>C Q E</b></span><span>Abilities</span>
+          <span><b>X</b></span><span>Ultimate</span>
+          <span><b>4 (hold)</b></span><span>Plant / Defuse spike</span>
+          <span><b>F</b></span><span>Pick up weapon · Collect ult orb</span>
+          <span><b>G</b></span><span>Drop spike (pass to teammate)</span>
+          <span><b>B</b></span><span>Shop (buy phase)</span>
+          <span><b>Tab</b></span><span>Scoreboard</span>
+          <span><b>Esc</b></span><span>Pause</span>
         </div>
       </div>
-      <div class="note">데스크톱 브라우저 + 키보드/마우스 전용입니다. 화면을 클릭하면 마우스가 잠깁니다.</div>
+      <div class="note">Desktop browser with keyboard & mouse only. Click the screen to lock the mouse.</div>
     </div>
   </div>
 </div>
 
 <!-- ================= AGENT SELECT ================= -->
 <div id="select" class="screen hidden">
-  <h1>요원 선택</h1>
-  <div class="hint">요원을 고르고 '선택 확정'을 누르세요</div>
+  <h1>SELECT AGENT</h1>
+  <div class="hint">Pick an agent and press 'Lock In'</div>
   <div class="selWrap">
     <div id="agentGrid"></div>
     <div class="panel" id="agentInfo"></div>
   </div>
   <div style="width:min(1150px,94vw);display:flex;justify-content:flex-end;margin-top:16px;gap:10px">
-    <button class="btn center" style="width:180px" id="btnBack">뒤로</button>
-    <button class="btn primary center" style="width:240px" id="btnLock">선택 확정</button>
+    <button class="btn center" style="width:180px" id="btnBack">Back</button>
+    <button class="btn primary center" style="width:240px" id="btnLock">Lock In</button>
   </div>
 </div>
 
@@ -259,7 +259,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
   <div id="topbar">
     <div class="alive" id="aliveL"></div>
     <div class="score" id="scoreL">0</div>
-    <div id="timerBox"><div id="timer">0:20</div><div id="phase">구매 단계</div></div>
+    <div id="timerBox"><div id="timer">0:20</div><div id="phase">BUY PHASE</div></div>
     <div class="score" id="scoreR">0</div>
     <div class="alive" id="aliveR"></div>
   </div>
@@ -269,10 +269,10 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
   <div id="crosshair"></div>
   <div id="hitmark"></div>
   <div id="dmgDirs"></div>
-  <div id="revealWarn" class="hidden">⚠ 위치가 발각되었습니다</div>
+  <div id="revealWarn" class="hidden">⚠ YOUR POSITION IS REVEALED</div>
   <div id="centerMsg"><div id="bannerBig"></div><div id="bannerSub"></div></div>
   <div id="toast"></div>
-  <div id="progress" class="hidden"><div class="lbl" id="progLbl">스파이크 설치 중</div><div class="bar"><div id="progFill"></div><span class="half hidden" id="progHalf"></span></div></div>
+  <div id="progress" class="hidden"><div class="lbl" id="progLbl">PLANTING SPIKE</div><div class="bar"><div id="progFill"></div><span class="half hidden" id="progHalf"></span></div></div>
   <div id="hint" class="hidden"></div>
   <div id="killIcons"></div>
   <div id="deathInfo" class="hidden"></div>
@@ -285,14 +285,14 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
   </div>
   <div id="abil"></div>
   <div id="slots"></div>
-  <div id="wpn"><div id="ammo">12<small>/36</small></div><div id="wname">클래식</div><div id="credHud">800</div></div>
+  <div id="wpn"><div id="ammo">12<small>/36</small></div><div id="wname">Classic</div><div id="credHud">800</div></div>
 </div>
 
 <!-- ================= SHOP ================= -->
 <div id="shop" class="hidden">
-  <div class="top"><h2>상점</h2><div id="shopCred">800</div></div>
+  <div class="top"><h2>SHOP</h2><div id="shopCred">800</div></div>
   <div id="shopCols"></div>
-  <div class="foot"><span>좌클릭: 구매 · 우클릭: 이번 라운드 구매품 판매</span><span>B / Esc: 닫기</span></div>
+  <div class="foot"><span>Left click: Buy · Right click: Sell items bought this round</span><span>B / Esc: Close</span></div>
 </div>
 
 <!-- ================= SCOREBOARD ================= -->
@@ -301,22 +301,22 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 <!-- ================= PAUSE ================= -->
 <div id="pause" class="screen hidden">
   <div class="panel">
-    <h3>일시정지</h3>
-    <button class="btn primary" id="btnResume">계속하기</button>
-    <div class="row"><label>마우스 감도 <span id="sensVal2" class="os">1.00</span></label><input type="range" id="sens2" min="0.2" max="3" step="0.05" value="1"></div>
-    <div class="row"><label>볼륨</label><input type="range" id="vol2" min="0" max="1" step="0.05" value="0.6"></div>
-    <button class="btn" id="btnQuit">메인 메뉴로</button>
+    <h3>PAUSED</h3>
+    <button class="btn primary" id="btnResume">Resume</button>
+    <div class="row"><label>Sensitivity <span id="sensVal2" class="os">1.00</span></label><input type="range" id="sens2" min="0.2" max="3" step="0.05" value="1"></div>
+    <div class="row"><label>Volume</label><input type="range" id="vol2" min="0" max="1" step="0.05" value="0.6"></div>
+    <button class="btn" id="btnQuit">Main Menu</button>
   </div>
 </div>
 
 <!-- ================= MATCH OVER ================= -->
 <div id="over" class="screen hidden">
   <div class="panel">
-    <div id="overTitle">승리</div>
+    <div id="overTitle">VICTORY</div>
     <div id="overScore">13 : 7</div>
     <div id="overStats"></div>
-    <button class="btn primary center" id="btnAgain" style="margin-top:16px">다시 하기</button>
-    <button class="btn center" id="btnMenu">메인 메뉴</button>
+    <button class="btn primary center" id="btnAgain" style="margin-top:16px">Play Again</button>
+    <button class="btn center" id="btnMenu">Main Menu</button>
   </div>
 </div>
 
@@ -324,7 +324,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 <script>
 'use strict';
 /* =====================================================================
-   VALOR STRIKE — 발로란트 스타일 5v5 택티컬 FPS (단일 HTML)
+   VALOR STRIKE — Valorant-style 5v5 tactical FPS (single HTML file)
    ===================================================================== */
 const $ = id => document.getElementById(id);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -344,92 +344,92 @@ const DIFF = {
 };
 
 /* ------------------------------ WEAPONS ------------------------------ */
-// dmg: [머리, 몸, 다리]
+// dmg: [head, body, legs]
 function W(name, cat, price, dmg, rate, mag, reserve, reload, auto, spread, move, recoil, model, extra) {
-  return Object.assign({ name, cat, price, dmg, rate, mag, reserve, reload, auto, spread, move, recoil, model, slot: cat === '보조무기' ? 2 : 1, pellets: 1, falloff: null, speedMul: 1, ads: 1.15 }, extra || {});
+  return Object.assign({ name, cat, price, dmg, rate, mag, reserve, reload, auto, spread, move, recoil, model, slot: cat === 'Sidearm' ? 2 : 1, pellets: 1, falloff: null, speedMul: 1, ads: 1.15 }, extra || {});
 }
 const WEAPONS = {
-  classic:  W('클래식', '보조무기', 0,    [78, 26, 22],  6.75, 12, 36, 1.75, false, .004, .030, .012, 'pistol', { falloff: [30, .85] }),
-  shorty:   W('쇼티',   '보조무기', 300,  [36, 12, 10],  3.3,  2,  6,  1.75, false, .065, .065, .03,  'pistol', { pellets: 15, falloff: [8, .4] }),
-  frenzy:   W('프렌지', '보조무기', 450,  [78, 26, 22],  10,   13, 39, 1.5,  true,  .009, .030, .018, 'pistol', { falloff: [20, .85] }),
-  ghost:    W('고스트', '보조무기', 500,  [105, 30, 25], 6.75, 15, 45, 1.5,  false, .003, .025, .010, 'pistol', { falloff: [30, .85] }),
-  sheriff:  W('셰리프', '보조무기', 800,  [159, 55, 47], 4,    6,  24, 2.25, false, .003, .040, .045, 'pistol', { falloff: [30, .9] }),
-  stinger:  W('스팅어', '기관단총', 1100, [67, 27, 23],  16,   20, 60, 2.25, true,  .010, .016, .012, 'smg', { falloff: [20, .85] }),
-  spectre:  W('스펙터', '기관단총', 1600, [78, 26, 22],  13.3, 30, 90, 2.25, true,  .006, .013, .009, 'smg', { falloff: [20, .85] }),
-  bucky:    W('버키',   '산탄총',   850,  [40, 20, 17],  1.1,  5,  10, 2.5,  false, .075, .060, .04,  'shotgun', { pellets: 15, falloff: [9, .5] }),
-  judge:    W('저지',   '산탄총',   1850, [34, 17, 14],  3.5,  7,  21, 2.2,  true,  .085, .060, .035, 'shotgun', { pellets: 12, falloff: [10, .55] }),
-  bulldog:  W('불독',   '소총',     2050, [115, 35, 29], 10,   24, 72, 2.5,  true,  .004, .050, .012, 'rifle'),
-  guardian: W('가디언', '소총',     2250, [195, 65, 49], 5.25, 12, 36, 2.5,  false, .002, .060, .02,  'rifle', { ads: 1.5 }),
-  phantom:  W('팬텀',   '소총',     2900, [156, 39, 33], 11,   30, 60, 2.5,  true,  .003, .060, .011, 'rifle', { falloff: [15, .9] }),
-  vandal:   W('밴달',   '소총',     2900, [160, 40, 34], 9.75, 25, 50, 2.5,  true,  .003, .060, .013, 'rifle'),
-  marshal:  W('마샬',   '저격총',   950,  [202, 101, 85],1.5,  5,  10, 2.5,  false, .002, .050, .03,  'sniper', { scope: 3.5, noscope: .03 }),
-  outlaw:   W('아웃로', '저격총',   2400, [238, 140, 119],2.75,2,  10, 2.8,  false, .002, .060, .04,  'sniper', { scope: 3.5, noscope: .035 }),
-  operator: W('오퍼레이터','저격총',4700, [255, 150, 127],0.75,5,  10, 3.7,  false, .001, .080, .05,  'sniper', { scope: 5, noscope: .045, speedMul: .9 }),
-  ares:     W('아레스', '기관총',   1600, [72, 30, 25],  13,   50, 100, 3.25,true,  .012, .040, .010, 'heavy', { speedMul: .93 }),
-  odin:     W('오딘',   '기관총',   3200, [95, 38, 32],  12,   100, 200, 5, true,   .012, .045, .010, 'heavy', { speedMul: .9 }),
-  knife:    W('전술 나이프', '근접', 0, [50, 50, 50],    2,    0,  0,  0,    true,  0, 0, 0, 'knife', { slot: 3, speedMul: 1.07 }),
-  blades:   W('칼날 폭풍', '궁극기', 0, [150, 50, 50],  3.4,  5,  0,  0,    false, .0008, .004, .01, 'blades', { slot: 'X' }),
+  classic:  W('Classic', 'Sidearm', 0,    [78, 26, 22],  6.75, 12, 36, 1.75, false, .004, .030, .012, 'pistol', { falloff: [30, .85] }),
+  shorty:   W('Shorty',   'Sidearm', 300,  [36, 12, 10],  3.3,  2,  6,  1.75, false, .065, .065, .03,  'pistol', { pellets: 15, falloff: [8, .4] }),
+  frenzy:   W('Frenzy', 'Sidearm', 450,  [78, 26, 22],  10,   13, 39, 1.5,  true,  .009, .030, .018, 'pistol', { falloff: [20, .85] }),
+  ghost:    W('Ghost', 'Sidearm', 500,  [105, 30, 25], 6.75, 15, 45, 1.5,  false, .003, .025, .010, 'pistol', { falloff: [30, .85] }),
+  sheriff:  W('Sheriff', 'Sidearm', 800,  [159, 55, 47], 4,    6,  24, 2.25, false, .003, .040, .045, 'pistol', { falloff: [30, .9] }),
+  stinger:  W('Stinger', 'SMG', 1100, [67, 27, 23],  16,   20, 60, 2.25, true,  .010, .016, .012, 'smg', { falloff: [20, .85] }),
+  spectre:  W('Spectre', 'SMG', 1600, [78, 26, 22],  13.3, 30, 90, 2.25, true,  .006, .013, .009, 'smg', { falloff: [20, .85] }),
+  bucky:    W('Bucky',   'Shotgun',   850,  [40, 20, 17],  1.1,  5,  10, 2.5,  false, .075, .060, .04,  'shotgun', { pellets: 15, falloff: [9, .5] }),
+  judge:    W('Judge',   'Shotgun',   1850, [34, 17, 14],  3.5,  7,  21, 2.2,  true,  .085, .060, .035, 'shotgun', { pellets: 12, falloff: [10, .55] }),
+  bulldog:  W('Bulldog',   'Rifle',     2050, [115, 35, 29], 10,   24, 72, 2.5,  true,  .004, .050, .012, 'rifle'),
+  guardian: W('Guardian', 'Rifle',     2250, [195, 65, 49], 5.25, 12, 36, 2.5,  false, .002, .060, .02,  'rifle', { ads: 1.5 }),
+  phantom:  W('Phantom',   'Rifle',     2900, [156, 39, 33], 11,   30, 60, 2.5,  true,  .003, .060, .011, 'rifle', { falloff: [15, .9] }),
+  vandal:   W('Vandal',   'Rifle',     2900, [160, 40, 34], 9.75, 25, 50, 2.5,  true,  .003, .060, .013, 'rifle'),
+  marshal:  W('Marshal',   'Sniper',   950,  [202, 101, 85],1.5,  5,  10, 2.5,  false, .002, .050, .03,  'sniper', { scope: 3.5, noscope: .03 }),
+  outlaw:   W('Outlaw', 'Sniper',   2400, [238, 140, 119],2.75,2,  10, 2.8,  false, .002, .060, .04,  'sniper', { scope: 3.5, noscope: .035 }),
+  operator: W('Operator','Sniper',4700, [255, 150, 127],0.75,5,  10, 3.7,  false, .001, .080, .05,  'sniper', { scope: 5, noscope: .045, speedMul: .9 }),
+  ares:     W('Ares', 'Heavy',   1600, [72, 30, 25],  13,   50, 100, 3.25,true,  .012, .040, .010, 'heavy', { speedMul: .93 }),
+  odin:     W('Odin',   'Heavy',   3200, [95, 38, 32],  12,   100, 200, 5, true,   .012, .045, .010, 'heavy', { speedMul: .9 }),
+  knife:    W('Tactical Knife', 'Melee', 0, [50, 50, 50],    2,    0,  0,  0,    true,  0, 0, 0, 'knife', { slot: 3, speedMul: 1.07 }),
+  blades:   W('Blade Storm', 'Ultimate', 0, [150, 50, 50],  3.4,  5,  0,  0,    false, .0008, .004, .01, 'blades', { slot: 'X' }),
 };
-const SHIELDS = { light: { name: '경량 실드', price: 400, val: 25 }, heavy: { name: '중량 실드', price: 1000, val: 50 } };
+const SHIELDS = { light: { name: 'Light Shields', price: 400, val: 25 }, heavy: { name: 'Heavy Shields', price: 1000, val: 50 } };
 
 /* ------------------------------ AGENTS ------------------------------ */
 const AGENTS = [
-  { id: 'jett', name: '제트', role: '타격대', color: '#7fd6ff', glyph: '風', desc: '바람을 다루는 민첩한 결투가. 빠른 진입과 정밀한 궁극기.',
-    ab: { C: { name: '연막 폭발', cost: 200, max: 3, free: 0, type: 'smokeSmall', desc: '조준 지점에 짧게 유지되는 연막을 생성합니다.' },
-          Q: { name: '상승 기류', cost: 150, max: 2, free: 0, type: 'updraft', desc: '공중으로 높이 솟구칩니다.' },
-          E: { name: '순풍', cost: 0, max: 1, free: 1, type: 'dash', desc: '이동 방향으로 순간 돌진합니다. (매 라운드 충전)' },
-          X: { name: '칼날 폭풍', ult: 7, type: 'blades', desc: '정확한 단검 5개 장착. 처치 시 재충전.' } } },
-  { id: 'phoenix', name: '피닉스', role: '타격대', color: '#ff8a3d', glyph: '炎', desc: '불꽃으로 스스로 치유하는 공격적 요원.',
-    ab: { C: { name: '불길', cost: 200, max: 1, free: 0, type: 'blaze', desc: '시야를 막고 피해를 주는 불벽을 세웁니다. 본인은 회복.' },
-          Q: { name: '커브볼', cost: 250, max: 2, free: 0, type: 'flash', desc: '앞으로 날아가 터지는 섬광탄.' },
-          E: { name: '뜨거운 손', cost: 0, max: 1, free: 1, type: 'molly', desc: '화염구를 던져 지역 피해. 본인은 회복.' },
-          X: { name: '역습', ult: 6, type: 'rib', desc: '10초 내 사망 시 표식 위치에서 부활합니다.' } } },
-  { id: 'sage', name: '세이지', role: '감시자', color: '#5fe6c8', glyph: '癒', desc: '치유와 부활, 벽으로 팀을 지키는 수호자.',
-    ab: { C: { name: '장벽 구슬', cost: 400, max: 1, free: 0, type: 'wall', desc: '파괴 가능한 거대한 얼음 벽을 생성합니다.' },
-          Q: { name: '둔화 구슬', cost: 200, max: 2, free: 0, type: 'slow', desc: '적을 둔화시키는 장판을 생성합니다.' },
-          E: { name: '회복 구슬', cost: 0, max: 1, free: 1, type: 'heal', desc: '5초 동안 체력 60을 회복합니다.' },
-          X: { name: '부활', ult: 8, type: 'revive', desc: '근처의 쓰러진 아군을 되살립니다.' } } },
-  { id: 'sova', name: '소바', role: '척후대', color: '#5b86ff', glyph: '弓', desc: '활과 드론으로 적 위치를 밝혀내는 추적자.',
-    ab: { C: { name: '올빼미 드론', cost: 400, max: 1, free: 0, type: 'drone', desc: '앞으로 날아가며 주변 적을 드러내는 드론.' },
-          Q: { name: '충격 화살', cost: 150, max: 2, free: 0, type: 'shock', desc: '착탄 지점에 폭발 피해를 줍니다.' },
-          E: { name: '정찰 화살', cost: 0, max: 1, free: 1, type: 'recon', desc: '꽂힌 곳에서 두 번 파동을 내 적을 드러냅니다.' },
-          X: { name: '사냥꾼의 분노', ult: 8, type: 'fury', desc: '벽을 관통하는 에너지 화살 3발.' } } },
-  { id: 'brim', name: '브림스톤', role: '전략가', color: '#d29a52', glyph: '砲', desc: '하늘에서 연막과 포격을 쏟아붓는 지휘관.',
-    ab: { C: { name: '자극제 신호기', cost: 200, max: 1, free: 0, type: 'stim', desc: '아군 연사력·이동속도 증가 장판.' },
-          Q: { name: '소이탄', cost: 250, max: 1, free: 0, type: 'molly', desc: '화염 지대를 생성하는 유탄.' },
-          E: { name: '공중 연막', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: '먼 거리에 오래 유지되는 연막. (1회 무료)' },
-          X: { name: '궤도 일격', ult: 7, type: 'orbital', desc: '조준 지점에 강력한 궤도 레이저 포격.' } } },
-  { id: 'reyna', name: '레이나', role: '타격대', color: '#c25bff', glyph: '魂', desc: '처치할수록 강해지는 흡혈 결투가.',
-    ab: { C: { name: '눈빛', cost: 250, max: 2, free: 0, type: 'leer', desc: '바라본 적의 시야를 흐리게 하는 눈.' },
-          Q: { name: '흡수', cost: 200, max: 2, free: 0, type: 'devour', desc: '처치 직후 사용: 체력을 크게 회복 (최대 150).' },
-          E: { name: '무시', cost: 0, max: 1, free: 1, type: 'dismiss', desc: '처치 직후 사용: 2초간 무적 + 고속 이동.' },
-          X: { name: '여제', ult: 6, type: 'empress', desc: '30초간 연사력 증가. 처치 시 지속시간 초기화.' } } },
+  { id: 'jett', name: 'Jett', role: 'Duelist', color: '#7fd6ff', glyph: 'JT', desc: 'An agile wind-wielding duelist. Fast entries and a precise ultimate.',
+    ab: { C: { name: 'Cloudburst', cost: 200, max: 3, free: 0, type: 'smokeSmall', desc: 'Creates a short-lived smoke where you aim.' },
+          Q: { name: 'Updraft', cost: 150, max: 2, free: 0, type: 'updraft', desc: 'Launches you high into the air.' },
+          E: { name: 'Tailwind', cost: 0, max: 1, free: 1, type: 'dash', desc: 'Instantly dash in your movement direction. (Recharges every round)' },
+          X: { name: 'Blade Storm', ult: 7, type: 'blades', desc: 'Equip 5 deadly accurate knives. Recharge on kill.' } } },
+  { id: 'phoenix', name: 'Phoenix', role: 'Duelist', color: '#ff8a3d', glyph: 'PX', desc: 'An aggressive agent who heals himself with fire.',
+    ab: { C: { name: 'Blaze', cost: 200, max: 1, free: 0, type: 'blaze', desc: 'Raises a wall of fire that blocks vision and deals damage. Heals you.' },
+          Q: { name: 'Curveball', cost: 250, max: 2, free: 0, type: 'flash', desc: 'A flare that flies forward and bursts into a blinding flash.' },
+          E: { name: 'Hot Hands', cost: 0, max: 1, free: 1, type: 'molly', desc: 'Throw a fireball that burns an area. Heals you.' },
+          X: { name: 'Run It Back', ult: 6, type: 'rib', desc: 'If you die within 10s, respawn at the marker.' } } },
+  { id: 'sage', name: 'Sage', role: 'Sentinel', color: '#5fe6c8', glyph: 'SG', desc: 'A guardian who protects the team with healing, revives and walls.',
+    ab: { C: { name: 'Barrier Orb', cost: 400, max: 1, free: 0, type: 'wall', desc: 'Creates a large, destructible ice wall.' },
+          Q: { name: 'Slow Orb', cost: 200, max: 2, free: 0, type: 'slow', desc: 'Creates a field that slows enemies.' },
+          E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Restore 60 HP over 5 seconds.' },
+          X: { name: 'Resurrection', ult: 8, type: 'revive', desc: 'Revive a nearby fallen ally.' } } },
+  { id: 'sova', name: 'Sova', role: 'Initiator', color: '#5b86ff', glyph: 'SV', desc: 'A tracker who reveals enemies with his bow and drone.',
+    ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', desc: 'A drone that flies forward and reveals nearby enemies.' },
+          Q: { name: 'Shock Bolt', cost: 150, max: 2, free: 0, type: 'shock', desc: 'Deals explosive damage where it lands.' },
+          E: { name: 'Recon Bolt', cost: 0, max: 1, free: 1, type: 'recon', desc: 'Sticks where it lands and pulses twice to reveal enemies.' },
+          X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Three wall-piercing energy blasts.' } } },
+  { id: 'brim', name: 'Brimstone', role: 'Controller', color: '#d29a52', glyph: 'BR', desc: 'A commander who rains smokes and fire from the sky.',
+    ab: { C: { name: 'Stim Beacon', cost: 200, max: 1, free: 0, type: 'stim', desc: 'A field that boosts allies\' fire rate and speed.' },
+          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'A grenade that creates a zone of fire.' },
+          E: { name: 'Sky Smoke', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: 'Long-range, long-lasting smoke. (1 free)' },
+          X: { name: 'Orbital Strike', ult: 7, type: 'orbital', desc: 'A devastating orbital laser strike where you aim.' } } },
+  { id: 'reyna', name: 'Reyna', role: 'Duelist', color: '#c25bff', glyph: 'RY', desc: 'A vampiric duelist who grows stronger with every kill.',
+    ab: { C: { name: 'Leer', cost: 250, max: 2, free: 0, type: 'leer', desc: 'An eye that nearsights enemies who look at it.' },
+          Q: { name: 'Devour', cost: 200, max: 2, free: 0, type: 'devour', desc: 'Use right after a kill: heal a lot (up to 150).' },
+          E: { name: 'Dismiss', cost: 0, max: 1, free: 1, type: 'dismiss', desc: 'Use right after a kill: 2s invulnerability + speed.' },
+          X: { name: 'Empress', ult: 6, type: 'empress', desc: 'Faster fire rate for 30s. Resets on kill.' } } },
 ];
 const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 
 /* ------------------------------ MAP ------------------------------ */
 const CELL = 3, GW = 48, GH = 40, WALL_H = 8, MAPW = GW * CELL, MAPH = GH * CELL;
 const grid = new Float32Array(GW * GH).fill(WALL_H);
-const zoneG = new Uint8Array(GW * GH); // 1=A, 2=B, 3=공격 스폰, 4=수비 스폰
+const zoneG = new Uint8Array(GW * GH); // 1=A, 2=B, 3=attacker spawn, 4=defender spawn
 const ROOMS = [
-  [18, 1, 29, 5],   // 수비 스폰
-  [8, 3, 17, 5],    // 수비→A 통로
-  [3, 3, 8, 8],     // A 뒤쪽
-  [2, 7, 15, 17],   // A 사이트
-  [30, 3, 39, 5],   // 수비→B 통로
-  [39, 3, 44, 8],   // B 뒤쪽
-  [32, 7, 45, 19],  // B 사이트
-  [21, 6, 26, 31],  // 미드
-  [17, 16, 30, 22], // 미드 광장
-  [14, 12, 21, 14], // A 연결로
-  [26, 17, 32, 19], // B 연결로
-  [3, 17, 8, 32],   // A 메인
-  [39, 19, 44, 32], // B 메인
-  [3, 31, 44, 33],  // 로비
-  [14, 33, 33, 38], // 공격 스폰
-  [26, 26, 39, 27], // 차고 (미드→B 메인)
+  [18, 1, 29, 5],   // defender spawn
+  [8, 3, 17, 5],    // defender → A path
+  [3, 3, 8, 8],     // A back
+  [2, 7, 15, 17],   // A site
+  [30, 3, 39, 5],   // defender → B path
+  [39, 3, 44, 8],   // B back
+  [32, 7, 45, 19],  // B site
+  [21, 6, 26, 31],  // mid
+  [17, 16, 30, 22], // mid courtyard
+  [14, 12, 21, 14], // A link
+  [26, 17, 32, 19], // B link
+  [3, 17, 8, 32],   // A main
+  [39, 19, 44, 32], // B main
+  [3, 31, 44, 33],  // lobby
+  [14, 33, 33, 38], // attacker spawn
+  [26, 26, 39, 27], // garage (mid → B main)
 ];
-const OBST = [ // [c0,r0,c1,r1,높이]
+const OBST = [ // [c0,r0,c1,r1,height]
   [7, 10, 8, 11, 1.4], [11, 13, 11, 14, 3.2], [4, 15, 4, 15, 1.4], [12, 16, 13, 16, 1.4], [9, 7, 10, 7, 3.2], [3, 10, 3, 10, 1.4],
   [36, 11, 37, 12, 3.2], [40, 14, 41, 14, 1.4], [34, 16, 34, 16, 1.4], [42, 9, 42, 10, 1.4], [38, 17, 38, 17, 3.2], [44, 16, 44, 16, 1.4],
   [23, 19, 24, 19, 3.2], [22, 24, 22, 24, 1.4], [25, 10, 25, 10, 1.4], [19, 21, 19, 21, 1.4], [28, 17, 28, 17, 1.4],
@@ -466,7 +466,7 @@ const HOLDS = {
 const ENTRANCES = { 1: [[5, 19], [17, 13]], 2: [[41, 21], [29, 18]] };
 const ORB_CELLS = [[23, 15], [23, 28]];
 
-/* --- A* 경로 탐색 --- */
+/* --- A* pathfinding --- */
 function astar(sc, sr, ec, er) {
   if (!walkable(ec, er)) [ec, er] = nearestWalkable(ec, er);
   if (!walkable(sc, sr)) [sc, sr] = nearestWalkable(sc, sr);
@@ -508,7 +508,7 @@ function findPath(x, z, tx, tz) {
   return res;
 }
 
-/* --- 레이캐스트 (그리드 DDA) --- */
+/* --- Raycast (grid DDA) --- */
 const RH = { t: 0, nx: 0, ny: 0, nz: 0 };
 function rayGrid(ox, oy, oz, dx, dy, dz, maxT) {
   RH.nx = RH.ny = RH.nz = 0;
@@ -553,7 +553,7 @@ function raySphere(ox, oy, oz, dx, dy, dz, cx, cy, cz, r) {
 }
 
 /* =====================================================================
-   THREE.JS 장면
+   THREE.JS SCENE
    ===================================================================== */
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
@@ -575,7 +575,7 @@ Object.assign(sun.shadow.camera, { left: -100, right: 100, top: 100, bottom: -10
 sun.shadow.bias = -.0008;
 scene.add(sun, sun.target);
 
-// 뷰모델(1인칭 총) 전용 장면
+// Separate scene for the first-person viewmodel
 const vmScene = new THREE.Scene();
 const vmCam = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, .01, 10);
 vmScene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
@@ -617,7 +617,7 @@ const MAT = {
   outline: new THREE.MeshBasicMaterial({ color: 0xff2638, side: THREE.BackSide }),
 };
 
-/* --- 맵 메쉬 생성 --- */
+/* --- Map meshes --- */
 const mapGroup = new THREE.Group(); scene.add(mapGroup);
 function regionColor(c, r) {
   if (r <= 5 && c >= 18 && c <= 29) return 0x93a8cc;
@@ -654,7 +654,7 @@ function regionColor(c, r) {
     col.setHex(h > 2 ? 0x8fa3b0 : 0xffffff); cm.setColorAt(i, col);
   });
   cm.castShadow = cm.receiveShadow = true; mapGroup.add(cm);
-  // 사이트 표시
+  // site markings
   for (const s of [1, 2]) {
     const [c0, r0, c1, r1] = SITE_RECT[s], w = (c1 - c0 + 1) * CELL, d = (r1 - r0 + 1) * CELL;
     const tex = canvasTex(256, 256, (x) => {
@@ -665,7 +665,7 @@ function regionColor(c, r) {
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     pl.rotation.x = -Math.PI / 2; pl.position.set((c0 * CELL) + w / 2, .02, (r0 * CELL) + d / 2); mapGroup.add(pl);
   }
-  // 벽 표지판
+  // wall signs
   const sign = (txt, c, r, rotY, color) => {
     const t = canvasTex(256, 128, (x) => { x.fillStyle = color; x.fillRect(0, 0, 256, 128); x.fillStyle = '#fff'; x.font = '900 64px "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, 128, 68); });
     const p = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.5), new THREE.MeshBasicMaterial({ map: t }));
@@ -675,7 +675,7 @@ function regionColor(c, r) {
   sign('MID', 23.5, 33.98, Math.PI, '#555f6b'); sign('A', 2.02, 12, Math.PI / 2, '#d97a2b'); sign('B', 45.98, 13, -Math.PI / 2, '#2b8ad9');
 })();
 
-/* 구매 단계 장벽 */
+/* Buy-phase barriers */
 const barrierGroup = new THREE.Group(); scene.add(barrierGroup);
 (function buildBarriers() {
   const tex = canvasTex(64, 64, (x) => { x.fillStyle = 'rgba(80,255,210,.18)'; x.fillRect(0, 0, 64, 64); x.strokeStyle = 'rgba(120,255,220,.6)'; x.lineWidth = 2; for (let i = -64; i < 128; i += 12) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 64, 64); x.stroke(); } }, 1, 2);
@@ -691,7 +691,7 @@ const barrierGroup = new THREE.Group(); scene.add(barrierGroup);
   }
 })();
 
-/* --- 총 모델 --- */
+/* --- Gun models --- */
 const MUZZLE_Z = { pistol: -.26, smg: -.5, rifle: -.78, sniper: -1.08, shotgun: -.52, heavy: -.86, knife: -.3, blades: -.3 };
 function buildGun(model, accent) {
   const g = new THREE.Group();
@@ -711,7 +711,7 @@ function buildGun(model, accent) {
   return g;
 }
 
-/* --- 캐릭터 모델 --- */
+/* --- Character models --- */
 function addPart(g, geo, mat, x, y, z, parent) {
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; (parent || g).add(m);
   const o = new THREE.Mesh(geo, MAT.outline); o.scale.setScalar(1.12); o.visible = false; m.add(o); g.userData.outlines.push(o);
@@ -732,7 +732,7 @@ function makeCharacter(agent) {
   addPart(g, new THREE.SphereGeometry(.225, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), darker, 0, 1.6, .02);
   const visor = new THREE.Mesh(new THREE.BoxGeometry(.3, .06, .05), new THREE.MeshBasicMaterial({ color: agent.color })); visor.position.set(0, 1.6, -.2); g.add(visor);
   const gunHolder = new THREE.Group(); gunHolder.position.set(.16, 1.2, -.35); g.add(gunHolder);
-  // 아군 표식
+  // ally marker
   const mk = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x2fe0b6, depthTest: false, transparent: true }));
   mk.scale.set(.45, .45, 1); mk.position.y = 2.15; mk.renderOrder = 999; g.add(mk);
   Object.assign(g.userData, { legL, legR, gunHolder, marker: mk, gunModel: null });
@@ -746,7 +746,7 @@ function setCharGun(e) {
   ud.gunModel = buildGun(WEAPONS[key].model); ud.gunModel.scale.setScalar(1.2); ud.gunHolder.add(ud.gunModel);
 }
 
-/* --- 파티클 / 트레이서 / 탄흔 --- */
+/* --- Particles / tracers / decals --- */
 const PART_N = 400;
 const partGeo = new THREE.BufferGeometry();
 const partPos = new Float32Array(PART_N * 3), partCol = new Float32Array(PART_N * 3);
@@ -802,7 +802,7 @@ let flashIdx = 0;
 function worldFlash(x, y, z, size = .6, color = 0xffd27a, t = .05) { const f = flashes[flashIdx = (flashIdx + 1) % flashes.length]; f.s.position.set(x, y, z); f.s.scale.set(size, size, 1); f.s.material.color.setHex(color); f.s.visible = true; f.t = t; }
 
 /* =====================================================================
-   오디오 (WebAudio 합성)
+   AUDIO (WebAudio synthesis)
    ===================================================================== */
 let AC = null, master = null, noiseBuf = null;
 function initAudio() {
@@ -862,10 +862,10 @@ const SND = {
 };
 
 /* =====================================================================
-   엔티티 (플레이어 + 봇)
+   ENTITIES (player + bots)
    ===================================================================== */
-const ALLY_NAMES = ['하늘', '번개', '파도', '서리'];
-const ENEMY_NAMES = ['그림자', '늑대', '독수리', '전갈', '유령'];
+const ALLY_NAMES = ['Sky', 'Bolt', 'Wave', 'Frost'];
+const ENEMY_NAMES = ['Shadow', 'Wolf', 'Eagle', 'Scorpion', 'Raven'];
 let entities = [], bots = [], player = null;
 function makeEntity(o) {
   return Object.assign({
@@ -891,7 +891,7 @@ function fwd(e) { const cp = Math.cos(e.pitch); return { x: -Math.sin(e.yaw) * c
 const isEnemy = (a, b) => a.team !== b.team;
 const sideOf = e => game.side[e.team];
 
-/* --- 이동 / 충돌 --- */
+/* --- Movement / collision --- */
 const GRAV = 22, JUMP = 7.2;
 function blockedAt(e, x, z) {
   const r = e.r, feet = e.y + .55;
@@ -938,7 +938,7 @@ function separate() {
   }
 }
 
-/* --- 시야 / 레이캐스트 --- */
+/* --- Line of sight / raycasts --- */
 function smokeBlocks(ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, L2 = dx * dx + dy * dy + dz * dz;
   for (const s of smokes) {
@@ -991,7 +991,7 @@ function canSee(b, e, fovDot = .2) {
 }
 
 /* =====================================================================
-   게임 상태
+   GAME STATE
    ===================================================================== */
 const game = {
   state: 'menu', paused: false, mode: 'comp', target: 13, half: 12, round: 0, score: [0, 0], side: ['atk', 'def'],
@@ -1000,7 +1000,7 @@ const game = {
 const BUY_TIME = 20, ROUND_TIME = 100, SPIKE_TIME = 45, PLANT_TIME = 4, DEFUSE_TIME = 7, END_TIME = 6;
 let smokes = [], zones = [], dynWalls = [], projectiles = [], timedFx = [], drops = [], orbs = [];
 
-/* --- 데미지 --- */
+/* --- Damage --- */
 function applyDamage(t, dmg, src, label, head) {
   if (!t.alive || t.dismissT > 0 || dmg <= 0) return;
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
@@ -1010,11 +1010,11 @@ function applyDamage(t, dmg, src, label, head) {
   if (t.hp <= 0) killEntity(t, src, label, head);
 }
 function killEntity(t, src, label, head) {
-  if (t.ribT > 0 && t.ribPos) { // 피닉스 역습
+  if (t.ribT > 0 && t.ribPos) { // Phoenix Run It Back
     Object.assign(t, { hp: 100, x: t.ribPos.x, y: t.ribPos.y, z: t.ribPos.z, ribT: 0, vx: 0, vz: 0, flashT: 0 });
     if (t.ribMesh) { scene.remove(t.ribMesh); t.ribMesh = null; }
     t.ribPos = null; spawnParticles(t.x, t.y + 1, t.z, 40, 0xff8a3d, 4, .7); SND.ability(t.x, t.z);
-    if (t.isPlayer) toast('역습! 표식 위치에서 부활했습니다');
+    if (t.isPlayer) toast('Run It Back! Respawned at your marker');
     return;
   }
   t.alive = false; t.hp = 0; t.deaths++; t.deadT = 0; t.deathPos = { x: t.x, y: t.y, z: t.z };
@@ -1027,7 +1027,7 @@ function killEntity(t, src, label, head) {
     for (const id in t.damagedBy) { const a = entities[id]; if (a && a !== src && isEnemy(a, t) && game.time - t.damagedBy[id] < 10) a.assists++; }
     if (src.isPlayer) { SND.kill(); const ki = document.createElement('i'); $('killIcons').appendChild(ki); }
   }
-  // 무기 드랍
+  // weapon drop
   const dw = t.primary || (t.secondary && t.secondary.key !== 'classic' ? t.secondary : null);
   if (dw) dropWeapon(dw, t.x, t.z);
   if (t.primary === dw) t.primary = null; else if (t.secondary === dw) t.secondary = null;
@@ -1041,7 +1041,7 @@ function killEntity(t, src, label, head) {
 }
 function falloffMul(w, d) { return (w.falloff && d > w.falloff[0]) ? w.falloff[1] : 1; }
 
-/* --- 드랍 / 스파이크 / 오브 --- */
+/* --- Drops / spike / orbs --- */
 function dropWeapon(inst, x, z) {
   const m = buildGun(WEAPONS[inst.key].model); m.scale.setScalar(1.5);
   const g = new THREE.Group(); g.add(m); g.position.set(x, .25 + Math.max(0, hAtPos(x, z) < WALL_H ? hAtPos(x, z) : 0), z); scene.add(g);
@@ -1060,7 +1060,7 @@ function dropSpike(x, y, z) {
   const sp = game.spike; sp.state = 'dropped'; sp.x = x; sp.y = groundAt({ x, y: y + .3, z, r: .2 }); sp.z = z; sp.carrier = null;
   sp.mesh.visible = true; sp.mesh.position.set(sp.x, sp.y, sp.z);
 }
-function giveSpike(e) { const sp = game.spike; sp.state = 'carried'; sp.carrier = e; e.hasSpike = true; sp.mesh.visible = false; if (e.isPlayer) toast('스파이크를 획득했습니다'); }
+function giveSpike(e) { const sp = game.spike; sp.state = 'carried'; sp.carrier = e; e.hasSpike = true; sp.mesh.visible = false; if (e.isPlayer) toast('You picked up the spike'); }
 function plantSpike(e) {
   const sp = game.spike; e.hasSpike = false;
   Object.assign(sp, { state: 'planted', carrier: null, x: e.x, y: e.y, z: e.z, timer: SPIKE_TIME, defuseProg: 0, half: false, defuser: null, beepT: 0 });
@@ -1068,7 +1068,7 @@ function plantSpike(e) {
   game.phase = 'planted';
   entities.forEach(m => { if (sideOf(m) === 'atk') m.credits = Math.min(9000, m.credits + 300); });
   e.ult = Math.min(AGENT[e.agent].ab.X.ult, e.ult + 1);
-  banner('스파이크 설치됨', sp.site === 1 ? 'A 사이트' : 'B 사이트', 'lose', 2.2, true);
+  banner('SPIKE PLANTED', sp.site === 1 ? 'Site A' : 'Site B', 'lose', 2.2, true);
   SND.beep(e.x, e.z); SND.beep(e.x, e.z);
 }
 function spawnOrbs() {
@@ -1082,7 +1082,7 @@ function spawnOrbs() {
 }
 
 /* =====================================================================
-   스킬 효과
+   ABILITY EFFECTS
    ===================================================================== */
 function makeSmoke(x, z, r, dur, color, owner) {
   const y = Math.min(hAtPos(x, z) < WALL_H ? hAtPos(x, z) : 0, 3) + r * .55;
@@ -1145,7 +1145,7 @@ function sageWall(e) {
   const mat = new THREE.MeshLambertMaterial({ color: 0x9feeff, emissive: 0x2a8a9a, transparent: true, opacity: .88 });
   const m = new THREE.Mesh(new THREE.BoxGeometry(w.x1 - w.x0, h, w.z1 - w.z0), mat); m.position.set((w.x0 + w.x1) / 2, base + h / 2, (w.z0 + w.z1) / 2); m.castShadow = true;
   m.scale.y = .05; scene.add(m); w.mesh = m;
-  // 벽 안에 있는 엔티티는 밀어냄
+  // lift entities standing inside the wall
   for (const o of entities) if (o.alive && o.x > w.x0 - .4 && o.x < w.x1 + .4 && o.z > w.z0 - .4 && o.z < w.z1 + .4) o.y = w.y1 + .01;
   dynWalls.push(w); return true;
 }
@@ -1190,15 +1190,15 @@ const ABIL = {
   },
   wall(e) { return sageWall(e); },
   slow(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
-  heal(e) { if (e.hp >= 100) { if (e.isPlayer) toast('체력이 가득 찼습니다'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
+  heal(e) { if (e.hp >= 100) { if (e.isPlayer) toast('Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
   revive(e) {
     let best = null, bd = 25;
     for (const o of entities) if (!o.alive && o.team === e.team && o !== e && o.deathPos) { const d = Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z); if (d < bd) { bd = d; best = o; } }
-    if (!best) { if (e.isPlayer) toast('근처에 부활시킬 아군이 없습니다'); return false; }
+    if (!best) { if (e.isPlayer) toast('No fallen ally nearby to revive'); return false; }
     Object.assign(best, { alive: true, hp: 100, armor: 0, x: best.deathPos.x, y: best.deathPos.y, z: best.deathPos.z, vy: 0, flashT: 0, target: null, path: [], slot: best.primary ? 1 : 2 });
     if (!best.secondary) best.secondary = mkWeapon('classic');
     best.mesh.rotation.set(0, best.yaw, 0); best.mesh.position.y = best.y;
-    spawnParticles(best.x, best.y + 1, best.z, 40, 0x5fe6c8, 3, .9); addFeedText(`${e.name} → ${best.name} 부활`, e.team);
+    spawnParticles(best.x, best.y + 1, best.z, 40, 0x5fe6c8, 3, .9); addFeedText(`${e.name} revived ${best.name}`, e.team);
     return true;
   },
   drone(e) {
@@ -1210,7 +1210,7 @@ const ABIL = {
     const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: 0x7fb0ff, owner: e }));
     p.onLand = () => {
       worldFlash(p.x, p.y + .5, p.z, 5, 0x7fb0ff, .2); SND.boom(p.x, p.z); spawnParticles(p.x, p.y + .3, p.z, 40, 0x7fb0ff, 6, .5);
-      for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const d = Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z); if (d < 4.5 && los(p.x, p.y + .4, p.z, o.x, o.y + 1, o.z, true)) applyDamage(o, d < 2 ? 75 : 40, e, '충격 화살'); }
+      for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const d = Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z); if (d < 4.5 && los(p.x, p.y + .4, p.z, o.x, o.y + 1, o.z, true)) applyDamage(o, d < 2 ? 75 : 40, e, 'Shock Bolt'); }
     }; return true;
   },
   recon(e) {
@@ -1233,16 +1233,16 @@ const ABIL = {
       timedFx.push({ t: 2.5, update() { for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const ey = eyeY(o), dx = x - o.x, dy = y - ey, dz = z - o.z, d = Math.hypot(dx, dy, dz); if (d > 40) continue; const f = fwd(o); if ((dx * f.x + dy * f.y + dz * f.z) / d > .5 && los(o.x, ey, o.z, x, y, z, true)) o.nearT = Math.max(o.nearT, .5); } }, end() { scene.remove(m); } });
     }; return true;
   },
-  devour(e) { if (e.soulT <= 0) { if (e.isPlayer) toast('처치 직후에만 사용할 수 있습니다'); return false; } e.soulT = 0; e.healT = 3; e.healRate = 34; e.healCap = 150; spawnParticles(e.x, e.y + 1, e.z, 25, 0xc25bff, 2, .6); return true; },
-  dismiss(e) { if (e.soulT <= 0) { if (e.isPlayer) toast('처치 직후에만 사용할 수 있습니다'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
+  devour(e) { if (e.soulT <= 0) { if (e.isPlayer) toast('Only usable right after a kill'); return false; } e.soulT = 0; e.healT = 3; e.healRate = 34; e.healCap = 150; spawnParticles(e.x, e.y + 1, e.z, 25, 0xc25bff, 2, .6); return true; },
+  dismiss(e) { if (e.soulT <= 0) { if (e.isPlayer) toast('Only usable right after a kill'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
   empress(e) { e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
 };
 function castAbility(e, key, target) {
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
-  if (key === 'X') { if (e.ult < ab.ult) { if (e.isPlayer) { toast(`궁극기 포인트 부족 (${e.ult}/${ab.ult})`); SND.deny(); } return false; } }
+  if (key === 'X') { if (e.ult < ab.ult) { if (e.isPlayer) { toast(`Not enough ult points (${e.ult}/${ab.ult})`); SND.deny(); } return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
-  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { if (e.isPlayer) toast('구매 단계에서는 사용할 수 없습니다'); return false; }
+  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { if (e.isPlayer) toast('Cannot be used during the buy phase'); return false; }
   if (ABIL[ab.type](e, ab, target) === false) return false;
   if (key === 'X') e.ult = 0; else e.charges[key]--;
   SND.ability(e.isPlayer ? undefined : e.x, e.isPlayer ? undefined : e.z);
@@ -1261,7 +1261,7 @@ function fireFury(e) {
     const px = o.x - ox, py = o.y + 1 - oy, pz = o.z - oz, t = px * f.x + py * f.y + pz * f.z;
     if (t < 0 || t > L) continue;
     const qx = px - f.x * t, qy = py - f.y * t, qz = pz - f.z * t;
-    if (qx * qx + qy * qy + qz * qz < 1.6 * 1.6) applyDamage(o, 80, e, '사냥꾼의 분노');
+    if (qx * qx + qy * qy + qz * qz < 1.6 * 1.6) applyDamage(o, 80, e, 'Hunter\'s Fury');
   }
 }
 
@@ -1285,7 +1285,7 @@ function updateEffects(dt) {
       const d = Math.hypot(e.x - z.x, e.z - z.z); if (d > z.r + e.r * .5 || e.y > (z.kind === 'orbital' ? 30 : 3)) continue;
       if (z.kind === 'fire' || z.kind === 'blaze' || z.kind === 'orbital') {
         if (e === z.owner && z.heal) { if (e.hp < 100) e.hp = Math.min(100, e.hp + 12.5 * dt); }
-        else if (isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.kind === 'orbital' ? '궤도 일격' : '화염');
+        else if (isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.kind === 'orbital' ? 'Orbital Strike' : 'Fire');
       } else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
       else if (z.kind === 'stim' && !isEnemy(e, z.owner)) e.stimT = .3;
     }
@@ -1330,7 +1330,7 @@ function clearEffects() {
   smokes = []; zones = []; dynWalls = []; projectiles = []; timedFx = [];
 }
 
-/* --- 공통 상태 업데이트 --- */
+/* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
@@ -1341,7 +1341,7 @@ function updateStatus(e, dt) {
   if (e.furyN > 0) { e.furyT -= dt; if (e.furyT <= 0) { fireFury(e); e.furyN--; e.furyT = 1.1; } }
   if (e.reloadT > 0) { e.reloadT -= dt; if (e.reloadT <= 0) finishReload(e); }
   e.fireCD -= dt;
-  // 스파이크 줍기
+  // spike pickup
   const sp = game.spike;
   if (sp && sp.state === 'dropped' && sideOf(e) === 'atk' && !(sp.ignore === e && game.time < sp.ignoreUntil) && Math.hypot(e.x - sp.x, e.z - sp.z) < (e.isPlayer ? 1.3 : 2.4)) giveSpike(e);
 }
@@ -1356,7 +1356,7 @@ function finishReload(e) {
 }
 
 /* =====================================================================
-   플레이어
+   PLAYER
    ===================================================================== */
 const keys = {}, mouse = [false, false, false];
 const camRig = { yaw: 0, pitch: 0 };
@@ -1378,18 +1378,18 @@ function equipView() {
 function switchSlot(s) {
   if (!player.alive) return;
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
-  if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* 칼날 폭풍 유지 중 교체 가능 */ }
+  if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
   if (player.slot === s) return;
   player.slot = s; player.reloadT = 0; player.fireCD = Math.max(player.fireCD, .35); equipView();
 }
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
   if (p.fireCD > 0 || p.reloadT > 0 || plantHold > 0) return;
-  if (w.model === 'knife') { // 근접
+  if (w.model === 'knife') { // melee
     p.fireCD = .5; vmKick = 1; SND.shot('knife');
     const f = fwd(p), oy = eyeY(p); let best = null, bt = 2.6;
     for (const e of entities) { if (!e.alive || !isEnemy(e, p)) continue; const h = rayEntity(p.x, oy, p.z, f.x, f.y, f.z, e); if (h && h.t < bt) { bt = h.t; best = e; } }
-    if (best) { applyDamage(best, mouse[2] ? 75 : 50, p, '나이프', false); hitMarker(false); SND.hit(); }
+    if (best) { applyDamage(best, mouse[2] ? 75 : 50, p, 'Knife', false); hitMarker(false); SND.hit(); }
     return;
   }
   if (inst.mag <= 0) { startReload(p); if (p.reloadT <= 0) SND.deny(); p.fireCD = .2; return; }
@@ -1398,7 +1398,7 @@ function playerFire() {
   if (inst.key === 'blades') { p.bladeMag--; } else inst.mag--;
   if (game.time - p.lastShot > Math.max(.32, 1.6 / rate)) p.shotIdx = 0;
   p.lastShot = game.time;
-  // 탄 퍼짐 계산
+  // spread calculation
   const hs = Math.hypot(p.vx, p.vz) / 6.75;
   const scoped = w.scope && adsT > .9, ads = !w.scope && adsT > .9;
   let spread = w.scope ? (scoped ? w.spread : w.noscope) : w.spread * (ads ? .7 : 1);
@@ -1429,12 +1429,12 @@ function playerFire() {
     else if (res.t < 199) { spawnDecal(hx, hy, hz, res.nx, res.ny, res.nz); if (k < 4) spawnParticles(hx, hy, hz, 3, 0xffd9a0, 2, .25); }
   }
   if (anyHit) { hitMarker(anyHead); anyHead ? SND.head() : SND.hit(); }
-  // 효과
+  // effects
   vmKick = Math.min(1.5, vmKick + (w.model === 'sniper' ? 1.5 : w.model === 'shotgun' ? 1.2 : .55));
   const g = vmRoot.userData.gun; if (g && g.userData.muzzle && inst.key !== 'blades') { g.userData.muzzle.visible = true; g.userData.muzzle.material.rotation = Math.random() * 6; setTimeout(() => { if (g.userData.muzzle) g.userData.muzzle.visible = false; }, 40); }
   SND.shot(w.model);
   alertEnemies(p, 38);
-  if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; } // 저격 후 스코프 해제
+  if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; } // unscope after sniper shot
   if (inst.key === 'blades' && p.bladeMag <= 0 && !killed) { p.slot = p.primary ? 1 : 2; equipView(); }
   else if (inst.key === 'blades' && p.bladeMag <= 0 && killed) { p.bladeMag = 5; }
   if (inst.mag === 0 && inst.key !== 'blades') setTimeout(() => { if (player.alive && curWeapon(player) === inst) startReload(player); }, 200);
@@ -1462,49 +1462,49 @@ function updatePlayer(dt) {
   if (p.dashT > 0) { p.dashT -= dt; p.vx = p.dashX; p.vz = p.dashZ; }
   if (keys.Space && p.onGround && !busy && !shopOpen) { p.vy = JUMP; p.onGround = false; }
   physics(p, dt);
-  // 발소리
+  // footsteps
   const spd = Math.hypot(p.vx, p.vz);
   if (p.onGround && spd > 5) { stepT -= dt; if (stepT <= 0) { stepT = .36; SND.step(undefined, undefined, .12); alertEnemies(p, 16); } }
-  // 사격
+  // shooting
   if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
   if (mouse[2] && w.model === 'knife' && !shopOpen && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
   if (!mouse[0]) p.recoil = Math.max(0, p.recoil - dt * 1.2);
-  // 조준
+  // aiming
   const wantAds = mouse[2] && w.model !== 'knife' && w.model !== 'blades' && p.reloadT <= 0;
   adsT = clamp(adsT + (wantAds ? dt : -dt) * 7, 0, 1);
-  // 스파이크 설치 / 해체
+  // spike plant / defuse
   const sp2 = game.spike;
   const holding4 = keys.Digit4 && !shopOpen;
   let doing = null;
   if (holding4 && game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && p.onGround) doing = 'plant';
   if (holding4 && game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && p.onGround) doing = 'defuse';
   if (doing === 'plant') {
-    plantHold += dt; showProgress('스파이크 설치 중', plantHold / PLANT_TIME, false);
+    plantHold += dt; showProgress('PLANTING SPIKE', plantHold / PLANT_TIME, false);
     if (plantHold >= PLANT_TIME) { plantSpike(p); plantHold = 0; hideProgress(); }
   } else if (doing === 'defuse') {
     plantHold = 1; sp2.defuser = p; sp2.defuseProg += dt; if (sp2.defuseProg >= DEFUSE_TIME / 2) sp2.half = true;
-    showProgress('스파이크 해체 중', sp2.defuseProg / DEFUSE_TIME, true);
+    showProgress('DEFUSING SPIKE', sp2.defuseProg / DEFUSE_TIME, true);
     if (Math.floor(game.time * 4) !== Math.floor((game.time - dt) * 4)) sndTone(500 + sp2.defuseProg * 80, .05, .15, 'square');
     if (sp2.defuseProg >= DEFUSE_TIME) { defuseSpike(p); plantHold = 0; hideProgress(); }
   } else {
     if (plantHold > 0 && sp2 && sp2.defuser === p) { sp2.defuser = null; sp2.defuseProg = sp2.half ? DEFUSE_TIME / 2 : 0; }
     plantHold = 0; hideProgress();
   }
-  // 상호작용 힌트
+  // interaction hint
   let hint = '';
   const near = nearestDrop(p);
-  if (near) hint = `<b>F</b> ${WEAPONS[near.inst.key].name} 줍기`;
-  const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8); if (orb) hint = '<b>F</b> 궁극기 오브 획득';
-  if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = '<b>4</b> 길게 눌러 스파이크 설치';
-  if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = '<b>4</b> 길게 눌러 스파이크 해체';
-  if (game.phase === 'buy' && !shopOpen) hint = hint || '<b>B</b> 상점 열기';
+  if (near) hint = `<b>F</b> Pick up ${WEAPONS[near.inst.key].name}`;
+  const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8); if (orb) hint = '<b>F</b> Collect ult orb';
+  if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = '<b>4</b> Hold to plant the spike';
+  if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = '<b>4</b> Hold to defuse the spike';
+  if (game.phase === 'buy' && !shopOpen) hint = hint || '<b>B</b> Open shop';
   setHint(hint);
 }
 function nearestDrop(p) { let best = null, bd = 2; for (const d of drops) { const dd = Math.hypot(d.x - p.x, d.z - p.z); if (dd < bd) { bd = dd; best = d; } } return best; }
 function interact() {
   const p = player; if (!p.alive) return;
   const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8);
-  if (orb) { scene.remove(orb.mesh); orbs.splice(orbs.indexOf(orb), 1); p.ult = Math.min(AGENT[p.agent].ab.X.ult, p.ult + 1); toast('궁극기 포인트 +1'); SND.buy(); refreshAbilHud(); return; }
+  if (orb) { scene.remove(orb.mesh); orbs.splice(orbs.indexOf(orb), 1); p.ult = Math.min(AGENT[p.agent].ab.X.ult, p.ult + 1); toast('Ult point +1'); SND.buy(); refreshAbilHud(); return; }
   const d = nearestDrop(p); if (!d) return;
   const slot = WEAPONS[d.inst.key].slot, cur = slot === 1 ? p.primary : p.secondary;
   if (cur) dropWeapon(cur, p.x, p.z);
@@ -1515,12 +1515,12 @@ function interact() {
 function onPlayerDeath(src, label) {
   plantHold = 0; hideProgress(); adsT = 0; deathCam = 0;
   const di = $('deathInfo'); di.classList.remove('hidden');
-  di.innerHTML = src && src !== player ? `<span class="k">${src.name}</span> (${AGENT[src.agent].name}) 에게 처치됨 · ${label || ''}<br><small style="opacity:.6">클릭: 관전 대상 변경</small>` : '사망했습니다';
+  di.innerHTML = src && src !== player ? `<span class="k">${src.name}</span> (${AGENT[src.agent].name}) killed you · ${label || ''}<br><small style="opacity:.6">Click: change spectate target</small>` : 'You died';
   spectateIdx = 0;
 }
 
 /* =====================================================================
-   봇 AI
+   BOT AI
    ===================================================================== */
 function setGoal(b, x, z) {
   if (b.goal && Math.hypot(b.goal.x - x, b.goal.z - z) < 1 && (b.path.length || Math.hypot(b.x - x, b.z - z) < 1.5)) return;
@@ -1572,7 +1572,7 @@ function botPerceive(b) {
     if (best !== b.target) {
       const ty = Math.atan2(-(best.x - b.x), -(best.z - b.z)), ang = Math.abs(angDiff(b.yaw, ty));
       b.reactT = D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0); b.burst = 0;
-      // 첫 교전 시 섬광/궁 사용
+      // use flash/ult on first contact
       const ag = AGENT[b.agent];
       if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C']) if ((ag.ab[k].type === 'flash' || ag.ab[k].type === 'leer') && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
       if (b.ult >= ag.ab.X.ult) { if (ag.ab.X.type === 'empress') castAbility(b, 'X'); }
@@ -1586,7 +1586,7 @@ function botShoot(b, t) {
   const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[settings.diff];
   if (b.reloadT > 0 || b.fireCD > 0) return;
   if (w.model === 'knife') {
-    if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, '나이프'); SND.shot('knife', b.x, b.z); }
+    if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, 'Knife'); SND.shot('knife', b.x, b.z); }
     return;
   }
   if (inst.mag <= 0) {
@@ -1605,7 +1605,7 @@ function botShoot(b, t) {
   if (t.crouch) acc *= .7;
   if (Math.hypot(b.vx, b.vz) > 1) acc *= .55;
   if (w.auto) acc *= 1 - Math.min(.6, b.burst * .1);
-  if (b.burst <= 1 && b.engageT < 1) acc *= .6; // 첫 발은 덜 정확
+  if (b.burst <= 1 && b.engageT < 1) acc *= .6; // first shots are less accurate
   if (b.flashT > 0) acc *= .2;
   let hit = false, head = false;
   for (let k = 0; k < w.pellets; k++) {
@@ -1629,7 +1629,7 @@ function botShoot(b, t) {
 function botObjective(b, dt) {
   const side = sideOf(b), sp = game.spike, spd = 6.2 * (b.slowT > 0 ? .5 : 1) * (b.stimT > 0 ? 1.1 : 1);
   b.plantT = (b.plantT || 0);
-  // 조사 (소리/피격)
+  // investigate (sound/damage)
   if (b.investigate && game.time - b.investigate.t < 5 && !b.hasSpike && !(sp.state === 'planted' && side === 'def' && sp.defuser === b)) {
     if (!b.invLooked) { b.invLooked = true; }
     const ty = Math.atan2(-(b.investigate.x - b.x), -(b.investigate.z - b.z));
@@ -1701,7 +1701,7 @@ function updateBot(b, dt) {
   const t = b.target;
   if (!(t && t.alive && b.targetVisible)) b.engageT = 0;
   if (game.phase === 'buy') { b.vx = b.vz = 0; }
-  else if (b.flashT > .25 || b.nearT > .1) { // 실명 상태: 뒤로 물러남
+  else if (b.flashT > .25 || b.nearT > .1) { // blinded: back off
     const f = fwd(b); b.vx = -f.x * 2.5; b.vz = -f.z * 2.5;
   } else if (t && t.alive && b.targetVisible) {
     const dx = t.x - b.x, dz = t.z - b.z, dist = Math.hypot(dx, dz);
@@ -1717,7 +1717,7 @@ function updateBot(b, dt) {
     if (b.engageT > 3.5) { b.yaw += clamp(angDiff(b.yaw, ty), -D.turn * dt * 2, D.turn * dt * 2); }
     if (b.reactT <= 0 && Math.abs(angDiff(b.yaw, ty)) < .2 && !(b.plantT > 0)) botShoot(b, t);
     b.path = [];
-    // 스파이크 해체 방해: 화염
+    // deny defuse with fire
     const ag = AGENT[b.agent];
     if (game.spike.defuser === t && sideOf(b) === 'atk') { for (const k of ['Q', 'E']) if (ag.ab[k].type === 'molly' && b.charges[k] > 0) { castAbility(b, k, { x: t.x, y: t.y, z: t.z }); break; } }
     if (b.ult >= ag.ab.X.ult && ag.ab.X.type === 'fury') castAbility(b, 'X');
@@ -1733,15 +1733,15 @@ function updateBot(b, dt) {
     }
   }
   if (b.repathT !== undefined) { b.repathT -= dt; }
-  // 끼임 감지
+  // stuck detection
   b.stuckT = (b.stuckT || 0) + dt;
   if (b.stuckT > 1.2) { if (Math.hypot(b.x - (b.lx || 0), b.z - (b.lz || 0)) < .4 && b.path.length) { b.path = findPath(b.x + rand(-1, 1), b.z + rand(-1, 1), b.goal.x, b.goal.z); } b.lx = b.x; b.lz = b.z; b.stuckT = 0; }
   if (b.dashT > 0) { b.dashT -= dt; b.vx = b.dashX; b.vz = b.dashZ; }
   physics(b, dt);
-  // 발소리 (플레이어에게 들림)
+  // footsteps (audible to the player)
   const spd = Math.hypot(b.vx, b.vz);
   if (spd > 4.5 && b.onGround) { b.stepT = (b.stepT || 0) - dt; if (b.stepT <= 0) { b.stepT = .38; if (isEnemy(b, player) && Math.hypot(b.x - camera.position.x, b.z - camera.position.z) < 28) SND.step(b.x, b.z, .5); } }
-  // 메쉬
+  // mesh
   m.position.set(b.x, b.y, b.z); m.rotation.set(0, b.yaw, 0);
   const ph = game.time * 10 * (spd / 6), sw = Math.min(1, spd / 4) * .6;
   m.userData.legL.rotation.x = Math.sin(ph) * sw; m.userData.legR.rotation.x = -Math.sin(ph) * sw;
@@ -1754,14 +1754,14 @@ function updateBot(b, dt) {
 }
 
 /* =====================================================================
-   라운드 진행
+   ROUND FLOW
    ===================================================================== */
 function setupMatch(agentId) {
-  // 기존 정리
+  // clean up previous match
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops();
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
-  player = makeEntity({ id: 0, name: '나', team: 0, agent: agentId, isPlayer: true });
+  player = makeEntity({ id: 0, name: 'You', team: 0, agent: agentId, isPlayer: true });
   entities = [player]; bots = [];
   const allyPool = shuffle(AGENTS.filter(a => a.id !== agentId).map(a => a.id));
   const enemyPool = shuffle(AGENTS.map(a => a.id));
@@ -1778,7 +1778,7 @@ function setupMatch(agentId) {
 function sidesForRound(r) {
   const H = game.half, s0 = game.startSide, flip = s => s === 'atk' ? 'def' : 'atk';
   if (r <= H) return s0; if (r <= 2 * H) return flip(s0);
-  return (r - 2 * H) % 2 === 1 ? s0 : flip(s0); // 연장전: 매 라운드 교대
+  return (r - 2 * H) % 2 === 1 ? s0 : flip(s0); // overtime: swap every round
 }
 function nextRound() {
   game.round++;
@@ -1788,7 +1788,7 @@ function nextRound() {
   const pistol = r === 1 || r === H + 1;
   game.ot = r > 2 * H;
   if (pistol) game.lossStreak = [0, 0];
-  if (r === H + 1) banner('공수 교대', '팀이 진영을 바꿉니다', '', 2.5);
+  if (r === H + 1) banner('SWITCHING SIDES', 'Teams swap attack and defense', '', 2.5);
   for (const e of entities) {
     if (pistol) { e.credits = 800; e.primary = null; e.secondary = mkWeapon('classic'); e.armor = 0; e.charges = { C: 0, Q: 0, E: 0 }; }
     if (game.ot) { e.credits = 5000; }
@@ -1801,7 +1801,7 @@ function nextRound() {
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
   }
-  // 스폰 위치
+  // spawn positions
   for (const team of [0, 1]) {
     const side = game.side[team], cells = shuffle(SPAWN_CELLS[side].slice());
     entities.filter(e => e.team === team).forEach((e, i) => {
@@ -1811,11 +1811,11 @@ function nextRound() {
   }
   clearEffects(); clearDrops();
   if (r === 1 || r % 3 === 1) spawnOrbs();
-  // 스파이크
+  // spike
   const sp = game.spike; Object.assign(sp, { state: 'none', carrier: null, timer: SPIKE_TIME, defuseProg: 0, half: false, defuser: null }); sp.mesh.visible = false; sp.mesh.userData.light.intensity = 0;
   const attackers = entities.filter(e => sideOf(e) === 'atk');
   const carrier = attackers.find(e => e.isPlayer) || pick(attackers); giveSpike(carrier);
-  // 봇 구매 & 계획
+  // bot buys & plans
   const atkSite = game.atkSite = Math.random() < .5 ? 1 : 2;
   for (const team of [0, 1]) {
     const mates = bots.filter(b => b.team === team);
@@ -1837,20 +1837,20 @@ function nextRound() {
   // UI
   $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden'); $('revealWarn').classList.add('hidden');
   camRig.yaw = player.yaw; camRig.pitch = 0; equipView(); refreshAbilHud();
-  banner(`라운드 ${r}`, (game.side[0] === 'atk' ? '공격' : '수비') + (game.ot ? ' · 연장전' : '') + (pistol ? ' · 권총 라운드' : ''), '', 2.5);
-  $('sideTag').textContent = game.side[0] === 'atk' ? '◆ 공격 진영' : '◆ 수비 진영';
+  banner(`ROUND ${r}`, (game.side[0] === 'atk' ? 'Attack' : 'Defense') + (game.ot ? ' · Overtime' : '') + (pistol ? ' · Pistol Round' : ''), '', 2.5);
+  $('sideTag').textContent = game.side[0] === 'atk' ? '◆ ATTACKING' : '◆ DEFENDING';
   $('sideTag').style.color = game.side[0] === 'atk' ? '#ff8a8a' : '#8ad0ff';
 }
 function startLive() {
   game.phase = 'live'; game.phaseT = ROUND_TIME; barrierGroup.visible = false; SND.roundStart();
   if (shopOpen) closeShop();
-  banner('전투 시작', game.side[0] === 'atk' ? '스파이크를 설치하세요' : '사이트를 방어하세요', '', 1.6);
+  banner('ROUND START', game.side[0] === 'atk' ? 'Plant the spike' : 'Defend the sites', '', 1.6);
 }
 function defuseSpike(e) {
   const sp = game.spike; sp.state = 'defused'; sp.mesh.userData.light.intensity = 0;
   e.ult = Math.min(AGENT[e.agent].ab.X.ult, e.ult + 1);
-  addFeedText(`${e.name} 스파이크 해체`, e.team);
-  endRound(e.team, '스파이크 해체');
+  addFeedText(`${e.name} defused the spike`, e.team);
+  endRound(e.team, 'Spike defused');
 }
 function explodeSpike() {
   const sp = game.spike; sp.state = 'exploded';
@@ -1858,9 +1858,9 @@ function explodeSpike() {
   big.position.set(sp.x, sp.y, sp.z); scene.add(big);
   timedFx.push({ t: 1.6, update() { big.scale.setScalar((1.6 - this.t) * 22); big.material.opacity = this.t * .4; }, end() { scene.remove(big); } });
   SND.boom(sp.x, sp.z); SND.boom();
-  for (const e of entities) if (e.alive) { const d = Math.hypot(e.x - sp.x, e.z - sp.z); if (d < 26) { e.ribT = 0; applyDamage(e, d < 14 ? 999 : (26 - d) * 15, null, '스파이크'); } }
+  for (const e of entities) if (e.alive) { const d = Math.hypot(e.x - sp.x, e.z - sp.z); if (d < 26) { e.ribT = 0; applyDamage(e, d < 14 ? 999 : (26 - d) * 15, null, 'Spike'); } }
   const atkTeam = game.side[0] === 'atk' ? 0 : 1;
-  endRound(atkTeam, '스파이크 폭발');
+  endRound(atkTeam, 'Spike detonated');
 }
 function endRound(winner, reason) {
   if (game.phase === 'end') return;
@@ -1871,7 +1871,7 @@ function endRound(winner, reason) {
   const lossBonus = [1900, 1900, 2400, 2900][game.lossStreak[loser]];
   for (const e of entities) e.credits = Math.min(9000, e.credits + (e.team === winner ? 3000 : lossBonus));
   const won = winner === 0;
-  banner(won ? '라운드 승리' : '라운드 패배', reason, won ? 'win' : 'lose', 3.5);
+  banner(won ? 'ROUND WON' : 'ROUND LOST', reason, won ? 'win' : 'lose', 3.5);
   won ? SND.win() : SND.lose();
   if (shopOpen) closeShop();
 }
@@ -1880,9 +1880,9 @@ function checkRoundEnd() {
   const atk = game.side[0] === 'atk' ? 0 : 1, def = 1 - atk;
   const aliveAtk = entities.some(e => e.team === atk && e.alive), aliveDef = entities.some(e => e.team === def && e.alive);
   if (game.phase === 'live') {
-    if (!aliveAtk) endRound(def, '적 전멸');
-    else if (!aliveDef) endRound(atk, '적 전멸');
-  } else if (!aliveDef) endRound(atk, '적 전멸');
+    if (!aliveAtk) endRound(def, 'Enemy team eliminated');
+    else if (!aliveDef) endRound(atk, 'Enemy team eliminated');
+  } else if (!aliveDef) endRound(atk, 'Enemy team eliminated');
 }
 function matchOver() {
   const [a, b] = game.score;
@@ -1893,21 +1893,21 @@ function matchOver() {
 function finishMatch() {
   game.state = 'over'; document.exitPointerLock && document.exitPointerLock();
   const won = game.score[0] > game.score[1];
-  $('overTitle').textContent = won ? '승리' : '패배'; $('overTitle').style.color = won ? 'var(--teal)' : 'var(--red)';
+  $('overTitle').textContent = won ? 'VICTORY' : 'DEFEAT'; $('overTitle').style.color = won ? 'var(--teal)' : 'var(--red)';
   $('overScore').textContent = `${game.score[0]} : ${game.score[1]}`;
   const all = entities.slice().sort((x, y) => (y.kills * 2 + y.assists) - (x.kills * 2 + x.assists));
   const mvp = all[0], p = player;
   $('overStats').innerHTML = `
-    <div class="stat"><span>요원</span><b>${AGENT[p.agent].name}</b></div>
+    <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
-    <div class="stat"><span>KD 비율</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
-    <div class="stat"><span>경기 MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills}킬</b></div>`;
+    <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
+    <div class="stat"><span>Match MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills} kills</b></div>`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
   won ? SND.win() : SND.lose();
 }
 function updateRound(dt) {
   if (game.phase === 'buy') { game.phaseT -= dt; if (game.phaseT <= 0) startLive(); }
-  else if (game.phase === 'live') { game.phaseT -= dt; if (game.phaseT <= 0) endRound(game.side[0] === 'def' ? 0 : 1, '시간 종료'); }
+  else if (game.phase === 'live') { game.phaseT -= dt; if (game.phaseT <= 0) endRound(game.side[0] === 'def' ? 0 : 1, 'Time expired'); }
   else if (game.phase === 'planted') {
     const sp = game.spike; sp.timer -= dt;
     const interval = sp.timer > 20 ? 1 : sp.timer > 10 ? .5 : sp.timer > 5 ? .25 : .12;
@@ -1924,13 +1924,13 @@ function updateRound(dt) {
 }
 
 /* =====================================================================
-   상점
+   SHOP
    ===================================================================== */
 const SHOP_COLS = [
-  ['보조무기', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']],
-  ['기관단총 · 산탄총', ['stinger', 'spectre', 'bucky', 'judge']],
-  ['소총', ['bulldog', 'guardian', 'phantom', 'vandal']],
-  ['저격총 · 기관총', ['marshal', 'outlaw', 'operator', 'ares', 'odin']],
+  ['Sidearms', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']],
+  ['SMGs · Shotguns', ['stinger', 'spectre', 'bucky', 'judge']],
+  ['Rifles', ['bulldog', 'guardian', 'phantom', 'vandal']],
+  ['Snipers · Heavies', ['marshal', 'outlaw', 'operator', 'ares', 'odin']],
 ];
 function canShop() { return game.state === 'playing' && game.phase === 'buy' && player.alive; }
 function openShop() { if (!canShop()) return; shopOpen = true; renderShop(); $('shop').classList.remove('hidden'); document.exitPointerLock && document.exitPointerLock(); }
@@ -1943,24 +1943,24 @@ function renderShop() {
     for (const k of list) {
       const w = WEAPONS[k], own = (p.primary && p.primary.key === k) || (p.secondary && p.secondary.key === k);
       const it = document.createElement('div'); it.className = 'item' + (own ? ' own' : '') + (!own && p.credits < w.price ? ' poor' : '');
-      it.innerHTML = `<div class="n">${w.name}</div><div class="p">${w.price}</div><div class="s">${w.cat} · 머리 ${w.dmg[0]} / 몸 ${w.dmg[1]}${w.pellets > 1 ? ' ×' + w.pellets : ''} · ${w.mag}발</div>`;
+      it.innerHTML = `<div class="n">${w.name}</div><div class="p">${w.price}</div><div class="s">${w.cat} · Head ${w.dmg[0]} / Body ${w.dmg[1]}${w.pellets > 1 ? ' ×' + w.pellets : ''} · ${w.mag} rds</div>`;
       it.onclick = () => buyWeapon(k); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('w:' + k); };
       col.appendChild(it);
     }
     cols.appendChild(col);
   }
-  const col = document.createElement('div'); col.className = 'col'; col.innerHTML = '<h4>방어구</h4>';
+  const col = document.createElement('div'); col.className = 'col'; col.innerHTML = '<h4>Shields</h4>';
   for (const k of ['light', 'heavy']) {
     const s = SHIELDS[k], own = p.armor >= s.val;
     const it = document.createElement('div'); it.className = 'item' + (own ? ' own' : '') + (!own && p.credits < s.price ? ' poor' : '');
-    it.innerHTML = `<div class="n">${s.name}</div><div class="p">${s.price}</div><div class="s">실드 +${s.val}</div>`;
+    it.innerHTML = `<div class="n">${s.name}</div><div class="p">${s.price}</div><div class="s">Shield +${s.val}</div>`;
     it.onclick = () => buyShield(k); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('s:' + k); }; col.appendChild(it);
   }
-  const h = document.createElement('h4'); h.textContent = '스킬 — ' + AGENT[p.agent].name; col.appendChild(h);
+  const h = document.createElement('h4'); h.textContent = 'Abilities — ' + AGENT[p.agent].name; col.appendChild(h);
   for (const key of ['C', 'Q', 'E']) {
     const a = AGENT[p.agent].ab[key], full = p.charges[key] >= a.max;
     const it = document.createElement('div'); it.className = 'item' + (full ? ' own' : '') + (!full && p.credits < a.cost ? ' poor' : '');
-    it.innerHTML = `<div class="n">[${key}] ${a.name}</div><div class="p">${a.cost || '무료'}</div><div class="s">보유 ${p.charges[key]} / ${a.max}</div>`;
+    it.innerHTML = `<div class="n">[${key}] ${a.name}</div><div class="p">${a.cost || 'Free'}</div><div class="s">Owned ${p.charges[key]} / ${a.max}</div>`;
     it.onclick = () => buyAbility(key); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('a:' + key); }; col.appendChild(it);
   }
   cols.appendChild(col);
@@ -2010,7 +2010,7 @@ function showDamageDir(src) {
 function addKillfeed(src, vic, label, head) {
   const el = document.createElement('div'); el.className = 'kf' + ((src && src.isPlayer) || vic.isPlayer ? ' me' : '');
   const cls = e => e.team === 0 ? 'a' : 'e';
-  el.innerHTML = (src && src !== vic ? `<span class="${cls(src)}">${src.name}</span>` : '') + `<span class="w">${label || '사망'}</span>` + (head ? '<span class="hs">◎헤드</span>' : '') + `<span class="${cls(vic)}">${vic.name}</span>`;
+  el.innerHTML = (src && src !== vic ? `<span class="${cls(src)}">${src.name}</span>` : '') + `<span class="w">${label || 'Died'}</span>` + (head ? '<span class="hs">◎HS</span>' : '') + `<span class="${cls(vic)}">${vic.name}</span>`;
   $('killfeed').appendChild(el); setTimeout(() => el.remove(), 5500);
   while ($('killfeed').children.length > 6) $('killfeed').firstChild.remove();
 }
@@ -2036,27 +2036,27 @@ function refreshAbilHud() {
 }
 function updateHUD(dt) {
   const p = player;
-  // 상단
+  // top bar
   const aliveHTML = team => entities.filter(e => e.team === team).map(e => `<i class="${e.alive ? '' : 'dead'}" style="border-color:${AGENT[e.agent].color};color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</i>`).join('');
   setText('aliveL', aliveHTML(0)); setText('aliveR', aliveHTML(1));
   setText('scoreL', String(game.score[0])); setText('scoreR', String(game.score[1]));
-  if (game.phase === 'planted') { setText('timer', '◆ ' + Math.ceil(game.spike.timer)); $('timer').className = 'spike'; setText('phase', '스파이크 설치됨'); }
+  if (game.phase === 'planted') { setText('timer', '◆ ' + Math.ceil(game.spike.timer)); $('timer').className = 'spike'; setText('phase', 'SPIKE PLANTED'); }
   else {
     $('timer').className = ''; setText('timer', fmtTime(game.phaseT));
-    setText('phase', { buy: '구매 단계', live: '라운드 ' + game.round, end: '라운드 종료' }[game.phase] || '');
+    setText('phase', { buy: 'BUY PHASE', live: 'ROUND ' + game.round, end: 'ROUND OVER' }[game.phase] || '');
   }
-  // 체력/탄약
+  // health/ammo
   const shownHp = Math.ceil(p.alive ? p.hp : 0);
   setText('hpNum', String(shownHp)); setText('armorNum', String(Math.ceil(p.armor)));
   $('hpBar').firstChild.style.width = Math.min(100, shownHp) + '%';
   $('hpNum').style.color = shownHp > 100 ? '#d8a8ff' : shownHp < 30 ? 'var(--red)' : '';
   const inst = curWeapon(p), w = WEAPONS[inst.key];
-  if (w.model === 'knife') setText('ammo', '—'); else if (inst.key === 'blades') setText('ammo', `${p.bladeMag}<small>칼날</small>`);
+  if (w.model === 'knife') setText('ammo', '—'); else if (inst.key === 'blades') setText('ammo', `${p.bladeMag}<small>blades</small>`);
   else setText('ammo', `${p.reloadT > 0 ? '<span style="opacity:.4">' + inst.mag + '</span>' : inst.mag}<small>/${inst.reserve}</small>`);
-  setText('wname', (p.reloadT > 0 ? '재장전 중 · ' : '') + w.name);
+  setText('wname', (p.reloadT > 0 ? 'Reloading · ' : '') + w.name);
   setText('credHud', String(p.credits));
-  setText('slots', [p.primary ? `<div class="${p.slot === 1 ? 'on' : ''}">1 ${WEAPONS[p.primary.key].name}</div>` : '', p.secondary ? `<div class="${p.slot === 2 ? 'on' : ''}">2 ${WEAPONS[p.secondary.key].name}</div>` : '', `<div class="${p.slot === 3 ? 'on' : ''}">3 나이프</div>`, p.hasSpike ? '<div style="color:var(--red)">4 스파이크</div>' : ''].join(''));
-  // 오버레이
+  setText('slots', [p.primary ? `<div class="${p.slot === 1 ? 'on' : ''}">1 ${WEAPONS[p.primary.key].name}</div>` : '', p.secondary ? `<div class="${p.slot === 2 ? 'on' : ''}">2 ${WEAPONS[p.secondary.key].name}</div>` : '', `<div class="${p.slot === 3 ? 'on' : ''}">3 Knife</div>`, p.hasSpike ? '<div style="color:var(--red)">4 Spike</div>' : ''].join(''));
+  // overlays
   const viewer = p.alive ? p : null;
   $('flashOv').style.opacity = viewer ? Math.min(1, p.flashT / .8) : 0;
   $('nearOv').style.opacity = viewer ? Math.min(1, p.nearT * 2) : 0;
@@ -2067,7 +2067,7 @@ function updateHUD(dt) {
   dmgT = Math.max(0, dmgT - dt); $('dmgOv').style.opacity = dmgT * 2;
   const scoped = p.alive && w.scope && adsT > .9;
   $('scopeOv').style.opacity = scoped ? 1 : 0; $('crosshair').style.opacity = scoped ? 0 : 1;
-  // 크로스헤어 확산 표시
+  // dynamic crosshair spread
   const moveF = Math.hypot(p.vx, p.vz) / 6.75 + (p.onGround ? 0 : 1) + Math.min(p.shotIdx, 8) * .08;
   const gap = 3 + moveF * 8;
   const lines = $('crosshair').querySelectorAll('.ln');
@@ -2080,7 +2080,7 @@ function updateHUD(dt) {
 }
 let abilT = 0; function refreshAbilHudThrottled() { abilT -= 1; if (abilT <= 0) { abilT = 10; refreshAbilHud(); } }
 
-/* --- 미니맵 --- */
+/* --- Minimap --- */
 const mm = $('minimap'), mmx = mm.getContext('2d'), MMS = Math.min(mm.width / MAPW, mm.height / MAPH);
 const mmBase = document.createElement('canvas'); mmBase.width = mm.width; mmBase.height = mm.height;
 (function () {
@@ -2122,7 +2122,7 @@ function updateSpotting() {
   for (const e of entities) if (e.alive && isEnemy(e, player) && canSee(player, e, .35)) e.spottedT = game.time + .6;
 }
 
-/* --- 점수판 --- */
+/* --- Scoreboard --- */
 function renderBoard() {
   const rows = team => entities.filter(e => e.team === team).sort((a, b) => b.kills - a.kills).map(e => {
     const w = e.primary ? WEAPONS[e.primary.key].name : e.secondary ? WEAPONS[e.secondary.key].name : '-';
@@ -2132,13 +2132,13 @@ function renderBoard() {
       <td class="os">${team === 0 ? e.credits : '—'}</td><td>${team === 0 || !e.alive ? w : '?'}</td>
       <td class="os">${e.ult}/${AGENT[e.agent].ab.X.ult}</td></tr>`;
   }).join('');
-  $('board').innerHTML = `<div class="hdr"><span style="color:var(--teal)">우리 팀 ${game.score[0]}</span><span style="font-size:14px;opacity:.6">라운드 ${game.round} · ${game.mode === 'swift' ? '신속 플레이' : '경쟁전'}</span><span style="color:var(--red)">${game.score[1]} 상대 팀</span></div>
-    <table><tr><th>플레이어</th><th>K</th><th>D</th><th>A</th><th>크레딧</th><th>무기</th><th>궁극기</th></tr>${rows(0)}<tr><td colspan="7" style="height:10px;border:0"></td></tr>${rows(1)}</table>
+  $('board').innerHTML = `<div class="hdr"><span style="color:var(--teal)">Your team ${game.score[0]}</span><span style="font-size:14px;opacity:.6">Round ${game.round} · ${game.mode === 'swift' ? 'Swiftplay' : 'Competitive'}</span><span style="color:var(--red)">${game.score[1]} Enemy team</span></div>
+    <table><tr><th>Player</th><th>K</th><th>D</th><th>A</th><th>Credits</th><th>Weapon</th><th>Ult</th></tr>${rows(0)}<tr><td colspan="7" style="height:10px;border:0"></td></tr>${rows(1)}</table>
     <div style="margin-top:10px;display:flex;gap:4px;flex-wrap:wrap">${game.history.map(w => `<span style="width:14px;height:14px;background:${w === 0 ? 'var(--teal)' : 'var(--red)'};display:inline-block"></span>`).join('')}</div>`;
 }
 
 /* =====================================================================
-   카메라 / 렌더
+   CAMERA / RENDER
    ===================================================================== */
 function updateCamera(dt) {
   const p = player;
@@ -2146,7 +2146,7 @@ function updateCamera(dt) {
   if (!p.alive) {
     deathCam += dt;
     const allies = entities.filter(e => e.team === p.team && e.alive && !e.isPlayer);
-    if (deathCam > 2 && allies.length) { viewEnt = allies[spectateIdx % allies.length]; $('deathInfo').innerHTML = `관전 중: <b style="color:var(--teal)">${viewEnt.name}</b> (${AGENT[viewEnt.agent].name}) · 클릭으로 변경`; }
+    if (deathCam > 2 && allies.length) { viewEnt = allies[spectateIdx % allies.length]; $('deathInfo').innerHTML = `Spectating: <b style="color:var(--teal)">${viewEnt.name}</b> (${AGENT[viewEnt.agent].name}) · Click to switch`; }
     else viewEnt = null;
   }
   if (viewEnt === p) {
@@ -2163,12 +2163,12 @@ function updateCamera(dt) {
     camera.position.set(viewEnt.x, viewEnt.y + 1.6, viewEnt.z); camera.rotation.set(viewEnt.pitch, viewEnt.yaw, 0); camRig.yaw = viewEnt.yaw;
     viewEnt.mesh.visible = false; vmRoot.visible = false;
     if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); }
-  } else if (p.deathPos) { // 사망 직후 3인칭 시점
+  } else if (p.deathPos) { // third-person view right after death
     const t = Math.min(1, deathCam / 1.5);
     camera.position.set(p.deathPos.x + Math.sin(p.yaw) * 3 * t, p.deathPos.y + 1.6 + 2.5 * t, p.deathPos.z + Math.cos(p.yaw) * 3 * t);
     camera.lookAt(p.deathPos.x, p.deathPos.y + .5, p.deathPos.z); vmRoot.visible = false;
   }
-  // 뷰모델 애니메이션
+  // viewmodel animation
   const g = vmRoot.userData.gun;
   if (g && p.alive) {
     const spd = Math.hypot(p.vx, p.vz), bob = p.onGround ? spd / 6.75 : 0;
@@ -2186,7 +2186,7 @@ function render() {
 }
 
 /* =====================================================================
-   메인 루프
+   MAIN LOOP
    ===================================================================== */
 let last = performance.now(), spotT = 0;
 function loop(now) {
@@ -2209,7 +2209,7 @@ function loop(now) {
     updateHUD(dt);
     drawMinimap();
   } else {
-    // 메뉴 배경 카메라 회전
+    // menu background camera orbit
     const t = now / 1000 * .08;
     camera.position.set(MAPW / 2 + Math.cos(t) * 60, 45, MAPH / 2 + Math.sin(t) * 50); camera.lookAt(MAPW / 2, 0, MAPH / 2);
   }
@@ -2217,7 +2217,7 @@ function loop(now) {
 }
 
 /* =====================================================================
-   입력
+   INPUT
    ===================================================================== */
 function lockPointer() { const c = renderer.domElement; if (c.requestPointerLock) { try { const r = c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { } } }
 const isLocked = () => document.pointerLockElement === renderer.domElement;
@@ -2255,7 +2255,7 @@ document.addEventListener('keydown', e => {
     case 'Digit3': switchSlot(3); break;
     case 'KeyR': startReload(player); break;
     case 'KeyF': interact(); break;
-    case 'KeyG': if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('스파이크를 버렸습니다'); } break;
+    case 'KeyG': if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
     case 'KeyC': castAbility(player, 'C'); break;
     case 'KeyQ': castAbility(player, 'Q'); break;
     case 'KeyE': castAbility(player, 'E'); break;
@@ -2268,7 +2268,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix();
 });
 
-/* --- 메뉴 UI --- */
+/* --- Menu UI --- */
 let selectedAgent = 'jett';
 function segBind(id, fn) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b.dataset.v); }); }
 segBind('diffSeg', v => settings.diff = v);
@@ -2297,7 +2297,7 @@ function renderAgents() {
   }
   const a = AGENT[selectedAgent];
   $('agentInfo').innerHTML = `<div class="big" style="color:${a.color}">${a.name}</div><div class="role">${a.role}</div><div class="desc">${a.desc}</div>` +
-    ['C', 'Q', 'E', 'X'].map(k => { const ab = a.ab[k]; return `<div class="abRow"><div class="k ${k === 'X' ? 'x' : ''}">${k}</div><div><div class="t">${ab.name} <span style="opacity:.5;font-weight:400;font-size:12px">${k === 'X' ? '궁극기 ' + ab.ult + '포인트' : (ab.free ? '라운드당 무료 ' + ab.free + '회' : '') + (ab.cost ? ' · ' + ab.cost + ' 크레딧' : '') + ' · 최대 ' + ab.max}</span></div><div class="d">${ab.desc}</div></div></div>`; }).join('');
+    ['C', 'Q', 'E', 'X'].map(k => { const ab = a.ab[k]; return `<div class="abRow"><div class="k ${k === 'X' ? 'x' : ''}">${k}</div><div><div class="t">${ab.name} <span style="opacity:.5;font-weight:400;font-size:12px">${k === 'X' ? 'Ultimate · ' + ab.ult + ' points' : (ab.free ? ab.free + ' free per round' : '') + (ab.cost ? ' · ' + ab.cost + ' credits' : '') + ' · max ' + ab.max}</span></div><div class="d">${ab.desc}</div></div></div>`; }).join('');
 }
 $('btnLock').onclick = () => {
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');

@@ -1,38 +1,38 @@
 # VALOR STRIKE
 
-발로란트 스타일의 5대5 택티컬 FPS를 **HTML 파일 하나**(`index.html`)로 만든 게임입니다. Three.js(CDN)로 3D를 렌더링합니다.
+A Valorant-style 5v5 tactical FPS in a **single HTML file** (`index.html`), rendered in 3D with Three.js (loaded from a CDN).
 
-## 실행 방법
-`index.html`을 데스크톱 브라우저(Chrome / Edge / Firefox)에서 열면 됩니다. 인터넷 연결이 필요합니다(Three.js CDN).
-화면을 클릭하면 마우스가 잠깁니다.
+## How to play
+Open `index.html` in a desktop browser (Chrome / Edge / Firefox). An internet connection is required to load Three.js.
+Click the screen to lock the mouse.
 
-## 들어간 기능
-- **요원 6명**과 고유 스킬 C / Q / E / 궁극기 X
-  - 제트: 연막 폭발, 상승 기류, 순풍(돌진), 칼날 폭풍
-  - 피닉스: 불길, 커브볼(섬광), 뜨거운 손(화염 + 자가 회복), 역습(부활 표식)
-  - 세이지: 장벽 구슬(파괴 가능, 위에 올라설 수 있음), 둔화 구슬, 회복 구슬, 부활
-  - 소바: 올빼미 드론, 충격 화살, 정찰 화살, 사냥꾼의 분노(벽 관통)
-  - 브림스톤: 자극제 신호기, 소이탄, 공중 연막, 궤도 일격
-  - 레이나: 눈빛(시야 흐림), 흡수(오버힐), 무시(무적), 여제
-- **무기 17종**(클래식~오퍼레이터, 오딘): 머리/몸/다리 데미지, 거리별 데미지 감소, 산탄, 스코프, 연사 반동, 이동 시 정확도 저하
-- **상점과 크레딧 경제**: 처치 200, 승리 3000, 연패 보너스 1900/2400/2900, 설치 보너스 300, 최대 9000, 이번 라운드에 산 물건 판매
-- **스파이크**: 설치 4초, 폭발 45초(갈수록 빨라지는 비프음), 해체 7초(절반 체크포인트 있음), 떨어뜨리기·줍기
-- **라운드 진행**: 구매 단계 장벽, 100초 라운드, 권총 라운드, 공수 교대, 연장전(2점 차로 이겨야 함), 경쟁전(13승)·신속 플레이(5승)
-- **봇 AI**(4명의 아군 + 5명의 적, 난이도 3단계): A* 경로 탐색, 사이트 공격/수비/회전, 반응 시간, 연막·섬광·화염·궁극기 사용, 소리 듣기, 설치·해체
-- 궁극기 오브, 무기 드랍과 줍기, 사망 후 아군 관전, 미니맵 발견 표시, 킬피드, 점수판, 피격 방향 표시, 섬광 효과, 적 빨간 외곽선
-- WebAudio로 만든 입체 효과음(총소리, 적 발소리, 스파이크 비프음)
+## Features
+- **6 agents**, each with C / Q / E abilities and an X ultimate
+  - Jett: Cloudburst, Updraft, Tailwind (dash), Blade Storm
+  - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back
+  - Sage: Barrier Orb (destructible, you can stand on it), Slow Orb, Healing Orb, Resurrection
+  - Sova: Owl Drone, Shock Bolt, Recon Bolt, Hunter's Fury (pierces walls)
+  - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike
+  - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress
+- **17 weapons**, from the Classic to the Operator and Odin. Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
+- **Shop and credit economy**: 200 per kill, 3000 per round win, loss bonus of 1900 / 2400 / 2900, 300 plant bonus, 9000 credit cap. Items bought this round can be sold back.
+- **Spike**: 4s plant, 45s fuse with beeps that speed up, 7s defuse with a halfway checkpoint. The spike can be dropped and picked up.
+- **Round flow**: buy-phase barriers, 100s rounds, pistol rounds, side swap at half, overtime (win by 2), Competitive (first to 13) and Swiftplay (first to 5)
+- **Bot AI** (4 allies + 5 enemies, 3 difficulty levels): A* pathfinding, attacking and defending sites, rotating, reaction time, using smokes, flashes, fire and ultimates, reacting to sound, planting and defusing
+- Ult orbs, weapon drops and pickups, spectating allies after death, minimap spotting, kill feed, scoreboard, damage direction indicator, flash effects, red outlines on enemies
+- Positional sound effects synthesized with WebAudio (gunshots, enemy footsteps, spike beeps)
 
-## 조작법
-| 키 | 동작 |
+## Controls
+| Key | Action |
 |---|---|
-| WASD / Shift / Ctrl / Space | 이동 / 걷기(소리 없음) / 앉기 / 점프 |
-| 좌클릭 / 우클릭 | 사격 / 조준·스코프 |
-| R | 재장전 |
-| 1 2 3 | 주무기 / 보조무기 / 나이프 |
-| C Q E X | 스킬 / 궁극기 |
-| 4 (길게 누르기) | 스파이크 설치·해체 |
-| F | 무기 줍기 / 궁극기 오브 획득 |
-| G | 스파이크 버리기 |
-| B | 상점(구매 단계) |
-| Tab | 점수판 |
-| Esc | 일시정지 |
+| WASD / Shift / Ctrl / Space | Move / Walk (silent) / Crouch / Jump |
+| Left click / Right click | Fire / Aim · Scope |
+| R | Reload |
+| 1 2 3 | Primary / Sidearm / Knife |
+| C Q E X | Abilities / Ultimate |
+| 4 (hold) | Plant or defuse the spike |
+| F | Pick up weapon / Collect ult orb |
+| G | Drop the spike |
+| B | Shop (buy phase) |
+| Tab | Scoreboard |
+| Esc | Pause |
