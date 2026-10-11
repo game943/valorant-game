@@ -7,6 +7,7 @@ Open `index.html` in a desktop browser (Chrome / Edge / Firefox). An internet co
 Click the screen to lock the mouse.
 
 ## Features
+- **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
 - **6 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (dash), Blade Storm
   - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back

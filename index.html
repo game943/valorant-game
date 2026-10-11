@@ -18,12 +18,6 @@ button{font-family:inherit}
 
 /* ---------- screens ---------- */
 .screen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center}
-#menu{background:radial-gradient(ellipse at 30% 50%,#1d2a36 0%,#0f1923 65%);overflow:hidden}
-#menu .stripe{position:absolute;top:-20%;height:140%;transform:skewX(-14deg)}
-#menu .s1{right:-8%;width:46%;background:var(--red)}
-#menu .s2{right:38%;width:3%;background:var(--red);opacity:.5}
-#menu .s3{right:43%;width:1%;background:var(--light);opacity:.25}
-.menuInner{position:relative;z-index:2;width:min(1150px,94vw);display:grid;grid-template-columns:1.15fr 1fr;gap:48px;align-items:center}
 .logo{font-family:'Oswald',sans-serif;font-size:clamp(52px,8vw,118px);letter-spacing:5px;line-height:.88;font-weight:700}
 .logo span{color:var(--red)}
 .sub{opacity:.75;margin:16px 0 26px;font-size:15px;line-height:1.6}
@@ -45,6 +39,104 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .keys b{display:inline-block;min-width:26px;padding:1px 6px;text-align:center;background:#26313d;border:1px solid #3b4856;font-family:Oswald;font-weight:500}
 .note{font-size:12px;opacity:.55;margin-top:10px;line-height:1.5}
 
+/* ---------- lobby / main menu ---------- */
+#menu{background:transparent;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden}
+.mVig{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(12,20,28,.7) 0,rgba(12,20,28,0) 22%,rgba(12,20,28,0) 62%,rgba(12,20,28,.92) 100%),linear-gradient(90deg,rgba(12,20,28,.8) 0,rgba(12,20,28,0) 45%)}
+.topnav{position:relative;z-index:4;height:64px;flex:none;display:flex;align-items:center;padding:0 22px;background:rgba(15,25,35,.78);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px)}
+.brand{font:700 22px Oswald,sans-serif;letter-spacing:3px;display:flex;gap:6px;width:240px}
+.brand .bv{color:var(--red)}
+#navTabs{flex:1;display:flex;justify-content:center;align-items:stretch;gap:2px;height:100%}
+#navTabs button{background:none;border:0;color:rgba(236,232,225,.55);font:700 15px Oswald,sans-serif;letter-spacing:3px;padding:0 20px;cursor:pointer;position:relative;transition:color .12s}
+#navTabs button:hover{color:var(--light)}
+#navTabs button.on{color:var(--light)}
+#navTabs button.on:after{content:'';position:absolute;left:16px;right:16px;bottom:0;height:3px;background:var(--red)}
+#navTabs button.play{font-size:24px;letter-spacing:5px;padding:0 40px;color:var(--light);background:linear-gradient(180deg,rgba(255,70,85,0) 0,rgba(255,70,85,.28) 100%)}
+.navRight{width:240px;display:flex;justify-content:flex-end;align-items:center;gap:16px}
+.acct{display:flex;align-items:center;gap:14px}
+.lvlBadge{width:32px;height:32px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;transform:rotate(45deg);background:rgba(245,215,110,.1)}
+.lvlBadge span{transform:rotate(-45deg);font:700 13px Oswald,sans-serif;color:var(--gold)}
+.acct .nm{font-weight:700;font-size:14px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xpbar{width:110px;height:3px;background:rgba(255,255,255,.15);margin-top:5px}
+#xpFill{height:100%;width:0;background:var(--gold)}
+.iconBtn{width:38px;height:38px;flex:none;border:1px solid rgba(255,255,255,.25);background:rgba(15,25,35,.5);color:var(--light);font-size:17px;cursor:pointer;transition:.12s}
+.iconBtn:hover{background:var(--light);color:var(--dark)}
+.tab{position:relative;z-index:2;flex:1;min-height:0}
+.homeLeft{position:absolute;left:5vw;bottom:9vh}
+.homeLeft .logo{font-size:clamp(40px,5.2vw,80px)}
+.homeLeft .sub{letter-spacing:4px;font-size:12px;margin:12px 0 26px}
+.bigPlay{width:300px;height:70px;border:0;background:var(--red);color:#fff;font:700 30px Oswald,sans-serif;letter-spacing:8px;cursor:pointer;clip-path:polygon(18px 0,100% 0,calc(100% - 18px) 100%,0 100%);transition:.15s;position:relative}
+.bigPlay:hover{background:#ff5f6c;letter-spacing:11px}
+.news{position:absolute;right:3vw;bottom:9vh;width:340px}
+.newsCard{background:rgba(15,25,35,.86);border-left:3px solid var(--red);padding:16px 18px;min-height:112px;animation:fadeIn .4s}
+.newsCard .k{font:500 11px Oswald,sans-serif;letter-spacing:3px;color:var(--red)}
+.newsCard .h{font-weight:900;font-size:18px;margin:4px 0 6px}
+.newsCard .b{font-size:13px;opacity:.75;line-height:1.5}
+.newsDots{display:flex;gap:6px;margin-top:8px}
+.newsDots i{width:22px;height:3px;background:rgba(255,255,255,.25);cursor:pointer}
+.newsDots i.on{background:var(--light)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#plates{position:absolute;inset:0;pointer-events:none;z-index:1}
+.plate{position:absolute;transform:translate(-50%,0);text-align:center;white-space:nowrap}
+.plate .pn{display:inline-block;font-weight:900;font-size:13px;background:rgba(15,25,35,.82);padding:5px 14px;border-bottom:2px solid var(--teal)}
+.plate .pa{font:500 11px Oswald,sans-serif;letter-spacing:3px;opacity:.75;margin-top:4px}
+.plate.me .pn{font-size:15px;border-color:var(--gold);padding:6px 18px}
+.modeStrip{display:flex;justify-content:center;gap:10px;margin-top:22px}
+.mode{width:250px;padding:14px 18px;background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.12s;clip-path:polygon(0 0,100% 0,100% 100%,14px 100%,0 calc(100% - 14px))}
+.mode:hover{border-color:rgba(255,255,255,.5)}
+.mode.on{background:var(--light);color:var(--dark)}
+.mode .t{font:700 20px Oswald,sans-serif;letter-spacing:3px}
+.mode .d{font-size:12px;opacity:.7;margin-top:2px}
+.playOpts{display:flex;justify-content:center;gap:10px;margin-top:10px}
+.optCard{background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.1);padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.mapCard{flex-direction:row;align-items:center;gap:12px}
+.mapCard canvas{border:1px solid rgba(255,255,255,.15);background:#0f1923}
+.mapName{font:700 20px Oswald,sans-serif;letter-spacing:3px}
+.ol{font:500 11px Oswald,sans-serif;letter-spacing:3px;opacity:.7}
+.startWrap{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);text-align:center}
+#queueInfo{font:500 14px Oswald,sans-serif;letter-spacing:4px;margin-bottom:10px;min-height:20px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.start{width:340px;height:66px;background:var(--red);color:#fff;border:0;font:700 28px Oswald,sans-serif;letter-spacing:8px;cursor:pointer;clip-path:polygon(18px 0,100% 0,calc(100% - 18px) 100%,0 100%);transition:.15s}
+.start:hover{background:#ff5f6c}
+.start.queue{background:#2b3642;font-size:20px}
+.start.queue:hover{background:#3a4755}
+#matchFound{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;background:rgba(10,16,22,.55)}
+.mfBand{width:100%;padding:26px 0;text-align:center;background:linear-gradient(90deg,rgba(255,70,85,0),rgba(255,70,85,.95) 25%,rgba(255,70,85,.95) 75%,rgba(255,70,85,0));animation:mfIn .45s cubic-bezier(.2,.9,.3,1.2)}
+.mfT{font:700 64px Oswald,sans-serif;letter-spacing:12px;color:#fff}
+.mfS{font:500 14px Oswald,sans-serif;letter-spacing:5px;opacity:.9}
+@keyframes mfIn{from{transform:scaleY(0);opacity:0}to{transform:none;opacity:1}}
+.tabPanel{position:absolute;inset:22px 4vw 24px;background:rgba(15,25,35,.93);border:1px solid rgba(255,255,255,.08);padding:22px 28px;overflow:auto;animation:fadeIn .25s}
+.tabPanel.leftPanel{right:auto;width:min(680px,56vw)}
+.pHead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px}
+.pHead h2{font:700 30px Oswald,sans-serif;letter-spacing:5px}
+#agGrid2{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+#agGrid2 .agent{height:84px}
+#agGrid2 .agent .glyph{font-size:34px}
+#agGrid2 .agent .nm{font-size:14px;bottom:6px;left:8px}
+#agGrid2 .agent .rl{display:none}
+.favBtn{margin-top:14px;padding:10px 18px;border:1px solid var(--gold);background:transparent;color:var(--gold);font:700 13px Oswald,sans-serif;letter-spacing:3px;cursor:pointer}
+.favBtn:hover,.favBtn.on{background:var(--gold);color:var(--dark)}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+.tile{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
+.tile .v{font:700 30px Oswald,sans-serif}
+.mrow{display:grid;grid-template-columns:110px 80px 1fr 110px 110px 120px;align-items:center;gap:10px;padding:10px 12px;border-left:4px solid;background:rgba(255,255,255,.03);margin-bottom:5px;font-size:14px}
+.mrow.w{border-color:var(--teal)}.mrow.l{border-color:var(--red)}
+.mrow .res{font:700 16px Oswald,sans-serif;letter-spacing:2px}
+.mrow.w .res{color:var(--teal)}.mrow.l .res{color:var(--red)}
+.empty{opacity:.6;padding:30px 0;text-align:center}
+.collCat{font:500 12px Oswald,sans-serif;letter-spacing:4px;opacity:.6;margin:16px 0 8px}
+.collGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.wcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
+.wcard .wt{display:flex;justify-content:space-between;align-items:baseline}
+.wcard .wn{font-weight:900;font-size:16px}
+.wcard .wp{font:500 14px Oswald,sans-serif;color:var(--gold)}
+.sbar{display:grid;grid-template-columns:76px 1fr 50px;align-items:center;gap:8px;font-size:11px;margin-top:6px}
+.sbar .ol{letter-spacing:1.5px;white-space:nowrap}
+.sbar .b{height:4px;background:rgba(255,255,255,.12)}
+.sbar .b div{height:100%;background:var(--light)}
+.sbar .n{font-family:Oswald,sans-serif;text-align:right;opacity:.85}
+#settingsModal{background:rgba(10,16,22,.8);z-index:42}
+.setPanel{width:min(860px,94vw)}
+.setGrid{display:grid;grid-template-columns:1fr 1fr;gap:36px}
+input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);padding:6px 10px;font:inherit;width:170px}
 /* agent select */
 #select{background:linear-gradient(120deg,#0f1923 0%,#18222d 60%,#2a1a22 100%);flex-direction:column}
 #select h1{font-family:Oswald;letter-spacing:6px;font-size:40px;margin-bottom:6px}
@@ -185,32 +277,92 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #overScore{font:700 44px Oswald;text-align:center;margin:4px 0 16px}
 .stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14px}
 #mobileNote{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:12px;opacity:.5;z-index:35}
-@media (max-width:820px){.menuInner,.selWrap{grid-template-columns:1fr}#menu .s1{opacity:.35}#shopCols{grid-template-columns:repeat(2,1fr);max-height:70vh;overflow:auto}}
+@media (max-width:820px){.selWrap,.setGrid{grid-template-columns:1fr}#navTabs button{padding:0 8px;font-size:12px}.brand,.navRight{width:auto}.news{display:none}.tiles{grid-template-columns:repeat(3,1fr)}#shopCols{grid-template-columns:repeat(2,1fr);max-height:70vh;overflow:auto}}
 </style>
 </head>
 <body>
 <div id="game"></div>
 
-<!-- ================= MAIN MENU ================= -->
+<!-- ================= MAIN MENU (LOBBY) ================= -->
 <div id="menu" class="screen">
-  <div class="stripe s1"></div><div class="stripe s2"></div><div class="stripe s3"></div>
-  <div class="menuInner">
-    <div>
-      <div class="logo">VALOR<br><span>STRIKE</span></div>
-      <div class="sub">5v5 tactical shooter · Agent abilities · Credit economy · Spike plant/defuse<br>Side swap · Overtime · Ult orbs · Weapon drops · Spectating · Minimap</div>
-      <button class="btn primary" id="btnComp">Competitive (First to 13)</button>
-      <button class="btn" id="btnSwift">Swiftplay (First to 5)</button>
-      <button class="btn" id="btnHelp">Controls</button>
+  <div class="mVig"></div>
+  <header class="topnav">
+    <div class="brand"><span class="bv">VALOR</span><span>STRIKE</span></div>
+    <nav id="navTabs">
+      <button data-tab="home" class="on">HOME</button>
+      <button data-tab="agents">AGENTS</button>
+      <button data-tab="play" class="play">PLAY</button>
+      <button data-tab="career">CAREER</button>
+      <button data-tab="collection">COLLECTION</button>
+    </nav>
+    <div class="navRight">
+      <div class="acct"><div class="lvlBadge"><span id="lvlNum">1</span></div><div><div class="nm" id="nameTag">Player</div><div class="xpbar"><div id="xpFill"></div></div></div></div>
+      <button class="iconBtn" id="btnSettings" title="Settings">⚙</button>
     </div>
-    <div class="panel">
-      <h3>SETTINGS</h3>
-      <div class="row"><label>Bot Difficulty</label><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
-      <div class="row"><label>Sensitivity <span id="sensVal" class="os">1.00</span></label><input type="range" id="sens" min="0.2" max="3" step="0.05" value="1"></div>
-      <div class="row"><label>Volume <span id="volVal" class="os">60</span></label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.6"></div>
-      <div class="row"><label>Crosshair Color</label><input type="color" id="chColor" value="#00ff9c"></div>
-      <div class="row"><label>Shadows</label><div class="seg" id="shadowSeg"><button data-v="1" class="on">On</button><button data-v="0">Off</button></div></div>
-      <div id="helpBox" class="hidden">
-        <h3 style="margin-top:16px">CONTROLS</h3>
+  </header>
+  <div id="plates"></div>
+
+  <section class="tab" id="tab-home">
+    <div class="homeLeft">
+      <div class="logo">VALOR<br><span>STRIKE</span></div>
+      <div class="sub">5V5 CHARACTER-BASED TACTICAL SHOOTER</div>
+      <button class="bigPlay" id="homePlay"><span>PLAY</span></button>
+    </div>
+    <div class="news">
+      <div class="newsCard" id="newsCard"></div>
+      <div class="newsDots" id="newsDots"></div>
+    </div>
+  </section>
+
+  <section class="tab hidden" id="tab-play">
+    <div class="modeStrip" id="modeStrip">
+      <div class="mode on" data-mode="comp"><div class="t">COMPETITIVE</div><div class="d">First to 13 · Overtime win by 2</div></div>
+      <div class="mode" data-mode="swift"><div class="t">SWIFTPLAY</div><div class="d">First to 5 · Quick matches</div></div>
+    </div>
+    <div class="playOpts">
+      <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
+      <div class="optCard mapCard"><canvas id="mapThumb" width="96" height="80"></canvas><div><div class="ol">MAP</div><div class="mapName">DUSTWALL</div><div class="ol" style="opacity:.5">2 SITES · MID</div></div></div>
+    </div>
+    <div class="startWrap">
+      <div id="queueInfo"></div>
+      <button class="start" id="btnStart">START</button>
+    </div>
+  </section>
+
+  <section class="tab hidden" id="tab-agents">
+    <div class="tabPanel leftPanel">
+      <div class="pHead"><h2>AGENTS</h2><span class="ol">Pick a favorite — it leads your party in the lobby</span></div>
+      <div id="agGrid2"></div>
+      <div id="agInfo2"></div>
+    </div>
+  </section>
+
+  <section class="tab hidden" id="tab-career">
+    <div class="tabPanel"><div class="pHead"><h2>CAREER</h2><span class="ol">Match history is saved in this browser</span></div><div id="careerBox"></div></div>
+  </section>
+
+  <section class="tab hidden" id="tab-collection">
+    <div class="tabPanel"><div class="pHead"><h2>COLLECTION</h2><span class="ol">Arsenal · damage per bullet (head / body / legs)</span></div><div id="collBox"></div></div>
+  </section>
+</div>
+<div id="matchFound" class="hidden"><div class="mfBand"><div class="mfT">MATCH FOUND</div><div class="mfS" id="mfSub">COMPETITIVE · DUSTWALL</div></div></div>
+
+<!-- ================= SETTINGS ================= -->
+<div id="settingsModal" class="screen hidden">
+  <div class="panel setPanel">
+    <div class="pHead"><h2>SETTINGS</h2><button class="iconBtn" id="btnCloseSet">✕</button></div>
+    <div class="setGrid">
+      <div>
+        <h3>GENERAL</h3>
+        <div class="row"><label>Player Name</label><input type="text" id="nameInput" maxlength="16" spellcheck="false"></div>
+        <div class="row"><label>Sensitivity <span id="sensVal" class="os">1.00</span></label><input type="range" id="sens" min="0.2" max="3" step="0.05" value="1"></div>
+        <div class="row"><label>Volume <span id="volVal" class="os">60</span></label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.6"></div>
+        <div class="row"><label>Crosshair Color</label><input type="color" id="chColor" value="#00ff9c"></div>
+        <div class="row"><label>Shadows</label><div class="seg" id="shadowSeg"><button data-v="1" class="on">On</button><button data-v="0">Off</button></div></div>
+        <div class="note">Desktop browser with keyboard &amp; mouse only. Click the screen in a match to lock the mouse.</div>
+      </div>
+      <div>
+        <h3>CONTROLS</h3>
         <div class="keys">
           <span><b>WASD</b></span><span>Move</span>
           <span><b>Shift</b></span><span>Walk (silent footsteps)</span>
@@ -223,13 +375,12 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
           <span><b>X</b></span><span>Ultimate</span>
           <span><b>4 (hold)</b></span><span>Plant / Defuse spike</span>
           <span><b>F</b></span><span>Pick up weapon · Collect ult orb</span>
-          <span><b>G</b></span><span>Drop spike (pass to teammate)</span>
+          <span><b>G</b></span><span>Drop spike</span>
           <span><b>B</b></span><span>Shop (buy phase)</span>
           <span><b>Tab</b></span><span>Scoreboard</span>
           <span><b>Esc</b></span><span>Pause</span>
         </div>
       </div>
-      <div class="note">Desktop browser with keyboard & mouse only. Click the screen to lock the mouse.</div>
     </div>
   </div>
 </div>
@@ -1761,9 +1912,12 @@ function setupMatch(agentId) {
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops();
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
-  player = makeEntity({ id: 0, name: 'You', team: 0, agent: agentId, isPlayer: true });
+  player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
   entities = [player]; bots = [];
-  const allyPool = shuffle(AGENTS.filter(a => a.id !== agentId).map(a => a.id));
+  // allies are the lobby party; swap out anyone who shares the player's agent
+  const allyPool = party.slice(1).map(p => p.agent);
+  const spare = shuffle(AGENTS.map(a => a.id).filter(id => id !== agentId && !allyPool.includes(id)));
+  for (let i = 0; i < 4; i++) if (!allyPool[i] || allyPool[i] === agentId) allyPool[i] = spare.pop();
   const enemyPool = shuffle(AGENTS.map(a => a.id));
   for (let i = 0; i < 4; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
   for (let i = 0; i < 5; i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
@@ -1897,11 +2051,16 @@ function finishMatch() {
   $('overScore').textContent = `${game.score[0]} : ${game.score[1]}`;
   const all = entities.slice().sort((x, y) => (y.kills * 2 + y.assists) - (x.kills * 2 + x.assists));
   const mvp = all[0], p = player;
+  const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
+  profile.xp += gain;
+  profile.matches.unshift({ won, score: game.score.slice(), agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
+  profile.matches = profile.matches.slice(0, 30); saveProfile();
   $('overStats').innerHTML = `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
     <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
-    <div class="stat"><span>Match MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills} kills</b></div>`;
+    <div class="stat"><span>Match MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills} kills</b></div>
+    <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
   won ? SND.win() : SND.lose();
 }
@@ -2181,6 +2340,7 @@ function updateCamera(dt) {
 }
 function render() {
   renderer.clear();
+  if (game.state === 'menu') { renderer.render(lobbyScene, lobbyCam); return; }
   renderer.render(scene, camera);
   if (vmRoot.visible && game.state === 'playing') { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
 }
@@ -2208,6 +2368,8 @@ function loop(now) {
     updateCamera(dt);
     updateHUD(dt);
     drawMinimap();
+  } else if (game.state === 'menu') {
+    updateLobby(now / 1000, dt); updateQueueInfo();
   } else {
     // menu background camera orbit
     const t = now / 1000 * .08;
@@ -2265,39 +2427,256 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Tab') { boardOpen = false; $('board').classList.add('hidden'); } });
 window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; });
 window.addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = lobbyCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); lobbyCam.updateProjectionMatrix();
 });
 
-/* --- Menu UI --- */
-let selectedAgent = 'jett';
-function segBind(id, fn) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b.dataset.v); }); }
-segBind('diffSeg', v => settings.diff = v);
-segBind('shadowSeg', v => { settings.shadows = v === '1'; renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); });
-function setSens(v) { settings.sens = +v; $('sens').value = $('sens2').value = v; $('sensVal').textContent = $('sensVal2').textContent = (+v).toFixed(2); }
-function setVol(v) { settings.vol = +v; $('vol').value = $('vol2').value = v; $('volVal').textContent = Math.round(v * 100); if (master) master.gain.value = settings.vol; }
+/* =====================================================================
+   PROFILE (saved in this browser)
+   ===================================================================== */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
+};
+const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [] }, store.get('vs_profile', {}));
+if (!AGENT[profile.fav]) profile.fav = 'jett';
+const saveProfile = () => store.set('vs_profile', profile);
+const levelOf = xp => Math.floor(xp / 1000) + 1;
+Object.assign(settings, store.get('vs_settings', {}));
+const saveSettings = () => store.set('vs_settings', settings);
+function refreshAccount() {
+  $('nameTag').textContent = profile.name; $('lvlNum').textContent = levelOf(profile.xp);
+  $('xpFill').style.width = (profile.xp % 1000) / 10 + '%';
+}
+
+/* =====================================================================
+   3D LOBBY
+   ===================================================================== */
+const lobbyScene = new THREE.Scene();
+lobbyScene.background = (() => {
+  const c = document.createElement('canvas'); c.width = 4; c.height = 256; const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, '#0b1219'); g.addColorStop(.6, '#1b2834'); g.addColorStop(1, '#0f1923');
+  x.fillStyle = g; x.fillRect(0, 0, 4, 256); return new THREE.CanvasTexture(c);
+})();
+lobbyScene.fog = new THREE.Fog(0x121c26, 11, 32);
+const lobbyCam = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, .1, 100);
+lobbyScene.add(new THREE.HemisphereLight(0xdfe9ff, 0x2a1d22, .7));
+const lKey = new THREE.DirectionalLight(0xfff2e0, .95); lKey.position.set(3, 6, 8); lobbyScene.add(lKey);
+const lRimR = new THREE.PointLight(0xff4655, 2.4, 14); lRimR.position.set(-4, 3, -2.5);
+const lRimT = new THREE.PointLight(0x2fe0b6, 1.6, 14); lRimT.position.set(4.5, 3, -2.5);
+lobbyScene.add(lRimR, lRimT);
+(function buildLobbySet() {
+  const plat = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 6.8, .3, 64), new THREE.MeshLambertMaterial({ color: 0x1a242e }));
+  plat.position.y = -.15; lobbyScene.add(plat);
+  [[1.05, 0xff4655, .8], [3, 0xece8e1, .25], [5.9, 0xff4655, .45]].forEach(([r, c, o]) => {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r - .035, r, 72), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = .01; lobbyScene.add(ring);
+  });
+  const slab = (w, h, x, y, z, rz, color, op = 1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color, transparent: op < 1, opacity: op, fog: false })); m.position.set(x, y, z); m.rotation.z = rz; lobbyScene.add(m); return m; };
+  slab(5.5, 34, 7.5, 4, -10, -.3, 0xff4655, .92); slab(.3, 34, 4.2, 4, -9.9, -.3, 0xece8e1, .5);
+  slab(2.2, 34, -9, 4, -10, -.3, 0xff4655, .35); slab(.12, 34, -6.8, 4, -9.9, -.3, 0xece8e1, .3);
+})();
+const shards = [];
+for (let i = 0; i < 16; i++) {
+  const m = new THREE.Mesh(new THREE.TetrahedronGeometry(rand(.08, .3)), new THREE.MeshBasicMaterial({ color: i % 3 ? 0xff4655 : 0xece8e1, transparent: true, opacity: .8 }));
+  m.position.set(rand(-9, 9), rand(.6, 6), rand(-9, -3)); lobbyScene.add(m);
+  shards.push({ m, sx: rand(-.6, .6), sy: rand(-.8, .8), by: m.position.y, ph: rand(0, 6) });
+}
+const LOBBY_SLOTS = [[0, 0], [-1.75, -1.1], [1.75, -1.1], [-3.4, -2.2], [3.4, -2.2]];
+const shadowGeo = new THREE.CircleGeometry(.55, 24), shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .45 });
+let party = [], lobbyChars = [], lobbyView = 'party', lobbyMX = 0, lobbyMY = 0;
+function makeLobbyChar(agentId) {
+  const g = makeCharacter(AGENT[agentId]); scene.remove(g);
+  g.userData.marker.visible = false;
+  const gun = buildGun('rifle', AGENT[agentId].color); gun.scale.setScalar(1.2); g.userData.gunHolder.add(gun);
+  const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .015; g.add(sh);
+  lobbyScene.add(g); return g;
+}
+function setLobbyAgent(i, agentId) {
+  const c = lobbyChars[i]; if (!c || c.agent === agentId) return;
+  const pos = c.g.position.clone(); lobbyScene.remove(c.g);
+  c.g = makeLobbyChar(agentId); c.g.position.copy(pos); c.agent = agentId; c.pop = 1;
+  updatePlates();
+}
+function buildParty() {
+  lobbyChars.forEach(c => lobbyScene.remove(c.g)); lobbyChars = [];
+  const others = shuffle(AGENTS.filter(a => a.id !== profile.fav).map(a => a.id));
+  party = [{ name: profile.name, agent: profile.fav, me: true }].concat(ALLY_NAMES.map((n, i) => ({ name: n, agent: others[i] })));
+  party.forEach((p, i) => {
+    const g = makeLobbyChar(p.agent), [x, z] = LOBBY_SLOTS[i];
+    g.position.set(x, 0, z);
+    lobbyChars.push({ g, agent: p.agent, slot: [x, z], ph: rand(0, 6), pop: 0 });
+  });
+  updatePlates();
+}
+function updatePlates() {
+  $('plates').innerHTML = party.map((p, i) => `<div class="plate ${p.me ? 'me' : ''}" id="plate${i}"><div class="pn" style="${p.me ? '' : 'border-color:' + AGENT[lobbyChars[i] ? lobbyChars[i].agent : p.agent].color}">${p.me ? profile.name : p.name}</div><div class="pa">${AGENT[lobbyChars[i] ? lobbyChars[i].agent : p.agent].name.toUpperCase()}${p.me ? ' · LV ' + levelOf(profile.xp) : ''}</div></div>`).join('');
+}
+const _v3 = new THREE.Vector3();
+function updateLobby(t, dt) {
+  const solo = lobbyView === 'solo';
+  lobbyChars.forEach((c, i) => {
+    let tx = c.slot[0], tz = c.slot[1];
+    if (solo) { if (i === 0) { tx = 2.3; tz = .4; } else { tx = c.slot[0] * 2.6; tz = -7; } }
+    c.g.position.x += (tx - c.g.position.x) * Math.min(1, dt * 6); c.g.position.z += (tz - c.g.position.z) * Math.min(1, dt * 6);
+    c.g.position.y = Math.sin(t * 1.7 + c.ph) * .012;
+    c.pop = Math.max(0, c.pop - dt * 3); c.g.scale.setScalar(1 + c.pop * .08);
+    const face = Math.PI - c.g.position.x * .07 + (solo && i === 0 ? Math.sin(t * .5) * .45 : 0);
+    c.g.rotation.y = face + Math.sin(t * .45 + c.ph) * .07;
+    const ud = c.g.userData; ud.legL.rotation.x = Math.sin(t * .8 + c.ph) * .03; ud.legR.rotation.x = -ud.legL.rotation.x;
+  });
+  shards.forEach(s => { s.m.rotation.x += s.sx * dt; s.m.rotation.y += s.sy * dt; s.m.position.y = s.by + Math.sin(t * .6 + s.ph) * .25; });
+  lRimR.intensity = 2.2 + Math.sin(t * 1.3) * .4;
+  const cx = solo ? .9 : curTab === 'home' ? -1.6 : 0;
+  lobbyCam.position.x += (cx + lobbyMX * .35 - lobbyCam.position.x) * Math.min(1, dt * 3);
+  lobbyCam.position.y += (1.62 - lobbyMY * .15 - lobbyCam.position.y) * Math.min(1, dt * 3);
+  lobbyCam.position.z = solo ? 6.4 : 8.2;
+  lobbyCam.lookAt(solo ? 1.6 : curTab === 'home' ? -1.6 : 0, 1.0, -.4);
+  // name plates under each agent
+  const showPlates = lobbyView === 'party' && !$('menu').classList.contains('hidden');
+  $('plates').style.display = showPlates ? '' : 'none';
+  if (showPlates) lobbyChars.forEach((c, i) => {
+    const el = $('plate' + i); if (!el) return;
+    _v3.set(c.g.position.x, -.12, c.g.position.z).project(lobbyCam);
+    el.style.left = ((_v3.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - _v3.y) / 2 * innerHeight) + 'px';
+  });
+}
+document.addEventListener('mousemove', e => { if (game.state === 'menu') { lobbyMX = e.clientX / innerWidth * 2 - 1; lobbyMY = e.clientY / innerHeight * 2 - 1; } });
+
+/* =====================================================================
+   MENU UI
+   ===================================================================== */
+let selectedAgent = profile.fav, curTab = 'home', playMode = 'comp', previewAgent = profile.fav;
+const tick = () => { if (AC) sndTone(1300, .03, .05, 'triangle'); };
+document.addEventListener('mousedown', () => initAudio(), { capture: true });
+function segBind(id, fn) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b.dataset.v); tick(); }); }
+function segSet(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v))); }
+segBind('diffSeg', v => { settings.diff = v; saveSettings(); });
+function applyShadows() { renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
+segBind('shadowSeg', v => { settings.shadows = v === '1'; applyShadows(); saveSettings(); });
+function setSens(v) { settings.sens = +v; $('sens').value = $('sens2').value = v; $('sensVal').textContent = $('sensVal2').textContent = (+v).toFixed(2); saveSettings(); }
+function setVol(v) { settings.vol = +v; $('vol').value = $('vol2').value = v; $('volVal').textContent = Math.round(v * 100); if (master) master.gain.value = settings.vol; saveSettings(); }
 $('sens').oninput = e => setSens(e.target.value); $('sens2').oninput = e => setSens(e.target.value);
 $('vol').oninput = e => setVol(e.target.value); $('vol2').oninput = e => setVol(e.target.value);
-$('chColor').oninput = e => { settings.ch = e.target.value; buildCrosshair(); };
-$('btnHelp').onclick = () => $('helpBox').classList.toggle('hidden');
-function goSelect(mode) {
+$('chColor').oninput = e => { settings.ch = e.target.value; buildCrosshair(); saveSettings(); };
+$('nameInput').oninput = e => { profile.name = e.target.value.trim().slice(0, 16) || 'Player'; party[0].name = profile.name; saveProfile(); refreshAccount(); updatePlates(); };
+// apply saved settings
+setSens(settings.sens); setVol(settings.vol); $('chColor').value = settings.ch; segSet('diffSeg', settings.diff); segSet('shadowSeg', settings.shadows ? 1 : 0); if (!settings.shadows) applyShadows();
+$('nameInput').value = profile.name;
+
+function openSettings() { $('settingsModal').classList.remove('hidden'); tick(); }
+function closeSettings() { $('settingsModal').classList.add('hidden'); }
+$('btnSettings').onclick = openSettings; $('btnCloseSet').onclick = closeSettings;
+$('settingsModal').onclick = e => { if (e.target.id === 'settingsModal') closeSettings(); };
+document.addEventListener('keydown', e => { if (game.state === 'menu' && e.code === 'Escape') closeSettings(); });
+
+function showTab(t) {
+  curTab = t; tick();
+  document.querySelectorAll('#navTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  ['home', 'play', 'agents', 'career', 'collection'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
+  lobbyView = t === 'agents' ? 'solo' : (t === 'home' || t === 'play') ? 'party' : 'dim';
+  if (t === 'agents') { previewAgent = profile.fav; renderAgentTab(); } else setLobbyAgent(0, profile.fav);
+  if (t === 'career') renderCareer();
+  if (t === 'collection') renderCollection();
+}
+document.querySelectorAll('#navTabs button').forEach(b => { b.onclick = () => showTab(b.dataset.tab); b.onmouseenter = tick; });
+$('homePlay').onclick = () => showTab('play');
+
+/* news carousel */
+const NEWS = [
+  { k: 'WELCOME', h: 'Welcome to VALOR STRIKE', b: '5v5 tactical shooter with 6 agents, 17 weapons, a full credit economy and spike rounds.' },
+  { k: 'PATCH NOTES', h: 'Steadier sprays', b: 'Crouching now cuts your spray and recoil in half. Bots react slower and miss more often.' },
+  { k: 'TIP', h: 'Walk quietly', b: 'Hold Shift to walk silently. Running footsteps can be heard by enemies — and by you.' },
+  { k: 'CAREER', h: 'Earn XP every match', b: '+200 per match, +20 per kill and +500 for a win. Level up and track your history in CAREER.' },
+];
+let newsIdx = 0;
+function showNews(i) {
+  newsIdx = (i + NEWS.length) % NEWS.length; const n = NEWS[newsIdx];
+  const card = $('newsCard'); card.innerHTML = `<div class="k">${n.k}</div><div class="h">${n.h}</div><div class="b">${n.b}</div>`;
+  card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  $('newsDots').innerHTML = NEWS.map((_, j) => `<i class="${j === newsIdx ? 'on' : ''}" data-i="${j}"></i>`).join('');
+  $('newsDots').querySelectorAll('i').forEach(d => d.onclick = () => showNews(+d.dataset.i));
+}
+setInterval(() => { if (game.state === 'menu' && curTab === 'home') showNews(newsIdx + 1); }, 6000);
+
+/* play tab: mode, map, queue */
+document.querySelectorAll('#modeStrip .mode').forEach(m => m.onclick = () => {
+  if (queueTimer) return; playMode = m.dataset.mode; tick();
+  document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x === m));
+});
+$('mapThumb').getContext('2d').drawImage(mmBase, 0, 0, 96, 80);
+let queueTimer = null, queueStart = 0;
+const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : 'COMPETITIVE';
+function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').textContent = 'START'; $('btnStart').classList.remove('queue'); }
+$('btnStart').onclick = () => {
   initAudio();
+  if (queueTimer) { cancelQueue(); sndTone(300, .12, .15, 'triangle'); return; }
+  queueStart = performance.now(); $('btnStart').textContent = 'CANCEL'; $('btnStart').classList.add('queue');
+  sndTone(520, .12, .2, 'triangle'); sndTone(780, .14, .2, 'triangle', 0, undefined, undefined, .08);
+  queueTimer = setTimeout(matchFound, rand(1800, 4200));
+};
+function matchFound() {
+  queueTimer = null; $('mfSub').textContent = `${modeName()} · DUSTWALL · ${settings.diff.toUpperCase()} BOTS`;
+  $('matchFound').classList.remove('hidden');
+  [660, 880, 1320].forEach((f, i) => sndTone(f, .25, .25, 'triangle', 0, undefined, undefined, i * .1));
+  setTimeout(() => { $('matchFound').classList.add('hidden'); cancelQueue(); goSelect(playMode); }, 1700);
+}
+function updateQueueInfo() {
+  const el = $('queueInfo');
+  const txt = queueTimer ? `FINDING MATCH · ${fmtTime((performance.now() - queueStart) / 1000 - .5)}` : `${modeName()} · ${settings.diff.toUpperCase()} BOTS`;
+  if (el.textContent !== txt) el.textContent = txt;
+}
+
+/* agents tab */
+function agentCard(a, on) {
+  return `<div class="agent ${on ? 'on' : ''}" data-id="${a.id}"><div class="bg" style="background:linear-gradient(135deg,${a.color} 0%,${a.color}55 60%,#0f1923 100%)"></div><div class="glyph">${a.glyph}</div><div class="rl">${a.role}</div><div class="nm">${a.name}</div></div>`;
+}
+function abilityRows(a) {
+  return ['C', 'Q', 'E', 'X'].map(k => { const ab = a.ab[k]; return `<div class="abRow"><div class="k ${k === 'X' ? 'x' : ''}">${k}</div><div><div class="t">${ab.name} <span style="opacity:.5;font-weight:400;font-size:12px">${k === 'X' ? 'Ultimate · ' + ab.ult + ' points' : (ab.free ? ab.free + ' free per round' : '') + (ab.cost ? ' · ' + ab.cost + ' credits' : '') + ' · max ' + ab.max}</span></div><div class="d">${ab.desc}</div></div></div>`; }).join('');
+}
+function renderAgentTab() {
+  $('agGrid2').innerHTML = AGENTS.map(a => agentCard(a, a.id === previewAgent)).join('');
+  $('agGrid2').querySelectorAll('.agent').forEach(d => d.onclick = () => { previewAgent = d.dataset.id; setLobbyAgent(0, previewAgent); renderAgentTab(); tick(); });
+  const a = AGENT[previewAgent], fav = previewAgent === profile.fav;
+  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}
+    <button class="favBtn ${fav ? 'on' : ''}" id="favBtn">${fav ? '★ FAVORITE AGENT' : '☆ SET AS FAVORITE'}</button>`;
+  $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); };
+}
+
+/* career tab */
+function renderCareer() {
+  const m = profile.matches, wins = m.filter(x => x.won).length;
+  const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
+  const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
+  let html = `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
+  html += '<div class="collCat">RECENT MATCHES</div>';
+  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${x.mode === 'swift' ? 'SWIFTPLAY' : 'COMPETITIVE'}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
+    : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
+  $('careerBox').innerHTML = html;
+}
+
+/* collection tab */
+function renderCollection() {
+  const all = Object.values(WEAPONS).filter(w => w.price !== undefined && w.cat !== 'Ultimate');
+  const maxD = Math.max(...all.map(w => w.dmg[1] * w.pellets)), maxR = 16, maxM = 100;
+  const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
+  const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
+  $('collBox').innerHTML = groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; return `<div class="wcard"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
+    <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
+    ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
+}
+
+/* agent select / match flow */
+function goSelect(mode) {
+  initAudio(); selectedAgent = profile.fav;
   game.mode = mode; game.target = mode === 'swift' ? 5 : 13; game.half = mode === 'swift' ? 4 : 12;
   $('menu').classList.add('hidden'); $('select').classList.remove('hidden'); renderAgents();
 }
-$('btnComp').onclick = () => goSelect('comp');
-$('btnSwift').onclick = () => goSelect('swift');
-$('btnBack').onclick = () => { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); };
+$('btnBack').onclick = () => { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); showTab('play'); };
 function renderAgents() {
-  const g = $('agentGrid'); g.innerHTML = '';
-  for (const a of AGENTS) {
-    const d = document.createElement('div'); d.className = 'agent' + (a.id === selectedAgent ? ' on' : '');
-    d.innerHTML = `<div class="bg" style="background:linear-gradient(135deg,${a.color} 0%,${a.color}55 60%,#0f1923 100%)"></div><div class="glyph">${a.glyph}</div><div class="rl">${a.role}</div><div class="nm">${a.name}</div>`;
-    d.onclick = () => { selectedAgent = a.id; renderAgents(); sndTone(600, .06, .15, 'triangle'); };
-    g.appendChild(d);
-  }
+  const g = $('agentGrid'); g.innerHTML = AGENTS.map(a => agentCard(a, a.id === selectedAgent)).join('');
+  g.querySelectorAll('.agent').forEach(d => d.onclick = () => { selectedAgent = d.dataset.id; renderAgents(); tick(); });
   const a = AGENT[selectedAgent];
-  $('agentInfo').innerHTML = `<div class="big" style="color:${a.color}">${a.name}</div><div class="role">${a.role}</div><div class="desc">${a.desc}</div>` +
-    ['C', 'Q', 'E', 'X'].map(k => { const ab = a.ab[k]; return `<div class="abRow"><div class="k ${k === 'X' ? 'x' : ''}">${k}</div><div><div class="t">${ab.name} <span style="opacity:.5;font-weight:400;font-size:12px">${k === 'X' ? 'Ultimate · ' + ab.ult + ' points' : (ab.free ? ab.free + ' free per round' : '') + (ab.cost ? ' · ' + ab.cost + ' credits' : '') + ' · max ' + ab.max}</span></div><div class="d">${ab.desc}</div></div></div>`; }).join('');
+  $('agentInfo').innerHTML = `<div class="big" style="color:${a.color}">${a.name}</div><div class="role">${a.role}</div><div class="desc">${a.desc}</div>` + abilityRows(a);
 }
 $('btnLock').onclick = () => {
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
@@ -2306,15 +2685,16 @@ $('btnLock').onclick = () => {
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
   game.state = 'menu'; game.paused = false; shopOpen = false;
-  ['pause', 'over', 'hud', 'shop', 'board'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
+  ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
   document.exitPointerLock && document.exitPointerLock();
   entities.forEach(e => e.mesh && (e.mesh.visible = false)); clearEffects(); clearDrops(); vmRoot.visible = false;
   if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); }
+  refreshAccount(); updatePlates(); showTab('home');
 }
 $('btnQuit').onclick = toMenu; $('btnMenu').onclick = toMenu;
 $('btnAgain').onclick = () => { $('over').classList.add('hidden'); $('hud').classList.remove('hidden'); setupMatch(selectedAgent); lockPointer(); };
 
-buildCrosshair();
+buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home');
 window.__vs = { game, get player() { return player; }, get bots() { return bots; }, entities: () => entities, castAbility, nextRound, endRound };
 requestAnimationFrame(loop);
 </script>
