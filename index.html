@@ -51,7 +51,42 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #navTabs button.on{color:var(--light)}
 #navTabs button.on:after{content:'';position:absolute;left:16px;right:16px;bottom:0;height:3px;background:var(--red)}
 #navTabs button.play{font-size:24px;letter-spacing:5px;padding:0 40px;color:var(--light);background:linear-gradient(180deg,rgba(255,70,85,0) 0,rgba(255,70,85,.28) 100%)}
-.navRight{width:240px;display:flex;justify-content:flex-end;align-items:center;gap:16px}
+.navRight{min-width:240px;display:flex;justify-content:flex-end;align-items:center;gap:14px}
+.partyBtn{height:38px;padding:0 14px;border:1px solid rgba(255,255,255,.25);background:rgba(15,25,35,.5);color:var(--light);font:700 13px Oswald,sans-serif;letter-spacing:3px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.12s}
+.partyBtn:hover,.partyBtn.open{background:var(--light);color:var(--dark)}
+.partyBtn.on b{color:var(--teal)}
+.partyBtn.on.open b,.partyBtn.on:hover b{color:#0b8f72}
+#partyPanel{position:absolute;top:72px;right:22px;width:330px;z-index:6;background:rgba(15,25,35,.96);border:1px solid rgba(255,255,255,.12);padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.45);animation:fadeIn .2s}
+.ppHead{display:flex;justify-content:space-between;align-items:baseline;font:700 18px Oswald,sans-serif;letter-spacing:4px;margin-bottom:8px}
+.ppMem{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
+.ppMem i{width:28px;height:28px;flex:none;display:flex;align-items:center;justify-content:center;font:700 11px Oswald,sans-serif;font-style:normal;color:#0f1923}
+.ppMem .n{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppMem .n small{font-weight:400;opacity:.5}
+.ppMem .crown{font:700 10px Oswald,sans-serif;letter-spacing:2px;color:var(--gold);border:1px solid var(--gold);padding:1px 5px}
+.ppMem .lv{font:500 11px Oswald,sans-serif;opacity:.6}
+.ppBtn{padding:9px 14px;border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--light);font:700 13px Oswald,sans-serif;letter-spacing:3px;cursor:pointer;transition:.12s}
+.ppBtn:hover{background:var(--light);color:var(--dark)}
+.ppBtn.primary{background:var(--red);border-color:var(--red);color:#fff;width:100%;margin-top:12px}
+.ppBtn.primary:hover{background:#ff5f6c}
+.ppBtn.danger{width:100%;margin-top:10px;border-color:rgba(255,70,85,.6);color:#ff8a94}
+.ppRow{display:flex;gap:8px;margin-top:10px;align-items:center}
+.ppRow input{flex:1;width:auto;text-transform:uppercase;letter-spacing:4px;font-family:Oswald,sans-serif}
+.ppCodeRow b{flex:1;font-size:24px;letter-spacing:6px;color:var(--gold)}
+#ppChat{height:120px;overflow-y:auto;margin-top:10px;background:rgba(0,0,0,.25);padding:6px 8px;font-size:12.5px;line-height:1.5;user-select:text}
+#ppChat .sys{opacity:.55;font-style:italic}
+#ppChat b{color:var(--teal)}
+#chatIn{width:100%;margin-top:6px}
+#ppStatus{font-size:12px;color:#ff8a94;margin-top:8px}
+#ppStatus:empty{display:none}
+.ppNote{font-size:11px;opacity:.45;margin-top:10px;line-height:1.5}
+.locked{pointer-events:none;opacity:.55}
+.start:disabled{background:#2b3642;cursor:default;font-size:17px;letter-spacing:5px}
+.agent.taken{opacity:.35;filter:grayscale(.7);cursor:not-allowed}
+.pickTag{position:absolute;right:6px;bottom:8px;font-size:11px;font-weight:700;background:rgba(15,25,35,.85);padding:2px 7px;border-left:2px solid var(--teal)}
+.pickTag.lock{border-color:var(--gold);color:var(--gold)}
+#btnLock:disabled{background:#3a4552;cursor:default}
+.crownI{color:var(--gold)}
+.plate.bot .pn{opacity:.85}
 .acct{display:flex;align-items:center;gap:14px}
 .lvlBadge{width:32px;height:32px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;transform:rotate(45deg);background:rgba(245,215,110,.1)}
 .lvlBadge span{transform:rotate(-45deg);font:700 13px Oswald,sans-serif;color:var(--gold)}
@@ -296,11 +331,28 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <button data-tab="collection">COLLECTION</button>
     </nav>
     <div class="navRight">
+      <button class="partyBtn" id="partyBtn" title="Party">PARTY <b id="partyCount"></b></button>
       <div class="acct"><div class="lvlBadge"><span id="lvlNum">1</span></div><div><div class="nm" id="nameTag">Player</div><div class="xpbar"><div id="xpFill"></div></div></div></div>
       <button class="iconBtn" id="btnSettings" title="Settings">⚙</button>
     </div>
   </header>
   <div id="plates"></div>
+  <div id="partyPanel" class="hidden">
+    <div class="ppHead"><span>PARTY</span><span class="ol" id="ppCount">SOLO</span></div>
+    <div id="ppMembers"></div>
+    <div id="ppSolo">
+      <button class="ppBtn primary" id="btnCreateParty">CREATE PARTY</button>
+      <div class="ppRow"><input type="text" id="joinCode" maxlength="5" placeholder="PARTY CODE" spellcheck="false" autocomplete="off"><button class="ppBtn" id="btnJoin">JOIN</button></div>
+    </div>
+    <div id="ppIn" class="hidden">
+      <div class="ppRow ppCodeRow"><span class="ol">CODE</span><b id="ppCode" class="os">-----</b><button class="ppBtn" id="btnCopyCode">COPY</button></div>
+      <div id="ppChat"></div>
+      <input type="text" id="chatIn" maxlength="140" placeholder="Message your party…" spellcheck="false" autocomplete="off">
+      <button class="ppBtn danger" id="btnLeave">LEAVE PARTY</button>
+    </div>
+    <div id="ppStatus"></div>
+    <div class="ppNote">Share the code with friends. Up to 5 players team up against bots. The host runs the match — no account or server needed.</div>
+  </div>
 
   <section class="tab" id="tab-home">
     <div class="homeLeft">
@@ -472,6 +524,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -1157,6 +1210,7 @@ function applyDamage(t, dmg, src, label, head) {
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
   if (t.isPlayer && src && src !== t && (game.time - (t.lastDirT || 0) > .3 || t.lastDirSrc !== src)) { t.lastDirT = game.time; t.lastDirSrc = src; showDamageDir(src); }
+  if (t.remote && src && src !== t && (game.time - (t.lastDirT || 0) > .3 || t.lastDirSrc !== src)) { t.lastDirT = game.time; t.lastDirSrc = src; netTo(t.remote, { t: 'hurt', s: src.id }); }
   if (!t.isPlayer && src && src !== t && !t.target) { t.investigate = { x: src.x, z: src.z, t: game.time }; t.alertYaw = Math.atan2(-(src.x - t.x), -(src.z - t.z)); }
   if (t.hp <= 0) killEntity(t, src, label, head);
 }
@@ -1164,11 +1218,12 @@ function killEntity(t, src, label, head) {
   if (t.ribT > 0 && t.ribPos) { // Phoenix Run It Back
     Object.assign(t, { hp: 100, x: t.ribPos.x, y: t.ribPos.y, z: t.ribPos.z, ribT: 0, vx: 0, vz: 0, flashT: 0 });
     if (t.ribMesh) { scene.remove(t.ribMesh); t.ribMesh = null; }
-    t.ribPos = null; spawnParticles(t.x, t.y + 1, t.z, 40, 0xff8a3d, 4, .7); SND.ability(t.x, t.z);
-    if (t.isPlayer) toast('Run It Back! Respawned at your marker');
+    t.ribPos = null; teleported(t); fx('parts', t.x, t.y + 1, t.z, 40, 0xff8a3d, 4, .7); fx('ab', t.x, t.z, t.id);
+    toastTo(t, 'Run It Back! Respawned at your marker');
     return;
   }
   t.alive = false; t.hp = 0; t.deaths++; t.deadT = 0; t.deathPos = { x: t.x, y: t.y, z: t.z };
+  t.killedBy = src ? src.id : -1; t.killLabel = label || ''; t.invSeq = (t.invSeq || 0) + 1;
   t.ult = Math.min(AGENT[t.agent].ab.X.ult, t.ult + 1);
   if (src && src !== t && isEnemy(src, t)) {
     src.kills++; src.roundKills++; src.credits = Math.min(9000, src.credits + 200);
@@ -1177,6 +1232,7 @@ function killEntity(t, src, label, head) {
     if (src.bladeMag > 0) src.bladeMag = 5;
     for (const id in t.damagedBy) { const a = entities[id]; if (a && a !== src && isEnemy(a, t) && game.time - t.damagedBy[id] < 10) a.assists++; }
     if (src.isPlayer) { SND.kill(); const ki = document.createElement('i'); $('killIcons').appendChild(ki); }
+    if (src.remote) netTo(src.remote, { t: 'kc' });
   }
   // weapon drop
   const dw = t.primary || (t.secondary && t.secondary.key !== 'classic' ? t.secondary : null);
@@ -1186,7 +1242,7 @@ function killEntity(t, src, label, head) {
   if (t.hasSpike) { t.hasSpike = false; dropSpike(t.x, t.y, t.z); }
   if (t.ribMesh) { scene.remove(t.ribMesh); t.ribMesh = null; }
   addKillfeed(src, t, label, head);
-  spawnParticles(t.x, t.y + 1.2, t.z, 25, AGENT[t.agent].color, 3, .6);
+  fx('parts', t.x, t.y + 1.2, t.z, 25, AGENT[t.agent].color, 3, .6);
   if (t.isPlayer) onPlayerDeath(src, label);
   if (game.spike && game.spike.defuser === t) game.spike.defuser = null;
 }
@@ -1196,7 +1252,7 @@ function falloffMul(w, d) { return (w.falloff && d > w.falloff[0]) ? w.falloff[1
 function dropWeapon(inst, x, z) {
   const m = buildGun(WEAPONS[inst.key].model); m.scale.setScalar(1.5);
   const g = new THREE.Group(); g.add(m); g.position.set(x, .25 + Math.max(0, hAtPos(x, z) < WALL_H ? hAtPos(x, z) : 0), z); scene.add(g);
-  drops.push({ inst: { ...inst }, x, z, mesh: g });
+  const d = { inst: { ...inst }, x, z, mesh: g }; drops.push(d); return d;
 }
 function clearDrops() { drops.forEach(d => scene.remove(d.mesh)); drops = []; }
 function makeSpikeMesh() {
@@ -1211,7 +1267,7 @@ function dropSpike(x, y, z) {
   const sp = game.spike; sp.state = 'dropped'; sp.x = x; sp.y = groundAt({ x, y: y + .3, z, r: .2 }); sp.z = z; sp.carrier = null;
   sp.mesh.visible = true; sp.mesh.position.set(sp.x, sp.y, sp.z);
 }
-function giveSpike(e) { const sp = game.spike; sp.state = 'carried'; sp.carrier = e; e.hasSpike = true; sp.mesh.visible = false; if (e.isPlayer) toast('You picked up the spike'); }
+function giveSpike(e) { const sp = game.spike; sp.state = 'carried'; sp.carrier = e; e.hasSpike = true; sp.mesh.visible = false; toastTo(e, 'You picked up the spike'); }
 function plantSpike(e) {
   const sp = game.spike; e.hasSpike = false;
   Object.assign(sp, { state: 'planted', carrier: null, x: e.x, y: e.y, z: e.z, timer: SPIKE_TIME, defuseProg: 0, half: false, defuser: null, beepT: 0 });
@@ -1222,14 +1278,15 @@ function plantSpike(e) {
   banner('SPIKE PLANTED', sp.site === 1 ? 'Site A' : 'Site B', 'lose', 2.2, true);
   SND.beep(e.x, e.z); SND.beep(e.x, e.z);
 }
+function makeOrb(x, z) {
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(new THREE.OctahedronGeometry(.32), new THREE.MeshBasicMaterial({ color: 0xf5d76e }));
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xf5d76e, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.set(1.6, 1.6, 1);
+  g.add(m, s); g.position.set(x, 1.1, z); scene.add(g); orbs.push({ x, z, mesh: g });
+}
 function spawnOrbs() {
   orbs.forEach(o => scene.remove(o.mesh)); orbs = [];
-  for (const [c, r] of ORB_CELLS) {
-    const p = cc(c, r), g = new THREE.Group();
-    const m = new THREE.Mesh(new THREE.OctahedronGeometry(.32), new THREE.MeshBasicMaterial({ color: 0xf5d76e }));
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xf5d76e, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); s.scale.set(1.6, 1.6, 1);
-    g.add(m, s); g.position.set(p.x, 1.1, p.z); scene.add(g); orbs.push({ x: p.x, z: p.z, mesh: g });
-  }
+  for (const [c, r] of ORB_CELLS) { const p = cc(c, r); makeOrb(p.x, p.z); }
 }
 
 /* =====================================================================
@@ -1239,8 +1296,9 @@ function makeSmoke(x, z, r, dur, color, owner) {
   const y = Math.min(hAtPos(x, z) < WALL_H ? hAtPos(x, z) : 0, 3) + r * .55;
   const mat = new THREE.MeshLambertMaterial({ color, emissive: new THREE.Color(color).multiplyScalar(.25), side: THREE.DoubleSide, transparent: true, opacity: .97 });
   const m = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 18), mat); m.position.set(x, y, z); m.scale.setScalar(.1); scene.add(m);
-  smokes.push({ x, y, z, r, t: dur, max: dur, mesh: m, grow: .1, owner });
-  SND.pop(x, z);
+  const s = { x, y, z, r, t: dur, max: dur, mesh: m, grow: .1, owner, color };
+  smokes.push(s); SND.pop(x, z);
+  return s;
 }
 function makeZone(o) {
   const z = Object.assign({ t: 5, delay: 0, r: 4, kind: 'fire', dps: 0, owner: null }, o);
@@ -1258,17 +1316,14 @@ function makeZone(o) {
   zones.push(z); return z;
 }
 function revealPulse(x, y, z, r, team, dur) {
-  const ring = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), new THREE.MeshBasicMaterial({ color: 0x4fa3ff, wireframe: true, transparent: true, opacity: .6 }));
-  ring.position.set(x, y, z); scene.add(ring);
-  timedFx.push({ t: .7, update(dt) { ring.scale.setScalar((1 - this.t / .7) * r + .5); ring.material.opacity = this.t; }, end() { scene.remove(ring); } });
-  sndTone(600, .4, .25, 'sine', 1400, x, z);
+  fx('pulse', x, y, z, r);
   for (const e of entities) {
     if (!e.alive || e.team === team) continue;
     if (Math.hypot(e.x - x, e.z - z) < r && los(x, y, z, e.x, e.y + 1.2, e.z, true)) { e.revealedT = dur; if (e.isPlayer) { $('revealWarn').classList.remove('hidden'); } }
   }
 }
 function popFlash(x, y, z, owner, dur, kind) {
-  worldFlash(x, y, z, 6, kind === 'near' ? 0xb04fff : 0xffffff, .15); SND.pop(x, z);
+  fx('pop', x, y, z, kind);
   for (const e of entities) {
     if (!e.alive || e === owner) continue;
     const ey = eyeY(e), dx = x - e.x, dy = y - ey, dz = z - e.z, d = Math.hypot(dx, dy, dz);
@@ -1287,15 +1342,19 @@ function spawnProj(o) {
 function throwFrom(e, speed, up = 0) { const f = fwd(e); return { x: e.x + f.x * .6, y: eyeY(e) - .15, z: e.z + f.z * .6, vx: f.x * speed, vy: f.y * speed + up, vz: f.z * speed }; }
 function lobTo(e, tx, ty, tz, T = .9, g = 14) { const sx = e.x, sy = eyeY(e), sz = e.z; return { x: sx, y: sy, z: sz, vx: (tx - sx) / T, vy: (ty - sy + .5 * g * T * T) / T, vz: (tz - sz) / T, g }; }
 
+function addWallMesh(w) {
+  const mat = new THREE.MeshLambertMaterial({ color: 0x9feeff, emissive: 0x2a8a9a, transparent: true, opacity: .88 });
+  const h = w.y1 - w.y0, m = new THREE.Mesh(new THREE.BoxGeometry(w.x1 - w.x0, h, w.z1 - w.z0), mat);
+  m.position.set((w.x0 + w.x1) / 2, w.y0 + h / 2, (w.z0 + w.z1) / 2); m.castShadow = true;
+  m.scale.y = .05; scene.add(m); w.mesh = m; return w;
+}
 function sageWall(e) {
   const f = fwd(e), along = Math.abs(f.x) > Math.abs(f.z) ? 'z' : 'x';
   const p = { x: e.x + f.x * 5, z: e.z + f.z * 5 };
   const len = 9, th = .8, h = 3.8, base = 0;
   const w = along === 'x' ? { x0: p.x - len / 2, x1: p.x + len / 2, z0: p.z - th / 2, z1: p.z + th / 2 } : { x0: p.x - th / 2, x1: p.x + th / 2, z0: p.z - len / 2, z1: p.z + len / 2 };
   Object.assign(w, { y0: base, y1: base + h, hp: 900, t: 30 });
-  const mat = new THREE.MeshLambertMaterial({ color: 0x9feeff, emissive: 0x2a8a9a, transparent: true, opacity: .88 });
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w.x1 - w.x0, h, w.z1 - w.z0), mat); m.position.set((w.x0 + w.x1) / 2, base + h / 2, (w.z0 + w.z1) / 2); m.castShadow = true;
-  m.scale.y = .05; scene.add(m); w.mesh = m;
+  addWallMesh(w);
   // lift entities standing inside the wall
   for (const o of entities) if (o.alive && o.x > w.x0 - .4 && o.x < w.x1 + .4 && o.z > w.z0 - .4 && o.z < w.z1 + .4) o.y = w.y1 + .01;
   dynWalls.push(w); return true;
@@ -1341,15 +1400,17 @@ const ABIL = {
   },
   wall(e) { return sageWall(e); },
   slow(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
-  heal(e) { if (e.hp >= 100) { if (e.isPlayer) toast('Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
+  heal(e) { if (e.hp >= 100) { toastTo(e, 'Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
   revive(e) {
     let best = null, bd = 25;
     for (const o of entities) if (!o.alive && o.team === e.team && o !== e && o.deathPos) { const d = Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z); if (d < bd) { bd = d; best = o; } }
-    if (!best) { if (e.isPlayer) toast('No fallen ally nearby to revive'); return false; }
+    if (!best) { toastTo(e, 'No fallen ally nearby to revive'); return false; }
     Object.assign(best, { alive: true, hp: 100, armor: 0, x: best.deathPos.x, y: best.deathPos.y, z: best.deathPos.z, vy: 0, flashT: 0, target: null, path: [], slot: best.primary ? 1 : 2 });
     if (!best.secondary) best.secondary = mkWeapon('classic');
-    best.mesh.rotation.set(0, best.yaw, 0); best.mesh.position.y = best.y;
-    spawnParticles(best.x, best.y + 1, best.z, 40, 0x5fe6c8, 3, .9); addFeedText(`${e.name} revived ${best.name}`, e.team);
+    if (best.mesh) { best.mesh.rotation.set(0, best.yaw, 0); best.mesh.position.y = best.y; }
+    teleported(best); best.invSeq = (best.invSeq || 0) + 1;
+    if (best.isPlayer) { $('deathInfo').classList.add('hidden'); equipView(); }
+    fx('parts', best.x, best.y + 1, best.z, 40, 0x5fe6c8, 3, .9); addFeedText(`${e.name} revived ${best.name}`, e.team);
     return true;
   },
   drone(e) {
@@ -1360,7 +1421,7 @@ const ABIL = {
   shock(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: 0x7fb0ff, owner: e }));
     p.onLand = () => {
-      worldFlash(p.x, p.y + .5, p.z, 5, 0x7fb0ff, .2); SND.boom(p.x, p.z); spawnParticles(p.x, p.y + .3, p.z, 40, 0x7fb0ff, 6, .5);
+      fx('boom', p.x, p.y, p.z, 0x7fb0ff);
       for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const d = Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z); if (d < 4.5 && los(p.x, p.y + .4, p.z, o.x, o.y + 1, o.z, true)) applyDamage(o, d < 2 ? 75 : 40, e, 'Shock Bolt'); }
     }; return true;
   },
@@ -1368,8 +1429,8 @@ const ABIL = {
     const p = spawnProj(Object.assign(throwFrom(e, 38, 1), { g: 8, color: 0x4fa3ff, owner: e, stick: true, life: 4 }));
     p.onLand = () => {
       const x = p.x, y = p.y + .3, z = p.z;
-      const m = new THREE.Mesh(new THREE.OctahedronGeometry(.25), new THREE.MeshBasicMaterial({ color: 0x4fa3ff })); m.position.set(x, y, z); scene.add(m);
-      let k = 0; timedFx.push({ t: 3.4, update() { m.rotation.y += .1; if (k === 0 && this.t < 2.8) { k = 1; revealPulse(x, y, z, 32, e.team, 2.5); } if (k === 1 && this.t < 1.0) { k = 2; revealPulse(x, y, z, 32, e.team, 2.5); } }, end() { scene.remove(m); } });
+      fx('recon', x, y, z);
+      let k = 0; timedFx.push({ t: 3.4, update() { if (k === 0 && this.t < 2.8) { k = 1; revealPulse(x, y, z, 32, e.team, 2.5); } if (k === 1 && this.t < 1.0) { k = 2; revealPulse(x, y, z, 32, e.team, 2.5); } }, end() { } });
     }; return true;
   },
   fury(e) { e.furyN = 3; e.furyT = 0; return true; },
@@ -1378,35 +1439,30 @@ const ABIL = {
   leer(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 14), { g: 0, life: .5, color: 0xc25bff, owner: e, land: false, size: .3 }));
     p.onExpire = () => {
-      const x = p.x, y = p.y, z = p.z, m = new THREE.Mesh(new THREE.SphereGeometry(.35, 14, 10), new THREE.MeshBasicMaterial({ color: 0xc25bff }));
-      const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); gl.scale.set(2.5, 2.5, 1); m.add(gl);
-      m.position.set(x, y, z); scene.add(m);
-      timedFx.push({ t: 2.5, update() { for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const ey = eyeY(o), dx = x - o.x, dy = y - ey, dz = z - o.z, d = Math.hypot(dx, dy, dz); if (d > 40) continue; const f = fwd(o); if ((dx * f.x + dy * f.y + dz * f.z) / d > .5 && los(o.x, ey, o.z, x, y, z, true)) o.nearT = Math.max(o.nearT, .5); } }, end() { scene.remove(m); } });
+      const x = p.x, y = p.y, z = p.z; fx('leer', x, y, z);
+      timedFx.push({ t: 2.5, update() { for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const ey = eyeY(o), dx = x - o.x, dy = y - ey, dz = z - o.z, d = Math.hypot(dx, dy, dz); if (d > 40) continue; const f = fwd(o); if ((dx * f.x + dy * f.y + dz * f.z) / d > .5 && los(o.x, ey, o.z, x, y, z, true)) o.nearT = Math.max(o.nearT, .5); } }, end() { } });
     }; return true;
   },
-  devour(e) { if (e.soulT <= 0) { if (e.isPlayer) toast('Only usable right after a kill'); return false; } e.soulT = 0; e.healT = 3; e.healRate = 34; e.healCap = 150; spawnParticles(e.x, e.y + 1, e.z, 25, 0xc25bff, 2, .6); return true; },
-  dismiss(e) { if (e.soulT <= 0) { if (e.isPlayer) toast('Only usable right after a kill'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
+  devour(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.healT = 3; e.healRate = 34; e.healCap = 150; spawnParticles(e.x, e.y + 1, e.z, 25, 0xc25bff, 2, .6); return true; },
+  dismiss(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
   empress(e) { e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
 };
 function castAbility(e, key, target) {
+  if (net.role === 'client' && e === player) return clientCast(key);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
-  if (key === 'X') { if (e.ult < ab.ult) { if (e.isPlayer) { toast(`Not enough ult points (${e.ult}/${ab.ult})`); SND.deny(); } return false; } }
+  if (key === 'X') { if (e.ult < ab.ult) { toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); if (e.isPlayer) SND.deny(); return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
-  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { if (e.isPlayer) toast('Cannot be used during the buy phase'); return false; }
+  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { toastTo(e, 'Cannot be used during the buy phase'); return false; }
   if (ABIL[ab.type](e, ab, target) === false) return false;
   if (key === 'X') e.ult = 0; else e.charges[key]--;
-  SND.ability(e.isPlayer ? undefined : e.x, e.isPlayer ? undefined : e.z);
+  fx('ab', e.x, e.z, e.id);
   if (e.isPlayer) refreshAbilHud();
   return true;
 }
 function fireFury(e) {
   const f = fwd(e), ox = e.x, oy = eyeY(e) - .1, oz = e.z, L = 90;
-  const g = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, L, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x6fb6ff, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false }));
-  g.position.set(ox + f.x * L / 2, oy + f.y * L / 2, oz + f.z * L / 2);
-  g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(f.x, f.y, f.z)); scene.add(g);
-  timedFx.push({ t: .6, update() { g.material.opacity = this.t; g.scale.x = g.scale.z = 1 + (.6 - this.t) * 3; }, end() { scene.remove(g); } });
-  sndTone(200, .6, .5, 'sawtooth', 1600, e.isPlayer ? undefined : e.x, e.isPlayer ? undefined : e.z);
+  fx('fury', ox, oy, oz, f.x, f.y, f.z, e.id);
   for (const o of entities) {
     if (!o.alive || !isEnemy(o, e)) continue;
     const px = o.x - ox, py = o.y + 1 - oy, pz = o.z - oz, t = px * f.x + py * f.y + pz * f.z;
@@ -1420,7 +1476,7 @@ function updateEffects(dt) {
   for (let i = smokes.length - 1; i >= 0; i--) {
     const s = smokes[i]; s.t -= dt; s.grow = Math.min(1, s.grow + dt * 2.5);
     if (s.mesh) { s.mesh.scale.setScalar(s.grow); s.mesh.material.opacity = s.t < 1 ? Math.max(0, s.t) * .97 : .97; }
-    if (s.t <= 0) { if (s.mesh) scene.remove(s.mesh); smokes.splice(i, 1); }
+    if (s.t <= 0 && net.role !== 'client') { if (s.mesh) scene.remove(s.mesh); smokes.splice(i, 1); }
   }
   for (let i = zones.length - 1; i >= 0; i--) {
     const z = zones[i];
@@ -1431,7 +1487,7 @@ function updateEffects(dt) {
     }
     z.t -= dt;
     if (z.cyl) { z.cyl.material.opacity = (z.kind === 'blaze' ? .55 : .25) + Math.random() * .15; if (z.kind === 'fire' && Math.random() < .3) spawnParticles(z.x + rand(-z.r, z.r) * .7, .3, z.z + rand(-z.r, z.r) * .7, 1, 0xff8a2a, 1.5, .5); }
-    for (const e of entities) {
+    if (net.role !== 'client') for (const e of entities) {
       if (!e.alive) continue;
       const d = Math.hypot(e.x - z.x, e.z - z.z); if (d > z.r + e.r * .5 || e.y > (z.kind === 'orbital' ? 30 : 3)) continue;
       if (z.kind === 'fire' || z.kind === 'blaze' || z.kind === 'orbital') {
@@ -1440,14 +1496,16 @@ function updateEffects(dt) {
       } else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
       else if (z.kind === 'stim' && !isEnemy(e, z.owner)) e.stimT = .3;
     }
-    if (z.t <= 0) { scene.remove(z.mesh); zones.splice(i, 1); }
+    if (z.t <= 0 && net.role !== 'client') { scene.remove(z.mesh); zones.splice(i, 1); }
   }
   for (let i = dynWalls.length - 1; i >= 0; i--) {
     const w = dynWalls[i]; w.t -= dt; w.mesh.scale.y = Math.min(1, w.mesh.scale.y + dt * 2.5); w.mesh.position.y = w.y0 + (w.y1 - w.y0) * w.mesh.scale.y / 2;
-    if (w.t <= 0) { spawnParticles(w.mesh.position.x, 2, w.mesh.position.z, 40, 0xbff6ff, 5, .6); scene.remove(w.mesh); dynWalls.splice(i, 1); }
+    if (w.t <= 0 && net.role !== 'client') { spawnParticles(w.mesh.position.x, 2, w.mesh.position.z, 40, 0xbff6ff, 5, .6); scene.remove(w.mesh); dynWalls.splice(i, 1); }
   }
   for (let i = projectiles.length - 1; i >= 0; i--) {
-    const p = projectiles[i]; p.life -= dt; let done = false;
+    const p = projectiles[i];
+    if (net.role === 'client') { p.vy -= p.g * dt; p.x += p.vx * dt; p.y = Math.max(.1, p.y + p.vy * dt); p.z += p.vz * dt; p.mesh.position.set(p.x, p.y, p.z); continue; }
+    p.life -= dt; let done = false;
     if (p.onUpdate) p.onUpdate(dt);
     for (let s = 0; s < 3 && !done; s++) {
       const h = dt / 3; p.vy -= p.g * h;
@@ -1494,7 +1552,7 @@ function updateStatus(e, dt) {
   e.fireCD -= dt;
   // spike pickup
   const sp = game.spike;
-  if (sp && sp.state === 'dropped' && sideOf(e) === 'atk' && !(sp.ignore === e && game.time < sp.ignoreUntil) && Math.hypot(e.x - sp.x, e.z - sp.z) < (e.isPlayer ? 1.3 : 2.4)) giveSpike(e);
+  if (net.role !== 'client' && sp && sp.state === 'dropped' && sideOf(e) === 'atk' && !(sp.ignore === e && game.time < sp.ignoreUntil) && Math.hypot(e.x - sp.x, e.z - sp.z) < (e.isPlayer ? 1.3 : 2.4)) giveSpike(e);
 }
 function startReload(e) {
   const w = curWeapon(e), W0 = WEAPONS[w.key];
@@ -1511,7 +1569,7 @@ function finishReload(e) {
    ===================================================================== */
 const keys = {}, mouse = [false, false, false];
 const camRig = { yaw: 0, pitch: 0 };
-let eyeH = 1.6, adsT = 0, vmKick = 0, vmEquip = 0, stepT = 0, triggerHeld = false, spectateIdx = 0, plantHold = 0, deathCam = 0;
+let eyeH = 1.6, adsT = 0, vmKick = 0, vmEquip = 0, stepT = 0, triggerHeld = false, spectateIdx = 0, deathCam = 0;
 let shopOpen = false, boardOpen = false;
 
 function equipView() {
@@ -1535,12 +1593,12 @@ function switchSlot(s) {
 }
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
-  if (p.fireCD > 0 || p.reloadT > 0 || plantHold > 0) return;
+  if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0) return;
   if (w.model === 'knife') { // melee
     p.fireCD = .5; vmKick = 1; SND.shot('knife');
     const f = fwd(p), oy = eyeY(p); let best = null, bt = 2.6;
     for (const e of entities) { if (!e.alive || !isEnemy(e, p)) continue; const h = rayEntity(p.x, oy, p.z, f.x, f.y, f.z, e); if (h && h.t < bt) { bt = h.t; best = e; } }
-    if (best) { applyDamage(best, mouse[2] ? 75 : 50, p, 'Knife', false); hitMarker(false); SND.hit(); }
+    if (best) { dealDamage(best, mouse[2] ? 75 : 50, p, 'Knife', false); hitMarker(false); SND.hit(); }
     return;
   }
   if (inst.mag <= 0) { startReload(p); if (p.reloadT <= 0) SND.deny(); p.fireCD = .2; return; }
@@ -1562,7 +1620,7 @@ function playerFire() {
   p.recoil += w.recoil * .6 * (crouched ? .5 : 1) * (ads ? .8 : 1); p.shotIdx++;
   const ox = p.x, oy = eyeY(p), oz = p.z;
   const muz = new THREE.Vector3(.16, -.14, MUZZLE_Z[w.model]).applyMatrix4(camera.matrixWorld);
-  let anyHit = false, anyHead = false, killed = false;
+  let anyHit = false, anyHead = false, killed = false, tr0 = null;
   for (let k = 0; k < w.pellets; k++) {
     const a = Math.random() * Math.PI * 2, rr = spread * Math.sqrt(Math.random());
     const yaw = p.yaw + yawWob + Math.cos(a) * rr, pitch = p.pitch + climb + Math.sin(a) * rr;
@@ -1570,13 +1628,14 @@ function playerFire() {
     const res = traceShot(p, ox, oy, oz, dx, dy, dz, 200);
     const hx = ox + dx * res.t, hy = oy + dy * res.t, hz = oz + dz * res.t;
     if (k < 3) spawnTracer(muz.x, muz.y, muz.z, hx, hy, hz, inst.key === 'blades' ? 0xa6e6ff : 0xfff2b0);
+    if (!tr0) tr0 = [hx, hy, hz];
     if (res.ent) {
       const dmg = w.dmg[res.reg] * falloffMul(w, res.t); const wasAlive = res.ent.alive;
-      applyDamage(res.ent, dmg, p, w.name, res.reg === 0);
+      dealDamage(res.ent, dmg, p, w.name, res.reg === 0);
       if (wasAlive && !res.ent.alive) killed = true;
       anyHit = true; if (res.reg === 0) anyHead = true;
       spawnParticles(hx, hy, hz, res.reg === 0 ? 10 : 5, res.reg === 0 ? 0xffe066 : 0xffffff, 2.5, .3);
-    } else if (res.wall) { damageWall(res.wall, w.dmg[1]); }
+    } else if (res.wall) { if (net.role !== 'client') damageWall(res.wall, w.dmg[1]); }
     else if (res.t < 199) { spawnDecal(hx, hy, hz, res.nx, res.ny, res.nz); if (k < 4) spawnParticles(hx, hy, hz, 3, 0xffd9a0, 2, .25); }
   }
   if (anyHit) { hitMarker(anyHead); anyHead ? SND.head() : SND.hit(); }
@@ -1584,7 +1643,8 @@ function playerFire() {
   vmKick = Math.min(1.5, vmKick + (w.model === 'sniper' ? 1.5 : w.model === 'shotgun' ? 1.2 : .55));
   const g = vmRoot.userData.gun; if (g && g.userData.muzzle && inst.key !== 'blades') { g.userData.muzzle.visible = true; g.userData.muzzle.material.rotation = Math.random() * 6; setTimeout(() => { if (g.userData.muzzle) g.userData.muzzle.visible = false; }, 40); }
   SND.shot(w.model);
-  alertEnemies(p, 38);
+  netShot(p, muz.x, muz.y, muz.z, tr0[0], tr0[1], tr0[2], w.model, inst.key === 'blades' ? 0xa6e6ff : 0xfff2b0);
+  if (net.role !== 'client') alertEnemies(p, 38);
   if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; } // unscope after sniper shot
   if (inst.key === 'blades' && p.bladeMag <= 0 && !killed) { p.slot = p.primary ? 1 : 2; equipView(); }
   else if (inst.key === 'blades' && p.bladeMag <= 0 && killed) { p.bladeMag = 5; }
@@ -1597,7 +1657,7 @@ function updatePlayer(dt) {
   const p = player;
   updateStatus(p, dt);
   if (!p.alive) return;
-  const busy = plantHold > 0;
+  const busy = p.plantHold > 0;
   p.crouch = !!(keys.ControlLeft || keys.ControlRight);
   const walk = !!(keys.ShiftLeft || keys.ShiftRight);
   let ix = 0, iz = 0; if (keys.KeyW) iz -= 1; if (keys.KeyS) iz += 1; if (keys.KeyA) ix -= 1; if (keys.KeyD) ix += 1;
@@ -1625,22 +1685,10 @@ function updatePlayer(dt) {
   adsT = clamp(adsT + (wantAds ? dt : -dt) * 7, 0, 1);
   // spike plant / defuse
   const sp2 = game.spike;
-  const holding4 = keys.Digit4 && !shopOpen;
+  const holding4 = !!keys.Digit4 && !shopOpen;
   let doing = null;
-  if (holding4 && game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && p.onGround) doing = 'plant';
-  if (holding4 && game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && p.onGround) doing = 'defuse';
-  if (doing === 'plant') {
-    plantHold += dt; showProgress('PLANTING SPIKE', plantHold / PLANT_TIME, false);
-    if (plantHold >= PLANT_TIME) { plantSpike(p); plantHold = 0; hideProgress(); }
-  } else if (doing === 'defuse') {
-    plantHold = 1; sp2.defuser = p; sp2.defuseProg += dt; if (sp2.defuseProg >= DEFUSE_TIME / 2) sp2.half = true;
-    showProgress('DEFUSING SPIKE', sp2.defuseProg / DEFUSE_TIME, true);
-    if (Math.floor(game.time * 4) !== Math.floor((game.time - dt) * 4)) sndTone(500 + sp2.defuseProg * 80, .05, .15, 'square');
-    if (sp2.defuseProg >= DEFUSE_TIME) { defuseSpike(p); plantHold = 0; hideProgress(); }
-  } else {
-    if (plantHold > 0 && sp2 && sp2.defuser === p) { sp2.defuser = null; sp2.defuseProg = sp2.half ? DEFUSE_TIME / 2 : 0; }
-    plantHold = 0; hideProgress();
-  }
+  if (net.role === 'client') { p.netA4 = holding4; doing = clientSpikeUI(p); }
+  else doing = spikeAction(p, holding4, dt);
   // interaction hint
   let hint = '';
   const near = nearestDrop(p);
@@ -1651,20 +1699,42 @@ function updatePlayer(dt) {
   if (game.phase === 'buy' && !shopOpen) hint = hint || '<b>B</b> Open shop';
   setHint(hint);
 }
+function spikeAction(p, holding4, dt) {
+  const sp2 = game.spike; let doing = null;
+  if (holding4 && game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && p.onGround) doing = 'plant';
+  if (holding4 && game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && p.onGround) doing = 'defuse';
+  if (doing === 'plant') {
+    p.plantHold = (p.plantHold || 0) + dt; if (p.isPlayer) showProgress('PLANTING SPIKE', p.plantHold / PLANT_TIME, false);
+    if (p.plantHold >= PLANT_TIME) { plantSpike(p); p.plantHold = 0; if (p.isPlayer) hideProgress(); }
+  } else if (doing === 'defuse') {
+    p.plantHold = 1; sp2.defuser = p; sp2.defuseProg += dt; if (sp2.defuseProg >= DEFUSE_TIME / 2) sp2.half = true;
+    if (p.isPlayer) {
+      showProgress('DEFUSING SPIKE', sp2.defuseProg / DEFUSE_TIME, true);
+      if (Math.floor(game.time * 4) !== Math.floor((game.time - dt) * 4)) sndTone(500 + sp2.defuseProg * 80, .05, .15, 'square');
+    }
+    if (sp2.defuseProg >= DEFUSE_TIME) { defuseSpike(p); p.plantHold = 0; if (p.isPlayer) hideProgress(); }
+  } else {
+    if (p.plantHold > 0 && sp2 && sp2.defuser === p) { sp2.defuser = null; sp2.defuseProg = sp2.half ? DEFUSE_TIME / 2 : 0; }
+    p.plantHold = 0; if (p.isPlayer) hideProgress();
+  }
+  return doing;
+}
 function nearestDrop(p) { let best = null, bd = 2; for (const d of drops) { const dd = Math.hypot(d.x - p.x, d.z - p.z); if (dd < bd) { bd = dd; best = d; } } return best; }
-function interact() {
-  const p = player; if (!p.alive) return;
+function interact(p = player) {
+  if (net.role === 'client' && p === player) { netSend({ t: 'use' }); return; }
+  if (!p.alive) return;
   const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8);
-  if (orb) { scene.remove(orb.mesh); orbs.splice(orbs.indexOf(orb), 1); p.ult = Math.min(AGENT[p.agent].ab.X.ult, p.ult + 1); toast('Ult point +1'); SND.buy(); refreshAbilHud(); return; }
+  if (orb) { scene.remove(orb.mesh); orbs.splice(orbs.indexOf(orb), 1); p.ult = Math.min(AGENT[p.agent].ab.X.ult, p.ult + 1); toastTo(p, 'Ult point +1'); if (p.isPlayer) { SND.buy(); refreshAbilHud(); } return; }
   const d = nearestDrop(p); if (!d) return;
   const slot = WEAPONS[d.inst.key].slot, cur = slot === 1 ? p.primary : p.secondary;
   if (cur) dropWeapon(cur, p.x, p.z);
   if (slot === 1) p.primary = d.inst; else p.secondary = d.inst;
   scene.remove(d.mesh); drops.splice(drops.indexOf(d), 1);
-  p.slot = slot; equipView(); SND.reload();
+  p.slot = slot; p.invSeq = (p.invSeq || 0) + 1;
+  if (p.isPlayer) { equipView(); SND.reload(); }
 }
 function onPlayerDeath(src, label) {
-  plantHold = 0; hideProgress(); adsT = 0; deathCam = 0;
+  player.plantHold = 0; hideProgress(); adsT = 0; deathCam = 0;
   const di = $('deathInfo'); di.classList.remove('hidden');
   di.innerHTML = src && src !== player ? `<span class="k">${src.name}</span> (${AGENT[src.agent].name}) killed you · ${label || ''}<br><small style="opacity:.6">Click: change spectate target</small>` : 'You died';
   spectateIdx = 0;
@@ -1770,6 +1840,7 @@ function botShoot(b, t) {
   const f = fwd(b), mx = ex + f.x * .7 + Math.cos(b.yaw) * .2, my = ey - .35, mz = ez + f.z * .7 - Math.sin(b.yaw) * .2;
   const tx = t.x + (hit ? 0 : rand(-1.2, 1.2)), ty = t.y + (head ? 1.55 : hit ? 1.1 : rand(.3, 2.2)), tz = t.z + (hit ? 0 : rand(-1.2, 1.2));
   spawnTracer(mx, my, mz, tx, ty, tz, 0xffb090); worldFlash(mx, my, mz, .5);
+  netShot(b, mx, my, mz, tx, ty, tz, w.model, 0xffb090);
   if (!hit) {
     const dx = tx - ex, dy = ty - ey, dz = tz - ez, L = Math.hypot(dx, dy, dz), tt = rayGrid(ex, ey, ez, dx / L, dy / L, dz / L, L + 20);
     if (tt < L + 19.9) spawnDecal(ex + dx / L * tt, ey + dy / L * tt, ez + dz / L * tt, RH.nx, RH.ny, RH.nz);
@@ -1907,19 +1978,24 @@ function updateBot(b, dt) {
 /* =====================================================================
    ROUND FLOW
    ===================================================================== */
-function setupMatch(agentId) {
+function setupMatch(agentId, humans = []) {
   // clean up previous match
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops();
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
-  entities = [player]; bots = [];
+  entities = [player]; bots = []; net.ents = {};
+  for (const h of humans) {
+    const e = makeEntity({ id: entities.length, name: h.name, team: 0, agent: h.agent, remote: h.peer });
+    e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
+  }
   // allies are the lobby party; swap out anyone who shares the player's agent
-  const allyPool = party.slice(1).map(p => p.agent);
-  const spare = shuffle(AGENTS.map(a => a.id).filter(id => id !== agentId && !allyPool.includes(id)));
-  for (let i = 0; i < 4; i++) if (!allyPool[i] || allyPool[i] === agentId) allyPool[i] = spare.pop();
+  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = 4 - humans.length;
+  const allyPool = party.filter(p => p.bot).map(p => p.agent).filter(a => !used.includes(a));
+  const spare = shuffle(AGENTS.map(a => a.id).filter(id => !used.includes(id) && !allyPool.includes(id)));
+  while (allyPool.length < nAllyBots) allyPool.push(spare.pop() || pick(AGENTS).id);
   const enemyPool = shuffle(AGENTS.map(a => a.id));
-  for (let i = 0; i < 4; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
+  for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
   for (let i = 0; i < 5; i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
   for (const b of bots) { b.mesh = makeCharacter(AGENT[b.agent]); b.path = []; b.think = 0; b.reactT = 0; }
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0 });
@@ -1961,6 +2037,7 @@ function nextRound() {
     entities.filter(e => e.team === team).forEach((e, i) => {
       const p = cc(...cells[i % cells.length]); e.x = p.x + rand(-.5, .5); e.z = p.z + rand(-.5, .5); e.y = 0;
       e.yaw = side === 'atk' ? 0 : Math.PI; e.pitch = 0;
+      teleported(e); e.invSeq = (e.invSeq || 0) + 1; e.plantHold = 0;
     });
   }
   clearEffects(); clearDrops();
@@ -1996,7 +2073,7 @@ function nextRound() {
   $('sideTag').style.color = game.side[0] === 'atk' ? '#ff8a8a' : '#8ad0ff';
 }
 function startLive() {
-  game.phase = 'live'; game.phaseT = ROUND_TIME; barrierGroup.visible = false; SND.roundStart();
+  game.phase = 'live'; game.phaseT = ROUND_TIME; barrierGroup.visible = false; SND.roundStart(); netSnd('roundStart');
   if (shopOpen) closeShop();
   banner('ROUND START', game.side[0] === 'atk' ? 'Plant the spike' : 'Defend the sites', '', 1.6);
 }
@@ -2008,17 +2085,14 @@ function defuseSpike(e) {
 }
 function explodeSpike() {
   const sp = game.spike; sp.state = 'exploded';
-  const big = new THREE.Mesh(new THREE.SphereGeometry(1, 30, 20), new THREE.MeshBasicMaterial({ color: 0xff4655, transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false }));
-  big.position.set(sp.x, sp.y, sp.z); scene.add(big);
-  timedFx.push({ t: 1.6, update() { big.scale.setScalar((1.6 - this.t) * 22); big.material.opacity = this.t * .4; }, end() { scene.remove(big); } });
-  SND.boom(sp.x, sp.z); SND.boom();
+  fx('explode', sp.x, sp.y, sp.z);
   for (const e of entities) if (e.alive) { const d = Math.hypot(e.x - sp.x, e.z - sp.z); if (d < 26) { e.ribT = 0; applyDamage(e, d < 14 ? 999 : (26 - d) * 15, null, 'Spike'); } }
   const atkTeam = game.side[0] === 'atk' ? 0 : 1;
   endRound(atkTeam, 'Spike detonated');
 }
 function endRound(winner, reason) {
   if (game.phase === 'end') return;
-  game.phase = 'end'; game.phaseT = END_TIME; plantHold = 0; hideProgress();
+  game.phase = 'end'; game.phaseT = END_TIME; entities.forEach(e => e.plantHold = 0); hideProgress();
   game.score[winner]++; game.history.push(winner);
   const loser = 1 - winner;
   game.lossStreak[winner] = 0; game.lossStreak[loser] = Math.min(3, game.lossStreak[loser] + 1);
@@ -2026,7 +2100,7 @@ function endRound(winner, reason) {
   for (const e of entities) e.credits = Math.min(9000, e.credits + (e.team === winner ? 3000 : lossBonus));
   const won = winner === 0;
   banner(won ? 'ROUND WON' : 'ROUND LOST', reason, won ? 'win' : 'lose', 3.5);
-  won ? SND.win() : SND.lose();
+  won ? SND.win() : SND.lose(); netSnd(won ? 'win' : 'lose');
   if (shopOpen) closeShop();
 }
 function checkRoundEnd() {
@@ -2045,6 +2119,7 @@ function matchOver() {
   return Math.abs(a - b) >= 2;
 }
 function finishMatch() {
+  if (net.role === 'host') { netBroadcast(buildSnap()); netBroadcast({ t: 'over' }); net.phase = 'lobby'; }
   game.state = 'over'; document.exitPointerLock && document.exitPointerLock();
   const won = game.score[0] > game.score[1];
   $('overTitle').textContent = won ? 'VICTORY' : 'DEFEAT'; $('overTitle').style.color = won ? 'var(--teal)' : 'var(--red)';
@@ -2062,6 +2137,7 @@ function finishMatch() {
     <div class="stat"><span>Match MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills} kills</b></div>
     <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
+  $('btnAgain').classList.toggle('hidden', net.role !== 'off'); $('btnMenu').textContent = net.role !== 'off' ? 'Back to Party Lobby' : 'Main Menu';
   won ? SND.win() : SND.lose();
 }
 function updateRound(dt) {
@@ -2072,7 +2148,7 @@ function updateRound(dt) {
     const interval = sp.timer > 20 ? 1 : sp.timer > 10 ? .5 : sp.timer > 5 ? .25 : .12;
     sp.beepT -= dt; if (sp.beepT <= 0) { sp.beepT = interval; SND.beep(sp.x, sp.z); sp.mesh.userData.light.intensity = 3; }
     sp.mesh.userData.light.intensity *= .9; sp.mesh.userData.ring.rotation.z += dt * 3;
-    if (sp.defuser && (!sp.defuser.alive || (!sp.defuser.isPlayer && Math.hypot(sp.defuser.x - sp.x, sp.defuser.z - sp.z) > 1.6) || (sp.defuser.isPlayer && plantHold <= 0))) { sp.defuser = null; sp.defuseProg = sp.half ? DEFUSE_TIME / 2 : 0; }
+    if (sp.defuser && (!sp.defuser.alive || (!sp.defuser.isPlayer && Math.hypot(sp.defuser.x - sp.x, sp.defuser.z - sp.z) > 1.6) || ((sp.defuser.isPlayer || sp.defuser.remote) && !(sp.defuser.plantHold > 0)))) { sp.defuser = null; sp.defuseProg = sp.half ? DEFUSE_TIME / 2 : 0; }
     if (sp.timer <= 0) explodeSpike();
   } else if (game.phase === 'end') {
     game.phaseT -= dt;
@@ -2124,27 +2200,37 @@ function renderShop() {
   }
   cols.appendChild(col);
 }
-function buyWeapon(k) {
-  const p = player, w = WEAPONS[k];
+function buyWeapon(k, p = player) {
+  if (net.role === 'client' && p === player) { netSend({ t: 'buy', f: 'w', k }); return; }
+  const w = WEAPONS[k];
   if ((w.slot === 1 ? p.primary : p.secondary)?.key === k) return;
-  if (p.credits < w.price) { SND.deny(); return; }
+  if (p.credits < w.price) { if (p.isPlayer) SND.deny(); return; }
   const slot = w.slot, prev = slot === 1 ? p.primary : p.secondary;
   p.credits -= w.price; const inst = mkWeapon(k);
   if (slot === 1) p.primary = inst; else p.secondary = inst;
   p.bought.push({ id: 'w:' + k, price: w.price, undo: () => { if (slot === 1) p.primary = prev; else p.secondary = prev; } });
-  p.slot = slot; equipView(); SND.buy(); renderShop();
+  p.slot = slot; p.invSeq = (p.invSeq || 0) + 1;
+  if (p.isPlayer) { equipView(); SND.buy(); renderShop(); }
 }
-function buyShield(k) {
-  const p = player, s = SHIELDS[k]; if (p.armor >= s.val) return; if (p.credits < s.price) { SND.deny(); return; }
-  const prev = p.armor; p.credits -= s.price; p.armor = s.val; p.bought.push({ id: 's:' + k, price: s.price, undo: () => p.armor = prev }); SND.buy(); renderShop();
+function buyShield(k, p = player) {
+  if (net.role === 'client' && p === player) { netSend({ t: 'buy', f: 's', k }); return; }
+  const s = SHIELDS[k]; if (p.armor >= s.val) return; if (p.credits < s.price) { if (p.isPlayer) SND.deny(); return; }
+  const prev = p.armor; p.credits -= s.price; p.armor = s.val; p.bought.push({ id: 's:' + k, price: s.price, undo: () => p.armor = prev });
+  if (p.isPlayer) { SND.buy(); renderShop(); }
 }
-function buyAbility(key) {
-  const p = player, a = AGENT[p.agent].ab[key]; if (p.charges[key] >= a.max) return; if (p.credits < a.cost) { SND.deny(); return; }
-  p.credits -= a.cost; p.charges[key]++; p.bought.push({ id: 'a:' + key, price: a.cost, undo: () => p.charges[key]-- }); SND.buy(); renderShop(); refreshAbilHud();
+function buyAbility(key, p = player) {
+  if (net.role === 'client' && p === player) { netSend({ t: 'buy', f: 'a', k: key }); return; }
+  const a = AGENT[p.agent].ab[key]; if (p.charges[key] >= a.max) return; if (p.credits < a.cost) { if (p.isPlayer) SND.deny(); return; }
+  p.credits -= a.cost; p.charges[key]++; p.bought.push({ id: 'a:' + key, price: a.cost, undo: () => p.charges[key]-- });
+  if (p.isPlayer) { SND.buy(); renderShop(); refreshAbilHud(); }
 }
-function sellItem(id) {
-  const p = player; for (let i = p.bought.length - 1; i >= 0; i--) if (p.bought[i].id === id) {
-    const b = p.bought.splice(i, 1)[0]; p.credits += b.price; b.undo(); if (!curWeapon(p) || (p.slot === 1 && !p.primary)) p.slot = 2; equipView(); SND.reload(); renderShop(); refreshAbilHud(); return;
+function sellItem(id, p = player) {
+  if (net.role === 'client' && p === player) { netSend({ t: 'buy', f: 'x', k: id }); return; }
+  for (let i = p.bought.length - 1; i >= 0; i--) if (p.bought[i].id === id) {
+    const b = p.bought.splice(i, 1)[0]; p.credits += b.price; b.undo(); if (!curWeapon(p) || (p.slot === 1 && !p.primary)) p.slot = 2;
+    p.invSeq = (p.invSeq || 0) + 1;
+    if (p.isPlayer) { equipView(); SND.reload(); renderShop(); refreshAbilHud(); }
+    return;
   }
 }
 
@@ -2155,7 +2241,8 @@ const hudCache = {};
 function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $(id).innerHTML = v; } }
 let toastT = 0, bannerT = 0, hitT = 0, dmgT = 0;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; toastT = 2; }
-function banner(big, sub, cls, dur, keep) { const b = $('bannerBig'); b.textContent = big; b.className = cls || ''; $('bannerSub').textContent = sub || ''; $('centerMsg').style.opacity = 1; bannerT = dur || 2; }
+function banner(big, sub, cls, dur, keep) {
+  if (net.role === 'host' && game.state === 'playing') { lastBanner = [big, sub, cls, dur]; netBroadcast({ t: 'ui', f: 'banner', a: lastBanner }); } const b = $('bannerBig'); b.textContent = big; b.className = cls || ''; $('bannerSub').textContent = sub || ''; $('centerMsg').style.opacity = 1; bannerT = dur || 2; }
 function setHint(h) { if (hudCache.hint !== h) { hudCache.hint = h; $('hint').innerHTML = h; $('hint').classList.toggle('hidden', !h); } }
 function showProgress(lbl, f, half) { $('progress').classList.remove('hidden'); setText('progLbl', lbl); $('progFill').style.width = (clamp(f, 0, 1) * 100) + '%'; $('progHalf').classList.toggle('hidden', !half); }
 function hideProgress() { $('progress').classList.add('hidden'); }
@@ -2167,13 +2254,15 @@ function showDamageDir(src) {
   $('dmgDirs').appendChild(d); setTimeout(() => d.remove(), 900);
 }
 function addKillfeed(src, vic, label, head) {
+  if (net.role === 'host') netBroadcast({ t: 'ui', f: 'kf', a: [src ? src.id : -1, vic.id, label, head] });
   const el = document.createElement('div'); el.className = 'kf' + ((src && src.isPlayer) || vic.isPlayer ? ' me' : '');
   const cls = e => e.team === 0 ? 'a' : 'e';
   el.innerHTML = (src && src !== vic ? `<span class="${cls(src)}">${src.name}</span>` : '') + `<span class="w">${label || 'Died'}</span>` + (head ? '<span class="hs">◎HS</span>' : '') + `<span class="${cls(vic)}">${vic.name}</span>`;
   $('killfeed').appendChild(el); setTimeout(() => el.remove(), 5500);
   while ($('killfeed').children.length > 6) $('killfeed').firstChild.remove();
 }
-function addFeedText(txt, team) { const el = document.createElement('div'); el.className = 'kf'; el.innerHTML = `<span class="${team === 0 ? 'a' : 'e'}">${txt}</span>`; $('killfeed').appendChild(el); setTimeout(() => el.remove(), 4500); }
+function addFeedText(txt, team) {
+  if (net.role === 'host') netBroadcast({ t: 'ui', f: 'feed', a: [txt, team] }); const el = document.createElement('div'); el.className = 'kf'; el.innerHTML = `<span class="${team === 0 ? 'a' : 'e'}">${txt}</span>`; $('killfeed').appendChild(el); setTimeout(() => el.remove(), 4500); }
 function buildCrosshair() {
   const c = $('crosshair'); c.style.setProperty('--ch', settings.ch);
   c.innerHTML = '<div style="left:-1px;top:-1px;width:2px;height:2px"></div>' + [[-1, -11, 2, 6], [-1, 5, 2, 6], [-11, -1, 6, 2], [5, -1, 6, 2]].map(([l, t, w, h]) => `<div class="ln" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px"></div>`).join('');
@@ -2352,14 +2441,20 @@ let last = performance.now(), spotT = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   let dt = Math.min(.05, (now - last) / 1000); last = now;
-  if (game.state === 'playing' && !game.paused) {
+  // in an online match the world keeps running while someone has the pause menu open
+  if (game.state === 'playing' && (!game.paused || net.role !== 'off')) {
     game.time += dt;
-    updatePlayer(dt);
-    for (const b of bots) updateBot(b, dt);
-    separate();
-    updateEffects(dt);
-    updateParticles(dt);
-    updateRound(dt);
+    if (net.role === 'client') clientTick(dt);
+    else {
+      updatePlayer(dt);
+      for (const b of bots) updateBot(b, dt);
+      for (const e of entities) if (e.remote) updateRemoteHuman(e, dt);
+      separate();
+      updateEffects(dt);
+      updateParticles(dt);
+      updateRound(dt);
+      if (net.role === 'host') hostNetTick(dt);
+    }
     spotT -= dt; if (spotT <= 0) { spotT = .2; updateSpotting(); }
     if (game.spike && game.spike.state === 'dropped') { game.spike.mesh.rotation.y += dt; }
     if (boardOpen) renderBoard();
@@ -2417,7 +2512,7 @@ document.addEventListener('keydown', e => {
     case 'Digit3': switchSlot(3); break;
     case 'KeyR': startReload(player); break;
     case 'KeyF': interact(); break;
-    case 'KeyG': if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
+    case 'KeyG': if (net.role === 'client') { netSend({ t: 'g' }); break; } if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
     case 'KeyC': castAbility(player, 'C'); break;
     case 'KeyQ': castAbility(player, 'Q'); break;
     case 'KeyE': castAbility(player, 'E'); break;
@@ -2429,6 +2524,537 @@ window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] =
 window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = lobbyCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); lobbyCam.updateProjectionMatrix();
 });
+
+/* =====================================================================
+   ONLINE PARTY — peer-to-peer (PeerJS / WebRTC), host-authoritative.
+   The host runs the whole match (bots, rounds, economy, damage). Each
+   client moves its own agent locally, reports hits/abilities/purchases
+   to the host, and renders the world from ~20 Hz host snapshots.
+   ===================================================================== */
+const NET_PREFIX = 'valorstrike-';
+const NET_LOCAL = /[?&]local\b/.test(location.search); // ?local = tabs on one PC talk over BroadcastChannel (testing)
+const net = { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {}, snapT: 0, sendT: 0, chat: [], partySig: '', hostDiff: 'normal' };
+const r2 = v => Math.round(v * 100) / 100;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cleanName = n => String(n || '').replace(/[<>&"'`\\]/g, '').trim().slice(0, 16) || 'Player';
+
+/* --- local transport with the same shape as PeerJS (for ?local testing) --- */
+class Emitter { constructor() { this.h = {}; } on(k, f) { (this.h[k] = this.h[k] || []).push(f); return this; } emit(k, ...a) { (this.h[k] || []).slice().forEach(f => f(...a)); } }
+class LocalConn extends Emitter {
+  constructor(p, remote) { super(); this.p = p; this.peer = remote; this.open = false; }
+  send(d) { if (this.open) this.p.bc.postMessage({ k: 'data', from: this.p.id, to: this.peer, d }); }
+  close() { if (!this.open) return; this.open = false; this.p.bc.postMessage({ k: 'close', from: this.p.id, to: this.peer }); delete this.p.conns[this.peer]; this.emit('close'); }
+}
+class LocalPeer extends Emitter {
+  constructor(id) {
+    super(); this.id = id || 'lp' + Math.random().toString(36).slice(2, 10); this.conns = {}; this.destroyed = false;
+    this.bc = new BroadcastChannel('valorstrike-local');
+    this.bc.onmessage = ev => {
+      const m = ev.data; if (!m || m.to !== this.id || this.destroyed) return;
+      if (m.k === 'connect') { const c = new LocalConn(this, m.from); c.open = true; this.conns[m.from] = c; this.emit('connection', c); this.bc.postMessage({ k: 'accept', from: this.id, to: m.from }); setTimeout(() => c.emit('open'), 0); }
+      else if (m.k === 'accept') { const c = this.conns[m.from]; if (c) { c.open = true; c.emit('open'); } }
+      else if (m.k === 'data') { const c = this.conns[m.from]; if (c) c.emit('data', m.d); }
+      else if (m.k === 'close') { const c = this.conns[m.from]; if (c) { c.open = false; delete this.conns[m.from]; c.emit('close'); } }
+    };
+    setTimeout(() => this.emit('open', this.id), 10);
+  }
+  connect(id) { const c = new LocalConn(this, id); this.conns[id] = c; this.bc.postMessage({ k: 'connect', from: this.id, to: id }); setTimeout(() => { if (!c.open && !this.destroyed) this.emit('error', { type: 'peer-unavailable' }); }, 1500); return c; }
+  destroy() { if (this.destroyed) return; Object.values(this.conns).forEach(c => c.close()); this.destroyed = true; this.bc.close(); }
+}
+function makePeer(id) {
+  if (NET_LOCAL) return new LocalPeer(id);
+  if (typeof Peer === 'undefined') throw new Error('PeerJS not loaded');
+  return id ? new Peer(id, { debug: 0 }) : new Peer({ debug: 0 });
+}
+
+/* --- messaging helpers --- */
+function netSend(m) { if (net.role === 'client' && net.host) try { net.host.send(m); } catch (e) { } }
+function netBroadcast(m, except) { if (net.role !== 'host') return; for (const id in net.conns) if (id !== except) try { net.conns[id].send(m); } catch (e) { } }
+function netTo(peerId, m) { const c = net.conns[peerId]; if (c) try { c.send(m); } catch (e) { } }
+function netSnd(n) { netBroadcast({ t: 'snd', n }); }
+function toastTo(e, msg) { if (!e) return; if (e.isPlayer) toast(msg); else if (e.remote) netTo(e.remote, { t: 'toast', m: msg }); }
+function teleported(e) { e.tpSeq = (e.tpSeq || 0) + 1; e.nx = e.x; e.ny = e.y; e.nz = e.z; }
+function dealDamage(t, dmg, src, label, head) {
+  if (net.role === 'client') { netSend({ t: 'hit', id: t.id, dmg: r2(dmg), l: label, h: head ? 1 : 0 }); return; }
+  applyDamage(t, dmg, src, label, head);
+}
+function netShot(e, mx, my, mz, hx, hy, hz, model, color) {
+  const a = [r2(mx), r2(my), r2(mz), r2(hx), r2(hy), r2(hz), model, color, e.id];
+  if (net.role === 'host') netBroadcast({ t: 'fx', k: 'shot', a });
+  else if (net.role === 'client' && e === player) netSend({ t: 'shot', a });
+}
+
+/* --- visual effects that every player sees (host broadcasts them) --- */
+const FX = {
+  shot(mx, my, mz, hx, hy, hz, model, color) { spawnTracer(mx, my, mz, hx, hy, hz, color); worldFlash(mx, my, mz, .5); SND.shot(model, mx, mz); },
+  pop(x, y, z, kind) { worldFlash(x, y, z, 6, kind === 'near' ? 0xb04fff : 0xffffff, .15); SND.pop(x, z); },
+  pulse(x, y, z, r) {
+    const ring = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), new THREE.MeshBasicMaterial({ color: 0x4fa3ff, wireframe: true, transparent: true, opacity: .6 }));
+    ring.position.set(x, y, z); scene.add(ring);
+    timedFx.push({ t: .7, update() { ring.scale.setScalar((1 - this.t / .7) * r + .5); ring.material.opacity = this.t; }, end() { scene.remove(ring); } });
+    sndTone(600, .4, .25, 'sine', 1400, x, z);
+  },
+  fury(ox, oy, oz, fx_, fy, fz, src) {
+    const L = 90, g = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, L, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x6fb6ff, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false }));
+    g.position.set(ox + fx_ * L / 2, oy + fy * L / 2, oz + fz * L / 2);
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(fx_, fy, fz)); scene.add(g);
+    timedFx.push({ t: .6, update() { g.material.opacity = this.t; g.scale.x = g.scale.z = 1 + (.6 - this.t) * 3; }, end() { scene.remove(g); } });
+    const mine = player && src === player.id;
+    sndTone(200, .6, .5, 'sawtooth', 1600, mine ? undefined : ox, mine ? undefined : oz);
+  },
+  boom(x, y, z, color) { worldFlash(x, y + .5, z, 5, color, .2); SND.boom(x, z); spawnParticles(x, y + .3, z, 40, color, 6, .5); },
+  explode(x, y, z) {
+    const big = new THREE.Mesh(new THREE.SphereGeometry(1, 30, 20), new THREE.MeshBasicMaterial({ color: 0xff4655, transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false }));
+    big.position.set(x, y, z); scene.add(big);
+    timedFx.push({ t: 1.6, update() { big.scale.setScalar((1.6 - this.t) * 22); big.material.opacity = this.t * .4; }, end() { scene.remove(big); } });
+    SND.boom(x, z); SND.boom();
+  },
+  ab(x, z, src) { const mine = player && src === player.id; SND.ability(mine ? undefined : x, mine ? undefined : z); },
+  parts(x, y, z, n, color, spd, life) { spawnParticles(x, y, z, n, color, spd, life); },
+  recon(x, y, z) {
+    const m = new THREE.Mesh(new THREE.OctahedronGeometry(.25), new THREE.MeshBasicMaterial({ color: 0x4fa3ff })); m.position.set(x, y, z); scene.add(m);
+    timedFx.push({ t: 3.4, update() { m.rotation.y += .1; }, end() { scene.remove(m); } });
+  },
+  leer(x, y, z) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(.35, 14, 10), new THREE.MeshBasicMaterial({ color: 0xc25bff }));
+    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); gl.scale.set(2.5, 2.5, 1); m.add(gl);
+    m.position.set(x, y, z); scene.add(m);
+    timedFx.push({ t: 2.5, update() { }, end() { scene.remove(m); } });
+  },
+};
+function fx(k, ...a) { FX[k](...a); if (net.role === 'host') netBroadcast({ t: 'fx', k, a }); }
+
+/* --- name tags over human teammates --- */
+function addNameTag(e) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d');
+  x.font = '900 32px "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const w = Math.min(250, x.measureText(e.name).width + 28);
+  x.fillStyle = 'rgba(15,25,35,.78)'; x.fillRect(128 - w / 2, 10, w, 44); x.fillStyle = '#2fe0b6'; x.fillText(e.name, 128, 33);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+  s.scale.set(1.6, .4, 1); s.position.y = 2.55; s.renderOrder = 1000; e.mesh.add(s); e.mesh.userData.nameTag = s;
+}
+/* --- third-person animation for networked characters --- */
+function netLerp(e, dt) {
+  if (e.nx === undefined) return;
+  const dx = e.nx - e.x, dz = e.nz - e.z;
+  if (dx * dx + dz * dz > 25) { e.x = e.nx; e.y = e.ny; e.z = e.nz; return; }
+  const k = Math.min(1, dt * 15); e.x += dx * k; e.y += (e.ny - e.y) * k; e.z += dz * k;
+}
+function animateNetChar(e, dt) {
+  const m = e.mesh; if (!m) return; const ud = m.userData;
+  if (!e.alive) {
+    e.deadT = (e.deadT || 0) + dt; const k = Math.min(1, e.deadT * 3);
+    m.position.set(e.x, e.y + .25 * k, e.z); m.rotation.set(-Math.PI / 2 * k, e.yaw, 0);
+    ud.marker.visible = false; ud.outlines.forEach(o => o.visible = false); if (ud.nameTag) ud.nameTag.visible = false;
+    return;
+  }
+  e.deadT = 0;
+  const spd = Math.hypot(e.vx || 0, e.vz || 0);
+  m.visible = true; m.position.set(e.x, e.y, e.z); m.rotation.set(0, e.yaw, 0);
+  const ph = game.time * 10 * (spd / 6), sw = Math.min(1, spd / 4) * .6;
+  ud.legL.rotation.x = Math.sin(ph) * sw; ud.legR.rotation.x = -Math.sin(ph) * sw;
+  setCharGun(e);
+  const enemy = isEnemy(e, player);
+  ud.marker.visible = !enemy || e.revealedT > 0; ud.marker.material.color.setHex(enemy ? 0xff3344 : 0x2fe0b6);
+  ud.outlines.forEach(o => o.visible = enemy); if (ud.nameTag) ud.nameTag.visible = true;
+  if (net.role === 'client' && enemy && spd > 4.5) { e.stepT = (e.stepT || 0) - dt; if (e.stepT <= 0) { e.stepT = .38; if (Math.hypot(e.x - camera.position.x, e.z - camera.position.z) < 28) SND.step(e.x, e.z, .5); } }
+}
+
+/* =====================================================================
+   PARTY (lobby)
+   ===================================================================== */
+function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
+function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host' }; }
+function setPartyStatus(m) { $('ppStatus').textContent = m || ''; }
+function resetNet() {
+  const peer = net.peer;
+  Object.assign(net, { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {} });
+  try { if (peer) peer.destroy(); } catch (e) { }
+  refreshPartyUI();
+}
+function createParty() {
+  if (net.role !== 'off' || net.peer) return;
+  const code = genCode(); setPartyStatus('Creating party…');
+  let peer; try { peer = makePeer(NET_PREFIX + code); } catch (e) { setPartyStatus('Online play is unavailable (PeerJS could not be loaded).'); return; }
+  net.peer = peer;
+  peer.on('open', id => { net.role = 'host'; net.code = code; net.myId = id; net.phase = 'lobby'; net.members = [selfMember()]; net.chat = []; setPartyStatus(''); partyMsg(null, 'Party created — share the code with friends'); partyChanged(); });
+  peer.on('connection', conn => { conn.on('data', d => hostRecv(conn, d)); conn.on('close', () => hostDrop(conn.peer)); conn.on('error', () => hostDrop(conn.peer)); });
+  peer.on('error', err => {
+    const type = err && err.type;
+    if (net.role === 'off') { try { peer.destroy(); } catch (e) { } net.peer = null; if (type === 'unavailable-id') createParty(); else setPartyStatus('Could not create a party (' + (type || 'network error') + ').'); }
+    else if (type !== 'peer-unavailable') setPartyStatus('Network: ' + (type || 'error'));
+  });
+  peer.on('disconnected', () => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) { } });
+}
+function joinParty(code) {
+  code = String(code || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{5}$/.test(code)) { setPartyStatus('Enter the 5-character party code.'); return; }
+  if (net.role !== 'off' || net.peer) return;
+  setPartyStatus('Connecting…');
+  let peer; try { peer = makePeer(); } catch (e) { setPartyStatus('Online play is unavailable (PeerJS could not be loaded).'); return; }
+  net.peer = peer;
+  const fail = msg => { if (net.peer !== peer) return; resetNet(); setPartyStatus(msg); };
+  peer.on('open', id => {
+    net.myId = id;
+    const conn = peer.connect(NET_PREFIX + code, { reliable: true, serialization: 'json' });
+    net.host = conn;
+    conn.on('open', () => { net.role = 'client'; net.code = code; net.chat = []; conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) }); setPartyStatus(''); refreshPartyUI(); });
+    conn.on('data', d => { if (net.host === conn) clientRecv(d); });
+    conn.on('close', () => { if (net.host === conn) onHostLost(); });
+    conn.on('error', () => { if (net.host === conn) onHostLost(); });
+  });
+  peer.on('error', err => { const type = err && err.type; if (net.role === 'off') fail(type === 'peer-unavailable' ? 'Party not found — check the code.' : 'Could not connect (' + (type || 'network error') + ').'); });
+  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail('Connection timed out.'); }, 12000);
+}
+function leaveParty() {
+  if (net.role === 'host') netBroadcast({ t: 'bye' });
+  if (net.role === 'client') netSend({ t: 'bye' });
+  const p = net.peer; setTimeout(() => { try { if (p) p.destroy(); } catch (e) { } }, 150);
+  net.peer = null; resetNet(); net.chat = []; renderChat(); setPartyStatus('');
+}
+function onHostLost() {
+  if (net.role !== 'client') return;
+  resetNet(); net.chat = []; renderChat(); setPartyStatus('The host left the party.');
+  $('matchFound').classList.add('hidden');
+  if (game.state === 'playing') toMenu();
+  else if (!$('select').classList.contains('hidden')) { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); showTab('home'); }
+}
+function netProfileChanged() {
+  if (net.role === 'client') netSend({ t: 'prof', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) });
+  else if (net.role === 'host') partyChanged();
+}
+function partyChanged() {
+  if (net.role === 'host') {
+    const me = net.members.find(m => m.id === net.myId); if (me) Object.assign(me, selfMember());
+    netBroadcast({ t: 'party', code: net.code, members: net.members, mode: playMode, diff: settings.diff, phase: net.phase });
+  }
+  refreshPartyUI();
+}
+function refreshPartyUI() {
+  renderPartyPanel(); updatePlayLock();
+  const sig = JSON.stringify((net.role === 'off' ? [] : net.members).map(m => [m.id, m.name, m.fav, m.host])) + profile.fav + profile.name;
+  if (sig !== net.partySig) { net.partySig = sig; if (game.state === 'menu') buildParty(); }
+}
+function partyMsg(name, text) { addChat(name, text); netBroadcast({ t: 'chat', n: name, m: text }); }
+function addChat(name, text) { net.chat.push({ n: name, m: String(text).slice(0, 140) }); if (net.chat.length > 40) net.chat.shift(); renderChat(); }
+function renderChat() {
+  const box = $('ppChat'); box.innerHTML = '';
+  for (const c of net.chat) { const d = document.createElement('div'); if (c.n == null) { d.className = 'sys'; d.textContent = c.m; } else { const b = document.createElement('b'); b.textContent = c.n + ': '; d.appendChild(b); d.appendChild(document.createTextNode(c.m)); } box.appendChild(d); }
+  box.scrollTop = box.scrollHeight;
+}
+function sendChat() {
+  const inp = $('chatIn'), txt = inp.value.trim().slice(0, 140); inp.value = ''; if (!txt) return;
+  if (net.role === 'host') partyMsg(profile.name, txt); else if (net.role === 'client') netSend({ t: 'chat', m: txt });
+}
+function renderPartyPanel() {
+  const inParty = net.role !== 'off';
+  $('ppSolo').classList.toggle('hidden', inParty); $('ppIn').classList.toggle('hidden', !inParty);
+  const mem = inParty ? net.members : [{ id: 'me', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) }];
+  $('ppCount').textContent = inParty ? `${net.members.length}/5` : 'SOLO';
+  $('partyCount').textContent = inParty ? `${net.members.length}/5` : '';
+  $('partyBtn').classList.toggle('on', inParty);
+  $('ppCode').textContent = net.code || '-----';
+  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${esc(m.name)}${me ? ' <small>(you)</small>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span></div>`; }).join('');
+}
+function updatePlayLock() {
+  const client = net.role === 'client';
+  $('modeStrip').classList.toggle('locked', client); $('diffSeg').classList.toggle('locked', client);
+  $('btnStart').disabled = client;
+  if (!queueTimer) $('btnStart').textContent = client ? 'WAITING FOR HOST' : 'START';
+}
+
+/* --- host: incoming messages --- */
+const SHOP_KEYS = new Set(['classic', 'shorty', 'frenzy', 'ghost', 'sheriff', 'stinger', 'spectre', 'bucky', 'judge', 'bulldog', 'guardian', 'phantom', 'vandal', 'marshal', 'outlaw', 'operator', 'ares', 'odin']);
+function hostRecv(conn, d) {
+  if (!d || typeof d !== 'object') return;
+  const id = conn.peer;
+  if (d.t === 'hello') {
+    if (net.conns[id]) return;
+    const deny = m => { try { conn.send({ t: 'deny', m }); } catch (e) { } setTimeout(() => { try { conn.close(); } catch (e) { } }, 400); };
+    if (net.members.length >= 5) return deny('That party is full.');
+    if (net.phase !== 'lobby' || game.state !== 'menu') return deny('That party is already in a match — try again after it ends.');
+    net.conns[id] = conn;
+    const m = { id, name: cleanName(d.name), fav: AGENT[d.fav] ? d.fav : 'jett', lv: Math.max(1, d.lv | 0), host: false };
+    net.members.push(m);
+    partyChanged(); conn.send({ t: 'chatlog', log: net.chat }); partyMsg(null, `${m.name} joined the party`);
+    return;
+  }
+  if (!net.conns[id]) return;
+  const m = net.members.find(x => x.id === id), e = net.ents[id];
+  switch (d.t) {
+    case 'prof': if (m) { m.name = cleanName(d.name); if (AGENT[d.fav]) m.fav = d.fav; m.lv = Math.max(1, d.lv | 0); partyChanged(); } break;
+    case 'chat': if (m) partyMsg(m.name, String(d.m || '').slice(0, 140)); break;
+    case 'pick': hostPick(id, d.a, !!d.lock); break;
+    case 'bye': hostDrop(id); break;
+    default: if (e && game.state === 'playing') hostGameMsg(e, d);
+  }
+}
+function syncAmmo(inst, a) { if (inst && Array.isArray(a) && a[0] === inst.key) { inst.mag = a[1] | 0; inst.reserve = a[2] | 0; } }
+function hostGameMsg(e, d) {
+  switch (d.t) {
+    case 'st':
+      if (d.tp === e.tpSeq && e.alive) { e.nx = +d.x || 0; e.ny = +d.y || 0; e.nz = +d.z || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.crouch = !!d.cr; e.onGround = !!d.og; }
+      e.netA4 = !!d.a4; if ([1, 2, 3, 'X'].includes(d.sl)) e.slot = d.sl; e.bladeMag = d.bm | 0;
+      if (d.iv === e.invSeq) { syncAmmo(e.primary, d.p); syncAmmo(e.secondary, d.s); }
+      break;
+    case 'shot':
+      if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
+      break;
+    case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
+    case 'cast':
+      if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k); }
+      break;
+    case 'buy':
+      if (game.phase !== 'buy' || !e.alive) break;
+      if (d.f === 'w' && SHOP_KEYS.has(d.k)) buyWeapon(d.k, e);
+      else if (d.f === 's' && SHIELDS[d.k]) buyShield(d.k, e);
+      else if (d.f === 'a' && ['C', 'Q', 'E'].includes(d.k)) buyAbility(d.k, e);
+      else if (d.f === 'x') sellItem(String(d.k), e);
+      break;
+    case 'use': interact(e); break;
+    case 'g': if (e.hasSpike && game.phase !== 'buy') { e.hasSpike = false; dropSpike(e.x, e.y, e.z); game.spike.ignore = e; game.spike.ignoreUntil = game.time + 2; toastTo(e, 'You dropped the spike'); } break;
+  }
+}
+function hostDrop(id) {
+  if (!net.conns[id]) return;
+  delete net.conns[id];
+  const m = net.members.find(x => x.id === id);
+  net.members = net.members.filter(x => x.id !== id); delete net.picks[id];
+  const e = net.ents[id]; if (e) { delete net.ents[id]; remoteToBot(e); }
+  if (m) partyMsg(null, `${m.name} left the party`);
+  partyChanged();
+  if (net.phase === 'select') { broadcastPicks(); checkAllLocked(); }
+}
+function remoteToBot(e) {
+  e.remote = null; Object.assign(e, { path: [], think: 0, reactT: 0, goal: null, target: null, investigate: null, lastSeen: null, plantHold: 0, netA4: false });
+  if (sideOf(e) === 'atk') { const s = game.atkSite || 1; Object.assign(e, { entry: cc(...ENTRANCES[s][0]), siteSpot: cc(...pick(SITE_CELLS[s])), plantSpot: cc(...pick(SITE_CELLS[s])), stage: 0, waitT: 0, role: 'atk' }); }
+  else Object.assign(e, { holdSite: 1, hold: cc(...pick(HOLDS[1])), holdYaw: 0, rotated: false, role: 'hold' });
+  bots.push(e);
+  if (game.state === 'playing') addFeedText(`${e.name} disconnected — a bot took over`, e.team);
+}
+
+/* --- agent select in a party --- */
+function takenBy(a, exceptId = net.myId) { for (const id in net.picks) if (id !== exceptId && net.picks[id].lock && net.picks[id].a === a) return id; return null; }
+function sendPick(lock) { if (net.role === 'client') netSend({ t: 'pick', a: selectedAgent, lock }); else if (net.role === 'host') hostPick(net.myId, selectedAgent, lock); }
+function hostPick(id, a, lock) {
+  if (net.phase !== 'select' || !AGENT[a]) return;
+  const cur = net.picks[id]; if (cur && cur.lock) return;
+  if (lock && takenBy(a, id)) lock = false;
+  net.picks[id] = { a, lock };
+  broadcastPicks(); checkAllLocked();
+}
+function broadcastPicks() { netBroadcast({ t: 'picks', picks: net.picks }); if (!$('select').classList.contains('hidden')) renderAgents(); }
+function checkAllLocked() { if (net.phase === 'select' && net.members.length && net.members.every(m => net.picks[m.id] && net.picks[m.id].lock)) startNetMatch(); }
+let lastBanner = null;
+function startNetMatch() {
+  net.phase = 'match';
+  const humans = net.members.filter(m => m.id !== net.myId).map(m => ({ peer: m.id, name: m.name, agent: net.picks[m.id].a }));
+  selectedAgent = net.picks[net.myId].a;
+  $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
+  setupMatch(selectedAgent, humans);
+  netBroadcast({ t: 'start', roster: entities.map(e => ({ id: e.id, name: e.name, team: e.team, agent: e.agent, peer: e.isPlayer ? net.myId : (e.remote || null) })), mode: game.mode, target: game.target, half: game.half });
+  net.snapT = 0; hostNetTick(0);
+  if (lastBanner) netBroadcast({ t: 'ui', f: 'banner', a: lastBanner });
+  lockPointer();
+}
+
+/* --- host: snapshots --- */
+let nidSeq = 0; const nidOf = o => o.nid || (o.nid = ++nidSeq);
+const invRec = i => i ? [i.key, i.mag, i.reserve] : 0;
+function entSnap(e) {
+  return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
+    hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary), s: invRec(e.secondary), bm: e.bladeMag,
+    cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
+    fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), so: r2(e.soulT),
+    hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
+}
+function buildSnap() {
+  const sp = game.spike;
+  return {
+    t: 'snap',
+    g: [game.phase, r2(game.phaseT), game.score[0], game.score[1], game.side[0], game.round, game.ot ? 1 : 0],
+    sp: sp ? [sp.state, r2(sp.x || 0), r2(sp.y || 0), r2(sp.z || 0), r2(sp.timer || 0), r2(sp.defuseProg || 0), sp.half ? 1 : 0, sp.carrier ? sp.carrier.id : -1, sp.defuser ? sp.defuser.id : -1, sp.site || 0] : null,
+    e: entities.map(entSnap),
+    sm: smokes.filter(s => s.mesh).map(s => [nidOf(s), r2(s.x), r2(s.y), r2(s.z), s.r, r2(s.t), s.max, s.color]),
+    zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay)]),
+    wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(w.t)]),
+    pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g]),
+    dr: drops.map(d => [nidOf(d), d.inst.key, r2(d.x), r2(d.z)]),
+    ob: orbs.map(o => [r2(o.x), r2(o.z)]),
+  };
+}
+function hostNetTick(dt) {
+  net.snapT -= dt;
+  if (net.snapT <= 0) { net.snapT = .05; if (Object.keys(net.conns).length) netBroadcast(buildSnap()); }
+}
+function updateRemoteHuman(e, dt) {
+  updateStatus(e, dt); netLerp(e, dt);
+  if (e.alive) {
+    spikeAction(e, !!e.netA4, dt);
+    if (e.onGround && Math.hypot(e.vx, e.vz) > 5) { e.stepT = (e.stepT || 0) - dt; if (e.stepT <= 0) { e.stepT = .36; alertEnemies(e, 16); } }
+  }
+  animateNetChar(e, dt);
+}
+
+/* --- client: incoming messages --- */
+function clientRecv(d) {
+  if (!d || typeof d !== 'object') return;
+  switch (d.t) {
+    case 'party':
+      net.members = (d.members || []).slice(0, 5).map(m => ({ id: String(m.id), name: cleanName(m.name), fav: AGENT[m.fav] ? m.fav : 'jett', lv: Math.max(1, m.lv | 0), host: !!m.host }));
+      net.phase = d.phase;
+      if (d.mode === 'comp' || d.mode === 'swift') { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
+      if (DIFF[d.diff]) { net.hostDiff = d.diff; segSet('diffSeg', d.diff); }
+      refreshPartyUI(); break;
+    case 'deny': { const msg = String(d.m || 'Could not join.'); resetNet(); setPartyStatus(msg); break; }
+    case 'chat': addChat(d.n == null ? null : cleanName(d.n), String(d.m || '')); break;
+    case 'chatlog': net.chat = (d.log || []).slice(-40).map(c => ({ n: c.n == null ? null : cleanName(c.n), m: String(c.m || '').slice(0, 140) })); renderChat(); break;
+    case 'found': if (game.state === 'menu') showMatchFound(d.mode === 'swift' ? 'swift' : 'comp', DIFF[d.diff] ? d.diff : 'normal'); break;
+    case 'picks': net.picks = d.picks || {}; if (!$('select').classList.contains('hidden')) renderAgents(); break;
+    case 'start': clientSetupMatch(d); break;
+    case 'bye': onHostLost(); break;
+    case 'snap': if (game.state === 'playing') applySnap(d); break;
+    case 'fx': if (game.state === 'playing' && FX[d.k] && Array.isArray(d.a)) FX[d.k](...d.a); break;
+    case 'ui':
+      if (game.state !== 'playing' || !Array.isArray(d.a)) break;
+      if (d.f === 'banner') banner(...d.a);
+      else if (d.f === 'kf') { const s = d.a[0] >= 0 ? entities[d.a[0]] : null, v = entities[d.a[1]]; if (v) addKillfeed(s, v, String(d.a[2] || ''), !!d.a[3]); }
+      else if (d.f === 'feed') addFeedText(esc(d.a[0]), d.a[1]);
+      break;
+    case 'snd': if (game.state === 'playing' && ['win', 'lose', 'roundStart'].includes(d.n)) SND[d.n](); break;
+    case 'toast': if (game.state === 'playing') toast(String(d.m || '')); break;
+    case 'hurt': { const s = entities[d.s]; if (s && player && game.state === 'playing') showDamageDir(s); break; }
+    case 'kc': if (game.state === 'playing') { SND.kill(); $('killIcons').appendChild(document.createElement('i')); if (player.bladeMag > 0) player.bladeMag = 5; } break;
+    case 'over': if (game.state === 'playing') finishMatch(); break;
+  }
+}
+function clientSetupMatch(d) {
+  entities.forEach(e => e.mesh && scene.remove(e.mesh));
+  clearEffects(); clearDrops(); orbs.forEach(o => scene.remove(o.mesh)); orbs = [];
+  if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
+  entities = []; bots = []; player = null;
+  for (const r of d.roster || []) {
+    const e = makeEntity({ id: r.id | 0, name: cleanName(r.name), team: r.team ? 1 : 0, agent: AGENT[r.agent] ? r.agent : 'jett', isPlayer: r.peer === net.myId });
+    e.secondary = mkWeapon('classic'); e.slot = 2; e.tpSeq = -1; e.invSeq = -1;
+    if (e.isPlayer) player = e; else { e.mesh = makeCharacter(AGENT[e.agent]); if (r.peer) addNameTag(e); }
+    entities[e.id] = e;
+  }
+  if (!player) { onHostLost(); return; }
+  Object.assign(game, { mode: d.mode === 'swift' ? 'swift' : 'comp', target: d.target | 0 || 13, half: d.half | 0 || 12, round: 0, score: [0, 0], history: [], time: 0, phase: 'buy', phaseT: 0, ot: false });
+  game.spike = { state: 'none', mesh: makeSpikeMesh(), beepT: 0, timer: 0, defuseProg: 0 }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
+  game.state = 'playing'; game.paused = false; shopOpen = false; deathCam = 0;
+  ['select', 'menu', 'matchFound', 'over', 'pause'].forEach(id => $(id).classList.add('hidden')); $('hud').classList.remove('hidden');
+  $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden');
+  buildAbilHud(); equipView(); refreshAbilHud(); lockPointer();
+}
+function clientCast(key) {
+  const p = player, ab = AGENT[p.agent].ab[key];
+  if (!ab || !p.alive || game.phase === 'end') return false;
+  if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') toast(`Not enough ult points (${p.ult}/${ab.ult})`); SND.deny(); return false; }
+  if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
+  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
+  if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades') ABIL[ab.type](p); // movement is ours to predict
+  netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq });
+  if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
+  refreshAbilHud();
+  return true;
+}
+function clientSpikeUI(p) {
+  const sp = game.spike;
+  if (sp && sp.defuser === p && game.phase === 'planted') { showProgress('DEFUSING SPIKE', sp.defuseProg / DEFUSE_TIME, true); return 'defuse'; }
+  if (p.plantHold > 0 && game.phase === 'live') { showProgress('PLANTING SPIKE', p.plantHold / PLANT_TIME, false); return 'plant'; }
+  hideProgress(); return null;
+}
+function clientTick(dt) {
+  updatePlayer(dt);
+  for (const e of entities) {
+    if (!e || e === player) continue;
+    netLerp(e, dt); if (e.nyaw !== undefined) e.yaw += angDiff(e.yaw, e.nyaw) * Math.min(1, dt * 15);
+    animateNetChar(e, dt);
+  }
+  updateEffects(dt); updateParticles(dt);
+  const sp = game.spike;
+  if (sp && sp.state === 'planted') {
+    sp.timer = Math.max(0, sp.timer - dt);
+    const interval = sp.timer > 20 ? 1 : sp.timer > 10 ? .5 : sp.timer > 5 ? .25 : .12;
+    sp.beepT -= dt; if (sp.beepT <= 0) { sp.beepT = interval; SND.beep(sp.x, sp.z); sp.mesh.userData.light.intensity = 3; }
+    sp.mesh.userData.light.intensity *= .9; sp.mesh.userData.ring.rotation.z += dt * 3;
+  }
+  net.sendT -= dt;
+  if (net.sendT <= 0) {
+    net.sendT = 1 / 30; const p = player;
+    netSend({ t: 'st', x: r2(p.x), y: r2(p.y), z: r2(p.z), vx: r2(p.vx), vz: r2(p.vz), yw: r2(p.yaw), pt: r2(p.pitch), cr: p.crouch ? 1 : 0, og: p.onGround ? 1 : 0, sl: p.slot, a4: p.netA4 ? 1 : 0, bm: p.bladeMag, p: invRec(p.primary), s: invRec(p.secondary), tp: p.tpSeq, iv: p.invSeq });
+  }
+}
+const fromInv = a => Array.isArray(a) && WEAPONS[a[0]] ? { key: a[0], mag: a[1] | 0, reserve: a[2] | 0 } : null;
+function syncList(list, arr, create, update, remove) {
+  const seen = new Set();
+  for (const rec of list || []) {
+    seen.add(rec[0]);
+    let o = arr.find(x => x.nid === rec[0]);
+    if (!o) { o = create(rec); if (!o) continue; o.nid = rec[0]; }
+    update(o, rec);
+  }
+  for (let i = arr.length - 1; i >= 0; i--) if (!seen.has(arr[i].nid)) { remove(arr[i]); arr.splice(i, 1); }
+}
+const ZONE_KINDS = new Set(['fire', 'slow', 'stim', 'orbital', 'blaze']);
+function applySnap(s) {
+  const [ph, pt, s0, s1, side0, rd, ot] = s.g;
+  if (s0 + s1 > game.score[0] + game.score[1]) game.history.push(s0 > game.score[0] ? 0 : 1);
+  const newRound = rd !== game.round;
+  Object.assign(game, { phase: ph, phaseT: pt, score: [s0, s1], round: rd, ot: !!ot });
+  game.side = [side0, side0 === 'atk' ? 'def' : 'atk'];
+  if (newRound) {
+    $('killIcons').innerHTML = ''; $('revealWarn').classList.add('hidden');
+    $('sideTag').textContent = game.side[0] === 'atk' ? '◆ ATTACKING' : '◆ DEFENDING'; $('sideTag').style.color = game.side[0] === 'atk' ? '#ff8a8a' : '#8ad0ff';
+    player.shotIdx = 0; player.recoil = 0; player.reloadT = 0;
+  }
+  barrierGroup.visible = ph === 'buy';
+  if (shopOpen && ph !== 'buy') closeShop();
+  for (const r of s.e || []) {
+    const e = entities[r.i]; if (!e) continue;
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
+    if (e === player) {
+      if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp }); }
+      if (r.iv !== e.invSeq) {
+        const oldP = e.primary && e.primary.key, oldS = e.secondary && e.secondary.key;
+        e.primary = fromInv(r.p); e.secondary = fromInv(r.s) || mkWeapon('classic'); e.invSeq = r.iv; e.reloadT = 0;
+        if (newRound || (e.slot === 1 && !e.primary) || e.slot === 'X') e.slot = e.primary ? 1 : 2;
+        if (e.primary && e.primary.key !== oldP) e.slot = 1; else if (e.secondary.key !== oldS && !e.primary) e.slot = 2; // equip what was just bought or picked up
+        equipView(); if (shopOpen) renderShop();
+      } else if (shopOpen && e.lastCred !== r.cd) renderShop();
+      e.lastCred = r.cd;
+      if (e.alive && !r.al) { e.alive = false; e.deathPos = { x: e.x, y: e.y, z: e.z }; onPlayerDeath(r.kb >= 0 ? entities[r.kb] : null, r.kl); }
+      else if (!e.alive && r.al) { e.alive = true; deathCam = 0; $('deathInfo').classList.add('hidden'); equipView(); }
+      if (r.rv > 0) $('revealWarn').classList.remove('hidden');
+    } else {
+      Object.assign(e, { nx: r.x, ny: r.y, nz: r.z, nyaw: r.yw, pitch: r.pt, vx: r.vx, vz: r.vz, crouch: !!r.cr, slot: r.sl, bladeMag: r.bm, primary: fromInv(r.p), secondary: fromInv(r.s) });
+      if (r.sp) e.spottedT = game.time + .5;
+      if (e.alive && !r.al) { e.alive = false; e.deadT = 0; }
+      else if (!e.alive && r.al) { e.alive = true; e.x = r.x; e.y = r.y; e.z = r.z; e.yaw = r.yw; }
+    }
+  }
+  if (s.sp) {
+    const [st, x, y, z, tm, dp, hf, cid, did, site] = s.sp, sp = game.spike;
+    if (st === 'planted' && sp.state !== 'planted') sp.beepT = 0;
+    Object.assign(sp, { state: st, x, y, z, timer: tm, defuseProg: dp, half: !!hf, carrier: cid >= 0 ? entities[cid] : null, defuser: did >= 0 ? entities[did] : null, site });
+    sp.mesh.visible = st === 'dropped' || st === 'planted'; if (sp.mesh.visible) sp.mesh.position.set(x, y, z);
+    if (st !== 'planted') sp.mesh.userData.light.intensity = 0;
+  }
+  syncList(s.sm, smokes, r => makeSmoke(r[1], r[3], r[4], r[6], r[7], null), (o, r) => { o.t = r[5]; }, o => o.mesh && scene.remove(o.mesh));
+  syncList(s.zn, zones, r => ZONE_KINDS.has(r[4]) ? makeZone({ x: r[1], z: r[2], r: r[3], kind: r[4], t: r[5], delay: r[6] }) : null,
+    (o, r) => { o.t = r[5]; if (r[6] < o.delay) o.delay = Math.max(r[6], .0001); }, o => scene.remove(o.mesh));
+  syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1 }); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
+  syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9] }),
+    (o, r) => Object.assign(o, { x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6] }), o => scene.remove(o.mesh));
+  syncList(s.dr, drops, r => WEAPONS[r[1]] ? dropWeapon({ key: r[1], mag: 0, reserve: 0 }, r[2], r[3]) : null, () => { }, o => scene.remove(o.mesh));
+  const want = s.ob || [];
+  if (want.length !== orbs.length || want.some((o, i) => Math.abs(o[0] - orbs[i].x) > .1 || Math.abs(o[1] - orbs[i].z) > .1)) {
+    orbs.forEach(o => scene.remove(o.mesh)); orbs = []; want.forEach(o => makeOrb(o[0], o[1]));
+  }
+}
+window.addEventListener('beforeunload', () => { try { if (net.role === 'host') netBroadcast({ t: 'bye' }); else if (net.role === 'client') netSend({ t: 'bye' }); if (net.peer) net.peer.destroy(); } catch (e) { } });
 
 /* =====================================================================
    PROFILE (saved in this browser)
@@ -2499,8 +3125,12 @@ function setLobbyAgent(i, agentId) {
 }
 function buildParty() {
   lobbyChars.forEach(c => lobbyScene.remove(c.g)); lobbyChars = [];
-  const others = shuffle(AGENTS.filter(a => a.id !== profile.fav).map(a => a.id));
-  party = [{ name: profile.name, agent: profile.fav, me: true }].concat(ALLY_NAMES.map((n, i) => ({ name: n, agent: others[i] })));
+  const humans = net.role === 'off' ? [] : net.members.filter(m => m.id !== net.myId);
+  const used = new Set([profile.fav, ...humans.map(h => h.fav)]);
+  const others = shuffle(AGENTS.filter(a => !used.has(a.id)).map(a => a.id));
+  party = [{ name: profile.name, agent: profile.fav, me: true, host: net.role === 'host' }];
+  humans.forEach(h => party.push({ name: h.name, agent: h.fav, human: true, host: h.host, lv: h.lv }));
+  for (let i = 0; party.length < 5; i++) party.push({ name: ALLY_NAMES[i], agent: others[i % others.length], bot: true });
   party.forEach((p, i) => {
     const g = makeLobbyChar(p.agent), [x, z] = LOBBY_SLOTS[i];
     g.position.set(x, 0, z);
@@ -2509,7 +3139,12 @@ function buildParty() {
   updatePlates();
 }
 function updatePlates() {
-  $('plates').innerHTML = party.map((p, i) => `<div class="plate ${p.me ? 'me' : ''}" id="plate${i}"><div class="pn" style="${p.me ? '' : 'border-color:' + AGENT[lobbyChars[i] ? lobbyChars[i].agent : p.agent].color}">${p.me ? profile.name : p.name}</div><div class="pa">${AGENT[lobbyChars[i] ? lobbyChars[i].agent : p.agent].name.toUpperCase()}${p.me ? ' · LV ' + levelOf(profile.xp) : ''}</div></div>`).join('');
+  $('plates').innerHTML = party.map((p, i) => {
+    const ag = AGENT[lobbyChars[i] ? lobbyChars[i].agent : p.agent], an = ag.name.toUpperCase();
+    const sub = p.me ? `${an} · LV ${levelOf(profile.xp)}` : p.human ? `${an} · LV ${p.lv}` : `BOT · ${an}`;
+    const border = p.me ? '' : 'border-color:' + (p.human ? 'var(--gold)' : ag.color);
+    return `<div class="plate ${p.me ? 'me' : ''} ${p.bot ? 'bot' : ''}" id="plate${i}"><div class="pn" style="${border}">${p.host ? '<span class="crownI">♛</span> ' : ''}${esc(p.me ? profile.name : p.name)}</div><div class="pa">${sub}</div></div>`;
+  }).join('');
 }
 const _v3 = new THREE.Vector3();
 function updateLobby(t, dt) {
@@ -2550,7 +3185,7 @@ const tick = () => { if (AC) sndTone(1300, .03, .05, 'triangle'); };
 document.addEventListener('mousedown', () => initAudio(), { capture: true });
 function segBind(id, fn) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b.dataset.v); tick(); }); }
 function segSet(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v))); }
-segBind('diffSeg', v => { settings.diff = v; saveSettings(); });
+segBind('diffSeg', v => { settings.diff = v; saveSettings(); if (net.role === 'host') partyChanged(); });
 function applyShadows() { renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
 segBind('shadowSeg', v => { settings.shadows = v === '1'; applyShadows(); saveSettings(); });
 function setSens(v) { settings.sens = +v; $('sens').value = $('sens2').value = v; $('sensVal').textContent = $('sensVal2').textContent = (+v).toFixed(2); saveSettings(); }
@@ -2558,7 +3193,7 @@ function setVol(v) { settings.vol = +v; $('vol').value = $('vol2').value = v; $(
 $('sens').oninput = e => setSens(e.target.value); $('sens2').oninput = e => setSens(e.target.value);
 $('vol').oninput = e => setVol(e.target.value); $('vol2').oninput = e => setVol(e.target.value);
 $('chColor').oninput = e => { settings.ch = e.target.value; buildCrosshair(); saveSettings(); };
-$('nameInput').oninput = e => { profile.name = e.target.value.trim().slice(0, 16) || 'Player'; party[0].name = profile.name; saveProfile(); refreshAccount(); updatePlates(); };
+$('nameInput').oninput = e => { profile.name = cleanName(e.target.value); party[0].name = profile.name; saveProfile(); refreshAccount(); updatePlates(); netProfileChanged(); };
 // apply saved settings
 setSens(settings.sens); setVol(settings.vol); $('chColor').value = settings.ch; segSet('diffSeg', settings.diff); segSet('shadowSeg', settings.shadows ? 1 : 0); if (!settings.shadows) applyShadows();
 $('nameInput').value = profile.name;
@@ -2600,29 +3235,37 @@ setInterval(() => { if (game.state === 'menu' && curTab === 'home') showNews(new
 
 /* play tab: mode, map, queue */
 document.querySelectorAll('#modeStrip .mode').forEach(m => m.onclick = () => {
-  if (queueTimer) return; playMode = m.dataset.mode; tick();
+  if (queueTimer || net.role === 'client') return; playMode = m.dataset.mode; tick();
   document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x === m));
+  if (net.role === 'host') partyChanged();
 });
 $('mapThumb').getContext('2d').drawImage(mmBase, 0, 0, 96, 80);
 let queueTimer = null, queueStart = 0;
 const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : 'COMPETITIVE';
-function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').textContent = 'START'; $('btnStart').classList.remove('queue'); }
+function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').classList.remove('queue'); updatePlayLock(); }
 $('btnStart').onclick = () => {
-  initAudio();
+  initAudio(); if (net.role === 'client') return;
   if (queueTimer) { cancelQueue(); sndTone(300, .12, .15, 'triangle'); return; }
   queueStart = performance.now(); $('btnStart').textContent = 'CANCEL'; $('btnStart').classList.add('queue');
   sndTone(520, .12, .2, 'triangle'); sndTone(780, .14, .2, 'triangle', 0, undefined, undefined, .08);
   queueTimer = setTimeout(matchFound, rand(1800, 4200));
 };
 function matchFound() {
-  queueTimer = null; $('mfSub').textContent = `${modeName()} · DUSTWALL · ${settings.diff.toUpperCase()} BOTS`;
+  queueTimer = null;
+  if (net.role === 'host') { net.phase = 'select'; net.picks = {}; partyChanged(); netBroadcast({ t: 'found', mode: playMode, diff: settings.diff }); }
+  showMatchFound(playMode, settings.diff);
+}
+function showMatchFound(mode, diff) {
+  playMode = mode;
+  $('mfSub').textContent = `${modeName()} · DUSTWALL · ${diff.toUpperCase()} BOTS${net.role !== 'off' ? ' · PARTY OF ' + net.members.length : ''}`;
   $('matchFound').classList.remove('hidden');
   [660, 880, 1320].forEach((f, i) => sndTone(f, .25, .25, 'triangle', 0, undefined, undefined, i * .1));
-  setTimeout(() => { $('matchFound').classList.add('hidden'); cancelQueue(); goSelect(playMode); }, 1700);
+  setTimeout(() => { $('matchFound').classList.add('hidden'); cancelQueue(); if (game.state === 'menu') goSelect(mode); }, 1700);
 }
 function updateQueueInfo() {
   const el = $('queueInfo');
-  const txt = queueTimer ? `FINDING MATCH · ${fmtTime((performance.now() - queueStart) / 1000 - .5)}` : `${modeName()} · ${settings.diff.toUpperCase()} BOTS`;
+  const diff = net.role === 'client' ? net.hostDiff : settings.diff, pty = net.role !== 'off' ? ` · PARTY ${net.members.length}/5` : '';
+  const txt = queueTimer ? `FINDING MATCH · ${fmtTime((performance.now() - queueStart) / 1000 - .5)}` : `${modeName()} · ${diff.toUpperCase()} BOTS${pty}`;
   if (el.textContent !== txt) el.textContent = txt;
 }
 
@@ -2639,7 +3282,7 @@ function renderAgentTab() {
   const a = AGENT[previewAgent], fav = previewAgent === profile.fav;
   $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}
     <button class="favBtn ${fav ? 'on' : ''}" id="favBtn">${fav ? '★ FAVORITE AGENT' : '☆ SET AS FAVORITE'}</button>`;
-  $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); };
+  $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); net.partySig = ''; buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); netProfileChanged(); };
 }
 
 /* career tab */
@@ -2669,16 +3312,39 @@ function renderCollection() {
 function goSelect(mode) {
   initAudio(); selectedAgent = profile.fav;
   game.mode = mode; game.target = mode === 'swift' ? 5 : 13; game.half = mode === 'swift' ? 4 : 12;
-  $('menu').classList.add('hidden'); $('select').classList.remove('hidden'); renderAgents();
+  $('menu').classList.add('hidden'); $('select').classList.remove('hidden');
+  $('btnBack').classList.toggle('hidden', net.role !== 'off');
+  if (net.role !== 'off' && takenBy(selectedAgent)) selectedAgent = AGENTS.find(a => !takenBy(a.id)).id;
+  renderAgents();
+  if (net.role !== 'off') sendPick(false);
 }
 $('btnBack').onclick = () => { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); showTab('play'); };
 function renderAgents() {
   const g = $('agentGrid'); g.innerHTML = AGENTS.map(a => agentCard(a, a.id === selectedAgent)).join('');
-  g.querySelectorAll('.agent').forEach(d => d.onclick = () => { selectedAgent = d.dataset.id; renderAgents(); tick(); });
+  const inParty = net.role !== 'off', mine = inParty && net.picks[net.myId] && net.picks[net.myId].lock;
+  if (inParty) for (const id in net.picks) {
+    if (id === net.myId) continue;
+    const pk = net.picks[id], m = net.members.find(x => x.id === id), card = g.querySelector(`[data-id="${pk.a}"]`);
+    if (!card || !m) continue;
+    card.insertAdjacentHTML('beforeend', `<div class="pickTag ${pk.lock ? 'lock' : ''}">${esc(m.name)}${pk.lock ? ' ✓' : ''}</div>`);
+    if (pk.lock) card.classList.add('taken');
+  }
+  g.querySelectorAll('.agent').forEach(d => d.onclick = () => {
+    if (mine || d.classList.contains('taken')) return;
+    selectedAgent = d.dataset.id; renderAgents(); tick(); if (inParty) sendPick(false);
+  });
   const a = AGENT[selectedAgent];
   $('agentInfo').innerHTML = `<div class="big" style="color:${a.color}">${a.name}</div><div class="role">${a.role}</div><div class="desc">${a.desc}</div>` + abilityRows(a);
+  const btn = $('btnLock');
+  if (inParty) {
+    const n = net.members.filter(m => net.picks[m.id] && net.picks[m.id].lock).length;
+    btn.textContent = mine ? `Waiting for party ${n}/${net.members.length}` : takenBy(selectedAgent) ? 'Agent taken' : 'Lock In';
+    btn.disabled = !!mine || !!takenBy(selectedAgent);
+    $('select').querySelector('.hint').textContent = 'Lock in your agent — the match starts when the whole party is ready';
+  } else { btn.textContent = 'Lock In'; btn.disabled = false; $('select').querySelector('.hint').textContent = "Pick an agent and press 'Lock In'"; }
 }
 $('btnLock').onclick = () => {
+  if (net.role !== 'off') { if (!takenBy(selectedAgent)) { sendPick(true); SND.buy(); } return; }
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
   setupMatch(selectedAgent); lockPointer();
 };
@@ -2689,12 +3355,27 @@ function toMenu() {
   document.exitPointerLock && document.exitPointerLock();
   entities.forEach(e => e.mesh && (e.mesh.visible = false)); clearEffects(); clearDrops(); vmRoot.visible = false;
   if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); }
-  refreshAccount(); updatePlates(); showTab('home');
+  refreshAccount(); net.partySig = ''; refreshPartyUI(); showTab('home');
+  if (net.role === 'host') { net.phase = 'lobby'; partyChanged(); }
 }
-$('btnQuit').onclick = toMenu; $('btnMenu').onclick = toMenu;
+$('btnQuit').onclick = () => { if (net.role !== 'off') leaveParty(); toMenu(); };
+$('btnMenu').onclick = toMenu;
 $('btnAgain').onclick = () => { $('over').classList.add('hidden'); $('hud').classList.remove('hidden'); setupMatch(selectedAgent); lockPointer(); };
 
-buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home');
+$('partyBtn').onclick = () => { $('partyPanel').classList.toggle('hidden'); $('partyBtn').classList.toggle('open', !$('partyPanel').classList.contains('hidden')); tick(); };
+$('btnCreateParty').onclick = () => { initAudio(); createParty(); };
+$('btnJoin').onclick = () => { initAudio(); joinParty($('joinCode').value); };
+$('joinCode').onkeydown = e => { if (e.key === 'Enter') joinParty($('joinCode').value); };
+$('btnLeave').onclick = () => { leaveParty(); };
+$('chatIn').onkeydown = e => { if (e.key === 'Enter') sendChat(); };
+$('btnCopyCode').onclick = () => {
+  const code = net.code || ''; if (!code) return;
+  const done = () => setPartyStatus(''), ok = () => { $('btnCopyCode').textContent = 'COPIED'; setTimeout(() => $('btnCopyCode').textContent = 'COPY', 1200); };
+  try { navigator.clipboard.writeText(code).then(ok, done); } catch (e) { done(); }
+};
+
+buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
+{ const jm = location.search.match(/[?&]join=([A-Za-z0-9]{5})\b/); if (jm) { $('partyPanel').classList.remove('hidden'); joinParty(jm[1]); } }
 window.__vs = { game, get player() { return player; }, get bots() { return bots; }, entities: () => entities, castAbility, nextRound, endRound };
 requestAnimationFrame(loop);
 </script>
