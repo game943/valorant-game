@@ -87,6 +87,15 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #btnLock:disabled{background:#3a4552;cursor:default}
 .crownI{color:var(--gold)}
 .plate.bot .pn{opacity:.85}
+.ppBtn.find,.findBtn{width:100%;background:var(--teal);border-color:var(--teal);color:#0f1923}
+.ppBtn.find:hover,.findBtn:hover{background:#5ff0cc;color:#0f1923}
+.findBtn{width:340px;margin-top:10px;padding:11px 0;border:0;font:700 15px Oswald,sans-serif;letter-spacing:4px;cursor:pointer;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)}
+.ppOr{text-align:center;margin:12px 0 -4px;font-size:10px}
+.ppPub{font-size:12px;line-height:1.5;margin-top:8px;padding:8px 10px;background:rgba(47,224,182,.1);border-left:2px solid var(--teal)}
+.ppMem .kick{width:22px;height:22px;border:1px solid rgba(255,70,85,.5);background:transparent;color:#ff8a94;cursor:pointer;font-size:11px}
+.ppMem .kick:hover{background:var(--red);color:#fff}
+.selTimer{font:700 16px Oswald,sans-serif;letter-spacing:4px;color:var(--gold);min-height:22px;margin:-12px 0 12px}
+.ppBtn:disabled{opacity:.4;pointer-events:none}
 .acct{display:flex;align-items:center;gap:14px}
 .lvlBadge{width:32px;height:32px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;transform:rotate(45deg);background:rgba(245,215,110,.1)}
 .lvlBadge span{transform:rotate(-45deg);font:700 13px Oswald,sans-serif;color:var(--gold)}
@@ -341,10 +350,13 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="ppHead"><span>PARTY</span><span class="ol" id="ppCount">SOLO</span></div>
     <div id="ppMembers"></div>
     <div id="ppSolo">
+      <button class="ppBtn find" id="btnFind2">FIND ONLINE PLAYERS</button>
+      <div class="ppOr ol">OR PLAY WITH FRIENDS</div>
       <button class="ppBtn primary" id="btnCreateParty">CREATE PARTY</button>
       <div class="ppRow"><input type="text" id="joinCode" maxlength="5" placeholder="PARTY CODE" spellcheck="false" autocomplete="off"><button class="ppBtn" id="btnJoin">JOIN</button></div>
     </div>
     <div id="ppIn" class="hidden">
+      <div id="ppPubNote" class="ppPub hidden">Public lobby — random online players can join. The match starts automatically when 2+ players are here (or press START).</div>
       <div class="ppRow ppCodeRow"><span class="ol">CODE</span><b id="ppCode" class="os">-----</b><button class="ppBtn" id="btnCopyCode">COPY</button></div>
       <div id="ppChat"></div>
       <input type="text" id="chatIn" maxlength="140" placeholder="Message your party…" spellcheck="false" autocomplete="off">
@@ -378,6 +390,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="startWrap">
       <div id="queueInfo"></div>
       <button class="start" id="btnStart">START</button>
+      <div><button class="findBtn" id="btnFind">FIND ONLINE PLAYERS</button></div>
     </div>
   </section>
 
@@ -441,6 +454,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="select" class="screen hidden">
   <h1>SELECT AGENT</h1>
   <div class="hint">Pick an agent and press 'Lock In'</div>
+  <div id="selTimer" class="selTimer"></div>
   <div class="selWrap">
     <div id="agentGrid"></div>
     <div class="panel" id="agentInfo"></div>
@@ -2533,7 +2547,9 @@ window.addEventListener('resize', () => {
    ===================================================================== */
 const NET_PREFIX = 'valorstrike-';
 const NET_LOCAL = /[?&]local\b/.test(location.search); // ?local = tabs on one PC talk over BroadcastChannel (testing)
-const net = { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {}, snapT: 0, sendT: 0, chat: [], partySig: '', hostDiff: 'normal' };
+const net = { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {}, snapT: 0, sendT: 0, chat: [], partySig: '', hostDiff: 'normal', public: false, searching: false, autoAt: 0, selAt: 0 };
+const PUB_SLOTS = 12, pubCode = i => 'PUB' + String(i).padStart(2, '0');   // well-known IDs for public lobbies
+const SELECT_TIME = 40, PUB_WAIT = 30;
 const r2 = v => Math.round(v * 100) / 100;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cleanName = n => String(n || '').replace(/[<>&"'`\\]/g, '').trim().slice(0, 16) || 'Player';
@@ -2668,24 +2684,110 @@ function selfMember() { return { id: net.myId, name: profile.name, fav: profile.
 function setPartyStatus(m) { $('ppStatus').textContent = m || ''; }
 function resetNet() {
   const peer = net.peer;
-  Object.assign(net, { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {} });
+  Object.assign(net, { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {}, public: false, searching: false, autoAt: 0, selAt: 0 });
   try { if (peer) peer.destroy(); } catch (e) { }
   refreshPartyUI();
 }
-function createParty() {
+function createParty(code, pub = false, slot = 0) {
   if (net.role !== 'off' || net.peer) return;
-  const code = genCode(); setPartyStatus('Creating party…');
+  code = code || genCode(); setPartyStatus(pub ? 'Opening a public lobby…' : 'Creating party…');
   let peer; try { peer = makePeer(NET_PREFIX + code); } catch (e) { setPartyStatus('Online play is unavailable (PeerJS could not be loaded).'); return; }
   net.peer = peer;
-  peer.on('open', id => { net.role = 'host'; net.code = code; net.myId = id; net.phase = 'lobby'; net.members = [selfMember()]; net.chat = []; setPartyStatus(''); partyMsg(null, 'Party created — share the code with friends'); partyChanged(); });
+  peer.on('open', id => {
+    net.role = 'host'; net.code = code; net.myId = id; net.phase = 'lobby'; net.public = pub; net.members = [selfMember()]; net.chat = []; setPartyStatus('');
+    partyMsg(null, pub ? `Public lobby ${code} is open — waiting for online players. The match starts automatically once someone joins.` : 'Party created — share the code with friends');
+    partyChanged();
+  });
   peer.on('connection', conn => { conn.on('data', d => hostRecv(conn, d)); conn.on('close', () => hostDrop(conn.peer)); conn.on('error', () => hostDrop(conn.peer)); });
   peer.on('error', err => {
     const type = err && err.type;
-    if (net.role === 'off') { try { peer.destroy(); } catch (e) { } net.peer = null; if (type === 'unavailable-id') createParty(); else setPartyStatus('Could not create a party (' + (type || 'network error') + ').'); }
+    if (net.role === 'off') {
+      try { peer.destroy(); } catch (e) { } net.peer = null;
+      if (type === 'unavailable-id') { if (!pub) createParty(); else if (slot < PUB_SLOTS) createParty(pubCode(slot + 1), true, slot + 1); else setPartyStatus('All public lobbies are busy — try again in a moment.'); }
+      else setPartyStatus('Could not create a party (' + (type || 'network error') + ').');
+    }
     else if (type !== 'peer-unavailable') setPartyStatus('Network: ' + (type || 'error'));
   });
   peer.on('disconnected', () => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) { } });
 }
+/* --- public matchmaking: probe every public lobby slot, join the fullest open one, otherwise open a new one --- */
+function attachHost(conn, code) {
+  net.host = conn; net.role = 'client'; net.code = code; net.chat = []; net.searching = false;
+  conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) });
+  setPartyStatus(''); refreshPartyUI();
+}
+function findPublicMatch() {
+  if (net.role !== 'off' || net.peer) return;
+  let peer; try { peer = makePeer(); } catch (e) { setPartyStatus('Online play is unavailable (PeerJS could not be loaded).'); return; }
+  net.peer = peer; net.searching = true; setPartyStatus(''); refreshPartyUI();
+  const offers = [], conns = [];
+  let decided = false, firstOffer = 0;
+  const decide = () => {
+    if (decided || net.peer !== peer) return; decided = true;
+    const best = offers.filter(o => o.open).sort((a, b) => b.n - a.n)[0];
+    conns.forEach(c => { if (!best || c !== best.conn) try { c.close(); } catch (e) { } });
+    if (best) { attachHost(best.conn, pubCode(best.slot)); return; }
+    // nobody to join: become the host of a new public lobby
+    try { peer.destroy(); } catch (e) { } net.peer = null; net.searching = false;
+    const used = new Set(offers.map(o => o.slot));
+    let slot = 1; while (used.has(slot) && slot < PUB_SLOTS) slot++;
+    createParty(pubCode(slot), true, slot);
+  };
+  peer.on('open', id => {
+    net.myId = id;
+    for (let i = 1; i <= PUB_SLOTS; i++) {
+      const conn = peer.connect(NET_PREFIX + pubCode(i), { reliable: true, serialization: 'json' });
+      conns.push(conn);
+      conn.on('open', () => { if (!decided) try { conn.send({ t: 'probe' }); } catch (e) { } });
+      conn.on('data', d => {
+        if (net.host === conn) { clientRecv(d); return; }
+        if (d && d.t === 'probeOk' && !decided) {
+          offers.push({ conn, slot: i, n: d.n | 0, open: !!d.open });
+          if (d.open && !firstOffer) { firstOffer = Date.now(); setTimeout(decide, 1200); }
+        }
+      });
+      conn.on('close', () => { if (net.host === conn) onHostLost(); });
+      conn.on('error', () => { if (net.host === conn) onHostLost(); });
+    }
+    setTimeout(decide, 6000);
+  });
+  peer.on('error', err => {
+    const type = err && err.type;
+    if (type === 'peer-unavailable') return;               // that public slot is simply empty
+    if (net.peer === peer && net.role === 'off') { resetNet(); setPartyStatus('Could not search for players (' + (type || 'network error') + ').'); }
+  });
+}
+function cancelSearch() { if (net.searching && net.role === 'off') { resetNet(); setPartyStatus(''); } }
+function hostKick(id) {
+  const c = net.conns[id]; if (!c || net.role !== 'host') return;
+  try { c.send({ t: 'deny', m: 'The host removed you from the party.' }); } catch (e) { }
+  setTimeout(() => { try { c.close(); } catch (e) { } }, 300);
+  hostDrop(id);
+}
+function autoLockAll() {
+  net.selAt = 0;
+  for (const m of net.members) {
+    const pk = net.picks[m.id]; if (pk && pk.lock) continue;
+    let a = pk && AGENT[pk.a] && !takenBy(pk.a, m.id) ? pk.a : null;
+    if (!a) a = AGENTS.map(x => x.id).find(x => !takenBy(x, m.id));
+    net.picks[m.id] = { a, lock: true };
+  }
+  broadcastPicks(); checkAllLocked();
+}
+// host timers: public lobbies start on their own, agent select has a time limit
+setInterval(() => {
+  if (net.role !== 'host') return;
+  const now = Date.now();
+  if (net.public && net.phase === 'lobby' && game.state === 'menu' && !queueTimer) {
+    const n = net.members.length, before = net.autoAt;
+    if (n < 2) net.autoAt = 0;
+    else if (!net.autoAt) net.autoAt = now + (n >= 5 ? 5000 : PUB_WAIT * 1000);
+    else if (n >= 5 && net.autoAt - now > 5000) net.autoAt = now + 5000;
+    if (net.autoAt !== before) partyChanged();
+    if (net.autoAt && now >= net.autoAt) { net.autoAt = 0; matchFound(); }
+  }
+  if (net.phase === 'select' && net.selAt && now >= net.selAt) autoLockAll();
+}, 500);
 function joinParty(code) {
   code = String(code || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{5}$/.test(code)) { setPartyStatus('Enter the 5-character party code.'); return; }
@@ -2726,7 +2828,7 @@ function netProfileChanged() {
 function partyChanged() {
   if (net.role === 'host') {
     const me = net.members.find(m => m.id === net.myId); if (me) Object.assign(me, selfMember());
-    netBroadcast({ t: 'party', code: net.code, members: net.members, mode: playMode, diff: settings.diff, phase: net.phase });
+    netBroadcast({ t: 'party', code: net.code, members: net.members, mode: playMode, diff: settings.diff, phase: net.phase, pub: net.public, auto: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0 });
   }
   refreshPartyUI();
 }
@@ -2754,7 +2856,11 @@ function renderPartyPanel() {
   $('partyCount').textContent = inParty ? `${net.members.length}/5` : '';
   $('partyBtn').classList.toggle('on', inParty);
   $('ppCode').textContent = net.code || '-----';
-  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${esc(m.name)}${me ? ' <small>(you)</small>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span></div>`; }).join('');
+  $('ppCount').textContent = inParty ? `${net.public ? 'PUBLIC · ' : ''}${net.members.length}/5` : net.searching ? 'SEARCHING…' : 'SOLO';
+  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; const kick = net.role === 'host' && !me ? `<button class="kick" data-kick="${esc(m.id)}" title="Remove from party">✕</button>` : ''; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${esc(m.name)}${me ? ' <small>(you)</small>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span>${kick}</div>`; }).join('');
+  $('ppMembers').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => hostKick(b.dataset.kick));
+  $('ppPubNote').classList.toggle('hidden', !(inParty && net.public));
+  $('btnCreateParty').disabled = $('btnJoin').disabled = net.searching;
 }
 function updatePlayLock() {
   const client = net.role === 'client';
@@ -2768,6 +2874,10 @@ const SHOP_KEYS = new Set(['classic', 'shorty', 'frenzy', 'ghost', 'sheriff', 's
 function hostRecv(conn, d) {
   if (!d || typeof d !== 'object') return;
   const id = conn.peer;
+  if (d.t === 'probe') {
+    try { conn.send({ t: 'probeOk', n: net.members.length, open: net.public && net.phase === 'lobby' && game.state === 'menu' && net.members.length < 5 }); } catch (e) { }
+    return;
+  }
   if (d.t === 'hello') {
     if (net.conns[id]) return;
     const deny = m => { try { conn.send({ t: 'deny', m }); } catch (e) { } setTimeout(() => { try { conn.close(); } catch (e) { } }, 400); };
@@ -2847,7 +2957,7 @@ function broadcastPicks() { netBroadcast({ t: 'picks', picks: net.picks }); if (
 function checkAllLocked() { if (net.phase === 'select' && net.members.length && net.members.every(m => net.picks[m.id] && net.picks[m.id].lock)) startNetMatch(); }
 let lastBanner = null;
 function startNetMatch() {
-  net.phase = 'match';
+  net.phase = 'match'; net.selAt = 0;
   const humans = net.members.filter(m => m.id !== net.myId).map(m => ({ peer: m.id, name: m.name, agent: net.picks[m.id].a }));
   selectedAgent = net.picks[net.myId].a;
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
@@ -2902,14 +3012,14 @@ function clientRecv(d) {
   switch (d.t) {
     case 'party':
       net.members = (d.members || []).slice(0, 5).map(m => ({ id: String(m.id), name: cleanName(m.name), fav: AGENT[m.fav] ? m.fav : 'jett', lv: Math.max(1, m.lv | 0), host: !!m.host }));
-      net.phase = d.phase;
+      net.phase = d.phase; net.public = !!d.pub; net.autoAt = d.auto > 0 ? Date.now() + d.auto * 1000 : 0;
       if (d.mode === 'comp' || d.mode === 'swift') { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
       if (DIFF[d.diff]) { net.hostDiff = d.diff; segSet('diffSeg', d.diff); }
       refreshPartyUI(); break;
     case 'deny': { const msg = String(d.m || 'Could not join.'); resetNet(); setPartyStatus(msg); break; }
     case 'chat': addChat(d.n == null ? null : cleanName(d.n), String(d.m || '')); break;
     case 'chatlog': net.chat = (d.log || []).slice(-40).map(c => ({ n: c.n == null ? null : cleanName(c.n), m: String(c.m || '').slice(0, 140) })); renderChat(); break;
-    case 'found': if (game.state === 'menu') showMatchFound(d.mode === 'swift' ? 'swift' : 'comp', DIFF[d.diff] ? d.diff : 'normal'); break;
+    case 'found': if (game.state === 'menu') { net.selAt = Date.now() + 1700 + clamp(+d.sel || SELECT_TIME, 5, 120) * 1000; showMatchFound(d.mode === 'swift' ? 'swift' : 'comp', DIFF[d.diff] ? d.diff : 'normal'); } break;
     case 'picks': net.picks = d.picks || {}; if (!$('select').classList.contains('hidden')) renderAgents(); break;
     case 'start': clientSetupMatch(d); break;
     case 'bye': onHostLost(); break;
@@ -3252,7 +3362,7 @@ $('btnStart').onclick = () => {
 };
 function matchFound() {
   queueTimer = null;
-  if (net.role === 'host') { net.phase = 'select'; net.picks = {}; partyChanged(); netBroadcast({ t: 'found', mode: playMode, diff: settings.diff }); }
+  if (net.role === 'host') { net.phase = 'select'; net.picks = {}; net.autoAt = 0; net.selAt = Date.now() + 1700 + SELECT_TIME * 1000; partyChanged(); netBroadcast({ t: 'found', mode: playMode, diff: settings.diff, sel: SELECT_TIME }); }
   showMatchFound(playMode, settings.diff);
 }
 function showMatchFound(mode, diff) {
@@ -3265,8 +3375,16 @@ function showMatchFound(mode, diff) {
 function updateQueueInfo() {
   const el = $('queueInfo');
   const diff = net.role === 'client' ? net.hostDiff : settings.diff, pty = net.role !== 'off' ? ` · PARTY ${net.members.length}/5` : '';
-  const txt = queueTimer ? `FINDING MATCH · ${fmtTime((performance.now() - queueStart) / 1000 - .5)}` : `${modeName()} · ${diff.toUpperCase()} BOTS${pty}`;
+  let txt = queueTimer ? `FINDING MATCH · ${fmtTime((performance.now() - queueStart) / 1000 - .5)}` : `${modeName()} · ${diff.toUpperCase()} BOTS${pty}`;
+  if (net.searching) txt = 'SEARCHING FOR ONLINE PLAYERS…';
+  else if (net.autoAt && !queueTimer) txt = `PUBLIC LOBBY · MATCH STARTS IN ${fmtTime((net.autoAt - Date.now()) / 1000)}${pty}`;
+  else if (net.public && !queueTimer && net.members.length < 2) txt = `PUBLIC LOBBY · WAITING FOR PLAYERS${pty}`;
   if (el.textContent !== txt) el.textContent = txt;
+  const st = $('selTimer'), sTxt = net.selAt && net.role !== 'off' && !$('select').classList.contains('hidden') ? `AUTO LOCK-IN ${fmtTime((net.selAt - Date.now()) / 1000)}` : '';
+  if (st.textContent !== sTxt) st.textContent = sTxt;
+  const fb = $('btnFind'), fTxt = net.searching ? 'CANCEL SEARCH' : 'FIND ONLINE PLAYERS';
+  fb.classList.toggle('hidden', net.role !== 'off' || !!queueTimer); if (fb.textContent !== fTxt) fb.textContent = fTxt;
+  if ($('btnFind2').textContent !== fTxt) $('btnFind2').textContent = fTxt;
 }
 
 /* agents tab */
@@ -3364,6 +3482,8 @@ $('btnAgain').onclick = () => { $('over').classList.add('hidden'); $('hud').clas
 
 $('partyBtn').onclick = () => { $('partyPanel').classList.toggle('hidden'); $('partyBtn').classList.toggle('open', !$('partyPanel').classList.contains('hidden')); tick(); };
 $('btnCreateParty').onclick = () => { initAudio(); createParty(); };
+const toggleFind = () => { initAudio(); if (net.searching) cancelSearch(); else { $('partyPanel').classList.remove('hidden'); $('partyBtn').classList.add('open'); findPublicMatch(); } tick(); };
+$('btnFind').onclick = toggleFind; $('btnFind2').onclick = toggleFind;
 $('btnJoin').onclick = () => { initAudio(); joinParty($('joinCode').value); };
 $('joinCode').onkeydown = e => { if (e.key === 'Enter') joinParty($('joinCode').value); };
 $('btnLeave').onclick = () => { leaveParty(); };

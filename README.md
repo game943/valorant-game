@@ -7,7 +7,7 @@ Open `index.html` in a desktop browser (Chrome / Edge / Firefox). An internet co
 Click the screen to lock the mouse.
 
 ## Features
-- **Online party play**: create a party, share a code, and play together with friends against bots (see below).
+- **Online play**: find random online players with public matchmaking, or create a party and share a code with friends; human teammates play together against bots (see below).
 - **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
 - **6 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (dash), Blade Storm
@@ -23,6 +23,13 @@ Click the screen to lock the mouse.
 - **Bot AI** (4 allies + 5 enemies, 3 difficulty levels): A* pathfinding, attacking and defending sites, rotating, reaction time, using smokes, flashes, fire and ultimates, reacting to sound, planting and defusing
 - Ult orbs, weapon drops and pickups, spectating allies after death, minimap spotting, kill feed, scoreboard, damage direction indicator, flash effects, red outlines on enemies
 - Positional sound effects synthesized with WebAudio (gunshots, enemy footsteps, spike beeps)
+
+## Play online with random players (public matchmaking)
+Click **FIND ONLINE PLAYERS** (on the PLAY tab or in the PARTY panel). The game looks for an open public lobby and joins the fullest one. If none is open, it opens a new public lobby that other players can find.
+- A public lobby starts on its own 30 seconds after a second player joins (5 seconds once it's full), or the host can press START.
+- Agent select has a 40-second timer; anyone who hasn't locked in gets a free agent automatically.
+- The host can remove a player with the ✕ next to their name.
+- There are 12 public lobby slots (PUB01–PUB12). Only players running this same game can find them.
 
 ## Play online with friends (party)
 1. One player clicks **PARTY** (top right of the lobby) → **CREATE PARTY** and shares the 5-letter code.
