@@ -87,6 +87,19 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #btnLock:disabled{background:#3a4552;cursor:default}
 .crownI{color:var(--gold)}
 .plate.bot .pn{opacity:.85}
+.acct{cursor:pointer;padding:4px 8px;margin:-4px -8px;transition:background .12s}
+.acct:hover{background:rgba(255,255,255,.08)}
+.acct .pen{font-size:11px;opacity:.45}
+.acct:hover .pen{opacity:1;color:var(--gold)}
+#nameModal{background:rgba(10,16,22,.85);z-index:44}
+.namePanel{width:min(460px,92vw);text-align:center}
+.namePanel h2{font:700 32px Oswald,sans-serif;letter-spacing:5px;margin:6px 0 10px}
+.nameNote{font-size:13px;opacity:.65;line-height:1.5;margin-bottom:18px}
+#nameField{width:100%;font:700 22px 'Noto Sans KR',sans-serif;text-align:center;padding:12px;letter-spacing:1px}
+#nameField:focus{outline:none;border-color:var(--red)}
+.nameErr{color:#ff8a94;font-size:12px;min-height:18px;margin-top:6px}
+.nameBtns{display:flex;gap:10px;margin-top:6px}.nameBtns .btn{flex:1}
+.ppMem .edit{border:0;background:none;color:var(--gold);cursor:pointer;font-size:13px;padding:0 4px}
 .ppBtn.find,.findBtn{width:100%;background:var(--teal);border-color:var(--teal);color:#0f1923}
 .ppBtn.find:hover,.findBtn:hover{background:#5ff0cc;color:#0f1923}
 .findBtn{width:340px;margin-top:10px;padding:11px 0;border:0;font:700 15px Oswald,sans-serif;letter-spacing:4px;cursor:pointer;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)}
@@ -341,7 +354,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     </nav>
     <div class="navRight">
       <button class="partyBtn" id="partyBtn" title="Party">PARTY <b id="partyCount"></b></button>
-      <div class="acct"><div class="lvlBadge"><span id="lvlNum">1</span></div><div><div class="nm" id="nameTag">Player</div><div class="xpbar"><div id="xpFill"></div></div></div></div>
+      <div class="acct" id="acctBtn" title="Change your name"><div class="lvlBadge"><span id="lvlNum">1</span></div><div><div class="nm"><span id="nameTag">Player</span> <span class="pen">✎</span></div><div class="xpbar"><div id="xpFill"></div></div></div></div>
       <button class="iconBtn" id="btnSettings" title="Settings">⚙</button>
     </div>
   </header>
@@ -411,6 +424,18 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </section>
 </div>
 <div id="matchFound" class="hidden"><div class="mfBand"><div class="mfT">MATCH FOUND</div><div class="mfS" id="mfSub">COMPETITIVE · DUSTWALL</div></div></div>
+
+<!-- ================= PLAYER NAME ================= -->
+<div id="nameModal" class="screen hidden">
+  <div class="panel namePanel">
+    <div class="ol" id="nameKicker">WELCOME, AGENT</div>
+    <h2>CHOOSE YOUR NAME</h2>
+    <div class="nameNote">This is how teammates and other online players see you — in the lobby, the party list, the killfeed and over your head in matches.</div>
+    <input type="text" id="nameField" maxlength="16" spellcheck="false" autocomplete="off" placeholder="Your name">
+    <div class="nameErr" id="nameErr"></div>
+    <div class="nameBtns"><button class="btn center" id="nameCancel">Cancel</button><button class="btn primary center" id="nameOk">Confirm</button></div>
+  </div>
+</div>
 
 <!-- ================= SETTINGS ================= -->
 <div id="settingsModal" class="screen hidden">
@@ -2452,9 +2477,7 @@ function render() {
    MAIN LOOP
    ===================================================================== */
 let last = performance.now(), spotT = 0;
-function loop(now) {
-  requestAnimationFrame(loop);
-  let dt = Math.min(.05, (now - last) / 1000); last = now;
+function simStep(dt) {
   // in an online match the world keeps running while someone has the pause menu open
   if (game.state === 'playing' && (!game.paused || net.role !== 'off')) {
     game.time += dt;
@@ -2473,6 +2496,11 @@ function loop(now) {
     if (game.spike && game.spike.state === 'dropped') { game.spike.mesh.rotation.y += dt; }
     if (boardOpen) renderBoard();
   }
+}
+function loop(now) {
+  requestAnimationFrame(loop);
+  let dt = Math.min(.05, (now - last) / 1000); last = now;
+  simStep(dt);
   if (game.state === 'playing') {
     updateCamera(dt);
     updateHUD(dt);
@@ -2577,10 +2605,29 @@ class LocalPeer extends Emitter {
   connect(id) { const c = new LocalConn(this, id); this.conns[id] = c; this.bc.postMessage({ k: 'connect', from: this.id, to: id }); setTimeout(() => { if (!c.open && !this.destroyed) this.emit('error', { type: 'peer-unavailable' }); }, 1500); return c; }
   destroy() { if (this.destroyed) return; Object.values(this.conns).forEach(c => c.close()); this.destroyed = true; this.bc.close(); }
 }
+const PEER_OPTS = (() => {
+  const m = location.search.match(/[?&]peerserver=([^&]+)/); if (!m) return { debug: 0 };
+  try {
+    const raw = decodeURIComponent(m[1]), u = new URL(raw.includes('://') ? raw : 'https://' + raw);
+    return { debug: 0, host: u.hostname, port: +u.port || (u.protocol === 'http:' ? 80 : 443), path: u.pathname || '/', secure: u.protocol === 'https:' };
+  } catch (e) { return { debug: 0 }; }
+})();
 function makePeer(id) {
   if (NET_LOCAL) return new LocalPeer(id);
   if (typeof Peer === 'undefined') throw new Error('PeerJS not loaded');
-  return id ? new Peer(id, { debug: 0 }) : new Peer({ debug: 0 });
+  return id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
+}
+// plain-language explanations for PeerJS error types
+function netErrText(type) {
+  return ({
+    'network': 'Lost connection to the matchmaking server. Check your internet connection.',
+    'server-error': 'The matchmaking server could not be reached. Try again in a moment.',
+    'socket-error': 'The matchmaking server could not be reached. Try again in a moment.',
+    'socket-closed': 'The connection to the matchmaking server closed. Try again.',
+    'browser-incompatible': 'This browser does not support WebRTC. Use Chrome, Edge or Firefox.',
+    'webrtc': 'A direct connection could not be made. Strict networks (school/office Wi-Fi) can block it.',
+    'ssl-unavailable': 'Secure connection unavailable. Open the game over https or as a local file.',
+  })[type] || ('Network problem (' + (type || 'unknown') + ').');
 }
 
 /* --- messaging helpers --- */
@@ -2704,9 +2751,9 @@ function createParty(code, pub = false, slot = 0) {
     if (net.role === 'off') {
       try { peer.destroy(); } catch (e) { } net.peer = null;
       if (type === 'unavailable-id') { if (!pub) createParty(); else if (slot < PUB_SLOTS) createParty(pubCode(slot + 1), true, slot + 1); else setPartyStatus('All public lobbies are busy — try again in a moment.'); }
-      else setPartyStatus('Could not create a party (' + (type || 'network error') + ').');
+      else setPartyStatus('Could not create a party. ' + netErrText(type));
     }
-    else if (type !== 'peer-unavailable') setPartyStatus('Network: ' + (type || 'error'));
+    else if (type !== 'peer-unavailable') setPartyStatus(netErrText(type));
   });
   peer.on('disconnected', () => { try { if (!peer.destroyed) peer.reconnect(); } catch (e) { } });
 }
@@ -2754,8 +2801,31 @@ function findPublicMatch() {
   peer.on('error', err => {
     const type = err && err.type;
     if (type === 'peer-unavailable') return;               // that public slot is simply empty
-    if (net.peer === peer && net.role === 'off') { resetNet(); setPartyStatus('Could not search for players (' + (type || 'network error') + ').'); }
+    if (net.peer === peer && net.role === 'off') { resetNet(); setPartyStatus('Could not search for players. ' + netErrText(type)); }
   });
+}
+function scanForBetterLobby() {
+  const mySlot = parseInt(String(net.code || '').slice(3), 10);
+  if (!(mySlot > 1) || net.scanPeer) return;
+  let tmp; try { tmp = makePeer(); } catch (e) { return; }
+  net.scanPeer = tmp;
+  let done = false;
+  const finish = found => {
+    if (done) return; done = true; net.scanPeer = null;
+    setTimeout(() => { try { tmp.destroy(); } catch (e) { } }, 100);
+    if (found && net.role === 'host' && net.public && net.members.length === 1 && net.phase === 'lobby' && game.state === 'menu') {
+      leaveParty(); setTimeout(findPublicMatch, 400);
+    }
+  };
+  tmp.on('open', () => {
+    for (let i = 1; i < mySlot; i++) {
+      const c = tmp.connect(NET_PREFIX + pubCode(i), { reliable: true, serialization: 'json' });
+      c.on('open', () => { try { c.send({ t: 'probe' }); } catch (e) { } });
+      c.on('data', d => { if (d && d.t === 'probeOk' && d.open) finish(true); });
+    }
+  });
+  tmp.on('error', () => { });
+  setTimeout(() => finish(false), 5000);
 }
 function cancelSearch() { if (net.searching && net.role === 'off') { resetNet(); setPartyStatus(''); } }
 function hostKick(id) {
@@ -2787,6 +2857,7 @@ setInterval(() => {
     if (net.autoAt && now >= net.autoAt) { net.autoAt = 0; matchFound(); }
   }
   if (net.phase === 'select' && net.selAt && now >= net.selAt) autoLockAll();
+  if (net.public && net.phase === 'lobby' && game.state === 'menu' && net.members.length === 1 && now - (net.mergeT || 0) > 8000) { net.mergeT = now; scanForBetterLobby(); }
 }, 500);
 function joinParty(code) {
   code = String(code || '').trim().toUpperCase();
@@ -2805,8 +2876,8 @@ function joinParty(code) {
     conn.on('close', () => { if (net.host === conn) onHostLost(); });
     conn.on('error', () => { if (net.host === conn) onHostLost(); });
   });
-  peer.on('error', err => { const type = err && err.type; if (net.role === 'off') fail(type === 'peer-unavailable' ? 'Party not found — check the code.' : 'Could not connect (' + (type || 'network error') + ').'); });
-  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail('Connection timed out.'); }, 12000);
+  peer.on('error', err => { const type = err && err.type; if (net.role === 'off') fail(type === 'peer-unavailable' ? 'Party not found — check the code (the host must keep the game open).' : 'Could not connect. ' + netErrText(type)); });
+  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail('Could not reach the host. The party may be closed, or a strict network (school/office Wi-Fi) is blocking direct connections.'); }, 15000);
 }
 function leaveParty() {
   if (net.role === 'host') netBroadcast({ t: 'bye' });
@@ -2857,8 +2928,9 @@ function renderPartyPanel() {
   $('partyBtn').classList.toggle('on', inParty);
   $('ppCode').textContent = net.code || '-----';
   $('ppCount').textContent = inParty ? `${net.public ? 'PUBLIC · ' : ''}${net.members.length}/5` : net.searching ? 'SEARCHING…' : 'SOLO';
-  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; const kick = net.role === 'host' && !me ? `<button class="kick" data-kick="${esc(m.id)}" title="Remove from party">✕</button>` : ''; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${esc(m.name)}${me ? ' <small>(you)</small>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span>${kick}</div>`; }).join('');
+  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; const kick = net.role === 'host' && !me ? `<button class="kick" data-kick="${esc(m.id)}" title="Remove from party">✕</button>` : ''; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${esc(m.name)}${me ? ' <small>(you)</small> <button class="edit" data-editname title="Change your name">✎</button>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span>${kick}</div>`; }).join('');
   $('ppMembers').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => hostKick(b.dataset.kick));
+  $('ppMembers').querySelectorAll('[data-editname]').forEach(b => b.onclick = () => openNameModal(false));
   $('ppPubNote').classList.toggle('hidden', !(inParty && net.public));
   $('btnCreateParty').disabled = $('btnJoin').disabled = net.searching;
 }
@@ -3303,7 +3375,30 @@ function setVol(v) { settings.vol = +v; $('vol').value = $('vol2').value = v; $(
 $('sens').oninput = e => setSens(e.target.value); $('sens2').oninput = e => setSens(e.target.value);
 $('vol').oninput = e => setVol(e.target.value); $('vol2').oninput = e => setVol(e.target.value);
 $('chColor').oninput = e => { settings.ch = e.target.value; buildCrosshair(); saveSettings(); };
-$('nameInput').oninput = e => { profile.name = cleanName(e.target.value); party[0].name = profile.name; saveProfile(); refreshAccount(); updatePlates(); netProfileChanged(); };
+function setPlayerName(n) {
+  profile.name = cleanName(n); profile.nameSet = true;
+  if (party[0]) party[0].name = profile.name;
+  saveProfile(); refreshAccount(); updatePlates(); renderPartyPanel(); netProfileChanged();
+  if ($('nameInput').value !== profile.name && document.activeElement !== $('nameInput')) $('nameInput').value = profile.name;
+}
+$('nameInput').oninput = e => setPlayerName(e.target.value);
+$('nameInput').onblur = () => { $('nameInput').value = profile.name; };
+function openNameModal(first) {
+  $('nameKicker').textContent = first ? 'WELCOME, AGENT' : 'PLAYER NAME';
+  $('nameCancel').classList.toggle('hidden', !!first);
+  $('nameField').value = first ? '' : profile.name; $('nameErr').textContent = '';
+  $('nameModal').classList.remove('hidden'); setTimeout(() => $('nameField').focus(), 50);
+}
+function confirmName() {
+  const raw = $('nameField').value, n = cleanName(raw);
+  if (!raw.trim()) { $('nameErr').textContent = 'Please type a name.'; return; }
+  if (n !== raw.trim()) { $('nameField').value = n; $('nameErr').textContent = 'Some symbols are not allowed and were removed — press Confirm again.'; return; }
+  setPlayerName(n); $('nameModal').classList.add('hidden'); SND.buy();
+}
+$('nameOk').onclick = confirmName;
+$('nameCancel').onclick = () => $('nameModal').classList.add('hidden');
+$('nameField').onkeydown = e => { if (e.key === 'Enter') confirmName(); if (e.key === 'Escape' && profile.nameSet) $('nameModal').classList.add('hidden'); };
+$('acctBtn').onclick = () => { initAudio(); openNameModal(false); };
 // apply saved settings
 setSens(settings.sens); setVol(settings.vol); $('chColor').value = settings.ch; segSet('diffSeg', settings.diff); segSet('shadowSeg', settings.shadows ? 1 : 0); if (!settings.shadows) applyShadows();
 $('nameInput').value = profile.name;
@@ -3495,9 +3590,24 @@ $('btnCopyCode').onclick = () => {
 };
 
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
+if (!profile.nameSet && profile.name === 'Player') openNameModal(true);
 { const jm = location.search.match(/[?&]join=([A-Za-z0-9]{5})\b/); if (jm) { $('partyPanel').classList.remove('hidden'); joinParty(jm[1]); } }
 window.__vs = { game, get player() { return player; }, get bots() { return bots; }, entities: () => entities, castAbility, nextRound, endRound };
 requestAnimationFrame(loop);
+// Browsers give hidden tabs no animation frames (and throttle their timers), which would freeze an
+// online match for everybody when the host switches tabs. A worker timer keeps the simulation running.
+(function backgroundTicker() {
+  const tickHidden = () => {
+    if (!document.hidden) return;
+    const now = performance.now(), dt = Math.min(.05, (now - last) / 1000); last = now;
+    simStep(dt);
+    if (game.state === 'menu') updateQueueInfo();
+  };
+  try {
+    const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},33)'], { type: 'text/javascript' })));
+    w.onmessage = tickHidden;
+  } catch (e) { setInterval(tickHidden, 33); }
+})();
 </script>
 </body>
 </html>

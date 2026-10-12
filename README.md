@@ -24,6 +24,9 @@ Click the screen to lock the mouse.
 - Ult orbs, weapon drops and pickups, spectating allies after death, minimap spotting, kill feed, scoreboard, damage direction indicator, flash effects, red outlines on enemies
 - Positional sound effects synthesized with WebAudio (gunshots, enemy footsteps, spike beeps)
 
+## Your player name
+The first time you open the game it asks for your name. Change it any time by clicking your name in the top bar (or the ✎ next to your name in the PARTY panel). Teammates and other online players see this name in the lobby, party list, killfeed and over your head.
+
 ## Play online with random players (public matchmaking)
 Click **FIND ONLINE PLAYERS** (on the PLAY tab or in the PARTY panel). The game looks for an open public lobby and joins the fullest one. If none is open, it opens a new public lobby that other players can find.
 - A public lobby starts on its own 30 seconds after a second player joins (5 seconds once it's full), or the host can press START.
@@ -41,6 +44,7 @@ How it works:
 - The host's browser runs the match (bots, rounds, economy, spike). Each player moves and aims locally, so movement feels instant; shots, abilities and purchases are sent to the host.
 - If a friend disconnects mid-match, a bot takes over their agent. If the host leaves, the party ends.
 - Connections are peer-to-peer (WebRTC) using the free public PeerJS signaling server, so no account or server of your own is needed. Some strict networks (school/office Wi-Fi, some mobile carriers) can block direct connections between players.
+- Testing with two tabs works — the match keeps running even when the host's tab is in the background. Both tabs share the saved profile, so give the second tab a different name.
 - To test on one PC without internet, serve the folder with any local web server and open `index.html?local` in two tabs.
 
 ## Controls
