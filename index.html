@@ -395,6 +395,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="modeStrip" id="modeStrip">
       <div class="mode on" data-mode="comp"><div class="t">COMPETITIVE</div><div class="d">First to 13 · Overtime win by 2</div></div>
       <div class="mode" data-mode="swift"><div class="t">SWIFTPLAY</div><div class="d">First to 5 · Quick matches</div></div>
+      <div class="mode" data-mode="duel"><div class="t">1V1 DUEL</div><div class="d">First to 7 · Full buy · vs a bot or a friend</div></div>
     </div>
     <div class="playOpts">
       <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
@@ -1141,7 +1142,10 @@ function blockedAt(e, x, z) {
   const c0 = cellOf(x - r), c1 = cellOf(x + r), r0 = cellOf(z - r), r1 = cellOf(z + r);
   for (let rr = r0; rr <= r1; rr++) for (let c = c0; c <= c1; c++) if (hAt(c, rr) > feet) return true;
   for (const w of dynWalls) if (x + r > w.x0 && x - r < w.x1 && z + r > w.z0 && z - r < w.z1 && w.y1 > feet && e.y + 1.7 > w.y0) return true;
-  if (game.phase === 'buy') { const need = sideOf(e) === 'atk' ? 3 : 4; if (zoneAt(x, z) !== need) return true; }
+  if (game.phase === 'buy') {
+    if (DUEL()) { if (e.spawnPt && Math.hypot(x - e.spawnPt.x, z - e.spawnPt.z) > 3) return true; }
+    else { const need = sideOf(e) === 'atk' ? 3 : 4; if (zoneAt(x, z) !== need) return true; }
+  }
   return false;
 }
 function groundAt(e) {
@@ -1893,6 +1897,12 @@ function botShoot(b, t) {
 }
 function botObjective(b, dt) {
   const side = sideOf(b), sp = game.spike, spd = 6.2 * (b.slowT > 0 ? .5 : 1) * (b.stimT > 0 ? 1.1 : 1);
+  if (DUEL()) { // 1v1: no spike, go find the opponent
+    if (game.phase !== 'live') return;
+    const t = entities.find(o => o.alive && isEnemy(o, b));
+    if (t) { setGoal(b, t.x, t.z); followPath(b, dt, spd); }
+    return;
+  }
   b.plantT = (b.plantT || 0);
   // investigate (sound/damage)
   if (b.investigate && game.time - b.investigate.t < 5 && !b.hasSpike && !(sp.state === 'planted' && side === 'def' && sp.defuser === b)) {
@@ -2021,6 +2031,16 @@ function updateBot(b, dt) {
 /* =====================================================================
    ROUND FLOW
    ===================================================================== */
+function myTeam() { return player ? player.team : 0; }
+const DUEL = () => game.mode === 'duel';
+// 1v1 spawn pairs (cells) about 40-60 m apart, so a duel round starts quickly
+const DUEL_SPAWNS = [[[8, 12], [28, 21]], [[39, 12], [19, 20]], [[5, 26], [34, 26]], [[23, 8], [23, 29]]];
+let lastBannerFn = null;
+function bannerTeams(fn) { // a banner whose text depends on which team the viewer is on
+  lastBannerFn = fn;
+  if (player) banner(...fn(player.team), true);
+  if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: fn(e.team) });
+}
 function setupMatch(agentId, humans = []) {
   // clean up previous match
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
@@ -2028,19 +2048,26 @@ function setupMatch(agentId, humans = []) {
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
   entities = [player]; bots = []; net.ents = {};
+  if (DUEL()) {
+    // 1v1: a friend from the party is the opponent, otherwise a bot
+    const h = humans[0];
+    if (h) { const e = makeEntity({ id: 1, name: h.name, team: 1, agent: h.agent, remote: h.peer }); e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e; }
+    else { const b = makeEntity({ id: 1, name: ENEMY_NAMES[0], team: 1, agent: pick(AGENTS.filter(a => a.id !== agentId)).id }); b.mesh = makeCharacter(AGENT[b.agent]); Object.assign(b, { path: [], think: 0, reactT: 0 }); entities.push(b); bots.push(b); }
+    humans = [];
+  }
   for (const h of humans) {
     const e = makeEntity({ id: entities.length, name: h.name, team: 0, agent: h.agent, remote: h.peer });
     e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
   }
   // allies are the lobby party; swap out anyone who shares the player's agent
-  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = 4 - humans.length;
+  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = DUEL() ? 0 : 4 - humans.length;
   const allyPool = party.filter(p => p.bot).map(p => p.agent).filter(a => !used.includes(a));
   const spare = shuffle(AGENTS.map(a => a.id).filter(id => !used.includes(id) && !allyPool.includes(id)));
   while (allyPool.length < nAllyBots) allyPool.push(spare.pop() || pick(AGENTS).id);
   const enemyPool = shuffle(AGENTS.map(a => a.id));
   for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
-  for (let i = 0; i < 5; i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
-  for (const b of bots) { b.mesh = makeCharacter(AGENT[b.agent]); b.path = []; b.think = 0; b.reactT = 0; }
+  for (let i = 0; i < (DUEL() ? 0 : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
+  for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.path = []; b.think = 0; b.reactT = 0; }
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0 });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
@@ -2058,13 +2085,13 @@ function nextRound() {
   const r = game.round, H = game.half;
   const prevSide = game.side[0];
   game.side[0] = sidesForRound(r); game.side[1] = game.side[0] === 'atk' ? 'def' : 'atk';
-  const pistol = r === 1 || r === H + 1;
+  const pistol = !DUEL() && (r === 1 || r === H + 1);
   game.ot = r > 2 * H;
   if (pistol) game.lossStreak = [0, 0];
-  if (r === H + 1) banner('SWITCHING SIDES', 'Teams swap attack and defense', '', 2.5);
+  if (r === H + 1 && !DUEL()) banner('SWITCHING SIDES', 'Teams swap attack and defense', '', 2.5);
   for (const e of entities) {
     if (pistol) { e.credits = 800; e.primary = null; e.secondary = mkWeapon('classic'); e.armor = 0; e.charges = { C: 0, Q: 0, E: 0 }; }
-    if (game.ot) { e.credits = 5000; }
+    if (game.ot || DUEL()) { e.credits = 5000; }
     if (!e.alive) { e.primary = null; e.secondary = e.secondary || mkWeapon('classic'); e.armor = 0; }
     if (!e.secondary) e.secondary = mkWeapon('classic');
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
@@ -2083,12 +2110,21 @@ function nextRound() {
       teleported(e); e.invSeq = (e.invSeq || 0) + 1; e.plantHold = 0;
     });
   }
+  if (DUEL()) { // two close spawn points instead of the team spawns; the pair is reshuffled every round
+    const pair = shuffle(pick(DUEL_SPAWNS).slice());
+    for (const e of entities) {
+      const [c, rr] = nearestWalkable(...pair[e.team]), [oc, orr] = nearestWalkable(...pair[1 - e.team]);
+      const p = cc(c, rr), o = cc(oc, orr);
+      Object.assign(e, { x: p.x, z: p.z, y: 0, pitch: 0, yaw: Math.atan2(-(o.x - p.x), -(o.z - p.z)), spawnPt: { x: p.x, z: p.z } });
+      teleported(e);
+    }
+  }
   clearEffects(); clearDrops();
   if (r === 1 || r % 3 === 1) spawnOrbs();
   // spike
   const sp = game.spike; Object.assign(sp, { state: 'none', carrier: null, timer: SPIKE_TIME, defuseProg: 0, half: false, defuser: null }); sp.mesh.visible = false; sp.mesh.userData.light.intensity = 0;
   const attackers = entities.filter(e => sideOf(e) === 'atk');
-  const carrier = attackers.find(e => e.isPlayer) || pick(attackers); giveSpike(carrier);
+  if (!DUEL()) { const carrier = attackers.find(e => e.isPlayer) || pick(attackers); giveSpike(carrier); }
   // bot buys & plans
   const atkSite = game.atkSite = Math.random() < .5 ? 1 : 2;
   for (const team of [0, 1]) {
@@ -2106,19 +2142,23 @@ function nextRound() {
     b.stage = 0; b.waitT = rand(0, 10); b.role = 'atk';
   });
   for (const b of bots) { b.target = null; b.targetVisible = false; b.path = []; b.goal = null; b.investigate = null; b.lastSeen = null; b.guard = null; b.mesh.rotation.set(0, b.yaw, 0); b.mesh.userData.gunKey = null; }
-  game.phase = 'buy'; game.phaseT = game.mode === 'swift' ? 15 : BUY_TIME;
-  barrierGroup.visible = true;
+  game.phase = 'buy'; game.phaseT = DUEL() ? 10 : game.mode === 'swift' ? 15 : BUY_TIME;
+  barrierGroup.visible = !DUEL();
   // UI
   $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden'); $('revealWarn').classList.add('hidden');
   camRig.yaw = player.yaw; camRig.pitch = 0; equipView(); refreshAbilHud();
-  banner(`ROUND ${r}`, (game.side[0] === 'atk' ? 'Attack' : 'Defense') + (game.ot ? ' · Overtime' : '') + (pistol ? ' · Pistol Round' : ''), '', 2.5);
-  $('sideTag').textContent = game.side[0] === 'atk' ? '◆ ATTACKING' : '◆ DEFENDING';
-  $('sideTag').style.color = game.side[0] === 'atk' ? '#ff8a8a' : '#8ad0ff';
+  bannerTeams(t => [`ROUND ${r}`, DUEL() ? '1v1 Duel · Full buy' : (game.side[t] === 'atk' ? 'Attack' : 'Defense') + (game.ot ? ' · Overtime' : '') + (pistol ? ' · Pistol Round' : ''), '', 2.5]);
+  setSideTag();
+}
+function setSideTag() {
+  const side = game.side[myTeam()];
+  $('sideTag').textContent = DUEL() ? '◆ 1V1 DUEL' : side === 'atk' ? '◆ ATTACKING' : '◆ DEFENDING';
+  $('sideTag').style.color = DUEL() ? '#f5d76e' : side === 'atk' ? '#ff8a8a' : '#8ad0ff';
 }
 function startLive() {
-  game.phase = 'live'; game.phaseT = ROUND_TIME; barrierGroup.visible = false; SND.roundStart(); netSnd('roundStart');
+  game.phase = 'live'; game.phaseT = DUEL() ? 75 : ROUND_TIME; barrierGroup.visible = false; SND.roundStart(); netSnd('roundStart');
   if (shopOpen) closeShop();
-  banner('ROUND START', game.side[0] === 'atk' ? 'Plant the spike' : 'Defend the sites', '', 1.6);
+  bannerTeams(t => ['ROUND START', DUEL() ? 'Eliminate your opponent' : game.side[t] === 'atk' ? 'Plant the spike' : 'Defend the sites', '', 1.6]);
 }
 function defuseSpike(e) {
   const sp = game.spike; sp.state = 'defused'; sp.mesh.userData.light.intensity = 0;
@@ -2141,9 +2181,9 @@ function endRound(winner, reason) {
   game.lossStreak[winner] = 0; game.lossStreak[loser] = Math.min(3, game.lossStreak[loser] + 1);
   const lossBonus = [1900, 1900, 2400, 2900][game.lossStreak[loser]];
   for (const e of entities) e.credits = Math.min(9000, e.credits + (e.team === winner ? 3000 : lossBonus));
-  const won = winner === 0;
-  banner(won ? 'ROUND WON' : 'ROUND LOST', reason, won ? 'win' : 'lose', 3.5);
-  won ? SND.win() : SND.lose(); netSnd(won ? 'win' : 'lose');
+  bannerTeams(t => [t === winner ? 'ROUND WON' : 'ROUND LOST', reason, t === winner ? 'win' : 'lose', 3.5]);
+  myTeam() === winner ? SND.win() : SND.lose();
+  if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'snd', n: e.team === winner ? 'win' : 'lose' });
   if (shopOpen) closeShop();
 }
 function checkRoundEnd() {
@@ -2151,27 +2191,27 @@ function checkRoundEnd() {
   const atk = game.side[0] === 'atk' ? 0 : 1, def = 1 - atk;
   const aliveAtk = entities.some(e => e.team === atk && e.alive), aliveDef = entities.some(e => e.team === def && e.alive);
   if (game.phase === 'live') {
-    if (!aliveAtk) endRound(def, 'Enemy team eliminated');
-    else if (!aliveDef) endRound(atk, 'Enemy team eliminated');
-  } else if (!aliveDef) endRound(atk, 'Enemy team eliminated');
+    if (!aliveAtk) endRound(def, (DUEL() ? 'Opponent eliminated' : 'Enemy team eliminated'));
+    else if (!aliveDef) endRound(atk, (DUEL() ? 'Opponent eliminated' : 'Enemy team eliminated'));
+  } else if (!aliveDef) endRound(atk, (DUEL() ? 'Opponent eliminated' : 'Enemy team eliminated'));
 }
 function matchOver() {
   const [a, b] = game.score;
-  if (game.mode === 'swift') return a >= game.target || b >= game.target;
+  if (game.mode !== 'comp') return a >= game.target || b >= game.target; // Swiftplay and 1v1: first to the target, no overtime
   if (a + b < 2 * game.half) return a >= game.target || b >= game.target;
   return Math.abs(a - b) >= 2;
 }
 function finishMatch() {
   if (net.role === 'host') { netBroadcast(buildSnap()); netBroadcast({ t: 'over' }); net.phase = 'lobby'; }
   game.state = 'over'; document.exitPointerLock && document.exitPointerLock();
-  const won = game.score[0] > game.score[1];
+  const MY = myTeam(), won = game.score[MY] > game.score[1 - MY];
   $('overTitle').textContent = won ? 'VICTORY' : 'DEFEAT'; $('overTitle').style.color = won ? 'var(--teal)' : 'var(--red)';
-  $('overScore').textContent = `${game.score[0]} : ${game.score[1]}`;
+  $('overScore').textContent = `${game.score[MY]} : ${game.score[1 - MY]}`;
   const all = entities.slice().sort((x, y) => (y.kills * 2 + y.assists) - (x.kills * 2 + x.assists));
   const mvp = all[0], p = player;
   const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
   profile.xp += gain;
-  profile.matches.unshift({ won, score: game.score.slice(), agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
+  profile.matches.unshift({ won, score: [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
   profile.matches = profile.matches.slice(0, 30); saveProfile();
   $('overStats').innerHTML = `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
@@ -2185,7 +2225,13 @@ function finishMatch() {
 }
 function updateRound(dt) {
   if (game.phase === 'buy') { game.phaseT -= dt; if (game.phaseT <= 0) startLive(); }
-  else if (game.phase === 'live') { game.phaseT -= dt; if (game.phaseT <= 0) endRound(game.side[0] === 'def' ? 0 : 1, 'Time expired'); }
+  else if (game.phase === 'live') {
+    game.phaseT -= dt;
+    if (game.phaseT <= 0) {
+      if (DUEL()) { const hp = t => entities.filter(e => e.team === t && e.alive).reduce((a, e) => a + e.hp + e.armor, 0); const h0 = hp(0), h1 = hp(1); endRound(h0 === h1 ? (game.side[0] === 'def' ? 0 : 1) : h0 > h1 ? 0 : 1, 'Time expired · more health left'); }
+      else endRound(game.side[0] === 'def' ? 0 : 1, 'Time expired');
+    }
+  }
   else if (game.phase === 'planted') {
     const sp = game.spike; sp.timer -= dt;
     const interval = sp.timer > 20 ? 1 : sp.timer > 10 ? .5 : sp.timer > 5 ? .25 : .12;
@@ -2284,8 +2330,8 @@ const hudCache = {};
 function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $(id).innerHTML = v; } }
 let toastT = 0, bannerT = 0, hitT = 0, dmgT = 0;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; toastT = 2; }
-function banner(big, sub, cls, dur, keep) {
-  if (net.role === 'host' && game.state === 'playing') { lastBanner = [big, sub, cls, dur]; netBroadcast({ t: 'ui', f: 'banner', a: lastBanner }); } const b = $('bannerBig'); b.textContent = big; b.className = cls || ''; $('bannerSub').textContent = sub || ''; $('centerMsg').style.opacity = 1; bannerT = dur || 2; }
+function banner(big, sub, cls, dur, noNet) {
+  if (!noNet && net.role === 'host' && game.state === 'playing') { lastBanner = [big, sub, cls, dur]; lastBannerFn = null; netBroadcast({ t: 'ui', f: 'banner', a: lastBanner }); } const b = $('bannerBig'); b.textContent = big; b.className = cls || ''; $('bannerSub').textContent = sub || ''; $('centerMsg').style.opacity = 1; bannerT = dur || 2; }
 function setHint(h) { if (hudCache.hint !== h) { hudCache.hint = h; $('hint').innerHTML = h; $('hint').classList.toggle('hidden', !h); } }
 function showProgress(lbl, f, half) { $('progress').classList.remove('hidden'); setText('progLbl', lbl); $('progFill').style.width = (clamp(f, 0, 1) * 100) + '%'; $('progHalf').classList.toggle('hidden', !half); }
 function hideProgress() { $('progress').classList.add('hidden'); }
@@ -2299,13 +2345,13 @@ function showDamageDir(src) {
 function addKillfeed(src, vic, label, head) {
   if (net.role === 'host') netBroadcast({ t: 'ui', f: 'kf', a: [src ? src.id : -1, vic.id, label, head] });
   const el = document.createElement('div'); el.className = 'kf' + ((src && src.isPlayer) || vic.isPlayer ? ' me' : '');
-  const cls = e => e.team === 0 ? 'a' : 'e';
+  const cls = e => e.team === myTeam() ? 'a' : 'e';
   el.innerHTML = (src && src !== vic ? `<span class="${cls(src)}">${src.name}</span>` : '') + `<span class="w">${label || 'Died'}</span>` + (head ? '<span class="hs">◎HS</span>' : '') + `<span class="${cls(vic)}">${vic.name}</span>`;
   $('killfeed').appendChild(el); setTimeout(() => el.remove(), 5500);
   while ($('killfeed').children.length > 6) $('killfeed').firstChild.remove();
 }
 function addFeedText(txt, team) {
-  if (net.role === 'host') netBroadcast({ t: 'ui', f: 'feed', a: [txt, team] }); const el = document.createElement('div'); el.className = 'kf'; el.innerHTML = `<span class="${team === 0 ? 'a' : 'e'}">${txt}</span>`; $('killfeed').appendChild(el); setTimeout(() => el.remove(), 4500); }
+  if (net.role === 'host') netBroadcast({ t: 'ui', f: 'feed', a: [txt, team] }); const el = document.createElement('div'); el.className = 'kf'; el.innerHTML = `<span class="${team === myTeam() ? 'a' : 'e'}">${txt}</span>`; $('killfeed').appendChild(el); setTimeout(() => el.remove(), 4500); }
 function buildCrosshair() {
   const c = $('crosshair'); c.style.setProperty('--ch', settings.ch);
   c.innerHTML = '<div style="left:-1px;top:-1px;width:2px;height:2px"></div>' + [[-1, -11, 2, 6], [-1, 5, 2, 6], [-11, -1, 6, 2], [5, -1, 6, 2]].map(([l, t, w, h]) => `<div class="ln" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px"></div>`).join('');
@@ -2329,8 +2375,9 @@ function updateHUD(dt) {
   const p = player;
   // top bar
   const aliveHTML = team => entities.filter(e => e.team === team).map(e => `<i class="${e.alive ? '' : 'dead'}" style="border-color:${AGENT[e.agent].color};color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</i>`).join('');
-  setText('aliveL', aliveHTML(0)); setText('aliveR', aliveHTML(1));
-  setText('scoreL', String(game.score[0])); setText('scoreR', String(game.score[1]));
+  const MY = myTeam();
+  setText('aliveL', aliveHTML(MY)); setText('aliveR', aliveHTML(1 - MY));
+  setText('scoreL', String(game.score[MY])); setText('scoreR', String(game.score[1 - MY]));
   if (game.phase === 'planted') { setText('timer', '◆ ' + Math.ceil(game.spike.timer)); $('timer').className = 'spike'; setText('phase', 'SPIKE PLANTED'); }
   else {
     $('timer').className = ''; setText('timer', fmtTime(game.phaseT));
@@ -2417,15 +2464,16 @@ function updateSpotting() {
 function renderBoard() {
   const rows = team => entities.filter(e => e.team === team).sort((a, b) => b.kills - a.kills).map(e => {
     const w = e.primary ? WEAPONS[e.primary.key].name : e.secondary ? WEAPONS[e.secondary.key].name : '-';
-    return `<tr class="${team === 0 ? 'ally' : 'enemy'} ${e.isPlayer ? 'me' : ''} ${e.alive ? '' : 'dead'}">
+    const mine = team === myTeam();
+    return `<tr class="${mine ? 'ally' : 'enemy'} ${e.isPlayer ? 'me' : ''} ${e.alive ? '' : 'dead'}">
       <td><b style="color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</b> ${e.name} <small style="opacity:.6">${AGENT[e.agent].name}</small>${e.hasSpike ? ' <span style="color:var(--red)">◆</span>' : ''}</td>
       <td class="os">${e.kills}</td><td class="os">${e.deaths}</td><td class="os">${e.assists}</td>
-      <td class="os">${team === 0 ? e.credits : '—'}</td><td>${team === 0 || !e.alive ? w : '?'}</td>
+      <td class="os">${mine ? e.credits : '—'}</td><td>${mine || !e.alive ? w : '?'}</td>
       <td class="os">${e.ult}/${AGENT[e.agent].ab.X.ult}</td></tr>`;
   }).join('');
-  $('board').innerHTML = `<div class="hdr"><span style="color:var(--teal)">Your team ${game.score[0]}</span><span style="font-size:14px;opacity:.6">Round ${game.round} · ${game.mode === 'swift' ? 'Swiftplay' : 'Competitive'}</span><span style="color:var(--red)">${game.score[1]} Enemy team</span></div>
-    <table><tr><th>Player</th><th>K</th><th>D</th><th>A</th><th>Credits</th><th>Weapon</th><th>Ult</th></tr>${rows(0)}<tr><td colspan="7" style="height:10px;border:0"></td></tr>${rows(1)}</table>
-    <div style="margin-top:10px;display:flex;gap:4px;flex-wrap:wrap">${game.history.map(w => `<span style="width:14px;height:14px;background:${w === 0 ? 'var(--teal)' : 'var(--red)'};display:inline-block"></span>`).join('')}</div>`;
+  $('board').innerHTML = `<div class="hdr"><span style="color:var(--teal)">Your team ${game.score[myTeam()]}</span><span style="font-size:14px;opacity:.6">Round ${game.round} · ${game.mode === 'swift' ? 'Swiftplay' : 'Competitive'}</span><span style="color:var(--red)">${game.score[1 - myTeam()]} Enemy team</span></div>
+    <table><tr><th>Player</th><th>K</th><th>D</th><th>A</th><th>Credits</th><th>Weapon</th><th>Ult</th></tr>${rows(myTeam())}<tr><td colspan="7" style="height:10px;border:0"></td></tr>${rows(1 - myTeam())}</table>
+    <div style="margin-top:10px;display:flex;gap:4px;flex-wrap:wrap">${game.history.map(w => `<span style="width:14px;height:14px;background:${w === myTeam() ? 'var(--teal)' : 'var(--red)'};display:inline-block"></span>`).join('')}</div>`;
 }
 
 /* =====================================================================
@@ -2723,8 +2771,8 @@ function animateNetChar(e, dt) {
   setCharGun(e);
   const enemy = isEnemy(e, player);
   ud.marker.visible = !enemy || e.revealedT > 0; ud.marker.material.color.setHex(enemy ? 0xff3344 : 0x2fe0b6);
-  ud.outlines.forEach(o => o.visible = enemy); if (ud.nameTag) ud.nameTag.visible = true;
-  if (net.role === 'client' && enemy && spd > 4.5) { e.stepT = (e.stepT || 0) - dt; if (e.stepT <= 0) { e.stepT = .38; if (Math.hypot(e.x - camera.position.x, e.z - camera.position.z) < 28) SND.step(e.x, e.z, .5); } }
+  ud.outlines.forEach(o => o.visible = enemy); if (ud.nameTag) ud.nameTag.visible = !enemy;
+  if (enemy && spd > 4.5) { e.stepT = (e.stepT || 0) - dt; if (e.stepT <= 0) { e.stepT = .38; if (Math.hypot(e.x - camera.position.x, e.z - camera.position.z) < 28) SND.step(e.x, e.z, .5); } }
 }
 
 /* =====================================================================
@@ -2855,8 +2903,8 @@ setInterval(() => {
   if (net.public && net.phase === 'lobby' && game.state === 'menu' && !queueTimer) {
     const n = net.members.length, before = net.autoAt;
     if (n < 2) net.autoAt = 0;
-    else if (!net.autoAt) net.autoAt = now + (n >= 5 ? 5000 : PUB_WAIT * 1000);
-    else if (n >= 5 && net.autoAt - now > 5000) net.autoAt = now + 5000;
+    else if (!net.autoAt) net.autoAt = now + (n >= partyCap() ? 5000 : PUB_WAIT * 1000);
+    else if (n >= partyCap() && net.autoAt - now > 5000) net.autoAt = now + 5000;
     if (net.autoAt !== before) partyChanged();
     if (net.autoAt && now >= net.autoAt) { net.autoAt = 0; matchFound(); }
   }
@@ -2939,9 +2987,9 @@ function renderPartyPanel() {
   $('btnCreateParty').disabled = $('btnJoin').disabled = net.searching;
 }
 function updatePlayLock() {
-  const client = net.role === 'client';
+  const client = net.role === 'client', tooMany = playMode === 'duel' && net.role !== 'off' && net.members.length > 2;
   $('modeStrip').classList.toggle('locked', client); $('diffSeg').classList.toggle('locked', client);
-  $('btnStart').disabled = client;
+  $('btnStart').disabled = client || tooMany;
   if (!queueTimer) $('btnStart').textContent = client ? 'WAITING FOR HOST' : 'START';
 }
 
@@ -2951,13 +2999,13 @@ function hostRecv(conn, d) {
   if (!d || typeof d !== 'object') return;
   const id = conn.peer;
   if (d.t === 'probe') {
-    try { conn.send({ t: 'probeOk', n: net.members.length, open: net.public && net.phase === 'lobby' && game.state === 'menu' && net.members.length < 5 }); } catch (e) { }
+    try { conn.send({ t: 'probeOk', n: net.members.length, open: net.public && net.phase === 'lobby' && game.state === 'menu' && net.members.length < partyCap() }); } catch (e) { }
     return;
   }
   if (d.t === 'hello') {
     if (net.conns[id]) return;
     const deny = m => { try { conn.send({ t: 'deny', m }); } catch (e) { } setTimeout(() => { try { conn.close(); } catch (e) { } }, 400); };
-    if (net.members.length >= 5) return deny('That party is full.');
+    if (net.members.length >= partyCap()) return deny(playMode === 'duel' ? 'That 1v1 lobby already has two players.' : 'That party is full.');
     if (net.phase !== 'lobby' || game.state !== 'menu') return deny('That party is already in a match — try again after it ends.');
     net.conns[id] = conn;
     const m = { id, name: cleanName(d.name), fav: AGENT[d.fav] ? d.fav : 'jett', lv: Math.max(1, d.lv | 0), host: false };
@@ -3020,7 +3068,9 @@ function remoteToBot(e) {
 }
 
 /* --- agent select in a party --- */
-function takenBy(a, exceptId = net.myId) { for (const id in net.picks) if (id !== exceptId && net.picks[id].lock && net.picks[id].a === a) return id; return null; }
+function takenBy(a, exceptId = net.myId) {
+  if (playMode === 'duel') return null; // opponents may pick the same agent
+  for (const id in net.picks) if (id !== exceptId && net.picks[id].lock && net.picks[id].a === a) return id; return null; }
 function sendPick(lock) { if (net.role === 'client') netSend({ t: 'pick', a: selectedAgent, lock }); else if (net.role === 'host') hostPick(net.myId, selectedAgent, lock); }
 function hostPick(id, a, lock) {
   if (net.phase !== 'select' || !AGENT[a]) return;
@@ -3040,7 +3090,8 @@ function startNetMatch() {
   setupMatch(selectedAgent, humans);
   netBroadcast({ t: 'start', roster: entities.map(e => ({ id: e.id, name: e.name, team: e.team, agent: e.agent, peer: e.isPlayer ? net.myId : (e.remote || null) })), mode: game.mode, target: game.target, half: game.half });
   net.snapT = 0; hostNetTick(0);
-  if (lastBanner) netBroadcast({ t: 'ui', f: 'banner', a: lastBanner });
+  if (lastBannerFn) { for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: lastBannerFn(e.team) }); }
+  else if (lastBanner) netBroadcast({ t: 'ui', f: 'banner', a: lastBanner });
   lockPointer();
 }
 
@@ -3089,13 +3140,13 @@ function clientRecv(d) {
     case 'party':
       net.members = (d.members || []).slice(0, 5).map(m => ({ id: String(m.id), name: cleanName(m.name), fav: AGENT[m.fav] ? m.fav : 'jett', lv: Math.max(1, m.lv | 0), host: !!m.host }));
       net.phase = d.phase; net.public = !!d.pub; net.autoAt = d.auto > 0 ? Date.now() + d.auto * 1000 : 0;
-      if (d.mode === 'comp' || d.mode === 'swift') { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
+      if (MODES.includes(d.mode)) { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
       if (DIFF[d.diff]) { net.hostDiff = d.diff; segSet('diffSeg', d.diff); }
       refreshPartyUI(); break;
     case 'deny': { const msg = String(d.m || 'Could not join.'); resetNet(); setPartyStatus(msg); break; }
     case 'chat': addChat(d.n == null ? null : cleanName(d.n), String(d.m || '')); break;
     case 'chatlog': net.chat = (d.log || []).slice(-40).map(c => ({ n: c.n == null ? null : cleanName(c.n), m: String(c.m || '').slice(0, 140) })); renderChat(); break;
-    case 'found': if (game.state === 'menu') { net.selAt = Date.now() + 1700 + clamp(+d.sel || SELECT_TIME, 5, 120) * 1000; showMatchFound(d.mode === 'swift' ? 'swift' : 'comp', DIFF[d.diff] ? d.diff : 'normal'); } break;
+    case 'found': if (game.state === 'menu') { net.selAt = Date.now() + 1700 + clamp(+d.sel || SELECT_TIME, 5, 120) * 1000; showMatchFound(MODES.includes(d.mode) ? d.mode : 'comp', DIFF[d.diff] ? d.diff : 'normal'); } break;
     case 'picks': net.picks = d.picks || {}; if (!$('select').classList.contains('hidden')) renderAgents(); break;
     case 'start': clientSetupMatch(d); break;
     case 'bye': onHostLost(); break;
@@ -3126,7 +3177,7 @@ function clientSetupMatch(d) {
     entities[e.id] = e;
   }
   if (!player) { onHostLost(); return; }
-  Object.assign(game, { mode: d.mode === 'swift' ? 'swift' : 'comp', target: d.target | 0 || 13, half: d.half | 0 || 12, round: 0, score: [0, 0], history: [], time: 0, phase: 'buy', phaseT: 0, ot: false });
+  Object.assign(game, { mode: MODES.includes(d.mode) ? d.mode : 'comp', target: d.target | 0 || 13, half: d.half | 0 || 12, round: 0, score: [0, 0], history: [], time: 0, phase: 'buy', phaseT: 0, ot: false });
   game.spike = { state: 'none', mesh: makeSpikeMesh(), beepT: 0, timer: 0, defuseProg: 0 }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   game.state = 'playing'; game.paused = false; shopOpen = false; deathCam = 0;
   ['select', 'menu', 'matchFound', 'over', 'pause'].forEach(id => $(id).classList.add('hidden')); $('hud').classList.remove('hidden');
@@ -3192,17 +3243,17 @@ function applySnap(s) {
   game.side = [side0, side0 === 'atk' ? 'def' : 'atk'];
   if (newRound) {
     $('killIcons').innerHTML = ''; $('revealWarn').classList.add('hidden');
-    $('sideTag').textContent = game.side[0] === 'atk' ? '◆ ATTACKING' : '◆ DEFENDING'; $('sideTag').style.color = game.side[0] === 'atk' ? '#ff8a8a' : '#8ad0ff';
+    setSideTag();
     player.shotIdx = 0; player.recoil = 0; player.reloadT = 0;
   }
-  barrierGroup.visible = ph === 'buy';
+  barrierGroup.visible = ph === 'buy' && !DUEL();
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
     Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
-      if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp }); }
+      if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
       if (r.iv !== e.invSeq) {
         const oldP = e.primary && e.primary.key, oldS = e.secondary && e.secondary.key;
         e.primary = fromInv(r.p); e.secondary = fromInv(r.s) || mkWeapon('classic'); e.invSeq = r.iv; e.reloadT = 0;
@@ -3216,7 +3267,7 @@ function applySnap(s) {
       if (r.rv > 0) $('revealWarn').classList.remove('hidden');
     } else {
       Object.assign(e, { nx: r.x, ny: r.y, nz: r.z, nyaw: r.yw, pitch: r.pt, vx: r.vx, vz: r.vz, crouch: !!r.cr, slot: r.sl, bladeMag: r.bm, primary: fromInv(r.p), secondary: fromInv(r.s) });
-      if (r.sp) e.spottedT = game.time + .5;
+      if (r.sp && player.team === 0) e.spottedT = game.time + .5;
       if (e.alive && !r.al) { e.alive = false; e.deadT = 0; }
       else if (!e.alive && r.al) { e.alive = true; e.x = r.x; e.y = r.y; e.z = r.z; e.yaw = r.yw; }
     }
@@ -3446,11 +3497,13 @@ setInterval(() => { if (game.state === 'menu' && curTab === 'home') showNews(new
 document.querySelectorAll('#modeStrip .mode').forEach(m => m.onclick = () => {
   if (queueTimer || net.role === 'client') return; playMode = m.dataset.mode; tick();
   document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x === m));
-  if (net.role === 'host') partyChanged();
+  if (net.role === 'host') partyChanged(); updatePlayLock();
 });
 $('mapThumb').getContext('2d').drawImage(mmBase, 0, 0, 96, 80);
 let queueTimer = null, queueStart = 0;
-const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : 'COMPETITIVE';
+const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : playMode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE';
+const MODES = ['comp', 'swift', 'duel'];
+const partyCap = () => playMode === 'duel' ? 2 : 5;
 function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').classList.remove('queue'); updatePlayLock(); }
 $('btnStart').onclick = () => {
   initAudio(); if (net.role === 'client') return;
@@ -3478,6 +3531,8 @@ function updateQueueInfo() {
   if (net.searching) txt = 'SEARCHING FOR ONLINE PLAYERS…';
   else if (net.autoAt && !queueTimer) txt = `PUBLIC LOBBY · MATCH STARTS IN ${fmtTime((net.autoAt - Date.now()) / 1000)}${pty}`;
   else if (net.public && !queueTimer && net.members.length < 2) txt = `PUBLIC LOBBY · WAITING FOR PLAYERS${pty}`;
+  if (playMode === 'duel' && net.role !== 'off' && net.members.length > 2) txt = '1V1 DUEL NEEDS A PARTY OF 1 OR 2';
+  else if (playMode === 'duel' && !queueTimer && !net.searching && !net.autoAt) txt = net.role !== 'off' && net.members.length === 2 ? '1V1 DUEL · YOU VS YOUR FRIEND' : '1V1 DUEL · YOU VS A BOT';
   if (el.textContent !== txt) el.textContent = txt;
   const st = $('selTimer'), sTxt = net.selAt && net.role !== 'off' && !$('select').classList.contains('hidden') ? `AUTO LOCK-IN ${fmtTime((net.selAt - Date.now()) / 1000)}` : '';
   if (st.textContent !== sTxt) st.textContent = sTxt;
@@ -3509,7 +3564,7 @@ function renderCareer() {
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
   html += '<div class="collCat">RECENT MATCHES</div>';
-  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${x.mode === 'swift' ? 'SWIFTPLAY' : 'COMPETITIVE'}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
+  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${x.mode === 'swift' ? 'SWIFTPLAY' : x.mode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE'}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
   $('careerBox').innerHTML = html;
 }
@@ -3528,7 +3583,7 @@ function renderCollection() {
 /* agent select / match flow */
 function goSelect(mode) {
   initAudio(); selectedAgent = profile.fav;
-  game.mode = mode; game.target = mode === 'swift' ? 5 : 13; game.half = mode === 'swift' ? 4 : 12;
+  game.mode = mode; game.target = mode === 'swift' ? 5 : mode === 'duel' ? 7 : 13; game.half = mode === 'swift' ? 4 : mode === 'duel' ? 6 : 12;
   $('menu').classList.add('hidden'); $('select').classList.remove('hidden');
   $('btnBack').classList.toggle('hidden', net.role !== 'off');
   if (net.role !== 'off' && takenBy(selectedAgent)) selectedAgent = AGENTS.find(a => !takenBy(a.id)).id;
