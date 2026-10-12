@@ -8,6 +8,7 @@ Click the screen to lock the mouse.
 
 ## Features
 - **Online play**: find random online players with public matchmaking, or create a party and share a code with friends; human teammates play together against bots (see below).
+- **3 maps** (Dustwall, Frostline, Canal) plus a Random option, each with its own layout and color theme.
 - **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
 - **6 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (dash), Blade Storm
@@ -23,6 +24,13 @@ Click the screen to lock the mouse.
 - **Bot AI** (4 allies + 5 enemies, 3 difficulty levels): A* pathfinding, attacking and defending sites, rotating, reaction time, using smokes, flashes, fire and ultimates, reacting to sound, planting and defusing
 - Ult orbs, weapon drops and pickups, spectating allies after death, minimap spotting, kill feed, scoreboard, damage direction indicator, flash effects, red outlines on enemies
 - Positional sound effects synthesized with WebAudio (gunshots, enemy footsteps, spike beeps)
+
+## Maps
+Pick the map on the PLAY tab with the ‹ › arrows (or click the map card). In a party, the host picks and everyone sees it.
+- **Dustwall**: desert outpost with a long mid corridor and a courtyard.
+- **Frostline**: arctic station with a central plaza, long side lanes and tunnels.
+- **Canal**: compact sunset harbor with a water street through the middle and close fights.
+- **Random**: a different map every match.
 
 ## 1v1 Duel
 Pick **1V1 DUEL** on the PLAY tab.

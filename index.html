@@ -148,6 +148,11 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .mapCard{flex-direction:row;align-items:center;gap:12px}
 .mapCard canvas{border:1px solid rgba(255,255,255,.15);background:#0f1923}
 .mapName{font:700 20px Oswald,sans-serif;letter-spacing:3px}
+.mapCard{gap:10px;padding-left:6px;padding-right:6px}
+.mapTxt{width:190px}
+#mapDesc{text-transform:uppercase;line-height:1.4;letter-spacing:1.5px}
+.mapArrow{width:28px;height:80px;border:0;background:rgba(255,255,255,.06);color:var(--light);font-size:22px;cursor:pointer}
+.mapArrow:hover{background:var(--light);color:var(--dark)}
 .ol{font:500 11px Oswald,sans-serif;letter-spacing:3px;opacity:.7}
 .startWrap{position:absolute;left:50%;bottom:6vh;transform:translateX(-50%);text-align:center}
 #queueInfo{font:500 14px Oswald,sans-serif;letter-spacing:4px;margin-bottom:10px;min-height:20px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
@@ -399,7 +404,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     </div>
     <div class="playOpts">
       <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
-      <div class="optCard mapCard"><canvas id="mapThumb" width="96" height="80"></canvas><div><div class="ol">MAP</div><div class="mapName">DUSTWALL</div><div class="ol" style="opacity:.5">2 SITES · MID</div></div></div>
+      <div class="optCard mapCard" id="mapCard" title="Change map"><button class="mapArrow" id="mapPrev" aria-label="Previous map">‹</button><canvas id="mapThumb" width="96" height="80"></canvas><div class="mapTxt"><div class="ol">MAP</div><div class="mapName" id="mapName">DUSTWALL</div><div class="ol" id="mapDesc" style="opacity:.6">2 SITES · MID</div></div><button class="mapArrow" id="mapNext" aria-label="Next map">›</button></div>
     </div>
     <div class="startWrap">
       <div id="queueInfo"></div>
@@ -580,7 +585,7 @@ const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI;
 const fmtTime = t => { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
 
 /* ------------------------------ SETTINGS ------------------------------ */
-const settings = { sens: 1, diff: 'normal', vol: 0.6, ch: '#00ff9c', shadows: true };
+const settings = { sens: 1, diff: 'normal', vol: 0.6, ch: '#00ff9c', shadows: true, map: 'dustwall' };
 const DIFF = {
   easy:   { react: 0.80, acc: 0.16, head: 0.05, turn: 3.5, fov: 0.45 },
   normal: { react: 0.55, acc: 0.26, head: 0.11, turn: 5.5, fov: 0.30 },
@@ -655,37 +660,60 @@ const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 const CELL = 3, GW = 48, GH = 40, WALL_H = 8, MAPW = GW * CELL, MAPH = GH * CELL;
 const grid = new Float32Array(GW * GH).fill(WALL_H);
 const zoneG = new Uint8Array(GW * GH); // 1=A, 2=B, 3=attacker spawn, 4=defender spawn
-const ROOMS = [
-  [18, 1, 29, 5],   // defender spawn
-  [8, 3, 17, 5],    // defender → A path
-  [3, 3, 8, 8],     // A back
-  [2, 7, 15, 17],   // A site
-  [30, 3, 39, 5],   // defender → B path
-  [39, 3, 44, 8],   // B back
-  [32, 7, 45, 19],  // B site
-  [21, 6, 26, 31],  // mid
-  [17, 16, 30, 22], // mid courtyard
-  [14, 12, 21, 14], // A link
-  [26, 17, 32, 19], // B link
-  [3, 17, 8, 32],   // A main
-  [39, 19, 44, 32], // B main
-  [3, 31, 44, 33],  // lobby
-  [14, 33, 33, 38], // attacker spawn
-  [26, 26, 39, 27], // garage (mid → B main)
-];
-const OBST = [ // [c0,r0,c1,r1,height]
-  [7, 10, 8, 11, 1.4], [11, 13, 11, 14, 3.2], [4, 15, 4, 15, 1.4], [12, 16, 13, 16, 1.4], [9, 7, 10, 7, 3.2], [3, 10, 3, 10, 1.4],
-  [36, 11, 37, 12, 3.2], [40, 14, 41, 14, 1.4], [34, 16, 34, 16, 1.4], [42, 9, 42, 10, 1.4], [38, 17, 38, 17, 3.2], [44, 16, 44, 16, 1.4],
-  [23, 19, 24, 19, 3.2], [22, 24, 22, 24, 1.4], [25, 10, 25, 10, 1.4], [19, 21, 19, 21, 1.4], [28, 17, 28, 17, 1.4],
-  [5, 24, 5, 24, 1.4], [42, 26, 42, 26, 1.4], [10, 32, 10, 32, 1.4], [30, 32, 31, 32, 1.4], [36, 26, 36, 26, 1.4],
-  [19, 3, 19, 3, 1.4], [28, 3, 28, 3, 1.4], [6, 28, 6, 28, 3.2], [41, 29, 41, 29, 3.2],
-];
-for (const [c0, r0, c1, r1] of ROOMS) for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * GW + c] = 0;
-for (const [c0, r0, c1, r1, h] of OBST) for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * GW + c] = h;
+// rooms: walkable rectangles [c0,r0,c1,r1] · obst: crates/pillars [c0,r0,c1,r1,height] · zones: 1=A site, 2=B site, 3=attacker spawn, 4=defender spawn
+const MAPS = {
+  dustwall: {
+    name: 'DUSTWALL', desc: 'Desert outpost · long mid',
+    rooms: [[18, 1, 29, 5], [8, 3, 17, 5], [3, 3, 8, 8], [2, 7, 15, 17], [30, 3, 39, 5], [39, 3, 44, 8], [32, 7, 45, 19], [21, 6, 26, 31], [17, 16, 30, 22], [14, 12, 21, 14], [26, 17, 32, 19], [3, 17, 8, 32], [39, 19, 44, 32], [3, 31, 44, 33], [14, 33, 33, 38], [26, 26, 39, 27]],
+    obst: [[7, 10, 8, 11, 1.4], [11, 13, 11, 14, 3.2], [4, 15, 4, 15, 1.4], [12, 16, 13, 16, 1.4], [9, 7, 10, 7, 3.2], [3, 10, 3, 10, 1.4],
+      [36, 11, 37, 12, 3.2], [40, 14, 41, 14, 1.4], [34, 16, 34, 16, 1.4], [42, 9, 42, 10, 1.4], [38, 17, 38, 17, 3.2], [44, 16, 44, 16, 1.4],
+      [23, 19, 24, 19, 3.2], [22, 24, 22, 24, 1.4], [25, 10, 25, 10, 1.4], [19, 21, 19, 21, 1.4], [28, 17, 28, 17, 1.4],
+      [5, 24, 5, 24, 1.4], [42, 26, 42, 26, 1.4], [10, 32, 10, 32, 1.4], [30, 32, 31, 32, 1.4], [36, 26, 36, 26, 1.4],
+      [19, 3, 19, 3, 1.4], [28, 3, 28, 3, 1.4], [6, 28, 6, 28, 3.2], [41, 29, 41, 29, 3.2]],
+    zones: { 1: [3, 8, 13, 16], 2: [33, 8, 44, 18], 3: [14, 34, 33, 38], 4: [18, 1, 29, 5] },
+    holds: { 1: [[4, 8], [13, 9], [12, 11], [3, 12], [9, 9], [6, 13]], 2: [[44, 8], [34, 8], [44, 12], [33, 10], [40, 9], [39, 12]], mid: [[23, 8], [25, 13], [21, 11], [24, 7]] },
+    entrances: { 1: [[5, 19], [17, 13]], 2: [[41, 21], [29, 18]] },
+    orbs: [[23, 15], [23, 28]],
+    duel: [[[8, 12], [28, 21]], [[39, 12], [19, 20]], [[5, 26], [34, 26]], [[23, 8], [23, 29]]],
+    signs: [['A ←', 3.02, 31.5, 1, '#d97a2b'], ['B →', 44.98, 31.5, -1, '#2b8ad9'], ['MID', 23.5, 33.98, 2, '#555f6b'], ['A', 2.02, 12, 1, '#d97a2b'], ['B', 45.98, 13, -1, '#2b8ad9']],
+    theme: { sky: 0xa9cbe0, floor: 0xffffff, def: 0x93a8cc, atk: 0xcf9f92, A: 0xdcc7a0, B: 0xa6c0c6, mid: 0xcabca8, crate: 0xffffff },
+  },
+  frostline: {
+    name: 'FROSTLINE', desc: 'Arctic station · central plaza',
+    rooms: [[20, 1, 27, 5], [9, 2, 19, 4], [28, 2, 38, 4], [4, 4, 15, 14], [32, 4, 43, 13], [21, 6, 26, 31], [16, 17, 31, 23], [15, 9, 21, 11], [26, 14, 32, 16],
+      [2, 15, 7, 33], [40, 14, 45, 33], [2, 31, 45, 34], [16, 34, 31, 38], [8, 20, 16, 22], [31, 26, 40, 28]],
+    obst: [[18, 19, 19, 20, 8], [28, 19, 29, 20, 8], [9, 8, 10, 9, 3.2], [6, 11, 6, 11, 1.4], [13, 6, 13, 6, 1.4], [11, 13, 12, 13, 1.4],
+      [37, 8, 38, 9, 3.2], [34, 11, 34, 11, 1.4], [41, 6, 41, 6, 1.4], [40, 11, 41, 11, 1.4], [23, 13, 24, 13, 1.4], [22, 27, 22, 27, 1.4],
+      [10, 32, 10, 32, 1.4], [36, 32, 37, 32, 1.4], [4, 24, 4, 24, 1.4], [43, 22, 43, 22, 3.2], [12, 21, 12, 21, 1.4], [35, 27, 35, 27, 1.4], [23, 21, 24, 21, 1.4]],
+    zones: { 1: [5, 5, 14, 13], 2: [33, 5, 42, 12], 3: [16, 35, 31, 38], 4: [20, 1, 27, 5] },
+    holds: { 1: [[5, 5], [14, 7], [13, 12], [5, 10], [8, 5], [11, 10]], 2: [[33, 5], [42, 7], [42, 12], [35, 12], [39, 5], [36, 10]], mid: [[23, 8], [22, 12], [25, 10], [24, 15]] },
+    entrances: { 1: [[4, 16], [16, 10]], 2: [[42, 15], [31, 15]] },
+    orbs: [[23, 18], [23, 29]],
+    duel: [[[9, 11], [28, 22]], [[38, 6], [18, 22]], [[4, 28], [42, 28]], [[23, 7], [23, 30]]],
+    signs: [],
+    theme: { sky: 0xc6dbea, floor: 0xe4ecf2, def: 0x8fa9cf, atk: 0xb3c3d4, A: 0xdfeaf2, B: 0xc2d7e2, mid: 0xcfd9e2, crate: 0xbfd6e6 },
+  },
+  canal: {
+    name: 'CANAL', desc: 'Sunset harbor · close fights',
+    rooms: [[19, 2, 28, 6], [3, 6, 14, 16], [33, 6, 44, 16], [9, 3, 18, 5], [29, 3, 38, 5], [8, 19, 39, 23], [5, 17, 9, 33], [38, 17, 42, 33],
+      [22, 7, 25, 18], [22, 24, 25, 31], [5, 31, 42, 33], [17, 34, 30, 38], [14, 10, 21, 12], [26, 13, 33, 15]],
+    obst: [[12, 20, 12, 21, 1.4], [18, 22, 19, 22, 1.4], [28, 20, 28, 20, 3.2], [34, 22, 35, 22, 1.4], [15, 19, 15, 19, 3.2], [31, 23, 31, 23, 1.4],
+      [7, 9, 8, 10, 3.2], [11, 13, 12, 13, 1.4], [4, 14, 4, 14, 1.4], [10, 7, 10, 7, 1.4],
+      [38, 9, 39, 10, 3.2], [35, 13, 35, 13, 1.4], [42, 12, 42, 12, 1.4], [37, 7, 37, 7, 1.4],
+      [12, 32, 12, 32, 1.4], [35, 32, 35, 32, 1.4], [7, 25, 7, 25, 1.4], [40, 26, 40, 26, 1.4], [24, 9, 24, 9, 1.4], [23, 28, 23, 28, 1.4]],
+    zones: { 1: [4, 7, 13, 15], 2: [34, 7, 43, 15], 3: [17, 35, 30, 38], 4: [19, 2, 28, 6] },
+    holds: { 1: [[4, 7], [13, 8], [12, 15], [5, 12], [9, 8], [9, 14]], 2: [[34, 7], [43, 8], [43, 14], [36, 15], [40, 7], [38, 13]], mid: [[23, 10], [24, 16], [22, 13], [25, 12]] },
+    entrances: { 1: [[7, 18], [20, 11]], 2: [[40, 18], [27, 14]] },
+    orbs: [[16, 21], [31, 21]],
+    duel: [[[8, 11], [30, 21]], [[39, 11], [16, 21]], [[7, 28], [40, 28]], [[23, 10], [23, 29]]],
+    signs: [],
+    water: [8, 21, 39, 21],
+    theme: { sky: 0xf0c7a2, floor: 0xf0dcc6, def: 0xc79a96, atk: 0xd9b28a, A: 0xe7b98e, B: 0x9ccac0, mid: 0xd89c7c, crate: 0xffe2c4 },
+  },
+};
+const MAP_IDS = Object.keys(MAPS);
+let curMap = null, SITE_RECT = {}, SPAWN_CELLS = {}, SITE_CELLS = {}, HOLDS = {}, ENTRANCES = {}, ORB_CELLS = [], DUEL_SPAWNS = [];
 function setZone(c0, r0, c1, r1, z) { for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (grid[r * GW + c] < WALL_H) zoneG[r * GW + c] = z; }
-setZone(3, 8, 13, 16, 1); setZone(33, 8, 44, 18, 2); setZone(14, 34, 33, 38, 3); setZone(18, 1, 29, 5, 4);
-const SITE_RECT = { 1: [3, 8, 13, 16], 2: [33, 8, 44, 18] };
-
 const hAt = (c, r) => (c < 0 || r < 0 || c >= GW || r >= GH) ? 99 : grid[r * GW + c];
 const cellOf = v => Math.floor(v / CELL);
 const hAtPos = (x, z) => hAt(cellOf(x), cellOf(z));
@@ -700,15 +728,21 @@ function nearestWalkable(c, r) {
   return [c, r];
 }
 function cellsWhere(fn) { const out = []; for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) if (walkable(c, r) && fn(c, r)) out.push([c, r]); return out; }
-const SPAWN_CELLS = { atk: cellsWhere((c, r) => zoneG[r * GW + c] === 3 && r >= 35), def: cellsWhere((c, r) => zoneG[r * GW + c] === 4 && r <= 3) };
-const SITE_CELLS = { 1: cellsWhere((c, r) => zoneG[r * GW + c] === 1), 2: cellsWhere((c, r) => zoneG[r * GW + c] === 2) };
-const HOLDS = {
-  1: [[4, 8], [13, 9], [12, 11], [3, 12], [9, 9], [6, 13]],
-  2: [[44, 8], [34, 8], [44, 12], [33, 10], [40, 9], [39, 12]],
-  mid: [[23, 8], [25, 13], [21, 11], [24, 7]],
-};
-const ENTRANCES = { 1: [[5, 19], [17, 13]], 2: [[41, 21], [29, 18]] };
-const ORB_CELLS = [[23, 15], [23, 28]];
+// fill the collision grid and the gameplay points for one map (no meshes)
+function applyMapData(id) {
+  const m = MAPS[id]; curMap = id;
+  grid.fill(WALL_H); zoneG.fill(0);
+  for (const [c0, r0, c1, r1] of m.rooms) for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * GW + c] = 0;
+  for (const [c0, r0, c1, r1, h] of m.obst) for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * GW + c] = h;
+  for (const z of [1, 2, 3, 4]) setZone(...m.zones[z], z);
+  SITE_RECT = { 1: m.zones[1], 2: m.zones[2] };
+  // spawn cells away from the barrier edge, so nobody starts pressed against it
+  const inner = z => cellsWhere((c, r) => zoneG[r * GW + c] === z && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dc, dr]) => hAt(c + dc, r + dr) >= WALL_H || zoneG[(r + dr) * GW + c + dc] === z));
+  SPAWN_CELLS = { atk: inner(3), def: inner(4) };
+  SITE_CELLS = { 1: cellsWhere((c, r) => zoneG[r * GW + c] === 1), 2: cellsWhere((c, r) => zoneG[r * GW + c] === 2) };
+  HOLDS = m.holds; ENTRANCES = m.entrances; ORB_CELLS = m.orbs; DUEL_SPAWNS = m.duel;
+}
+applyMapData('dustwall');
 
 /* --- A* pathfinding --- */
 function astar(sc, sr, ec, er) {
@@ -863,17 +897,19 @@ const MAT = {
 
 /* --- Map meshes --- */
 const mapGroup = new THREE.Group(); scene.add(mapGroup);
+// wall color by area: near a spawn or site it takes that area's color, elsewhere the map's mid color
 function regionColor(c, r) {
-  if (r <= 5 && c >= 18 && c <= 29) return 0x93a8cc;
-  if (r >= 34) return 0xcf9f92;
-  if (c <= 16 && r <= 18) return 0xdcc7a0;
-  if (c >= 31 && r <= 20) return 0xa6c0c6;
-  if (c <= 10) return 0xd4bf98;
-  if (c >= 37) return 0xa0b9be;
-  return 0xcabca8;
+  const t = MAPS[curMap].theme, z = MAPS[curMap].zones;
+  const near = ([c0, r0, c1, r1], pad) => c >= c0 - pad && c <= c1 + pad && r >= r0 - pad && r <= r1 + pad;
+  if (near(z[4], 2)) return t.def; if (near(z[3], 2)) return t.atk;
+  if (near(z[1], 3)) return t.A; if (near(z[2], 3)) return t.B;
+  return t.mid;
 }
-(function buildMap() {
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(MAPW, MAPH), new THREE.MeshLambertMaterial({ map: floorTex }));
+function buildMapMeshes() {
+  while (mapGroup.children.length) mapGroup.remove(mapGroup.children[0]);
+  const theme = MAPS[curMap].theme;
+  scene.background.setHex(theme.sky); scene.fog.color.setHex(theme.sky);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(MAPW, MAPH), new THREE.MeshLambertMaterial({ map: floorTex, color: theme.floor }));
   floor.rotation.x = -Math.PI / 2; floor.position.set(MAPW / 2, 0, MAPH / 2); floor.receiveShadow = true; mapGroup.add(floor);
   const walls = [], crates = [];
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
@@ -895,7 +931,7 @@ function regionColor(c, r) {
   const cm = new THREE.InstancedMesh(box, new THREE.MeshLambertMaterial({ map: crateTex }), crates.length);
   crates.forEach(([c, r, h], i) => {
     m.makeScale(CELL - .1, h, CELL - .1); m.setPosition((c + .5) * CELL, h / 2, (r + .5) * CELL); cm.setMatrixAt(i, m);
-    col.setHex(h > 2 ? 0x8fa3b0 : 0xffffff); cm.setColorAt(i, col);
+    col.setHex(h > 2 ? 0x8fa3b0 : theme.crate); cm.setColorAt(i, col);
   });
   cm.castShadow = cm.receiveShadow = true; mapGroup.add(cm);
   // site markings
@@ -915,13 +951,20 @@ function regionColor(c, r) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.5), new THREE.MeshBasicMaterial({ map: t }));
     p.position.set(c * CELL, 3.6, r * CELL); p.rotation.y = rotY; mapGroup.add(p);
   };
-  sign('A ←', 3.02, 31.5, Math.PI / 2, '#d97a2b'); sign('B →', 44.98, 31.5, -Math.PI / 2, '#2b8ad9');
-  sign('MID', 23.5, 33.98, Math.PI, '#555f6b'); sign('A', 2.02, 12, Math.PI / 2, '#d97a2b'); sign('B', 45.98, 13, -Math.PI / 2, '#2b8ad9');
-})();
+  for (const [txt, c, r, rot, color] of MAPS[curMap].signs) sign(txt, c, r, rot * Math.PI / 2, color);
+  // decorative shallow water along Canal's middle street
+  const wtr = MAPS[curMap].water;
+  if (wtr) {
+    const [c0, r0, c1, r1] = wtr, w = (c1 - c0 + 1) * CELL, d = (r1 - r0 + 1) * CELL - .6;
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshLambertMaterial({ color: 0x3a8ea8, emissive: 0x0c3442, transparent: true, opacity: .82 }));
+    water.rotation.x = -Math.PI / 2; water.position.set(c0 * CELL + w / 2, .04, (r0 + .5 + (r1 - r0) / 2) * CELL); mapGroup.add(water);
+  }
+}
 
 /* Buy-phase barriers */
 const barrierGroup = new THREE.Group(); scene.add(barrierGroup);
-(function buildBarriers() {
+function buildBarriers() {
+  while (barrierGroup.children.length) barrierGroup.remove(barrierGroup.children[0]);
   const tex = canvasTex(64, 64, (x) => { x.fillStyle = 'rgba(80,255,210,.18)'; x.fillRect(0, 0, 64, 64); x.strokeStyle = 'rgba(120,255,220,.6)'; x.lineWidth = 2; for (let i = -64; i < 128; i += 12) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 64, 64); x.stroke(); } }, 1, 2);
   const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false });
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
@@ -933,7 +976,7 @@ const barrierGroup = new THREE.Group(); scene.add(barrierGroup);
       barrierGroup.add(p);
     }
   }
-})();
+}
 
 /* --- Gun models --- */
 const MUZZLE_Z = { pistol: -.26, smg: -.5, rifle: -.78, sniper: -1.08, shotgun: -.52, heavy: -.86, knife: -.3, blades: -.3 };
@@ -2034,7 +2077,6 @@ function updateBot(b, dt) {
 function myTeam() { return player ? player.team : 0; }
 const DUEL = () => game.mode === 'duel';
 // 1v1 spawn pairs (cells) about 40-60 m apart, so a duel round starts quickly
-const DUEL_SPAWNS = [[[8, 12], [28, 21]], [[39, 12], [19, 20]], [[5, 26], [34, 26]], [[23, 8], [23, 29]]];
 let lastBannerFn = null;
 function bannerTeams(fn) { // a banner whose text depends on which team the viewer is on
   lastBannerFn = fn;
@@ -2042,6 +2084,8 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
   if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: fn(e.team) });
 }
 function setupMatch(agentId, humans = []) {
+  if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
+  loadMap(game.mapId);
   // clean up previous match
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops();
@@ -2211,7 +2255,7 @@ function finishMatch() {
   const mvp = all[0], p = player;
   const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
   profile.xp += gain;
-  profile.matches.unshift({ won, score: [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
+  profile.matches.unshift({ map: game.mapId, won, score: [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
   profile.matches = profile.matches.slice(0, 30); saveProfile();
   $('overStats').innerHTML = `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
@@ -2421,8 +2465,8 @@ let abilT = 0; function refreshAbilHudThrottled() { abilT -= 1; if (abilT <= 0) 
 /* --- Minimap --- */
 const mm = $('minimap'), mmx = mm.getContext('2d'), MMS = Math.min(mm.width / MAPW, mm.height / MAPH);
 const mmBase = document.createElement('canvas'); mmBase.width = mm.width; mmBase.height = mm.height;
-(function () {
-  const x = mmBase.getContext('2d');
+function drawMinimapBase() {
+  const x = mmBase.getContext('2d'); x.clearRect(0, 0, mmBase.width, mmBase.height);
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const h = grid[r * GW + c], z = zoneG[r * GW + c];
     if (h >= WALL_H) continue;
@@ -2430,8 +2474,13 @@ const mmBase = document.createElement('canvas'); mmBase.width = mm.width; mmBase
     x.fillRect(c * CELL * MMS, r * CELL * MMS, CELL * MMS + .5, CELL * MMS + .5);
   }
   x.font = '900 18px Oswald, sans-serif'; x.fillStyle = 'rgba(255,255,255,.7)'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText('A', 8.5 * CELL * MMS, 12.5 * CELL * MMS); x.fillText('B', 39 * CELL * MMS, 13.5 * CELL * MMS);
-})();
+  for (const k of [1, 2]) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(k === 1 ? 'A' : 'B', (c0 + c1 + 1) / 2 * CELL * MMS, (r0 + r1 + 1) / 2 * CELL * MMS); }
+}
+// switch the whole world to another map (collision, meshes, barriers, minimap)
+function loadMap(id) {
+  if (!MAPS[id]) id = 'dustwall';
+  applyMapData(id); buildMapMeshes(); buildBarriers(); drawMinimapBase();
+}
 function drawMinimap() {
   mmx.clearRect(0, 0, mm.width, mm.height); mmx.drawImage(mmBase, 0, 0);
   const P = (x, z) => [x * MMS, z * MMS];
@@ -2951,7 +3000,7 @@ function netProfileChanged() {
 function partyChanged() {
   if (net.role === 'host') {
     const me = net.members.find(m => m.id === net.myId); if (me) Object.assign(me, selfMember());
-    netBroadcast({ t: 'party', code: net.code, members: net.members, mode: playMode, diff: settings.diff, phase: net.phase, pub: net.public, auto: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0 });
+    netBroadcast({ t: 'party', code: net.code, members: net.members, mode: playMode, diff: settings.diff, map: settings.map || 'dustwall', phase: net.phase, pub: net.public, auto: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0 });
   }
   refreshPartyUI();
 }
@@ -2988,7 +3037,7 @@ function renderPartyPanel() {
 }
 function updatePlayLock() {
   const client = net.role === 'client', tooMany = playMode === 'duel' && net.role !== 'off' && net.members.length > 2;
-  $('modeStrip').classList.toggle('locked', client); $('diffSeg').classList.toggle('locked', client);
+  $('modeStrip').classList.toggle('locked', client); $('diffSeg').classList.toggle('locked', client); $('mapCard').classList.toggle('locked', client);
   $('btnStart').disabled = client || tooMany;
   if (!queueTimer) $('btnStart').textContent = client ? 'WAITING FOR HOST' : 'START';
 }
@@ -3088,7 +3137,7 @@ function startNetMatch() {
   selectedAgent = net.picks[net.myId].a;
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
   setupMatch(selectedAgent, humans);
-  netBroadcast({ t: 'start', roster: entities.map(e => ({ id: e.id, name: e.name, team: e.team, agent: e.agent, peer: e.isPlayer ? net.myId : (e.remote || null) })), mode: game.mode, target: game.target, half: game.half });
+  netBroadcast({ t: 'start', map: game.mapId, roster: entities.map(e => ({ id: e.id, name: e.name, team: e.team, agent: e.agent, peer: e.isPlayer ? net.myId : (e.remote || null) })), mode: game.mode, target: game.target, half: game.half });
   net.snapT = 0; hostNetTick(0);
   if (lastBannerFn) { for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: lastBannerFn(e.team) }); }
   else if (lastBanner) netBroadcast({ t: 'ui', f: 'banner', a: lastBanner });
@@ -3142,11 +3191,12 @@ function clientRecv(d) {
       net.phase = d.phase; net.public = !!d.pub; net.autoAt = d.auto > 0 ? Date.now() + d.auto * 1000 : 0;
       if (MODES.includes(d.mode)) { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
       if (DIFF[d.diff]) { net.hostDiff = d.diff; segSet('diffSeg', d.diff); }
+      if (MAP_CHOICES.includes(d.map) && d.map !== net.hostMap) { net.hostMap = d.map; renderMapCard(); }
       refreshPartyUI(); break;
     case 'deny': { const msg = String(d.m || 'Could not join.'); resetNet(); setPartyStatus(msg); break; }
     case 'chat': addChat(d.n == null ? null : cleanName(d.n), String(d.m || '')); break;
     case 'chatlog': net.chat = (d.log || []).slice(-40).map(c => ({ n: c.n == null ? null : cleanName(c.n), m: String(c.m || '').slice(0, 140) })); renderChat(); break;
-    case 'found': if (game.state === 'menu') { net.selAt = Date.now() + 1700 + clamp(+d.sel || SELECT_TIME, 5, 120) * 1000; showMatchFound(MODES.includes(d.mode) ? d.mode : 'comp', DIFF[d.diff] ? d.diff : 'normal'); } break;
+    case 'found': if (game.state === 'menu') { game.mapId = MAPS[d.map] ? d.map : 'dustwall'; net.selAt = Date.now() + 1700 + clamp(+d.sel || SELECT_TIME, 5, 120) * 1000; showMatchFound(MODES.includes(d.mode) ? d.mode : 'comp', DIFF[d.diff] ? d.diff : 'normal'); } break;
     case 'picks': net.picks = d.picks || {}; if (!$('select').classList.contains('hidden')) renderAgents(); break;
     case 'start': clientSetupMatch(d); break;
     case 'bye': onHostLost(); break;
@@ -3166,6 +3216,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
+  game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops(); orbs.forEach(o => scene.remove(o.mesh)); orbs = [];
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
@@ -3499,7 +3550,26 @@ document.querySelectorAll('#modeStrip .mode').forEach(m => m.onclick = () => {
   document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x === m));
   if (net.role === 'host') partyChanged(); updatePlayLock();
 });
-$('mapThumb').getContext('2d').drawImage(mmBase, 0, 0, 96, 80);
+const MAP_CHOICES = [...MAP_IDS, 'random'];
+const resolveMap = id => MAPS[id] ? id : pick(MAP_IDS);
+const mapLabel = id => MAPS[id] ? MAPS[id].name : 'RANDOM';
+function renderMapCard() {
+  const id = net.role === 'client' ? (net.hostMap || 'dustwall') : (settings.map || 'dustwall');
+  $('mapName').textContent = mapLabel(id);
+  $('mapDesc').textContent = MAPS[id] ? MAPS[id].desc : 'A different map every match';
+  const x = $('mapThumb').getContext('2d'); x.clearRect(0, 0, 96, 80);
+  if (MAPS[id] && game.state === 'menu') { if (curMap !== id) loadMap(id); x.drawImage(mmBase, 0, 0, 96, 80); }
+  else { x.fillStyle = '#1c2631'; x.fillRect(0, 0, 96, 80); x.fillStyle = '#ece8e1'; x.font = '700 40px Oswald, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('?', 48, 42); }
+}
+function stepMap(dir) {
+  if (net.role === 'client' || queueTimer) return;
+  const i = MAP_CHOICES.indexOf(settings.map || 'dustwall');
+  settings.map = MAP_CHOICES[(i + dir + MAP_CHOICES.length) % MAP_CHOICES.length]; saveSettings(); tick();
+  renderMapCard(); if (net.role === 'host') partyChanged();
+}
+$('mapPrev').onclick = e => { e.stopPropagation(); stepMap(-1); };
+$('mapNext').onclick = e => { e.stopPropagation(); stepMap(1); };
+$('mapCard').onclick = () => stepMap(1);
 let queueTimer = null, queueStart = 0;
 const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : playMode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE';
 const MODES = ['comp', 'swift', 'duel'];
@@ -3513,13 +3583,13 @@ $('btnStart').onclick = () => {
   queueTimer = setTimeout(matchFound, rand(1800, 4200));
 };
 function matchFound() {
-  queueTimer = null;
-  if (net.role === 'host') { net.phase = 'select'; net.picks = {}; net.autoAt = 0; net.selAt = Date.now() + 1700 + SELECT_TIME * 1000; partyChanged(); netBroadcast({ t: 'found', mode: playMode, diff: settings.diff, sel: SELECT_TIME }); }
+  queueTimer = null; game.mapId = resolveMap(settings.map);
+  if (net.role === 'host') { net.phase = 'select'; net.picks = {}; net.autoAt = 0; net.selAt = Date.now() + 1700 + SELECT_TIME * 1000; partyChanged(); netBroadcast({ t: 'found', mode: playMode, diff: settings.diff, sel: SELECT_TIME, map: game.mapId }); }
   showMatchFound(playMode, settings.diff);
 }
 function showMatchFound(mode, diff) {
   playMode = mode;
-  $('mfSub').textContent = `${modeName()} · DUSTWALL · ${diff.toUpperCase()} BOTS${net.role !== 'off' ? ' · PARTY OF ' + net.members.length : ''}`;
+  $('mfSub').textContent = `${modeName()} · ${mapLabel(game.mapId)} · ${diff.toUpperCase()} BOTS${net.role !== 'off' ? ' · PARTY OF ' + net.members.length : ''}`;
   $('matchFound').classList.remove('hidden');
   [660, 880, 1320].forEach((f, i) => sndTone(f, .25, .25, 'triangle', 0, undefined, undefined, i * .1));
   setTimeout(() => { $('matchFound').classList.add('hidden'); cancelQueue(); if (game.state === 'menu') goSelect(mode); }, 1700);
@@ -3564,7 +3634,7 @@ function renderCareer() {
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
   html += '<div class="collCat">RECENT MATCHES</div>';
-  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${x.mode === 'swift' ? 'SWIFTPLAY' : x.mode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE'}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
+  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${x.mode === 'swift' ? 'SWIFTPLAY' : x.mode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE'}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
   $('careerBox').innerHTML = html;
 }
@@ -3622,17 +3692,18 @@ $('btnLock').onclick = () => {
 };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
+  game.mapId = null;
   game.state = 'menu'; game.paused = false; shopOpen = false;
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
   document.exitPointerLock && document.exitPointerLock();
   entities.forEach(e => e.mesh && (e.mesh.visible = false)); clearEffects(); clearDrops(); vmRoot.visible = false;
   if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); }
-  refreshAccount(); net.partySig = ''; refreshPartyUI(); showTab('home');
+  refreshAccount(); net.partySig = ''; refreshPartyUI(); showTab('home'); renderMapCard();
   if (net.role === 'host') { net.phase = 'lobby'; partyChanged(); }
 }
 $('btnQuit').onclick = () => { if (net.role !== 'off') leaveParty(); toMenu(); };
 $('btnMenu').onclick = toMenu;
-$('btnAgain').onclick = () => { $('over').classList.add('hidden'); $('hud').classList.remove('hidden'); setupMatch(selectedAgent); lockPointer(); };
+$('btnAgain').onclick = () => { game.mapId = resolveMap(settings.map); $('over').classList.add('hidden'); $('hud').classList.remove('hidden'); setupMatch(selectedAgent); lockPointer(); };
 
 $('partyBtn').onclick = () => { $('partyPanel').classList.toggle('hidden'); $('partyBtn').classList.toggle('open', !$('partyPanel').classList.contains('hidden')); tick(); };
 $('btnCreateParty').onclick = () => { initAudio(); createParty(); };
@@ -3648,6 +3719,7 @@ $('btnCopyCode').onclick = () => {
   try { navigator.clipboard.writeText(code).then(ok, done); } catch (e) { done(); }
 };
 
+loadMap('dustwall'); renderMapCard();
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
 if (!profile.nameSet && profile.name === 'Player') openNameModal(true);
 { const jm = location.search.match(/[?&]join=([A-Za-z0-9]{5})\b/); if (jm) { $('partyPanel').classList.remove('hidden'); joinParty(jm[1]); } }
