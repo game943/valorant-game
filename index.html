@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 32</div>
+<div id="buildTag">VALOR STRIKE · build 33</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1275,132 +1275,185 @@ function buildBarriers() {
 /* --- Gun models --- */
 const MUZZLE_Z = { beam: -.2, pistol: -.26, smg: -.5, rifle: -.78, sniper: -1.08, shotgun: -.52, heavy: -.86, knife: -.3, blades: -.3 };
 const GUN_MATS = {};
-const gm = (c, em) => GUN_MATS[c + ':' + (em || 0)] || (GUN_MATS[c + ':' + (em || 0)] = new THREE.MeshLambertMaterial({ color: c, emissive: em || 0 }));
+const gm = (c, em) => GUN_MATS[c + ':' + (em || 0)] || (GUN_MATS[c + ':' + (em || 0)] = (() => {
+  const metal = c === 0x5a616c || c === 0x8e959f || c === 0xcfd6de, wood = c === 0x7a4a26 || c === 0x9a6236;
+  return new THREE.MeshPhongMaterial({ color: c, emissive: em || 0, shininess: metal ? 80 : wood ? 12 : 35, specular: metal ? 0x8a8f96 : wood ? 0x1a1208 : 0x30343a });
+})());
 const GC = { blk: 0x1b1d22, dk: 0x2b3038, mt: 0x5a616c, lt: 0x8e959f, wood: 0x7a4a26, wood2: 0x9a6236, tan: 0xb89c6a, olive: 0x5b6146, white: 0xd8cfc0, glass: 0x4fc3ff };
-// Each builder gets (B box, C z-cylinder, X x-cylinder, Y y-cylinder) and returns the muzzle z.
+// Gun builders. Coordinates: f = distance forward from the grip (the barrel points to -z), y = up.
+// Helpers (h): S = extruded side profile with bevelled edges, Cf/Bf = cylinder/box placed by forward range,
+// Rail = picatinny rail, TG = trigger guard + trigger, Sight = front post / rear notch. Each builder returns the muzzle z.
 const GUN_BUILDERS = {
-  classic(B, C) {
-    B(.058, .07, .27, 0, .02, -.1, gm(GC.dk)); B(.05, .05, .22, 0, -.04, -.11, gm(GC.white));
-    B(.05, .15, .075, 0, -.1, .0, gm(GC.dk), .22); C(.014, .04, 0, .02, -.25, gm(GC.mt)); B(.03, .02, .06, 0, -.06, -.06, gm(GC.mt));
-    return -.27;
+  classic(h, M) {
+    h.S([[-.04, .0], [.17, .0], [.17, .045], [-.035, .05], [-.045, .03]], .05, M.dk);                     // slide
+    h.Bf(.051, .006, -.02, .16, .044, M.mt); for (let i = 0; i < 5; i++) h.Bf(.052, .03, -.03 + i * .009, -.026 + i * .009, .025, M.blk); // serrations
+    h.S([[-.03, .0], [.15, .0], [.15, -.02], [.06, -.025], [-.03, -.025]], .046, M.white);                // frame
+    h.S([[.0, -.02], [-.05, -.02], [-.085, -.15], [-.035, -.16], [.015, -.04]], .048, M.white);          // grip
+    for (let i = 0; i < 4; i++) h.Bf(.05, .005, -.07 + i * .005, -.03 + i * .005, -.06 - i * .022, gm(0xbdb4a4));
+    h.TG(.02, -.02, .045); h.Cf(.008, .02, .165, .028, M.blk); h.Bf(.01, .012, .155, .165, .056, M.mt); h.Bf(.03, .012, -.03, -.015, .056, M.mt);
+    return -.19;
   },
-  shorty(B, C) {
-    C(.021, .3, -.022, .02, -.22, gm(GC.mt)); C(.021, .3, .022, .02, -.22, gm(GC.mt));
-    B(.075, .08, .14, 0, .0, .0, gm(GC.dk)); B(.07, .05, .14, 0, -.03, -.2, gm(0xa8342a));
-    B(.055, .15, .075, 0, -.11, .07, gm(GC.wood), .3);
+  shorty(h, M) {
+    h.Cf(.022, .3, .02, .03, M.mt, -.022); h.Cf(.022, .3, .02, .03, M.mt, .022); h.Cf(.008, .3, .02, .052, M.lt);
+    h.S([[-.06, -.01], [.08, -.01], [.08, .06], [-.05, .06]], .085, M.dk);
+    h.S([[.08, -.012], [.24, -.008], [.24, .02], [.08, .02]], .07, M.acc(0xa8342a));
+    h.S([[-.04, -.01], [-.09, -.01], [-.15, -.15], [-.1, -.17], [-.02, -.03]], .05, M.wood);
+    h.TG(-.01, -.01, .05); h.Bf(.03, .01, .3, .32, .06, M.blk);
+    return -.34;
+  },
+  frenzy(h, M) {
+    h.S([[-.05, .0], [.17, .0], [.17, .05], [-.04, .055], [-.055, .035]], .052, M.dk);
+    h.Bf(.053, .016, .0, .15, .05, M.acc(0xe0702a)); h.Rail(-.02, .14, .058, .025);
+    h.S([[.0, -.005], [-.05, -.005], [-.08, -.26], [-.02, -.27], [.02, -.03]], .046, M.blk);           // grip with long mag inside
+    h.Bf(.044, .02, -.085, -.02, -.27, M.mt);
+    h.S([[.13, -.005], [.1, -.005], [.11, -.11], [.14, -.11]], .036, M.dk);                              // front grip
+    h.TG(.03, -.005, .05); h.Cf(.012, .04, .17, .025, M.mt); h.Cf(.016, .03, .2, .025, M.blk);
+    return -.24;
+  },
+  ghost(h, M) {
+    h.S([[-.04, .0], [.16, .0], [.16, .044], [-.035, .05], [-.045, .03]], .05, M.body(0x3a4656));
+    for (let i = 0; i < 5; i++) h.Bf(.052, .028, -.03 + i * .009, -.026 + i * .009, .025, M.blk);
+    h.S([[-.03, .0], [.15, .0], [.15, -.022], [-.03, -.022]], .046, M.dk);
+    h.S([[.0, -.02], [-.05, -.02], [-.08, -.15], [-.03, -.16], [.015, -.04]], .048, M.blk);
+    h.TG(.02, -.02, .045);
+    h.Cf(.026, .2, .17, .024, M.blk); for (let i = 0; i < 4; i++) h.Cf(.0275, .006, .2 + i * .045, .024, M.mt); h.Cf(.022, .006, .37, .024, M.dk);
     return -.38;
   },
-  frenzy(B, C) {
-    B(.06, .09, .26, 0, .02, -.08, gm(GC.dk)); B(.062, .025, .2, 0, .075, -.08, gm(0xe0702a));
-    B(.05, .3, .06, 0, -.17, .02, gm(GC.blk), .12); B(.04, .1, .045, 0, -.07, -.17, gm(GC.mt));
-    C(.016, .06, 0, .03, -.24, gm(GC.mt));
-    return -.28;
+  sheriff(h, M) {
+    h.Cf(.02, .2, .1, .045, M.lt); h.S([[.06, .025], [.3, .03], [.3, .065], [.06, .07]], .03, M.mt);       // barrel + top rib
+    h.Bf(.012, .025, .27, .29, .085, M.mt);
+    h.S([[-.03, -.01], [.07, -.01], [.07, .07], [-.02, .075], [-.04, .05]], .04, M.dk);                   // frame
+    const cyl = h.Cf(.042, .075, .0, .03, M.mt); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; h.Cf(.007, .077, .0, .03 + Math.sin(a) * .028, M.blk, Math.cos(a) * .028); }
+    h.S([[-.02, -.005], [-.06, .0], [-.13, -.13], [-.08, -.15], [.0, -.03]], .044, M.furn(GC.wood2));
+    h.Bf(.012, .025, -.04, -.03, .07, M.mt); h.TG(.0, -.01, .04);
+    return -.31;
   },
-  ghost(B, C) {
-    B(.056, .072, .26, 0, .02, -.08, gm(0x3a4656)); B(.05, .045, .2, 0, -.035, -.1, gm(GC.dk));
-    B(.05, .15, .075, 0, -.1, .02, gm(GC.blk), .22); C(.028, .24, 0, .02, -.33, gm(GC.blk)); C(.03, .02, 0, .02, -.44, gm(GC.mt));
-    return -.46;
+  stinger(h, M) {
+    h.S([[-.08, -.035], [.24, -.035], [.26, .0], [.26, .045], [-.08, .05]], .06, M.dk);
+    h.Bf(.062, .012, .02, .2, .04, M.acc(0xc0392b)); h.Rail(-.05, .2, .058, .028);
+    h.S([[.0, -.03], [-.045, -.03], [-.08, -.16], [-.035, -.17], [.02, -.045]], .045, M.blk);
+    h.S([[.14, -.035], [.08, -.035], [.07, -.24], [.12, -.24]], .04, M.blk);
+    h.TG(.03, -.035, .05);
+    for (const x of [-.022, .022]) h.Bf(.008, .008, -.38, -.08, .015, M.mt, x); h.Bf(.06, .07, -.4, -.37, -.01, M.mt);
+    h.Cf(.012, .08, .26, .02, M.mt); h.Cf(.017, .03, .32, .02, M.blk); h.Sight(.24, .055, -.06, .058);
+    return -.36;
   },
-  sheriff(B, C, X, Y) {
-    C(.022, .26, 0, .04, -.22, gm(GC.lt)); B(.03, .03, .26, 0, .07, -.2, gm(GC.mt)); B(.03, .025, .02, 0, .09, -.32, gm(GC.mt));
-    C(.05, .1, 0, .015, -.04, gm(GC.mt)); B(.06, .07, .12, 0, .02, .04, gm(GC.dk));
-    B(.055, .17, .08, 0, -.1, .1, gm(GC.wood2), .45); B(.02, .05, .03, 0, -.04, .02, gm(GC.mt));
-    return -.35;
+  spectre(h, M) {
+    h.S([[-.08, -.03], [.28, -.03], [.28, .04], [.25, .05], [-.06, .055], [-.08, .04]], .06, M.body(0x2f3640));
+    h.Bf(.062, .01, .0, .24, .02, M.acc(0x2fe0b6)); h.Rail(-.05, .24, .056, .026);
+    h.S([[.0, -.025], [-.045, -.025], [-.075, -.16], [-.03, -.17], [.02, -.04]], .045, M.blk);
+    h.S([[.15, -.03], [.1, -.03], [.07, -.2], [.12, -.2]], .038, M.blk);
+    h.S([[-.08, .03], [-.08, -.02], [-.3, -.06], [-.32, -.06], [-.32, .02], [-.25, .03]], .045, M.dk);
+    h.TG(.03, -.03, .05); h.Cf(.03, .26, .28, .01, M.blk); h.Cf(.032, .008, .52, .01, M.mt); h.Sight(.26, .055, -.05, .058);
+    return -.56;
   },
-  stinger(B, C) {
-    B(.065, .1, .36, 0, 0, -.12, gm(GC.dk)); B(.067, .03, .2, 0, .05, -.18, gm(0xc0392b));
-    B(.045, .22, .06, 0, -.15, -.12, gm(GC.blk)); B(.05, .14, .06, 0, -.1, .04, gm(GC.dk), .25);
-    B(.01, .01, .26, -.025, -.02, .19, gm(GC.mt)); B(.01, .01, .26, .025, -.02, .19, gm(GC.mt)); B(.06, .08, .015, 0, -.02, .32, gm(GC.mt));
-    C(.016, .1, 0, .01, -.35, gm(GC.mt));
-    return -.4;
+  bucky(h, M) {
+    h.Cf(.02, .55, .1, .045, M.mt); h.Cf(.017, .42, .1, .0, M.dk); h.Bf(.012, .015, .63, .645, .07, M.lt);
+    h.S([[-.08, -.035], [.12, -.035], [.12, .06], [-.08, .065]], .06, M.dk);
+    h.S([[.18, -.03], [.4, -.03], [.4, .02], [.18, .02]], .07, M.furn(GC.wood2)); for (let i = 0; i < 6; i++) h.Bf(.072, .006, .2 + i * .03, .21 + i * .03, -.03, M.furn(GC.wood));
+    h.S([[-.08, .05], [-.08, -.04], [-.02, -.04], [-.04, -.15], [-.1, -.16], [-.48, -.12], [-.5, -.12], [-.5, .0], [-.42, .03]], .055, M.furn(GC.wood));
+    h.Bf(.058, .14, -.52, -.5, -.06, M.blk); h.TG(.03, -.035, .05);
+    return -.66;
   },
-  spectre(B, C) {
-    B(.07, .11, .4, 0, 0, -.12, gm(0x2f3640)); B(.072, .03, .3, 0, .06, -.12, gm(0x2fe0b6));
-    B(.045, .2, .065, 0, -.15, -.13, gm(GC.blk)); B(.055, .14, .06, 0, -.1, .04, gm(GC.blk), .25);
-    B(.05, .09, .2, 0, -.01, .17, gm(GC.dk)); C(.032, .26, 0, .01, -.45, gm(GC.blk));
+  judge(h, M) {
+    h.S([[-.2, -.04], [.3, -.04], [.32, .0], [.32, .07], [-.18, .075], [-.2, .05]], .09, M.body(GC.olive));
+    h.Bf(.092, .015, -.1, .25, .06, M.blk); h.Rail(-.12, .25, .08, .03);
+    h.Cf(.03, .2, .3, .03, M.blk); h.Cf(.024, .1, .48, .03, M.mt); for (let i = 0; i < 3; i++) h.Bf(.064, .008, .38 + i * .04, .39 + i * .04, .062, M.dk);
+    h.X(.095, .075, 0, -.14, -.08, M.blk); h.X(.04, .078, 0, -.14, -.08, M.mt);
+    h.S([[.0, -.035], [-.045, -.035], [-.08, -.17], [-.035, -.18], [.02, -.05]], .05, M.blk);
+    h.S([[-.2, .06], [-.2, -.03], [-.42, -.07], [-.44, -.07], [-.44, .05]], .07, M.body(GC.olive));
+    h.S([[.24, -.04], [.2, -.04], [.21, -.15], [.25, -.15]], .04, M.dk); h.TG(.03, -.04, .055);
+    return -.58;
+  },
+  bulldog(h, M) {
+    h.S([[-.38, -.045], [.32, -.045], [.34, -.01], [.34, .05], [-.36, .06], [-.38, .04]], .07, M.body(GC.tan));
+    h.Bf(.072, .03, .14, .32, -.03, M.dk);
+    for (const f of [-.1, .2]) h.Bf(.025, .07, f, f + .03, .095, M.dk); h.S([[-.12, .12], [.24, .12], [.24, .145], [-.12, .145]], .03, M.dk);
+    h.S([[.04, -.04], [.0, -.04], [-.04, -.17], [.0, -.18], [.06, -.06]], .046, M.dk);
+    h.S([[-.04, -.045], [-.11, -.045], [-.14, -.2], [-.07, -.2]], .045, M.dk);
+    h.Cf(.014, .24, .33, .015, M.mt); h.Cf(.02, .05, .55, .015, M.blk); h.TG(.06, -.045, .05); h.Bf(.072, .13, -.4, -.38, -.0, M.blk);
     return -.6;
   },
-  bucky(B, C) {
-    C(.022, .62, 0, .03, -.28, gm(GC.mt)); C(.018, .5, 0, -.02, -.24, gm(GC.dk));
-    B(.07, .1, .2, 0, .01, 0, gm(GC.dk)); B(.07, .07, .18, 0, -.03, -.34, gm(GC.wood2));
-    B(.06, .12, .28, 0, -.03, .23, gm(GC.wood), -.1); B(.05, .13, .06, 0, -.11, .05, gm(GC.wood), .25);
-    return -.6;
-  },
-  judge(B, C, X) {
-    B(.1, .14, .52, 0, 0, -.16, gm(GC.olive)); C(.035, .2, 0, .03, -.5, gm(GC.blk)); B(.104, .03, .3, 0, .08, -.18, gm(GC.blk));
-    X(.1, .07, 0, -.15, -.08, gm(GC.blk)); B(.06, .14, .06, 0, -.11, .05, gm(GC.blk), .25);
-    B(.075, .13, .2, 0, -.01, .2, gm(GC.olive)); B(.04, .12, .05, 0, -.11, -.32, gm(GC.dk));
-    return -.6;
-  },
-  bulldog(B, C) {
-    B(.075, .12, .54, 0, 0, -.18, gm(GC.tan)); B(.077, .05, .26, 0, -.02, -.3, gm(GC.dk));
-    B(.02, .07, .03, 0, .09, -.06, gm(GC.dk)); B(.02, .07, .03, 0, .09, -.26, gm(GC.dk)); B(.03, .025, .24, 0, .13, -.16, gm(GC.dk));
-    B(.05, .2, .08, 0, -.15, -.16, gm(GC.dk)); B(.055, .14, .06, 0, -.11, .02, gm(GC.dk), .25);
-    B(.06, .12, .22, 0, -.01, .2, gm(GC.tan)); C(.02, .2, 0, .02, -.54, gm(GC.mt)); B(.04, .04, .05, 0, .02, -.66, gm(GC.blk));
-    return -.7;
-  },
-  guardian(B, C, X, Y) {
-    B(.07, .11, .52, 0, 0, -.14, gm(GC.dk)); B(.072, .08, .3, 0, -.01, -.38, gm(GC.wood2));
-    B(.06, .14, .32, 0, -.02, .26, gm(GC.wood), -.08); B(.05, .14, .07, 0, -.13, -.08, gm(GC.blk));
-    B(.05, .14, .06, 0, -.11, .05, gm(GC.wood), .25); C(.018, .4, 0, .02, -.72, gm(GC.mt));
-    C(.03, .2, 0, .11, -.12, gm(GC.blk)); B(.02, .04, .03, 0, .07, -.12, gm(GC.mt)); C(.033, .01, 0, .11, -.225, gm(GC.glass, 0x123c55));
-    return -.94;
-  },
-  phantom(B, C) {
-    B(.072, .12, .56, 0, 0, -.18, gm(GC.blk)); B(.074, .025, .5, 0, .065, -.2, gm(GC.dk)); B(.074, .02, .3, 0, -.02, -.32, gm(0x37d6ff, 0x0b4a5a));
-    B(.05, .2, .08, 0, -.15, -.12, gm(GC.dk), -.08); B(.055, .14, .06, 0, -.11, .04, gm(GC.blk), .25);
-    B(.05, .14, .24, 0, -.03, .22, gm(GC.dk), .12); B(.04, .06, .1, 0, .1, -.14, gm(GC.mt));
-    C(.036, .3, 0, .01, -.6, gm(GC.blk)); C(.038, .02, 0, .01, -.75, gm(GC.mt));
-    return -.78;
-  },
-  vandal(B, C) {
-    B(.07, .11, .44, 0, 0, -.12, gm(GC.dk)); B(.072, .085, .24, 0, -.005, -.42, gm(GC.wood2)); C(.012, .26, 0, .06, -.36, gm(GC.mt));
-    B(.05, .1, .07, 0, -.1, -.14, gm(0xe0702a), -.15); B(.05, .12, .07, 0, -.2, -.1, gm(0xe0702a), -.45);
-    B(.055, .14, .06, 0, -.11, .04, gm(GC.wood), .25); B(.06, .11, .3, 0, -.03, .24, gm(GC.wood), -.12);
-    C(.018, .24, 0, .01, -.64, gm(GC.mt)); B(.015, .06, .02, 0, .06, -.74, gm(GC.mt)); B(.03, .04, .06, 0, .075, -.08, gm(GC.mt));
-    return -.78;
-  },
-  marshal(B, C, X, Y) {
-    B(.06, .09, .7, 0, 0, -.22, gm(GC.wood2)); B(.06, .13, .3, 0, -.03, .26, gm(GC.wood), -.1);
-    C(.016, .44, 0, .03, -.78, gm(GC.mt)); B(.05, .06, .2, 0, .045, -.02, gm(GC.mt));
-    X(.012, .08, .05, .05, .06, gm(GC.lt)); Y(.015, .03, .09, .03, .06, gm(GC.lt));
-    C(.026, .2, 0, .12, -.04, gm(GC.dk)); B(.02, .04, .03, 0, .08, -.04, gm(GC.mt)); C(.03, .01, 0, .12, -.145, gm(GC.glass, 0x123c55));
+  guardian(h, M) {
+    h.S([[-.08, -.03], [.3, -.03], [.3, .04], [-.08, .045]], .062, M.dk);
+    h.S([[.3, -.035], [.62, -.03], [.62, .02], [.3, .03]], .068, M.furn(GC.wood2));
+    h.S([[-.05, .03], [-.08, -.05], [-.0, -.06], [-.04, -.17], [-.1, -.17], [-.14, -.08], [-.48, -.06], [-.52, -.15], [-.56, -.15], [-.56, .03], [-.3, .045]], .058, M.furn(GC.wood));
+    h.Cf(.013, .38, .6, .0, M.mt); h.Cf(.018, .05, .96, .0, M.blk); h.Bf(.014, .04, .9, .92, .03, M.mt);
+    h.S([[.16, -.03], [.08, -.03], [.08, -.12], [.16, -.12]], .045, M.blk); h.TG(.03, -.03, .05);
+    h.Scope(-.06, .2, .11, .022, M);
     return -1.0;
   },
-  outlaw(B, C) {
-    C(.026, .66, 0, .055, -.48, gm(GC.dk)); C(.026, .66, 0, .0, -.48, gm(GC.dk)); B(.062, .1, .04, 0, .03, -.78, gm(0xb3322a));
-    B(.08, .14, .22, 0, -.01, -.04, gm(GC.blk)); B(.07, .08, .2, 0, -.02, -.3, gm(0xb3322a));
-    B(.06, .14, .3, 0, -.04, .22, gm(GC.dk), -.1); B(.055, .14, .06, 0, -.12, .07, gm(GC.blk), .25);
-    C(.04, .3, 0, .15, -.12, gm(GC.blk)); B(.02, .05, .04, 0, .1, -.1, gm(GC.mt)); C(.042, .01, 0, .15, -.275, gm(GC.glass, 0x123c55));
-    return -.84;
+  phantom(h, M) {
+    h.S([[-.12, .0], [.3, .0], [.3, .05], [-.1, .06], [-.12, .05]], .062, M.blk);
+    h.S([[-.12, -.035], [.12, -.035], [.15, -.005], [.3, .0], [-.12, .0]], .06, M.dk); h.Rail(-.1, .28, .065, .026);
+    h.S([[.3, -.035], [.6, -.035], [.6, .045], [.3, .055]], .066, M.dk); h.Bf(.068, .012, .33, .56, -.005, M.acc(0x37d6ff, 0x0b4a5a));
+    for (let i = 0; i < 5; i++) h.Bf(.068, .018, .34 + i * .05, .37 + i * .05, .02, M.blk);
+    h.S([[-.12, .045], [-.12, -.03], [-.2, -.05], [-.44, -.1], [-.47, -.1], [-.47, .035], [-.3, .045]], .05, M.blk);
+    h.S([[.0, -.03], [-.045, -.03], [-.08, -.17], [-.035, -.18], [.02, -.045]], .046, M.blk);
+    h.S([[.14, -.035], [.07, -.035], [.04, -.21], [.11, -.21]], .046, M.dk); h.TG(.03, -.035, .05);
+    h.Cf(.034, .3, .6, .012, M.blk); h.Cf(.036, .01, .85, .012, M.mt); h.Sight(.26, .072, -.08, .072);
+    return -.9;
   },
-  operator(B, C, X, Y) {
-    B(.08, .13, .66, 0, 0, -.18, gm(0x3e4a3c)); B(.07, .16, .3, 0, -.02, .3, gm(0x3e4a3c), -.06); B(.072, .05, .16, 0, .09, .34, gm(GC.dk));
-    C(.024, .5, 0, .03, -.76, gm(GC.dk)); B(.07, .05, .1, 0, .03, -1.06, gm(GC.blk)); B(.074, .012, .02, 0, .03, -1.02, gm(GC.mt));
-    C(.06, .44, 0, .17, -.12, gm(GC.blk)); C(.066, .06, 0, .17, -.35, gm(GC.dk)); C(.066, .06, 0, .17, .1, gm(GC.dk));
-    C(.058, .01, 0, .17, -.385, gm(GC.glass, 0x123c55)); B(.03, .07, .05, 0, .09, -.22, gm(GC.mt)); B(.03, .07, .05, 0, .09, -.02, gm(GC.mt));
-    X(.014, .1, .05, .06, .06, gm(GC.lt)); B(.05, .16, .08, 0, -.15, -.1, gm(GC.blk));
-    B(.055, .15, .06, 0, -.12, .07, gm(GC.dk), .25);
-    const l1 = B(.015, .2, .015, -.035, -.1, -.5, gm(GC.mt)); l1.rotation.z = .35; const l2 = B(.015, .2, .015, .035, -.1, -.5, gm(GC.mt)); l2.rotation.z = -.35;
+  vandal(h, M) {
+    h.S([[-.1, -.035], [.26, -.035], [.26, .03], [.21, .045], [-.08, .05], [-.1, .04]], .064, M.dk);
+    h.Bf(.066, .008, -.06, .2, .046, M.mt); h.Bf(.02, .012, .1, .13, .015, M.mt, .035);
+    h.S([[-.1, .035], [-.1, -.03], [-.46, -.11], [-.48, -.11], [-.48, .02], [-.42, .03]], .05, M.furn(GC.wood));
+    h.Bf(.052, .135, -.495, -.48, -.045, M.blk);
+    h.S([[.0, -.03], [-.045, -.03], [-.09, -.17], [-.05, -.18], [.03, -.04]], .045, M.blk);
+    h.S([[.26, -.035], [.5, -.035], [.5, .0], [.47, .022], [.28, .022], [.26, .01]], .066, M.furn(GC.wood2));
+    h.Cf(.018, .2, .28, .055, M.furn(GC.wood2)); h.Bf(.03, .05, .48, .52, .045, M.mt);
+    h.Cf(.012, .3, .48, .015, M.mt); h.Bf(.02, .05, .72, .74, .045, M.mt); h.Cf(.017, .06, .76, .015, M.blk);
+    h.S([[.17, -.035], [.08, -.035], [.04, -.12], ['q', .03, -.2, .07, -.25], [.13, -.24], ['q', .1, -.16, .17, -.035]], .044, M.acc(0xe0702a));
+    h.Bf(.03, .025, .2, .23, .055, M.mt); h.TG(.03, -.035, .05);
+    return -.82;
+  },
+  marshal(h, M) {
+    h.S([[-.1, -.035], [.66, -.03], [.66, .02], [.2, .035], [-.08, .04]], .055, M.furn(GC.wood2));
+    h.S([[-.08, .03], [-.1, -.04], [-.02, -.05], [-.06, -.15], [-.12, -.15], [-.16, -.07], [-.52, -.06], [-.55, -.15], [-.58, -.15], [-.58, .02]], .055, M.furn(GC.wood));
+    h.Cf(.016, .5, .6, .03, M.mt); h.Cf(.02, .04, 1.08, .03, M.blk);
+    h.S([[-.06, .02], [.18, .02], [.18, .07], [-.06, .07]], .05, M.mt); h.X(.012, .09, .06, .05, .04, M.lt); h.Y(.016, .03, .1, .03, .04, M.lt);
+    h.TG(.03, -.04, .05); h.Scope(-.04, .2, .12, .02, M);
+    return -1.1;
+  },
+  outlaw(h, M) {
+    h.Cf(.026, .6, .25, .06, M.dk); h.Cf(.026, .6, .25, .005, M.dk); h.Bf(.06, .02, .25, .85, .033, M.blk); h.Cf(.03, .03, .84, .06, M.acc(0xb3322a)); h.Cf(.03, .03, .84, .005, M.acc(0xb3322a));
+    h.S([[-.08, -.035], [.25, -.035], [.25, .09], [-.06, .09], [-.08, .06]], .075, M.blk);
+    h.S([[.3, -.03], [.52, -.025], [.52, .0], [.3, .0]], .07, M.acc(0xb3322a));
+    h.S([[-.08, .07], [-.08, -.04], [-.02, -.05], [-.06, -.16], [-.12, -.16], [-.16, -.08], [-.46, -.08], [-.5, -.16], [-.53, -.16], [-.53, .05]], .06, M.dk);
+    h.TG(.03, -.035, .05); h.Scope(-.06, .24, .16, .03, M);
+    return -.9;
+  },
+  operator(h, M) {
+    h.S([[-.15, -.045], [.42, -.04], [.42, .045], [-.12, .055], [-.15, .04]], .08, M.body(0x3e4a3c));
+    h.S([[-.15, .05], [-.15, -.05], [-.05, -.05], [-.09, -.17], [-.15, -.17], [-.2, -.09], [-.5, -.1], [-.55, -.2], [-.6, -.2], [-.6, .06], [-.4, .1], [-.22, .1]], .075, M.body(0x3e4a3c));
+    h.Bf(.077, .05, -.42, -.22, .1, M.dk);
+    h.Cf(.024, .55, .42, .02, M.dk); for (let i = 0; i < 4; i++) h.Bf(.072, .012, 1.0 + i * .025, 1.012 + i * .025, .02, M.blk); h.Bf(.07, .05, .98, 1.1, .02, M.blk);
+    h.S([[.18, -.045], [.08, -.045], [.08, -.16], [.18, -.16]], .06, M.blk); h.TG(.03, -.045, .055);
+    h.X(.014, .1, .05, .06, .02, M.lt);
+    h.Rail(-.1, .3, .062, .03); h.Scope(-.1, .38, .16, .042, M);
+    for (const s of [-1, 1]) { const l = h.Bf(.014, .014, .62, .64, -.11, M.mt, s * .04); l.scale.y = 14; l.rotation.z = s * .35; }
     return -1.12;
   },
-  ares(B, C) {
-    B(.1, .15, .56, 0, 0, -.16, gm(GC.dk)); B(.102, .03, .4, 0, .085, -.16, gm(0xe8b923));
-    C(.045, .34, 0, .01, -.6, gm(GC.mt)); for (let i = 0; i < 4; i++) C(.05, .025, 0, .01, -.47 - i * .08, gm(GC.blk));
-    C(.02, .08, 0, .01, -.8, gm(GC.blk));
-    B(.13, .17, .17, 0, -.15, -.08, gm(GC.olive)); B(.06, .15, .07, 0, -.13, .07, gm(GC.blk), .25);
-    B(.07, .13, .24, 0, -.01, .24, gm(GC.dk)); B(.03, .07, .03, 0, .13, -.06, gm(GC.mt)); B(.03, .02, .2, 0, .17, -.08, gm(GC.mt));
-    return -.84;
+  ares(h, M) {
+    h.S([[-.12, -.06], [.34, -.06], [.34, .07], [-.1, .08], [-.12, .06]], .1, M.dk);
+    h.Bf(.102, .025, -.05, .3, .08, M.acc(0xe8b923)); h.Rail(-.08, .3, .095, .03);
+    h.Cf(.045, .36, .34, .01, M.mt); for (let i = 0; i < 7; i++) h.Cf(.05, .02, .36 + i * .05, .01, M.blk); h.Cf(.02, .08, .72, .01, M.blk);
+    h.S([[.16, -.06], [-.02, -.06], [-.02, -.22], [.16, -.22]], .13, M.body(GC.olive));
+    h.S([[-.02, -.05], [-.07, -.05], [-.11, -.19], [-.06, -.2], [.0, -.07]], .05, M.blk);
+    h.S([[-.12, .06], [-.12, -.04], [-.44, -.08], [-.46, -.08], [-.46, .05]], .075, M.dk);
+    for (const f of [.02, .22]) h.Bf(.03, .07, f, f + .03, .12, M.mt); h.Bf(.03, .02, .02, .25, .15, M.mt); h.TG(-.0, -.06, .06);
+    return -.8;
   },
-  odin(B, C, X) {
-    B(.12, .17, .62, 0, 0, -.18, gm(GC.blk)); B(.122, .04, .44, 0, .09, -.2, gm(0x8a2be2, 0x220a3a));
-    C(.065, .4, 0, .01, -.68, gm(GC.dk)); for (let i = 0; i < 5; i++) C(.07, .02, 0, .01, -.52 - i * .08, gm(GC.mt));
-    C(.026, .12, 0, .01, -.92, gm(GC.mt));
-    X(.13, .1, 0, -.18, -.1, gm(GC.dk)); X(.06, .104, 0, -.18, -.1, gm(GC.mt));
-    B(.065, .15, .07, 0, -.14, .08, gm(GC.blk), .25); B(.08, .15, .26, 0, -.01, .26, gm(GC.dk));
-    B(.03, .09, .03, 0, .14, -.04, gm(GC.mt)); B(.03, .09, .03, 0, .14, -.3, gm(GC.mt)); B(.035, .03, .3, 0, .2, -.17, gm(GC.mt));
-    B(.05, .13, .06, 0, -.13, -.42, gm(GC.blk));
-    return -.98;
+  odin(h, M) {
+    h.S([[-.12, -.07], [.36, -.07], [.36, .08], [-.1, .09], [-.12, .07]], .12, M.blk);
+    h.Bf(.122, .03, -.05, .32, .085, M.acc(0x8a2be2, 0x220a3a)); h.Rail(-.08, .3, .105, .03);
+    h.Cf(.065, .42, .36, .01, M.dk); for (let i = 0; i < 6; i++) h.Cf(.07, .022, .4 + i * .065, .01, M.mt); h.Cf(.026, .12, .78, .01, M.mt); h.Cf(.032, .04, .88, .01, M.blk);
+    h.X(.13, .1, 0, -.19, -.1, M.dk); h.X(.06, .104, 0, -.19, -.1, M.mt); h.X(.03, .108, 0, -.19, -.1, M.blk);
+    h.S([[-.02, -.06], [-.07, -.06], [-.11, -.2], [-.06, -.21], [.0, -.08]], .055, M.blk);
+    h.S([[-.12, .07], [-.12, -.05], [-.46, -.09], [-.48, -.09], [-.48, .06]], .085, M.dk);
+    for (const f of [.04, .28]) h.Bf(.03, .09, f, f + .03, .14, M.mt); h.Bf(.035, .025, .04, .31, .19, M.mt);
+    h.S([[.46, -.07], [.42, -.07], [.43, -.19], [.47, -.19]], .05, M.blk); h.TG(-.0, -.07, .06);
+    return -.92;
   },
 };
 // Jett's kunai: glowing blade + wrapped handle + ring; the tip points to -z
@@ -1431,6 +1484,28 @@ function flyKunai(ax, ay, az, bx, by, bz, stick) {
 function buildGun(key, accent, skin) {
   const g = buildGunBase(key, accent); if (skin) applySkin(g, skin); return g;
 }
+const GUN_TEMPLATES = {};
+function makeGunTemplate(key) {
+  const g = new THREE.Group();
+  const add = me => { g.add(me); return me; };
+  const shapeFrom = pts => { const sh = new THREE.Shape(); let first = true; for (const p of pts) { if (p[0] === 'q') sh.quadraticCurveTo(p[1], p[2], p[3], p[4]); else if (first) { sh.moveTo(p[0], p[1]); first = false; } else sh.lineTo(p[0], p[1]); } return sh; };
+  const h = {
+    S(pts, th, m, x = 0, bev = .005) { const geo = new THREE.ExtrudeGeometry(shapeFrom(pts), { depth: Math.max(.002, th - bev * 2), bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 8 }); geo.translate(0, 0, -(th - bev * 2) / 2); const me = new THREE.Mesh(geo, m); me.rotation.y = Math.PI / 2; me.position.x = x; return add(me); },
+    Cf(r, len, f0, y, m, x = 0) { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 16), m); me.rotation.x = Math.PI / 2; me.position.set(x, y, -(f0 + len / 2)); return add(me); },
+    Bf(w, hh, f0, f1, y, m, x = 0) { const me = new THREE.Mesh(new THREE.BoxGeometry(w, hh, Math.abs(f1 - f0)), m); me.position.set(x, y, -(f0 + f1) / 2); return add(me); },
+    X(r, l, x, y, z, m) { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 20), m); me.rotation.z = Math.PI / 2; me.position.set(x, y, z); return add(me); },
+    Y(r, l, x, y, z, m) { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 10), m); me.position.set(x, y, z); return add(me); },
+    Rail(f0, f1, y, w = .028) { h.Bf(w, .01, f0, f1, y, M.blk); for (let f = f0 + .006; f < f1 - .006; f += .018) h.Bf(w + .004, .008, f, f + .009, y + .008, M.blk); },
+    TG(f, y, w) { h.Bf(.01, .007, f - .07, f + .03, y - .052, M.dk); h.Bf(.01, .05, f + .022, f + .03, y - .028, M.dk); h.Bf(.008, .032, f - .02, f - .012, y - .022, M.mt); },
+    Sight(fFront, yFront, fRear, yRear) { h.Bf(.008, .03, fFront, fFront + .01, yFront + .015, M.blk); for (const x of [-.01, .01]) h.Bf(.006, .02, fRear, fRear + .015, yRear + .01, M.blk, x); },
+    Scope(f0, f1, y, r, Mm) { h.Cf(r, f1 - f0, f0, y, M.blk); h.Cf(r * 1.25, .05, f1 - .02, y, M.dk); h.Cf(r * 1.2, .045, f0 - .02, y, M.dk); h.Cf(r * .9, .005, f1 + .028, y, gm(GC.glass, 0x123c55));
+      h.X(r * .4, r * 2.6, 0, y + r * .2, -(f0 + f1) / 2, M.dk); for (const f of [f0 + .03, f1 - .05]) h.Bf(.02, y - .05, f, f + .02, (y + .05) / 2, M.mt); }
+  };
+  const M = { dk: gm(GC.dk), blk: gm(GC.blk), mt: gm(GC.mt), lt: gm(GC.lt), white: gm(GC.white), body: c => gm(c), furn: c => gm(c), acc: (c, em) => gm(c, em) };
+  M.wood = gm(GC.wood);
+  g.userData.muzzleZ = GUN_BUILDERS[key](h, M);
+  return g;
+}
 function buildGunBase(key, accent) {
   const g = new THREE.Group();
   const model = WEAPONS[key] ? WEAPONS[key].model : key;
@@ -1439,7 +1514,10 @@ function buildGunBase(key, accent) {
   const C = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 12), m); me.rotation.x = Math.PI / 2; me.position.set(x, y, z); g.add(me); return me; };
   const X = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 14), m); me.rotation.z = Math.PI / 2; me.position.set(x, y, z); g.add(me); return me; };
   const Y = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 10), m); me.position.set(x, y, z); g.add(me); return me; };
-  if (GUN_BUILDERS[key]) { g.userData.muzzleZ = GUN_BUILDERS[key](B, C, X, Y); return g; }
+  if (GUN_BUILDERS[key]) {
+    if (!GUN_TEMPLATES[key]) GUN_TEMPLATES[key] = makeGunTemplate(key);
+    const t = GUN_TEMPLATES[key].clone(); t.userData.muzzleZ = GUN_TEMPLATES[key].userData.muzzleZ; return t;
+  }
   switch (model) {
     case 'pistol': B(.06, .09, .27, 0, 0, -.1, MAT.gunDark); B(.055, .15, .07, 0, -.1, .0, MAT.gunMetal, .25); C(.016, .06, 0, .01, -.25, MAT.gunMetal); B(.062, .02, .2, 0, .05, -.1, acc); break;
     case 'smg': B(.07, .11, .44, 0, 0, -.16, MAT.gunDark); B(.045, .2, .07, 0, -.14, -.14, MAT.gunMetal); B(.06, .09, .18, 0, -.01, .14, acc); C(.018, .14, 0, .01, -.44, MAT.gunMetal); B(.05, .14, .06, 0, -.1, .02, MAT.gunMetal, .25); break;
@@ -2990,7 +3068,7 @@ function equipView() {
   if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = new THREE.Mesh(new THREE.BoxGeometry(.09, .09, .14), MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
-  gun.scale.setScalar(.4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
+  gun.scale.setScalar(gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
   player.shotIdx = 0; player.recoil = 0; adsOn = false;
 }
 function switchSlot(s) {
@@ -6215,7 +6293,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 32;
+const BUILD = 33;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
