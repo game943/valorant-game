@@ -31,6 +31,21 @@ Click the screen to lock the mouse.
 - Ult orbs, weapon drops and pickups, spectating allies after death, minimap spotting, kill feed, scoreboard, damage direction indicator, flash effects, red outlines on enemies
 - Positional sound effects synthesized with WebAudio (gunshots, enemy footsteps, spike beeps)
 
+## Practice Range
+Pick **PRACTICE RANGE** on the PLAY tab, press START and choose an agent. It's solo, so leave your party first.
+- A shooting range with distance markers (15 / 30 / 60 / 84 m) and up to 8 target bots that come back after you kill them.
+- Buy any weapon or ability at any time with **B**. You have unlimited credits.
+- Press **H** for the range menu:
+  - **Target behavior:**
+    - **Static:** targets stand still.
+    - **Strafing:** targets move left and right.
+    - **Peeking:** targets step out from behind pillars.
+    - **Fight back:** targets strafe and shoot at you. You respawn if you die.
+  - **Distance, number of targets and target armor.**
+  - **Infinite ammo** (no reloads) and **infinite abilities**, a **Fill ultimate** button and **Reset stats**.
+  - **Shooting test:** 30 targets pop up one at a time (Easy / Medium / Hard). You get a score and a rank, and your best score is saved.
+- The stats panel shows shots, accuracy, headshot %, kills, average time to kill and your last hit. Damage numbers float over each target you hit, and headshots show in gold.
+
 ## Skins, Store and Night Market
 - Earn **VP** (Valor Points) by playing: +250 for a win, +100 for a loss and +10 per kill. You start with 2,500 VP. Your VP shows in the top bar.
 - **STORE** tab:

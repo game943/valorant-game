@@ -239,6 +239,20 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #menuToast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);background:rgba(15,25,35,.95);border:1px solid var(--teal);padding:10px 18px;font-size:14px;z-index:70;opacity:0;pointer-events:none;transition:.25s}
 #menuToast.on{opacity:1;transform:translate(-50%,0)}
 @media (max-width:820px){.feat{grid-template-columns:1fr}.nmGrid{grid-template-columns:repeat(2,1fr)}}
+#rangeHud{position:absolute;left:12px;top:262px;width:236px;background:rgba(15,25,35,.6);border:1px solid rgba(255,255,255,.12);padding:10px 12px;font-size:13px;pointer-events:none}
+.rhT{font:600 13px Oswald,sans-serif;letter-spacing:3px;color:var(--red);margin-bottom:6px}
+.rhRow{display:flex;justify-content:space-between;padding:2px 0}
+.rhRow b{font-family:Oswald;font-weight:500}
+.rhTest{margin-top:8px;padding:6px 8px;background:rgba(255,70,85,.18);border-left:3px solid var(--red);font-size:12px;line-height:1.5}
+.rhTest b{font:600 18px Oswald,sans-serif}
+.rhKey{margin-top:8px;font-size:11px;opacity:.7}
+.rhKey b{display:inline-block;padding:0 5px;background:#26313d;border:1px solid #3b4856;font-family:Oswald;font-weight:500}
+.dmgNum{position:absolute;transform:translate(-50%,-50%);font:700 20px Oswald,sans-serif;color:#fff;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none}
+.dmgNum.head{color:#ffd24a;font-size:24px}
+#rangeMenu{background:rgba(10,16,22,.75);z-index:45}
+.btn.small{width:auto;margin:0;padding:6px 14px;font-size:13px}
+.mode.range{border-color:rgba(47,224,182,.5)}
+.mode.range .t{color:var(--teal)}
 .collCat{font:500 12px Oswald,sans-serif;letter-spacing:4px;opacity:.6;margin:16px 0 8px}
 .collGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .wcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
@@ -480,6 +494,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="mode on" data-mode="comp"><div class="t">COMPETITIVE</div><div class="d">First to 13 · Overtime win by 2</div></div>
       <div class="mode" data-mode="swift"><div class="t">SWIFTPLAY</div><div class="d">First to 5 · Quick matches</div></div>
       <div class="mode" data-mode="duel"><div class="t">1V1 DUEL</div><div class="d">First to 7 · Full buy · vs a bot or a friend</div></div>
+      <div class="mode range" data-mode="range"><div class="t">PRACTICE RANGE</div><div class="d">Solo · targets, aim test &amp; free gear</div></div>
     </div>
     <div class="playOpts">
       <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
@@ -541,6 +556,13 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
+<div id="rangeMenu" class="screen hidden">
+  <div class="panel setPanel">
+    <div class="pHead"><h2>PRACTICE RANGE</h2><button class="iconBtn" id="rmClose">✕</button></div>
+    <div class="setBody" id="rmBody"></div>
+    <div class="setFoot"><span class="note" style="margin:0">Press the range menu key or Esc to go back to shooting.</span><button class="btn" id="rmQuit">Leave the Range</button></div>
+  </div>
+</div>
 <div id="fps" class="hidden"></div>
 <div id="settingsModal" class="screen hidden">
   <div class="panel setPanel">
@@ -603,6 +625,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div id="sideTag"></div>
   <div id="killfeed"></div>
   <div id="crosshair" class="chx"></div>
+  <div id="rangeHud" class="hidden"><div id="rangeStats"></div></div>
   <div id="hitmark"></div>
   <div id="dmgDirs"></div>
   <div id="revealWarn" class="hidden">⚠ YOUR POSITION IS REVEALED</div>
@@ -687,7 +710,7 @@ const BIND_DEFS = [
   ['prim', 'Primary weapon', 'Digit1'], ['sec', 'Sidearm', 'Digit2'], ['melee', 'Knife', 'Digit3'], ['reload', 'Reload', 'KeyR'],
   ['abC', 'Ability (C slot)', 'KeyC'], ['abQ', 'Ability (Q slot)', 'KeyQ'], ['abE', 'Signature ability (E slot)', 'KeyE'], ['ult', 'Ultimate', 'KeyX'],
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
-  ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'],
+  ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -851,8 +874,19 @@ const MAPS = {
     water: [8, 21, 39, 21],
     theme: { sky: 0xf0c7a2, floor: 0xf0dcc6, def: 0xc79a96, atk: 0xd9b28a, A: 0xe7b98e, B: 0x9ccac0, mid: 0xd89c7c, crate: 0xffe2c4 },
   },
+  range: {
+    name: 'THE RANGE', desc: 'Practice range', range: true,
+    rooms: [[6, 3, 41, 31], [15, 32, 32, 38]],
+    obst: [[11, 22, 12, 22, 8], [19, 22, 20, 22, 8], [27, 22, 28, 22, 8], [35, 22, 36, 22, 8], [15, 10, 16, 10, 8], [31, 10, 32, 10, 8],
+      [7, 30, 7, 30, 1.4], [40, 30, 40, 30, 1.4], [7, 18, 7, 18, 3.2], [40, 18, 40, 18, 3.2]],
+    zones: { 1: [6, 3, 10, 5], 2: [37, 3, 41, 5], 3: [15, 33, 32, 38], 4: [20, 3, 27, 4] },
+    holds: { 1: [[8, 4]], 2: [[39, 4]], mid: [[23, 16]] }, entrances: { 1: [[8, 8]], 2: [[39, 8]] }, orbs: [], duel: [[[23, 34], [23, 6]]],
+    signs: [['PRACTICE RANGE', 23.5, 3.02, 0, '#ff4655'], ['15 M', 6.02, 29.5, 1, '#3a4656'], ['30 M', 6.02, 24.5, 1, '#3a4656'], ['60 M', 6.02, 14.5, 1, '#3a4656'], ['84 M', 6.02, 6.5, 1, '#3a4656'],
+      ['15 M', 41.98, 29.5, -1, '#3a4656'], ['30 M', 41.98, 24.5, -1, '#3a4656'], ['60 M', 41.98, 14.5, -1, '#3a4656'], ['84 M', 41.98, 6.5, -1, '#3a4656']],
+    theme: { sky: 0x9fb6c9, floor: 0xdfe3e8, def: 0x9aa9ba, atk: 0xa9b6c4, A: 0xc8d2dc, B: 0xc8d2dc, mid: 0xd2d8de, crate: 0xffc04d },
+  },
 };
-const MAP_IDS = Object.keys(MAPS);
+const MAP_IDS = Object.keys(MAPS).filter(k => !MAPS[k].range);
 let curMap = null, SITE_RECT = {}, SPAWN_CELLS = {}, SITE_CELLS = {}, HOLDS = {}, ENTRANCES = {}, ORB_CELLS = [], DUEL_SPAWNS = [];
 function setZone(c0, r0, c1, r1, z) { for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (grid[r * GW + c] < WALL_H) zoneG[r * GW + c] = z; }
 const hAt = (c, r) => (c < 0 || r < 0 || c >= GW || r >= GH) ? 99 : grid[r * GW + c];
@@ -1668,6 +1702,7 @@ function applyDamage(t, dmg, src, label, head) {
   if (!t.alive || t.dismissT > 0 || dmg <= 0) return;
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
+  if (t.dummy && src === player && RANGE()) rangeHit(t, dmg, head);
   if (t.isPlayer && src && src !== t && (game.time - (t.lastDirT || 0) > .3 || t.lastDirSrc !== src)) { t.lastDirT = game.time; t.lastDirSrc = src; showDamageDir(src); }
   if (t.remote && src && src !== t && (game.time - (t.lastDirT || 0) > .3 || t.lastDirSrc !== src)) { t.lastDirT = game.time; t.lastDirSrc = src; netTo(t.remote, { t: 'hurt', s: src.id }); }
   if (!t.isPlayer && src && src !== t && !t.target) { t.investigate = { x: src.x, z: src.z, t: game.time }; t.alertYaw = Math.atan2(-(src.x - t.x), -(src.z - t.z)); }
@@ -1682,6 +1717,7 @@ function killEntity(t, src, label, head) {
     return;
   }
   t.alive = false; t.hp = 0; t.deaths++; t.deadT = 0; t.deathPos = { x: t.x, y: t.y, z: t.z };
+  if (t.dummy && RANGE()) rangeKill(t);
   t.killedBy = src ? src.id : -1; t.killLabel = label || ''; t.invSeq = (t.invSeq || 0) + 1;
   t.ult = Math.min(AGENT[t.agent].ab.X.ult, t.ult + 1);
   if (src && src !== t && isEnemy(src, t)) {
@@ -2219,6 +2255,7 @@ function switchSlot(s) {
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
   if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0 || p.detainT > 0) return;
+  if (RANGE() && w.model !== 'knife') rs.shots++;
   if (w.model === 'knife') { // melee
     p.fireCD = .5; vmKick = 1; SND.shot('knife');
     const f = fwd(p), oy = eyeY(p); let best = null, bt = 2.6;
@@ -2641,6 +2678,7 @@ function setupMatch(agentId, humans = []) {
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
   player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {};
+  if (RANGE()) return setupRange();
   if (DUEL()) {
     // 1v1: a friend from the party is the opponent, otherwise a bot
     const h = humans[0];
@@ -2851,7 +2889,7 @@ const SHOP_COLS = [
   ['Rifles', ['bulldog', 'guardian', 'phantom', 'vandal']],
   ['Snipers · Heavies', ['marshal', 'outlaw', 'operator', 'ares', 'odin']],
 ];
-function canShop() { return game.state === 'playing' && game.phase === 'buy' && player.alive; }
+function canShop() { return game.state === 'playing' && (game.phase === 'buy' || RANGE()) && player.alive; }
 function openShop() { if (!canShop()) return; shopOpen = true; renderShop(); $('shop').classList.remove('hidden'); document.exitPointerLock && document.exitPointerLock(); }
 function closeShop() { shopOpen = false; $('shop').classList.add('hidden'); if (game.state === 'playing' && !game.paused) lockPointer(); }
 function renderShop() {
@@ -2981,7 +3019,8 @@ function updateHUD(dt) {
   const MY = myTeam();
   setText('aliveL', aliveHTML(MY)); setText('aliveR', aliveHTML(1 - MY));
   setText('scoreL', String(game.score[MY])); setText('scoreR', String(game.score[1 - MY]));
-  if (game.phase === 'planted') { setText('timer', '◆ ' + Math.ceil(game.spike.timer)); $('timer').className = 'spike'; setText('phase', 'SPIKE PLANTED'); }
+  if (RANGE()) { $('timer').className = ''; setText('timer', '∞'); setText('phase', rs.test ? 'SHOOTING TEST' : 'PRACTICE'); }
+  else if (game.phase === 'planted') { setText('timer', '◆ ' + Math.ceil(game.spike.timer)); $('timer').className = 'spike'; setText('phase', 'SPIKE PLANTED'); }
   else {
     $('timer').className = ''; setText('timer', fmtTime(game.phaseT));
     setText('phase', { buy: 'BUY PHASE', live: 'ROUND ' + game.round, end: 'ROUND OVER' }[game.phase] || '');
@@ -3142,6 +3181,7 @@ function simStep(dt) {
   if (game.state === 'playing' && (!game.paused || net.role !== 'off')) {
     game.time += dt;
     if (net.role === 'client') clientTick(dt);
+    else if (RANGE()) { updatePlayer(dt); rangeTick(dt); updateEffects(dt); updateParticles(dt); }
     else {
       updatePlayer(dt);
       for (const b of bots) updateBot(b, dt);
@@ -3183,7 +3223,7 @@ function loop(now) {
 function lockPointer() { const c = renderer.domElement; if (c.requestPointerLock) { try { const r = c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { } } }
 const isLocked = () => document.pointerLockElement === renderer.domElement;
 document.addEventListener('pointerlockchange', () => {
-  if (!isLocked() && game.state === 'playing' && !shopOpen) { game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
+  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
 });
 document.addEventListener('mousemove', e => {
   if (!isLocked() || game.state !== 'playing' || game.paused || !player.alive) return;
@@ -3205,6 +3245,8 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
   if (game.state !== 'playing') return;
   const act = actionOf(e.code);
+  if (rangeMenuOpen) { if (e.code === 'Escape' || act === 'rangeMenu') closeRangeMenu(); return; }
+  if (act === 'rangeMenu' && RANGE() && !e.repeat) { if (shopOpen) closeShop(); openRangeMenu(); return; }
   if (e.code === 'Tab') e.preventDefault();
   if (act === 'board') { boardOpen = true; $('board').classList.remove('hidden'); renderBoard(); return; }
   if (e.code === 'Escape' && shopOpen) { closeShop(); return; }
@@ -4330,6 +4372,200 @@ $('skinPicker').onclick = e => { if (e.target.id === 'skinPicker') closeSkinPick
 let menuToastT = 0;
 function toastMenu(m) { const t = $('menuToast'); t.textContent = m; t.classList.add('on'); clearTimeout(menuToastT); menuToastT = setTimeout(() => t.classList.remove('on'), 3200); }
 $('vpBox').onclick = () => showTab('store');
+/* =====================================================================
+   PRACTICE RANGE
+   ===================================================================== */
+const RANGE = () => game.mode === 'range';
+const RANGE_ROWS = { close: 29, medium: 24, far: 14, xfar: 6 };
+const PEEK_SPOTS = [[11.5, 21], [19.5, 21], [27.5, 21], [35.5, 21]]; // just behind the tall pillars
+const RANGE_MAX = 8;
+const rangeOpts = { mode: 'static', armor: 0, dist: 'mixed', count: 5, ammo: true, abil: true, test: 'medium' };
+const rs = { shots: 0, hits: 0, heads: 0, kills: 0, dmg: 0, ttk: [], last: '', lastHitShot: -1, respawnT: 0, test: null };
+let rangeMenuOpen = false;
+const RANGE_TEST_STAY = { easy: 2.6, medium: 1.7, hard: 1.1 };
+function resetRangeStats() { Object.assign(rs, { shots: 0, hits: 0, heads: 0, kills: 0, dmg: 0, ttk: [], last: '', lastHitShot: -1 }); }
+function setupRange() {
+  Object.assign(rangeOpts, profile.rangeOpts || {});
+  for (let i = 0; i < RANGE_MAX; i++) {
+    const d = makeEntity({ id: entities.length, name: 'Target ' + (i + 1), team: 1, agent: AGENTS[i % AGENTS.length].id });
+    d.dummy = true; d.mesh = makeCharacter(AGENT[d.agent]); d.secondary = mkWeapon('classic'); d.slot = 2; d.skins = {};
+    entities.push(d);
+  }
+  player.secondary = mkWeapon('classic'); player.slot = 2; player.credits = 9000;
+  Object.assign(game, { round: 1, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: 'atk', side: ['atk', 'def'], time: 0, phase: 'live', phaseT: 0 });
+  game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
+  barrierGroup.visible = false; clearEffects(); clearDrops();
+  game.state = 'playing'; game.paused = false; rangeMenuOpen = false;
+  resetRangeStats(); rs.test = null;
+  rangeRespawnPlayer(); layoutDummies();
+  buildAbilHud(); equipView();
+  $('rangeHud').classList.remove('hidden');
+  banner('PRACTICE RANGE', `Press ${keyName(settings.binds.rangeMenu)} for range options · ${keyName(settings.binds.shop)} to buy any weapon`, '', 3);
+}
+function rangeRespawnPlayer() {
+  const p = player, s = cc(23.5, 35);
+  Object.assign(p, { alive: true, hp: 100, armor: 50, x: s.x, y: 0, z: s.z, vx: 0, vz: 0, vy: 0, yaw: 0, pitch: 0, flashT: 0, nearT: 0, slowT: 0, detainT: 0, deathPos: null, reloadT: 0, fireCD: 0, damagedBy: {} });
+  teleported(p); $('deathInfo').classList.add('hidden');
+  if (!p.secondary) p.secondary = mkWeapon('classic');
+  p.slot = p.primary ? 1 : 2; equipView();
+}
+const dummies = () => entities.filter(e => e.dummy);
+function placeDummy(d, x, z) {
+  Object.assign(d, { x, z, y: 0, vx: 0, vz: 0, alive: true, hp: 100, armor: rangeOpts.armor, deadT: 0, damagedBy: {}, flashT: 0, nearT: 0, slowT: 0, spawnT: game.time, firstHitT: 0, ax: x, az: z, strafeDir: Math.random() < .5 ? -1 : 1, strafeT: rand(.3, 1.2), peekT: rand(.5, 2), peekOut: false, shootT: rand(.8, 1.6) });
+  d.mesh.visible = true; teleported(d);
+}
+function hideDummy(d) { d.alive = false; d.off = true; d.mesh.visible = false; d.hp = 0; }
+function layoutDummies() {
+  if (rs.test) return;
+  const list = dummies(), n = Math.min(rangeOpts.count, rangeOpts.mode === 'peek' ? PEEK_SPOTS.length : RANGE_MAX);
+  list.forEach((d, i) => {
+    if (i >= n) { hideDummy(d); return; }
+    d.off = false;
+    if (rangeOpts.mode === 'peek') { const [c, r] = PEEK_SPOTS[i]; const p = cc(c, r); placeDummy(d, p.x - CELL * .5, p.z); return; }
+    const rows = Object.values(RANGE_ROWS), row = rangeOpts.dist === 'mixed' ? rows[i % rows.length] : RANGE_ROWS[rangeOpts.dist];
+    const p = cc(8.5 + (n === 1 ? 15 : i * 30 / Math.max(1, n - 1)), row);
+    placeDummy(d, p.x, p.z);
+  });
+}
+function rangeHit(t, dmg, head) {
+  if (rs.lastHitShot !== rs.shots) { rs.hits++; rs.lastHitShot = rs.shots; if (head) rs.heads++; }
+  if (!t.firstHitT) t.firstHitT = game.time;
+  rs.dmg += dmg; rs.last = `${head ? 'HEAD' : 'BODY'} · ${Math.round(dmg)}`;
+  dmgNumber(t.x, t.y + (head ? 1.75 : 1.2), t.z, Math.round(dmg), head);
+}
+function rangeKill(t) {
+  rs.kills++; if (t.firstHitT) rs.ttk.push(game.time - t.firstHitT);
+  if (rs.ttk.length > 30) rs.ttk.shift();
+  if (rs.test && rs.test.cur === t) { rs.test.kills++; rs.test.times.push(game.time - t.spawnT); rs.test.cur = null; rs.test.gap = .35; }
+}
+function dmgNumber(x, y, z, n, head) {
+  const el = document.createElement('div'); el.className = 'dmgNum' + (head ? ' head' : ''); el.textContent = n; $('hud').appendChild(el);
+  const v = new THREE.Vector3(), ox = rand(-.3, .3);
+  timedFx.push({ t: .8, update() { v.set(x + ox, y + (.8 - this.t) * .9, z).project(camera); if (v.z > 1) { el.style.display = 'none'; return; } el.style.display = ''; el.style.left = (v.x + 1) / 2 * innerWidth + 'px'; el.style.top = (1 - v.y) / 2 * innerHeight + 'px'; el.style.opacity = Math.min(1, this.t * 2.5); }, end() { el.remove(); } });
+}
+function rangeTick(dt) {
+  const p = player;
+  p.credits = 9000;
+  const ki = $('killIcons'); while (ki.children.length > 5) ki.firstChild.remove();
+  if (rangeOpts.abil) { const ag = AGENT[p.agent]; for (const k of ['C', 'Q', 'E']) p.charges[k] = ag.ab[k].max; }
+  if (rangeOpts.ammo) for (const w of [p.primary, p.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
+  if (!p.alive) { rs.respawnT += dt; if (rs.respawnT > 2.5) { rs.respawnT = 0; rangeRespawnPlayer(); } }
+  // shooting test
+  const T = rs.test;
+  if (T) {
+    if (T.cur && T.cur.alive && game.time - T.cur.spawnT > T.stay) { T.miss++; hideDummy(T.cur); T.cur = null; T.gap = .35; }
+    if (!T.cur) {
+      T.gap -= dt;
+      if (T.gap <= 0) {
+        if (T.n >= T.total) finishRangeTest();
+        else {
+          const d = dummies()[T.n % RANGE_MAX]; T.n++; d.off = false;
+          const rows = Object.values(RANGE_ROWS).slice(0, T.diff === 'easy' ? 2 : 3), r = pick(rows), c = rand(8.5, 38.5), q = cc(c, r);
+          placeDummy(d, q.x, q.z); d.armor = 0; T.cur = d;
+        }
+      }
+    }
+  }
+  for (const d of dummies()) {
+    if (d.off) { d.mesh.visible = false; continue; }
+    if (!d.alive) {
+      if (!T && d.deadT > 1.4) { const ax = d.ax, az = d.az; placeDummy(d, ax, az); }
+      animateNetChar(d, dt); continue;
+    }
+    d.yaw = Math.atan2(-(p.x - d.x), -(p.z - d.z));
+    const mode = T ? 'static' : rangeOpts.mode;
+    let vx = 0;
+    if (mode === 'strafe' || mode === 'fight') {
+      d.strafeT -= dt; if (d.strafeT <= 0) { d.strafeT = rand(.25, 1.1); d.strafeDir = Math.random() < .55 ? -d.strafeDir : d.strafeDir; }
+      if (Math.abs(d.x + d.strafeDir * .5 - d.ax) > 4.5 || hAtPos(d.x + d.strafeDir * .8, d.z) > 0) d.strafeDir *= -1;
+      vx = d.strafeDir * 5;
+    } else if (mode === 'peek') {
+      d.peekT -= dt;
+      if (d.peekT <= 0) { d.peekOut = !d.peekOut; d.peekT = d.peekOut ? rand(.7, 1.4) : rand(1, 2.6); }
+      const tx = d.ax + (d.peekOut ? CELL * 1.25 : 0), dx = tx - d.x;
+      vx = Math.abs(dx) < .05 ? 0 : Math.sign(dx) * Math.min(6.5, Math.abs(dx) / dt);
+    }
+    d.x += vx * dt; d.vx = vx; d.vz = 0;
+    if (mode === 'fight' && p.alive) {
+      d.shootT -= dt;
+      if (d.shootT <= 0) {
+        d.shootT = rand(.9, 1.5);
+        if (canSee(d, p, -1)) {
+          const head = Math.random() < .12, hit = Math.random() < .38, hy = hit ? eyeY(p) - (head ? .05 : .45) : eyeY(p) + rand(-.6, .4);
+          const hx = p.x + (hit ? 0 : rand(-1.2, 1.2)), hz = p.z + (hit ? 0 : rand(-1.2, 1.2));
+          FX.shot(d.x, d.y + 1.4, d.z, hx, hy, hz, 'pistol', 0xff9a6a);
+          if (hit) applyDamage(p, head ? 78 : 26, d, 'Classic', head);
+        }
+      }
+    }
+    teleported(d); animateNetChar(d, dt);
+  }
+  if (!rangeMenuOpen) updateRangeHud();
+}
+function updateRangeHud() {
+  const acc = rs.shots ? Math.round(rs.hits / rs.shots * 100) : 0, hs = rs.hits ? Math.round(rs.heads / rs.hits * 100) : 0;
+  const ttk = rs.ttk.length ? (rs.ttk.reduce((a, b) => a + b, 0) / rs.ttk.length).toFixed(2) + 's' : '—';
+  const T = rs.test;
+  setText('rangeStats', `<div class="rhT">PRACTICE RANGE</div>
+    <div class="rhRow"><span>Shots</span><b>${rs.shots}</b></div><div class="rhRow"><span>Accuracy</span><b>${acc}%</b></div>
+    <div class="rhRow"><span>Headshots</span><b>${hs}%</b></div><div class="rhRow"><span>Kills</span><b>${rs.kills}</b></div>
+    <div class="rhRow"><span>Avg. time to kill</span><b>${ttk}</b></div><div class="rhRow"><span>Last hit</span><b>${rs.last || '—'}</b></div>
+    ${T ? `<div class="rhTest">SHOOTING TEST · ${T.diff.toUpperCase()}<br><b>${T.kills}</b> hit · ${T.miss} missed · ${T.total - T.n} left</div>` : ''}
+    <div class="rhKey"><b>${keyName(settings.binds.rangeMenu)}</b> Range menu · <b>${keyName(settings.binds.shop)}</b> Buy</div>`);
+}
+function startRangeTest(diff) {
+  closeRangeMenu();
+  for (const d of dummies()) hideDummy(d);
+  rs.test = { diff, total: 30, n: 0, kills: 0, miss: 0, times: [], cur: null, gap: 2.2, stay: RANGE_TEST_STAY[diff] };
+  banner('SHOOTING TEST', `${diff.toUpperCase()} · hit as many of the 30 targets as you can`, '', 2);
+}
+function finishRangeTest() {
+  const T = rs.test; rs.test = null;
+  const avg = T.times.length ? (T.times.reduce((a, b) => a + b, 0) / T.times.length).toFixed(2) + 's' : '—';
+  profile.rangeBest = profile.rangeBest || {}; const best = profile.rangeBest[T.diff] || 0, nb = T.kills > best;
+  if (nb) { profile.rangeBest[T.diff] = T.kills; saveProfile(); }
+  const rank = T.kills >= 28 ? 'AGENT 0' : T.kills >= 24 ? 'EXPERT' : T.kills >= 18 ? 'MARKSMAN' : T.kills >= 10 ? 'RECRUIT' : 'ROOKIE';
+  banner(`${T.kills} / 30 · ${rank}`, `Shooting test (${T.diff}) · avg. reaction ${avg}${nb ? ' · NEW BEST!' : ' · best ' + best}`, '', 5);
+  if (T.kills >= 24) SND.kill();
+  layoutDummies();
+}
+function openRangeMenu() {
+  if (!RANGE()) return;
+  rangeMenuOpen = true; renderRangeMenu(); $('rangeMenu').classList.remove('hidden');
+  Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false;
+  document.exitPointerLock && document.exitPointerLock();
+}
+function closeRangeMenu() { rangeMenuOpen = false; $('rangeMenu').classList.add('hidden'); if (game.state === 'playing' && !game.paused) lockPointer(); }
+function renderRangeMenu() {
+  const seg = (k, opts) => `<div class="seg">${opts.map(([v, t]) => `<button data-ro="${k}" data-v="${v}" class="${String(rangeOpts[k]) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const best = profile.rangeBest || {};
+  $('rmBody').innerHTML = `
+    <div class="setSub">TARGETS</div>
+    <div class="row"><label>Target behavior</label>${seg('mode', [['static', 'Static'], ['strafe', 'Strafing'], ['peek', 'Peeking'], ['fight', 'Fight back']])}</div>
+    <div class="row"><label>Distance</label>${seg('dist', [['close', '15 m'], ['medium', '30 m'], ['far', '60 m'], ['mixed', 'Mixed']])}</div>
+    <div class="row"><label>Number of targets</label>${seg('count', [[1, '1'], [3, '3'], [5, '5'], [8, '8']])}</div>
+    <div class="row"><label>Target armor</label>${seg('armor', [[0, 'None'], [25, 'Light'], [50, 'Heavy']])}</div>
+    <div class="setSub">YOU</div>
+    <div class="row"><label>Infinite ammo (no reloads)</label>${seg('ammo', [[true, 'On'], [false, 'Off']])}</div>
+    <div class="row"><label>Infinite abilities</label>${seg('abil', [[true, 'On'], [false, 'Off']])}</div>
+    <div class="row"><label>Ultimate</label><button class="btn small" id="rmUlt">Fill ultimate</button></div>
+    <div class="row"><label>Stats</label><button class="btn small" id="rmReset">Reset stats</button></div>
+    <div class="setSub">SHOOTING TEST · 30 targets pop up one by one</div>
+    <div class="row"><label>Start a test</label><div class="seg">${['easy', 'medium', 'hard'].map(d => `<button data-test="${d}">${d[0].toUpperCase() + d.slice(1)}${best[d] ? ' · best ' + best[d] : ''}</button>`).join('')}</div></div>`;
+  $('rmBody').querySelectorAll('[data-ro]').forEach(b => b.onclick = () => {
+    const k = b.dataset.ro, raw = b.dataset.v; rangeOpts[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(+raw) ? raw : +raw;
+    if (k === 'mode' && raw === 'peek' && rangeOpts.count > 4) rangeOpts.count = 4;
+    profile.rangeOpts = { ...rangeOpts }; saveProfile(); tick();
+    if (['mode', 'dist', 'count', 'armor'].includes(k)) { rs.test = null; layoutDummies(); }
+    renderRangeMenu();
+  });
+  $('rmBody').querySelectorAll('[data-test]').forEach(b => b.onclick = () => { tick(); startRangeTest(b.dataset.test); });
+  $('rmUlt').onclick = () => { player.ult = AGENT[player.agent].ab.X.ult; tick(); toastMenu('Ultimate ready'); };
+  $('rmReset').onclick = () => { resetRangeStats(); tick(); updateRangeHud(); };
+}
+$('rmClose').onclick = closeRangeMenu;
+$('rmQuit').onclick = () => { closeRangeMenu(); toMenu(); };
+
 function refreshLobbyGuns() {
   refreshVP(); const c = lobbyChars[0]; if (!c) return;
   const ud = c.g.userData; if (ud.lobbyGun) ud.gunHolder.remove(ud.lobbyGun);
@@ -4392,12 +4628,17 @@ $('mapPrev').onclick = e => { e.stopPropagation(); stepMap(-1); };
 $('mapNext').onclick = e => { e.stopPropagation(); stepMap(1); };
 $('mapCard').onclick = () => stepMap(1);
 let queueTimer = null, queueStart = 0;
-const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : playMode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE';
+const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : playMode === 'duel' ? '1V1 DUEL' : playMode === 'range' ? 'PRACTICE RANGE' : 'COMPETITIVE';
 const MODES = ['comp', 'swift', 'duel'];
 const partyCap = () => playMode === 'duel' ? 2 : 5;
 function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').classList.remove('queue'); updatePlayLock(); }
+function startRange() {
+  if (net.role !== 'off') { toastMenu('The Practice Range is solo — leave the party first.'); SND.deny(); return; }
+  game.mapId = 'range'; goSelect('range');
+}
 $('btnStart').onclick = () => {
   initAudio(); if (net.role === 'client') return;
+  if (playMode === 'range' && !queueTimer) { startRange(); return; }
   if (queueTimer) { cancelQueue(); sndTone(300, .12, .15, 'triangle'); return; }
   queueStart = performance.now(); $('btnStart').textContent = 'CANCEL'; $('btnStart').classList.add('queue');
   sndTone(520, .12, .2, 'triangle'); sndTone(780, .14, .2, 'triangle', 0, undefined, undefined, .08);
@@ -4516,7 +4757,8 @@ $('btnLock').onclick = () => {
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
   game.mapId = null;
-  game.state = 'menu'; game.paused = false; shopOpen = false;
+  game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null;
+  $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
   document.exitPointerLock && document.exitPointerLock();
   entities.forEach(e => e.mesh && (e.mesh.visible = false)); clearEffects(); clearDrops(); vmRoot.visible = false;
