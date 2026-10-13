@@ -447,6 +447,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #fuelBar.neon .fb{border-color:rgba(70,182,255,.6)}
 #fuelBar.neon #fuelFill{background:linear-gradient(90deg,#2f6fe0,#8fd0ff)}
 #brimOv{position:fixed;inset:0;pointer-events:none;z-index:12}
+#driftOv{background:radial-gradient(circle,rgba(40,60,160,.15) 30%,rgba(30,40,140,.65) 100%);transition:opacity .3s;opacity:0}
 #healOv{background:radial-gradient(circle,transparent 55%,rgba(60,230,150,.35) 100%);transition:opacity .2s;opacity:0}
 .healPop{position:absolute;left:150px;bottom:110px;font:700 24px Oswald,sans-serif;color:#5fe6a8;text-shadow:0 0 6px #000;animation:healUp .9s forwards;pointer-events:none}
 @keyframes healUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-50px);opacity:0}}
@@ -634,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 31</div>
+<div id="buildTag">VALOR STRIKE · build 32</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -702,6 +703,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="ov" id="lowOv"></div>
   <div class="ov" id="empOv"></div>
   <div class="ov" id="healOv"></div>
+  <div class="ov" id="driftOv"></div>
   <canvas id="brimOv" class="hidden"></canvas>
   <div id="shadeOv" class="hidden"><div id="shadeTxt"></div></div>
   <div id="placeHint" class="hidden"></div>
@@ -919,6 +921,21 @@ AGENTS.push(
           Q: { name: 'Relay Bolt', cost: 200, max: 2, free: 0, type: 'relay', desc: 'An energy bolt that bounces once, then concusses enemies where it lands.' },
           E: { name: 'High Gear', cost: 0, max: 1, free: 1, type: 'highgear', desc: 'Press E to start or stop sprinting (uses energy, you cannot shoot). While sprinting press Crouch to slide. Kills give energy back.' },
           X: { name: 'Overdrive', ult: 7, type: 'overdrive', desc: 'Full energy and faster sprint, and your hand fires a deadly-accurate lightning beam for 20s. Kills reset the timer.' } } },
+  { id: 'yoru', name: 'Yoru', role: 'Duelist', color: '#3b5bdb', glyph: 'YO', desc: 'A rift-walker who fools enemies with decoys and teleports behind their lines.',
+    ab: { C: { name: 'Fakeout', cost: 100, max: 1, free: 0, type: 'fakeout', desc: 'Send a decoy of yourself running forward. When an enemy gets close it bursts into a blinding flash.' },
+          Q: { name: 'Blindside', cost: 250, max: 2, free: 0, type: 'blindside', desc: 'Throw a rift shard that bounces off one wall and then bursts into a flash.' },
+          E: { name: 'Gatecrash', cost: 0, max: 1, free: 1, type: 'gatecrash', desc: 'Send a rift tether racing forward along the ground. Press E again to teleport to it.' },
+          X: { name: 'Dimensional Drift', ult: 7, type: 'drift', desc: 'Step into another dimension for 10s: enemies cannot see or hurt you and you move faster, but you cannot shoot. Press X again to come back early.' } } },
+  { id: 'kayo', name: 'KAY/O', role: 'Initiator', color: '#8fb2cf', glyph: 'KO', desc: 'A war machine built to suppress enemy abilities.',
+    ab: { C: { name: 'FRAG/ment', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'frag', zr: 3.6, zt: 3, dps: 40, color: 0xb8d6f0, desc: 'A grenade that sticks to the floor and pulses heavy damage.' },
+          Q: { name: 'FLASH/drive', cost: 250, max: 2, free: 0, type: 'flash', life: .8, desc: 'A flash grenade that pops after a short time.' },
+          E: { name: 'ZERO/point', cost: 0, max: 1, free: 1, type: 'zeropoint', desc: 'Throw a knife that sticks to a surface and, after 1s, SUPPRESSES and reveals nearby enemies: they cannot use abilities for 8s.' },
+          X: { name: 'NULL/cmd', ult: 8, type: 'nullcmd', desc: 'Overload with energy for 12s: pulses that suppress every enemy within 25 m, and you fire faster.' } } },
+  { id: 'fade', name: 'Fade', role: 'Initiator', color: '#6c5a86', glyph: 'FD', desc: 'A bounty hunter who uses nightmares to seize and hunt her prey.',
+    ab: { C: { name: 'Prowler', cost: 250, max: 2, free: 0, type: 'prowler', desc: 'A creature that hunts the nearest enemy in front of it and nearsights them.' },
+          Q: { name: 'Seize', cost: 200, max: 1, free: 0, type: 'seize', desc: 'An orb that drops and tethers nearby enemies: slowed and VULNERABLE for 4s.' },
+          E: { name: 'Haunt', cost: 0, max: 1, free: 1, type: 'haunt', desc: 'Throw an eye that drops and reveals every enemy it can see.' },
+          X: { name: 'Nightfall', ult: 8, type: 'nightfall', desc: 'A wave of nightmares that passes through walls: enemies in front are revealed, nearsighted and decayed.' } } },
 );
 const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 
@@ -1570,7 +1587,7 @@ function updateFace(e, dt) {
   }
   if (fl) { ud.stars.rotation.y += dt * 4; ud.face.rotation.z = Math.sin(game.time * 9) * .12; }
   if (ud.cage) { ud.cage.visible = e.alive && e.detainT > .05; if (ud.cage.visible) ud.cage.rotation.y += dt * 1.5; }
-  if (ud.vuln) ud.vuln.visible = e.alive && e.vulnT > .05;
+  if (ud.vuln) ud.vuln.visible = e.alive && (e.vulnT > .05 || e.suppT > .05); if (ud.vuln && ud.vuln.visible) ud.vuln.material.color.setHex(e.vulnT > .05 ? 0xffffff : 0x6fd6ff);
 }
 // what each agent looks like: skin, hair, clothes and extra gear
 const LOOKS = {
@@ -1585,6 +1602,9 @@ const LOOKS = {
   killjoy: { skin: 0xecd0bb, hair: 0x2a2620, style: 'bun', top: 0xf4d03a, top2: 0x2b2b30, pants: 0x3b3b44, eye: 0x2a2a2a, gear: ['beanieKj', 'glasses'] },
   cypher: { skin: 0xb98c6c, hair: 0x1a1a1a, style: 'none', top: 0xd8d2bf, top2: 0x4fa3ff, pants: 0x3a3a3f, eye: 0x4fa3ff, glow: true, gear: ['fedora', 'mask', 'scarf'] },
   skye: { skin: 0xecd0bb, hair: 0x8a5a2b, style: 'bun', top: 0x5a8a3a, top2: 0x9be86b, pants: 0x4a3a28, eye: 0x2a2a2a, gear: ['leaves'] },
+  yoru: { skin: 0xe2c0a2, hair: 0x1d2a6e, style: 'spiky', tip: 0x5f7cff, top: 0x1c2233, top2: 0x3b5bdb, pants: 0x262b3a, eye: 0x7f9bff, glow: true, gear: ['mask'] },
+  kayo: { skin: 0x9aa4ae, hair: 0x9aa4ae, style: 'none', top: 0x5d6873, top2: 0x6fd6ff, pants: 0x3d454e, eye: 0x6fd6ff, glow: true, gear: ['antenna'], wide: 1.1, eyes3: true },
+  fade: { skin: 0xd8b49a, hair: 0x2a1f2e, style: 'long', top: 0x3a3042, top2: 0x9b7bd6, pants: 0x2a2530, eye: 0x9b7bd6, glow: true, gear: ['scarf'] },
   neon: { skin: 0xc49a7c, hair: 0x1b4fd8, style: 'twin', top: 0x1c2433, top2: 0x46b6ff, pants: 0x1d2333, eye: 0x8fd0ff, glow: true, gear: ['bolts'] },
   viper: { skin: 0xecd0bb, hair: 0x141414, style: 'short', top: 0x1b1d22, top2: 0x3fbf7a, pants: 0x15161a, eye: 0x2a2a2a, gear: ['respirator'] },
 };
@@ -1649,6 +1669,7 @@ function makeCharacter(agent) {
   if (G.includes('eyePiece')) { const e = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .05, 10), new THREE.MeshBasicMaterial({ color: 0x6fb6ff })); e.rotation.x = Math.PI / 2; e.position.set(.07, 1.64, -.21); g.add(e); }
   if (G.includes('shoulderPads')) for (const sx of [-.33, .33]) { const s = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), acc); s.position.set(sx * W, 1.45, 0); g.add(s); }
   if (G.includes('flameShoulder')) { const f = new THREE.Mesh(new THREE.ConeGeometry(.08, .22, 6), new THREE.MeshBasicMaterial({ color: 0xff8a3d })); f.position.set(-.36, 1.55, 0); g.add(f); }
+  if (G.includes('antenna')) for (const sx of [-1, 1]) { const a = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .3, 6), M(0x5d6873)); a.position.set(sx * .12, 1.9, .03); a.rotation.z = -sx * .3; g.add(a); const t = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0x6fd6ff })); t.position.set(sx * .17, 2.04, .03); g.add(t); }
   if (G.includes('bolts')) for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.05, .3, .02), new THREE.MeshBasicMaterial({ color: 0x46b6ff })); b.position.set(sx * .14, 1.15, -.165); b.rotation.z = sx * .5; g.add(b); }
   if (G.includes('leaves')) for (let i = 0; i < 4; i++) { const lf = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 4), M(0x9be86b)); lf.position.set(.3 - (i % 2) * .6, 1.5 + (i > 1 ? .05 : 0), (i > 1 ? .08 : -.05)); lf.rotation.z = (i % 2 ? 1 : -1) * .9; g.add(lf); }
   const gunHolder = new THREE.Group(); gunHolder.position.set(.16, 1.2, -.35); g.add(gunHolder);
@@ -1923,6 +1944,7 @@ function aimPoint(e, maxD) {
   return { x: e.x + f.x * t, y: oy + f.y * t, z: e.z + f.z * t };
 }
 function canSee(b, e, fovDot = .2) {
+  if (e.driftT > 0) return false;
   if (!e.alive || e.dismissT > 0) return false;
   const dx = e.x - b.x, dz = e.z - b.z, d = Math.hypot(dx, dz);
   if (d > 95) return false;
@@ -1945,6 +1967,7 @@ let smokes = [], zones = [], dynWalls = [], projectiles = [], timedFx = [], drop
 function applyDamage(t, dmg, src, label, head) {
   if (!t.alive || t.dismissT > 0 || dmg <= 0) return;
   if (game.phase === 'buy' && src && src !== t && isEnemy(src, t)) return; // nobody can be hurt before the round starts
+  if (t.driftT > 0) return;
   if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
@@ -2045,11 +2068,12 @@ function makeSmoke(x, z, r, dur, color, owner) {
 }
 function makeZone(o) {
   const z = Object.assign({ t: 5, delay: 0, r: 4, kind: 'fire', dps: 0, owner: null }, o);
-  const colors = { fire: 0xff6a1a, slow: 0x7f9bff, stim: 0x4dff88, orbital: 0xff2a3a, blaze: 0xff7a22, acid: 0x5fd35a, turret: 0xd8e04a, alarm: 0xd8e04a, lockdown: 0xd8e04a, trap: 0xc9c3ae, cam: 0xc9c3ae };
+  const colors = { fire: 0xff6a1a, slow: 0x7f9bff, stim: 0x4dff88, orbital: 0xff2a3a, blaze: 0xff7a22, acid: 0x5fd35a, frag: 0xb8d6f0, turret: 0xd8e04a, alarm: 0xd8e04a, lockdown: 0xd8e04a, trap: 0xc9c3ae, cam: 0xc9c3ae };
   const g = new THREE.Group();
   const disc = new THREE.Mesh(new THREE.CircleGeometry(z.r, 28), new THREE.MeshBasicMaterial({ color: colors[z.kind], transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = .05; g.add(disc);
   if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap') disc.visible = false;
+  if (z.kind === 'frag') { z.pulseT = 0; const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - .2, z.r, 32), new THREE.MeshBasicMaterial({ color: 0xb8d6f0, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .07; g.add(ring); }
   if (z.kind === 'acid') {
     const cyl = new THREE.Mesh(new THREE.CylinderGeometry(z.r, z.r, .9, 20, 1, true), new THREE.MeshBasicMaterial({ color: colors.acid, transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
     cyl.position.y = .45; g.add(cyl); z.cyl = cyl;
@@ -2125,6 +2149,26 @@ const PROJ_MODELS = {
     const led = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3344 })); led.position.set(0, .16, .08); g.add(led);
     return { g, anim(t) { led.visible = Math.sin(t * 14) > 0; } };
   },
+  decoy(c) { // Yoru's Fakeout: a ghostly copy of Yoru
+    const g = makeCharacter(AGENT.yoru); scene.remove(g); g.userData.marker.visible = false;
+    g.traverse(o => { if (o.isMesh && o.material && !o.material.isLineBasicMaterial) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = .6; } });
+    g.rotation.y = Math.PI; const wrap = new THREE.Group(); wrap.add(g);
+    return { g: wrap, ground: true, anim(t) { g.userData.legL.rotation.x = Math.sin(t * 10) * .6; g.userData.legR.rotation.x = -Math.sin(t * 10) * .6; } };
+  },
+  shard(c) { // Yoru's Blindside
+    const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.OctahedronGeometry(.12), new THREE.MeshBasicMaterial({ color: 0x7f9bff })); m.scale.set(.7, 1.4, .7); g.add(m);
+    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x5f7cff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); gl.scale.set(.7, .7, 1); g.add(gl);
+    return { g, anim(t) { m.rotation.y = t * 9; } };
+  },
+  tether(c) { // Yoru's Gatecrash
+    const g = new THREE.Group(); const r = new THREE.Mesh(new THREE.TorusGeometry(.3, .04, 8, 20), new THREE.MeshBasicMaterial({ color: 0x5f7cff })); r.rotation.x = Math.PI / 2; r.position.y = .1; g.add(r);
+    const core = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xbfd0ff })); core.position.y = .25; g.add(core);
+    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x5f7cff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); gl.scale.set(1, 1, 1); gl.position.y = .25; g.add(gl);
+    return { g, ground: true, anim(t) { r.rotation.z = t * 4; core.position.y = .25 + Math.sin(t * 5) * .06; } };
+  },
+  knife(c) { const g = new THREE.Group(), k = makeKunai(); k.rotation.y = Math.PI; k.scale.setScalar(1.6); g.add(k); return { g }; },
+  prowler(c) { const md = PROJ_MODELS.tiger(c), m = new THREE.MeshLambertMaterial({ color: 0x2a2238, emissive: 0x4a1a5a, transparent: true, opacity: .9 }); md.g.traverse(o => { if (o.isMesh && !o.material.isMeshBasicMaterial) o.material = m; }); return md; },
+  nightmareOrb(c) { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.SphereGeometry(.16, 12, 10), new THREE.MeshBasicMaterial({ color: c })); g.add(m); for (let i = 0; i < 4; i++) { const t = new THREE.Mesh(new THREE.ConeGeometry(.04, .3, 5), new THREE.MeshBasicMaterial({ color: 0x2a2238 })); t.rotation.x = -Math.PI / 2; t.position.set(Math.sin(i * 1.6) * .08, Math.cos(i * 1.6) * .08, -.2); g.add(t); } return { g }; },
   hawk(c) { // Skye's Guiding Light
     const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: 0xd8ff9a }), w = new THREE.MeshBasicMaterial({ color: 0x9be86b, transparent: true, opacity: .9, side: THREE.DoubleSide });
     const b = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), m); b.scale.set(.8, .8, 1.6); g.add(b);
@@ -2508,6 +2552,69 @@ const ABIL = {
     if (e.isPlayer) { equipView(); sndTone(200, .6, .25, 'sawtooth', 1800); }
     return true;
   },
+  /* ---- Yoru ---- */
+  fakeout(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .05, z: e.z + f.z / l, vx: f.x / l * 6.75, vy: 0, vz: f.z / l * 6.75, g: 0, life: 7, color: 0x5f7cff, owner: e, land: false, bounce: 0, size: .3, model: 'decoy' });
+    p.onUpdate = () => { if (hAtPos(p.x + p.vx * .1, p.z + p.vz * .1) > 0) { p.vx = p.vz = 0; } for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5 && los(p.x, 1.2, p.z, o.x, o.y + 1.4, o.z, true)) { p.life = 0; break; } };
+    p.onExpire = () => popFlash(p.x, 1.4, p.z, e, 1.6, 'flash');
+    return true;
+  },
+  blindside(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 22), { g: 0, life: .9, color: 0x7f9bff, owner: e, land: false, bounce: 1, model: 'shard' }));
+    p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.7, 'flash'); return true;
+  },
+  gatecrash(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .1, z: e.z + f.z / l, vx: f.x / l * 9, vy: 0, vz: f.z / l * 9, g: 0, life: 30, color: 0x5f7cff, owner: e, land: false, bounce: .2, size: .3, model: 'tether' });
+    let run = 2.6; p.onUpdate = dt => { run -= dt; if (run <= 0) { p.vx = p.vz = 0; } };
+    p.onExpire = () => { if (e.gate === p) e.gate = null; };
+    e.gate = p; if (e.isPlayer) toast('Gatecrash sent — press E again to teleport to it'); return true;
+  },
+  drift(e) { e.driftT = 10; fx('parts', e.x, e.y + 1, e.z, 40, 0x5f7cff, 3, .7); if (e.isPlayer) { equipView(); sndTone(180, .7, .25, 'sine', 900); } return true; },
+  /* ---- KAY/O ---- */
+  zeropoint(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 8, color: 0x6fd6ff, owner: e, stick: true, life: 4, model: 'knife' }));
+    p.onLand = () => { const x = p.x, y = p.y + .3, z = p.z; fx('parts', x, y, z, 12, 0x6fd6ff, 2, .5);
+      timedFx.push({ t: 1, update() { }, end() { fx('pulse', x, y, z, 15); suppressAround(x, y, z, 15, e, 8, true); } }); };
+    return true;
+  },
+  nullcmd(e) {
+    e.stimT = 12; let n = 0; fx('pulse', e.x, e.y + 1, e.z, 25);
+    timedFx.push({ t: 12, update() { const k = Math.floor((12 - this.t) / 3); if (k > n && e.alive) { n = k; fx('pulse', e.x, e.y + 1, e.z, 25); suppressAround(e.x, e.y + 1, e.z, 25, e, 4, false); } }, end() { } });
+    suppressAround(e.x, e.y + 1, e.z, 25, e, 4, false); if (e.isPlayer) sndTone(120, .8, .3, 'sawtooth', 600);
+    return true;
+  },
+  /* ---- Fade ---- */
+  prowler(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .5, z: e.z + f.z / l, vx: f.x / l * 11, vy: 0, vz: f.z / l * 11, g: 0, life: 3.5, color: 0x6c5a86, owner: e, land: false, bounce: 1, size: .35, model: 'prowler' });
+    p.onUpdate = () => homeAndHit(p, e, 11, 18, 1.6);
+    p.onExpire = () => { fx('pop', p.x, p.y + .5, p.z, 'near'); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 2.5) { o.nearT = Math.max(o.nearT, 3); toastTo(o, 'A Prowler got you!'); } };
+    return true;
+  },
+  seize(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 16, 3), { color: 0x9b7bd6, owner: e, model: 'nightmareOrb' }));
+    p.onLand = () => { fx('pop', p.x, p.y + 1, p.z, 'near'); fx('parts', p.x, p.y + .5, p.z, 30, 0x6c5a86, 3, .6);
+      for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5 && los(p.x, p.y + .5, p.z, o.x, o.y + 1, o.z, true)) { o.slowT = Math.max(o.slowT, 4); o.vulnT = 4; toastTo(o, 'Seized! You are slowed and VULNERABLE'); } };
+    return true;
+  },
+  haunt(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 18, 4), { color: 0x9b7bd6, owner: e, model: 'eye' }));
+    p.onLand = () => { const x = p.x, y = p.y + 1.6, z = p.z; fx('pulse', x, y, z, 30);
+      for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - x, o.z - z) < 30 && los(x, y, z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = Math.max(o.revealedT, 3); if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } };
+    return true;
+  },
+  nightfall(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
+    for (let i = 1; i <= 10; i++) { const d = i * 3.5; setTimeout(() => { for (let k = -3; k <= 3; k++) fx('parts', e.x + dx * d - dz * k * 2.5, 1.5, e.z + dz * d + dx * k * 2.5, 4, 0x4a1a5a, 2, .8); }, i * 60); }
+    for (const o of entities) {
+      if (!o.alive || !isEnemy(o, e)) continue;
+      const ox = o.x - e.x, oz = o.z - e.z, along = ox * dx + oz * dz, side = Math.abs(-ox * dz + oz * dx);
+      if (along > 0 && along < 40 && side < 9) { o.revealedT = Math.max(o.revealedT, 8); o.nearT = Math.max(o.nearT, 2.5); o.hp = Math.max(1, o.hp - 30); o.damagedBy[e.id] = game.time; /* decay, never lethal */ toastTo(o, 'Nightfall: you are revealed and decayed'); }
+    }
+    return true;
+  },
   /* ---- Skye ---- */
   regrowth(e) {
     const hurt = entities.filter(o => o.alive && !isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 14 && o.hp < 100 && (o === e || los(e.x, eyeY(e), e.z, o.x, o.y + 1, o.z, true)));
@@ -2651,7 +2758,7 @@ function neonTick(e, dt) {
   e.slideCD = Math.max(0, (e.slideCD || 0) - dt);
 }
 // Thrown / launched abilities: first press readies them (time gauge), second press or LEFT click uses them
-const READY_TYPES = new Set(['smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay']);
+const READY_TYPES = new Set(['fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay']);
 function readyGate(e, ab, key) { // true = this press only readied the ability
   if (e.isPlayer && e.ready && e.ready.key !== key) clearReady(e); // another ability replaces it
   if (!e.isPlayer || e.agent === 'sova' || !READY_TYPES.has(ab.type)) return false;
@@ -2664,6 +2771,12 @@ function readyGate(e, ab, key) { // true = this press only readied the ability
   return true;
 }
 function clearReady(e) { if (e && e.ready) { e.ready = null; if (gauge && gauge.readyG) gauge = null; } }
+// KAY/O: stop enemies from using abilities
+function suppressAround(x, y, z, r, owner, dur, needLos) {
+  for (const o of entities) if (o.alive && isEnemy(o, owner) && Math.hypot(o.x - x, o.z - z) < r && (!needLos || los(x, y, z, o.x, o.y + 1.2, o.z, true))) {
+    o.suppT = Math.max(o.suppT || 0, dur); o.revealedT = Math.max(o.revealedT, 2); toastTo(o, 'SUPPRESSED — you cannot use abilities');
+  }
+}
 function castAbility(e, key, target) {
   if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
   if (net.role === 'client' && e === player) return clientCast(key, target);
@@ -2675,6 +2788,10 @@ function castAbility(e, key, target) {
   if (!target && tryStartPlace(e, ab, key)) return false;
   if (!target && readyGate(e, ab, key)) return false;
   if (ab.type === 'dash' && e.tailwindT > 0) { doDash(e); if (e.isPlayer && gauge && gauge.tailwind) gauge = null; return true; }
+  if (ab.type === 'gatecrash' && e.gate && projectiles.includes(e.gate)) { const g = e.gate; e.gate = null; g.life = 0; fx('parts', e.x, e.y + 1, e.z, 25, 0x5f7cff, 3, .5); if (e.isPlayer) shadeScreen(.35, ''); teleportTo(e, { x: g.x, z: g.z }); return true; }
+  if (ab.type === 'drift' && e.driftT > 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) equipView(); return true; }
+  if (e.suppT > 0) { toastTo(e, 'Suppressed — you cannot use abilities'); if (e.isPlayer) SND.deny(); return false; }
+  if (e.driftT > 0) { toastTo(e, 'You are drifting — press X to come back first'); return false; }
   if (ab.type === 'highgear') { toggleSprint(e); return true; }
   if (e.detainT > 0) { toastTo(e, 'Detained — you cannot use abilities'); if (e.isPlayer) SND.deny(); return false; }
   if (ab.type === 'satchel' && e.satchel && projectiles.includes(e.satchel)) { e.satchel.life = 0; e.satchel = null; if (e.isPlayer && gauge && gauge.satchel) gauge = null; return true; }
@@ -2762,7 +2879,7 @@ function updateEffects(dt) {
       if (z.kind === 'fire' || z.kind === 'blaze' || z.kind === 'orbital') {
         if (e === z.owner && z.heal) { if (e.hp < 100) e.hp = Math.min(100, e.hp + 12.5 * dt); }
         else if (isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.kind === 'orbital' ? 'Orbital Strike' : 'Fire');
-      } else if (z.kind === 'acid' && isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.label || 'Acid');
+      } else if ((z.kind === 'acid' || z.kind === 'frag') && isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.label || (z.kind === 'frag' ? 'FRAG/ment' : 'Acid'));
       else if (z.kind === 'trap' && isEnemy(e, z.owner)) { e.revealedT = Math.max(e.revealedT, 3.5); e.slowT = Math.max(e.slowT, 2.5); toastTo(e, 'You tripped a Trapwire!'); fx('pop', z.x, 1, z.z, 'near'); z.t = 0; }
       else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
       else if (z.kind === 'stim' && !isEnemy(e, z.owner)) e.stimT = .3;
@@ -2818,7 +2935,8 @@ function clearEffects() {
 /* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
-  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt);
+  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt);
+  if (e.driftT > 0) { e.driftT -= dt; if (e.driftT <= 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) { equipView(); toast('Back from the drift'); } } }
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
   if (e.tailwindT > 0) e.tailwindT -= dt;
@@ -2885,7 +3003,7 @@ function switchSlot(s) {
 }
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
-  if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0 || p.detainT > 0) return;
+  if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0 || p.detainT > 0 || p.driftT > 0) return;
   if (RANGE() && w.model !== 'knife') rs.shots++;
   if (inst.key === 'blades') { throwBlades(p, false); return; }
   if (w.model === 'knife') { // melee
@@ -3000,7 +3118,7 @@ function updatePlayer(dt) {
   let ix = 0, iz = 0; if (kd('fwd')) iz -= 1; if (kd('back')) iz += 1; if (kd('left')) ix -= 1; if (kd('right')) ix += 1;
   const w = WEAPONS[curWeapon(p).key];
   if (p.sprint && !p.crouch) { /* High Gear */ }
-  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1);
+  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (p.driftT > 0 ? 1.3 : 1) * (adsT > .5 && w.scope ? .75 : 1);
   if (shopOpen) ix = iz = 0;
   const s = Math.sin(p.yaw), c = Math.cos(p.yaw);
   let wx = -s * (-iz) + c * ix, wz = -c * (-iz) - s * ix; const l = Math.hypot(wx, wz);
@@ -3043,6 +3161,8 @@ function updatePlayer(dt) {
   if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to plant the spike`;
   if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to defuse the spike`;
   if (game.phase === 'buy' && !shopOpen) hint = hint || `<b>${keyName(settings.binds.shop)}</b> Open shop`;
+  if (p.suppT > 0) hint = '<b style="color:#6fd6ff">SUPPRESSED</b> — you can\'t use abilities';
+  if (p.driftT > 0) hint = `<b style="color:#7f9bff">DIMENSIONAL DRIFT</b> · ${Math.ceil(p.driftT)}s — enemies can\'t see you · ${keyName(settings.binds.ult)} to come back`;
   if (p.vulnT > 0) hint = '<b style="color:#ff5fd2">VULNERABLE</b> — you take double damage';
   if (p.detainT > 0) hint = '<b style="color:#ffe14a">DETAINED</b> — you can\'t shoot or use abilities';
   setHint(hint);
@@ -3143,10 +3263,11 @@ function botPerceive(b) {
       b.reactT = D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
-      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
+      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
       if (b.ult >= ag.ab.X.ult) {
         const ut = ag.ab.X.type;
-        if (['empress', 'neural', 'seekers', 'pit', 'lockdown', 'overdrive'].includes(ut)) castAbility(b, 'X');
+        if (['empress', 'neural', 'seekers', 'pit', 'lockdown', 'overdrive', 'nullcmd'].includes(ut)) castAbility(b, 'X');
+        else if (ut === 'nightfall') { b.yaw = ty; castAbility(b, 'X'); }
         else if (ut === 'rocket') { b.yaw = ty; b.pitch = Math.atan2(best.y + 1 - eyeY(b), bd); castAbility(b, 'X'); }
       }
     }
@@ -3157,7 +3278,7 @@ function botPerceive(b) {
 }
 function botShoot(b, t) {
   const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[settings.diff];
-  if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0 || game.phase === 'buy') return;
+  if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0 || b.driftT > 0 || game.phase === 'buy') return;
   if (w.model === 'knife') {
     if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, 'Knife'); SND.shot('knife', b.x, b.z); }
     return;
@@ -3346,7 +3467,7 @@ function updateBot(b, dt) {
   m.position.set(b.x, b.y, b.z); m.rotation.set(0, b.yaw, 0);
   const ph = game.time * 10 * (spd / 6), sw = Math.min(1, spd / 4) * .6;
   m.userData.legL.rotation.x = Math.sin(ph) * sw; m.userData.legR.rotation.x = -Math.sin(ph) * sw;
-  m.visible = true;
+  m.visible = !(b.driftT > 0 && isEnemy(b, player));
   setCharGun(b); updateFace(b, dt);
   const enemy = isEnemy(b, player);
   m.userData.marker.visible = !enemy || b.revealedT > 0;
@@ -3426,7 +3547,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
   }
@@ -4153,7 +4274,7 @@ function animateNetChar(e, dt) {
   }
   e.deadT = 0;
   const spd = Math.hypot(e.vx || 0, e.vz || 0);
-  m.visible = true; m.position.set(e.x, e.y, e.z); m.rotation.set(0, e.yaw, 0);
+  m.visible = !(e.driftT > 0 && player && isEnemy(e, player)); m.position.set(e.x, e.y, e.z); m.rotation.set(0, e.yaw, 0);
   const ph = game.time * 10 * (spd / 6), sw = Math.min(1, spd / 4) * .6;
   ud.legL.rotation.x = Math.sin(ph) * sw; ud.legR.rotation.x = -Math.sin(ph) * sw;
   setCharGun(e); updateFace(e, dt);
@@ -4492,7 +4613,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), od: r2(e.odT || 0), hl: r2(e.healT || 0), hc: e.healCap || 100, fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
+    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), su: r2(e.suppT || 0), df: r2(e.driftT || 0), od: r2(e.odT || 0), hl: r2(e.healT || 0), hc: e.healCap || 100, fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -4587,6 +4708,8 @@ function clientCast(key, target) {
   if (ab.type === 'highgear') { toggleSprint(p); return true; } // sprinting is our own movement
   if (p.agent === 'viper' && p.vState && ((ab.type === 'screen' && p.vState.w) || (ab.type === 'skySmoke' && p.vState.c))) { netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (ab.type === 'dash' && p.tailwindT > 0) { doDash(p); if (gauge && gauge.tailwind) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
+  if ((ab.type === 'gatecrash' && p.gateUntil > game.time) || (ab.type === 'drift' && p.driftT > 0)) { if (ab.type === 'gatecrash') p.gateUntil = 0; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
+  if (p.suppT > 0) { toast('Suppressed — you cannot use abilities'); SND.deny(); return false; }
   if (ab.type === 'satchel' && p.satchelUntil > game.time) { p.satchelUntil = 0; if (gauge && gauge.satchel) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') ultNotReady(ab, p.ult); else SND.deny(); return false; }
   if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
@@ -4599,6 +4722,7 @@ function clientCast(key, target) {
   if (ab.type === 'fury') { p.furyN = 3; p.furyManual = 6.5; p.furyCD = .3; p.furyPrev = true; }
   if (target && ab.type === 'step') shadeScreen(.9, ''); if (target && ab.type === 'fts') shadeScreen(2.5, 'FROM THE SHADOWS');
   if (ab.type === 'satchel') p.satchelUntil = game.time + 5;
+  if (ab.type === 'gatecrash') p.gateUntil = game.time + 30;
   return true;
 }
 function clientSpikeUI(p) {
@@ -4639,7 +4763,7 @@ function syncList(list, arr, create, update, remove) {
   }
   for (let i = arr.length - 1; i >= 0; i--) if (!seen.has(arr[i].nid)) { remove(arr[i]); arr.splice(i, 1); }
 }
-const ZONE_KINDS = new Set(['fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'turret', 'alarm', 'lockdown', 'trap', 'cam']);
+const ZONE_KINDS = new Set(['fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'frag', 'turret', 'alarm', 'lockdown', 'trap', 'cam']);
 function applySnap(s) {
   const [ph, pt, s0, s1, side0, rd, ot] = s.g;
   if (s0 + s1 > game.score[0] + game.score[1]) game.history.push(s0 > game.score[0] ? 0 : 1);
@@ -4655,7 +4779,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, healT: r.hl || 0, healCap: r.hc || 100, odT: e.isPlayer && e.odT > 0 && !(r.od > 0) ? e.odT : (r.od || 0), flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, suppT: r.su || 0, driftT: r.df || 0, healT: r.hl || 0, healCap: r.hc || 100, odT: e.isPlayer && e.odT > 0 && !(r.od > 0) ? e.odT : (r.od || 0), flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
@@ -5419,7 +5543,7 @@ function makeOrbHand(color) {
   g.userData.orb = orb; g.scale.setScalar(.5); g.position.set(.2, -.2, -.45); g.rotation.set(.35, -.25, .15);
   return g;
 }
-const ORB_COLOR = { neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b };
+const ORB_COLOR = { yoru: 0x5f7cff, kayo: 0x6fd6ff, fade: 0x9b7bd6, neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b };
 /* --- Viper: fuel, toggling the screen and the cloud --- */
 function setSmokeOff(s, off) { s.off = off; if (s.mesh) s.mesh.visible = !off; if (!off) s.grow = .2; }
 function toggleViper(e, which) {
@@ -5568,7 +5692,8 @@ function updateVmProps(dt) {
   if (!wantOrb && ud.orbHand) { vmRoot.remove(ud.orbHand); ud.orbHand = null; }
   if (ud.orbHand) { ud.orbHand.userData.orb.scale.setScalar(1 + Math.sin(game.time * 8) * .12); if (p.sprint) ud.orbHand.position.y = -.2 + Math.sin(game.time * 14) * .03; }
   if (ud.gun && ud.gun.userData.zap) { const s2 = 1 + Math.random() * .4; ud.gun.userData.zap[1].scale.set(.4 * s2, .4 * s2, 1); }
-  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb;
+  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb && !(p.driftT > 0);
+  $('driftOv').style.opacity = p.driftT > 0 ? .85 : 0;
   // Omen's shadow fade, Viper's fuel bar
   if (shadeT > 0) { shadeT -= dt; $('shadeOv').style.opacity = Math.min(1, shadeT / shadeMax * 3, (shadeMax - shadeT) * 6); if (shadeT <= 0) $('shadeOv').classList.add('hidden'); }
   const vf = p.agent === 'viper' ? (viperState(p) && net.role !== 'client' ? viperState(p)[0] : p.fuel ?? 100) : p.agent === 'neon' ? (p.energy ?? 100) : -1;
@@ -5889,7 +6014,7 @@ $('homePlay').onclick = () => showTab('play');
 
 /* news carousel */
 const NEWS = [
-  { k: 'WELCOME', h: 'Welcome to VALOR STRIKE', b: '5v5 tactical shooter with 13 agents, 17 weapons, a full credit economy and spike rounds.' },
+  { k: 'WELCOME', h: 'Welcome to VALOR STRIKE', b: '5v5 tactical shooter with 16 agents, 17 weapons, a full credit economy and spike rounds.' },
   { k: 'PATCH NOTES', h: 'Steadier sprays', b: 'Crouching now cuts your spray and recoil in half. Bots react slower and miss more often.' },
   { k: 'TIP', h: 'Walk quietly', b: 'Hold Shift to walk silently. Running footsteps can be heard by enemies — and by you.' },
   { k: 'CAREER', h: 'Earn XP every match', b: '+200 per match, +20 per kill and +500 for a win. Level up and track your history in CAREER.' },
@@ -6090,7 +6215,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 31;
+const BUILD = 32;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {

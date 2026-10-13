@@ -10,7 +10,7 @@ Click the screen to lock the mouse.
 - **Online play**: find random online players with public matchmaking, or create a party and share a code with friends; human teammates play together against bots (see below).
 - **3 maps** (Dustwall, Frostline, Canal) plus a Random option, each with its own layout and color theme.
 - **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
-- **13 agents**, each with C / Q / E abilities and an X ultimate
+- **16 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (press E to ready, E again to dash where you move; 2 kills recharge it), Blade Storm (5 floating kunai: left click throws one, right click throws the rest in a fan, kills refill them), passive Drift (hold Space in the air to glide)
   - Phoenix: Blaze, Curveball (press Q, then left click curves it left or right click curves it right), Hot Hands (fire that heals you), Run It Back
   - Sage: Barrier Orb (preview the wall, right click rotates, left click builds; you can stand on it), Slow Orb, Healing Orb (left click heals the ally you aim at, right click heals you), Resurrection (aim at a fallen ally)
@@ -24,6 +24,9 @@ Click the screen to lock the mouse.
   - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)
   - Viper: Snake Bite (acid), Poison Cloud and Toxic Screen (press the key again to switch them on/off; they burn fuel), Viper's Pit (lasts while you stay inside; you see nearby enemies in it)
   - Neon: Fast Lane (two electric walls race forward), Relay Bolt (bounces once, then concusses), High Gear (E toggles a sprint that uses energy; press Crouch while sprinting to slide, every 4s; kills give energy back), Overdrive (lightning beam from your hand for 20s, kills reset it)
+  - Yoru: Fakeout (a decoy that flashes enemies who get close), Blindside (bouncing flash), Gatecrash (send a tether, press E again to teleport to it), Dimensional Drift (10s invisible and untouchable, can't shoot; press X to return)
+  - KAY/O: FRAG/ment (pulsing damage grenade), FLASH/drive, ZERO/point (knife that SUPPRESSES enemies: no abilities for 8s), NULL/cmd (12s of suppression pulses and faster fire)
+  - Fade: Prowler (hunts and nearsights the nearest enemy), Seize (tethers enemies: slowed and vulnerable), Haunt (an eye that reveals enemies), Nightfall (a wave through walls that reveals, nearsights and decays)
 - **17 weapons**, each with its own 3D model and colors (Sheriff revolver, Vandal with wood furniture, Operator with big scope and bipod, Odin with a drum…) shown in your hands, on other players, as drops, and as pictures in the shop and Collection. Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
 - **Shop and credit economy**: 200 per kill, 3000 per round win, loss bonus of 1900 / 2400 / 2900, 300 plant bonus, 9000 credit cap. Items bought this round can be sold back.
 - **Spike**: 4s plant, 45s fuse with beeps that speed up, 7s defuse with a halfway checkpoint. The spike can be dropped and picked up.
