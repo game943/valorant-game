@@ -18,7 +18,7 @@ Click the screen to lock the mouse.
   - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike
   - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress
   - Omen: Shrouded Step (short teleport), Paranoia (nearsights through walls), Dark Cover, From the Shadows (long teleport)
-  - Raze: Boom Bot (chases and explodes), Blast Pack, Paint Shells (cluster grenade), Showstopper (rocket)
+  - Raze: Boom Bot (chases and explodes), Blast Pack (throw it, press Q again to blow it up and launch yourself — QQ to fly), Paint Shells (cluster grenade), Showstopper (rocket)
   - Killjoy: Nanoswarm, Alarmbot (reveals and slows), Turret (shoots enemies), Lockdown (detained enemies can't shoot)
   - Cypher: Trapwire, Cyber Cage, Spycam (reveal pulses), Neural Theft (reveals every enemy)
   - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)

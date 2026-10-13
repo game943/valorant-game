@@ -836,7 +836,7 @@ AGENTS.push(
           X: { name: 'From the Shadows', ult: 7, type: 'fts', desc: 'Teleport to any spot you aim at, up to 80 m away.' } } },
   { id: 'raze', name: 'Raze', role: 'Duelist', color: '#f0a03a', glyph: 'RZ', desc: 'An explosives expert who clears corners with bombs and rockets.',
     ab: { C: { name: 'Boom Bot', cost: 300, max: 1, free: 0, type: 'boombot', desc: 'A bot that rolls forward, chases the nearest enemy and explodes.' },
-          Q: { name: 'Blast Pack', cost: 200, max: 2, free: 0, type: 'shock', dmg: 55, rad: 4.5, color: 0xff9b3d, label: 'Blast Pack', desc: 'An explosive satchel that damages enemies around it.' },
+          Q: { name: 'Blast Pack', cost: 200, max: 2, free: 0, type: 'satchel', dmg: 50, rad: 4.5, color: 0xff9b3d, label: 'Blast Pack', desc: 'Throw a satchel that sticks to surfaces. Press Q again to blow it up and launch everyone nearby — yourself too. Press Q twice fast to blast yourself into the air.' },
           E: { name: 'Paint Shells', cost: 0, max: 1, free: 1, type: 'paint', desc: 'A cluster grenade that splits into four more explosions.' },
           X: { name: 'Showstopper', ult: 8, type: 'rocket', desc: 'Fire a rocket that explodes on impact with huge damage.' } } },
   { id: 'killjoy', name: 'Killjoy', role: 'Sentinel', color: '#d8e04a', glyph: 'KJ', desc: 'A genius inventor who locks down sites with gadgets.',
@@ -1994,6 +1994,14 @@ function popFlash(x, y, z, owner, dur, kind) {
 }
 // 3D models for thrown / flying abilities. Each faces +z (its flight direction) and may animate.
 const PROJ_MODELS = {
+  satchel(c) { // Raze's Blast Pack
+    const g = new THREE.Group(), bag = new THREE.MeshLambertMaterial({ color: 0xf08a2a }), dk = new THREE.MeshLambertMaterial({ color: 0x2b2b30 });
+    const b = new THREE.Mesh(new THREE.BoxGeometry(.3, .22, .2), bag); g.add(b);
+    for (const sx of [-.08, .08]) { const st = new THREE.Mesh(new THREE.BoxGeometry(.04, .23, .21), dk); st.position.x = sx; g.add(st); }
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(.31, .05, .21), new THREE.MeshLambertMaterial({ color: 0x3fa7d6 })); flap.position.y = .12; g.add(flap);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3344 })); led.position.set(0, .16, .08); g.add(led);
+    return { g, anim(t) { led.visible = Math.sin(t * 14) > 0; } };
+  },
   hawk(c) { // Skye's Guiding Light
     const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: 0xd8ff9a }), w = new THREE.MeshBasicMaterial({ color: 0x9be86b, transparent: true, opacity: .9, side: THREE.DoubleSide });
     const b = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), m); b.scale.set(.8, .8, 1.6); g.add(b);
@@ -2306,6 +2314,17 @@ const ABIL = {
     reveal(); let k = 0; timedFx.push({ t: 3.2, update() { if (k === 0 && this.t < .2) { k = 1; reveal(); } }, end() { } });
     return true;
   },
+  satchel(e, ab) {
+    const p = spawnProj(Object.assign(throwFrom(e, 14, 3), { g: 16, bounce: .15, land: false, life: 5, color: 0xff9b3d, owner: e, model: 'satchel', size: .2 }));
+    e.satchel = p;
+    p.onUpdate = () => {
+      const fl = hAtPos(p.x, p.z), gh = fl < WALL_H ? fl : 0;
+      if (p.y <= gh + .15) { p.vx *= .7; p.vz *= .7; } // it sticks where it lands
+      if (!e.isPlayer && !e.remote) for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1 - p.y, o.z - p.z) < 3) { p.life = 0; break; } // bots blow it on enemies
+    };
+    p.onExpire = () => { if (e.satchel === p) e.satchel = null; satchelBlast(p.x, p.y, p.z, e, ab); };
+    return true;
+  },
   /* ---- Skye ---- */
   regrowth(e) {
     for (const o of entities) if (o.alive && !isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 12 && o.hp < 100) { o.healT = 3; o.healRate = 15; o.healCap = 100; fx('parts', o.x, o.y + 1, o.z, 15, 0x7fd36b, 2, .6); }
@@ -2370,6 +2389,7 @@ let gauge = null;
 function startGauge(ab, key) {
   const G = GAUGE_DEF[ab.type];
   if (ab.type === 'empress' || ab.type === 'rib') { gauge = { name: ab.name, timed: ab.type }; return; }
+  if (ab.type === 'satchel') { gauge = { name: ab.name, key, t: 0, max: 5, satchel: true, mode: 'auto' }; return; }
   if (!G || !ab.guided) return;
   gauge = { name: ab.name, key, t: 0, max: G.auto || ab.life || .75, steer: G.steer, release: G.release || 'pop', mode: 'wait' };
 }
@@ -2386,16 +2406,34 @@ function updateGauge(dt) {
     if (gauge.mode === 'wait' && gauge.t >= .2) { gauge.mode = held ? 'steer' : 'auto'; if (held) gauge.max = gauge.steer; }
     if (gauge.mode === 'steer' && !held) { if (gauge.release === 'pop') gauge.t = gauge.max; else gauge.mode = 'auto'; }
     if (gauge.t >= gauge.max) gauge = null;
-    else { frac = gauge.t / gauge.max; label = gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
+    else { frac = gauge.t / gauge.max; label = gauge.satchel ? `${gauge.name} · press ${keyName(settings.binds['ab' + gauge.key])} again to detonate` : gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
   }
   if (frac < 0) { el.classList.add('hidden'); return; }
   el.classList.remove('hidden'); setText('agLabel', label); $('agFill').style.width = (Math.min(1, frac) * 100).toFixed(1) + '%';
   $('abGauge').classList.toggle('steer', !!(gauge && gauge.mode === 'steer'));
 }
+// push someone away from an explosion (used by Raze's Blast Pack)
+function knock(o, vx, vy, vz) {
+  o.vx = vx; o.vz = vz; o.vy = Math.max(o.vy, vy); o.onGround = false; o.dashT = 0; o.kbT = .9; o.kbVx = vx; o.kbVz = vz;
+  if (o.remote) netTo(o.remote, { t: 'kb', vx: r2(vx), vy: r2(vy), vz: r2(vz) });
+}
+function satchelBlast(x, y, z, e, ab) {
+  fx('boom', x, y, z, 0xff9b3d);
+  for (const o of entities) {
+    if (!o.alive) continue;
+    const dx = o.x - x, dy = o.y + .9 - y, dz = o.z - z, d = Math.hypot(dx, dy, dz);
+    if (d > ab.rad || !los(x, y + .3, z, o.x, o.y + 1, o.z, true)) continue;
+    const f = 1 - d / ab.rad * .45, hl = Math.hypot(dx, dz);
+    const hx = hl > .3 ? dx / hl : 0, hz = hl > .3 ? dz / hl : 0;
+    knock(o, hx * 18 * f, 10 + 8 * f, hz * 18 * f);
+    if (isEnemy(o, e)) applyDamage(o, ab.dmg, e, ab.label);
+  }
+}
 function castAbility(e, key, target) {
   if (net.role === 'client' && e === player) return clientCast(key);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
+  if (ab.type === 'satchel' && e.satchel && projectiles.includes(e.satchel)) { e.satchel.life = 0; e.satchel = null; if (e.isPlayer && gauge && gauge.satchel) gauge = null; return true; }
   if (key === 'X') { if (e.ult < ab.ult) { toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); if (e.isPlayer) SND.deny(); return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
   if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toastTo(e, 'Cannot be used during the buy phase'); return false; }
@@ -2657,7 +2695,8 @@ function updatePlayer(dt) {
   let wx = -s * (-iz) + c * ix, wz = -c * (-iz) - s * ix; const l = Math.hypot(wx, wz);
   if (l > 0) { wx = wx / l * sp; wz = wz / l * sp; }
   if (busy) wx = wz = 0;
-  const acc = p.onGround ? 16 : 1.5;
+  if (p.kbT > 0) p.kbT -= dt;
+  const acc = p.kbT > 0 ? 1.2 : p.onGround ? 16 : 1.5;
   p.vx += (wx - p.vx) * Math.min(1, acc * dt); p.vz += (wz - p.vz) * Math.min(1, acc * dt);
   if (p.dashT > 0) { p.dashT -= dt; p.vx = p.dashX; p.vz = p.dashZ; }
   if (kd('jump') && p.onGround && !busy && !shopOpen) { p.vy = JUMP; p.onGround = false; }
@@ -2964,6 +3003,7 @@ function updateBot(b, dt) {
   b.stuckT = (b.stuckT || 0) + dt;
   if (b.stuckT > 1.2) { if (Math.hypot(b.x - (b.lx || 0), b.z - (b.lz || 0)) < .4 && b.path.length) { b.path = findPath(b.x + rand(-1, 1), b.z + rand(-1, 1), b.goal.x, b.goal.z); } b.lx = b.x; b.lz = b.z; b.stuckT = 0; }
   if (b.dashT > 0) { b.dashT -= dt; b.vx = b.dashX; b.vz = b.dashZ; }
+  if (b.kbT > 0) { b.kbT -= dt; b.vx = b.kbVx *= .985; b.vz = b.kbVz *= .985; }
   physics(b, dt);
   // footsteps (audible to the player)
   const spd = Math.hypot(b.vx, b.vz);
@@ -4147,6 +4187,7 @@ function clientRecv(d) {
       break;
     case 'snd': if (game.state === 'playing' && ['win', 'lose', 'roundStart'].includes(d.n)) SND[d.n](); break;
     case 'toast': if (game.state === 'playing') toast(String(d.m || '')); break;
+    case 'kb': if (player && player.alive) { player.vx = +d.vx || 0; player.vz = +d.vz || 0; player.vy = Math.max(player.vy, +d.vy || 0); player.onGround = false; player.kbT = .9; player.kbVx = player.vx; player.kbVz = player.vz; } break;
     case 'hurt': { const s = entities[d.s]; if (s && player && game.state === 'playing') showDamageDir(s); break; }
     case 'kc': if (game.state === 'playing') { SND.kill(); $('killIcons').appendChild(document.createElement('i')); if (player.bladeMag > 0) player.bladeMag = 5; } break;
     case 'over': if (game.state === 'playing') finishMatch(); break;
@@ -4176,6 +4217,7 @@ function clientSetupMatch(d) {
 function clientCast(key) {
   const p = player, ab = AGENT[p.agent].ab[key];
   if (!ab || !p.alive || game.phase === 'end') return false;
+  if (ab.type === 'satchel' && p.satchelUntil > game.time) { p.satchelUntil = 0; if (gauge && gauge.satchel) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') toast(`Not enough ult points (${p.ult}/${ab.ult})`); SND.deny(); return false; }
   if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
   if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
@@ -4183,6 +4225,7 @@ function clientCast(key) {
   netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
   refreshAbilHud(); startGauge(ab, key); matchStats.abil++;
+  if (ab.type === 'satchel') p.satchelUntil = game.time + 5;
   return true;
 }
 function clientSpikeUI(p) {
