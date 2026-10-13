@@ -10,13 +10,19 @@ Click the screen to lock the mouse.
 - **Online play**: find random online players with public matchmaking, or create a party and share a code with friends; human teammates play together against bots (see below).
 - **3 maps** (Dustwall, Frostline, Canal) plus a Random option, each with its own layout and color theme.
 - **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
-- **6 agents**, each with C / Q / E abilities and an X ultimate
+- **12 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (dash), Blade Storm
   - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back
   - Sage: Barrier Orb (destructible, you can stand on it), Slow Orb, Healing Orb, Resurrection
   - Sova: Owl Drone, Shock Bolt, Recon Bolt, Hunter's Fury (pierces walls)
   - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike
   - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress
+  - Omen: Shrouded Step (short teleport), Paranoia (nearsights through walls), Dark Cover, From the Shadows (long teleport)
+  - Raze: Boom Bot (chases and explodes), Blast Pack, Paint Shells (cluster grenade), Showstopper (rocket)
+  - Killjoy: Nanoswarm, Alarmbot (reveals and slows), Turret (shoots enemies), Lockdown (detained enemies can't shoot)
+  - Cypher: Trapwire, Cyber Cage, Spycam (reveal pulses), Neural Theft (reveals every enemy)
+  - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)
+  - Viper: Snake Bite (acid), Poison Cloud, Toxic Screen (smoke wall through walls), Viper's Pit
 - **17 weapons**, from the Classic to the Operator and Odin. Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
 - **Shop and credit economy**: 200 per kill, 3000 per round win, loss bonus of 1900 / 2400 / 2900, 300 plant bonus, 9000 credit cap. Items bought this round can be sold back.
 - **Spike**: 4s plant, 45s fuse with beeps that speed up, 7s defuse with a halfway checkpoint. The spike can be dropped and picked up.

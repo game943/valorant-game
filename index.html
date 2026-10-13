@@ -204,12 +204,12 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #select h1{font-family:Oswald;letter-spacing:6px;font-size:40px;margin-bottom:6px}
 #select .hint{opacity:.6;font-size:13px;margin-bottom:20px}
 .selWrap{display:grid;grid-template-columns:1fr 1fr;gap:28px;width:min(1150px,94vw)}
-#agentGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start}
-.agent{height:132px;cursor:pointer;position:relative;overflow:hidden;border:2px solid transparent;background:#1c2631;transition:.12s}
+#agentGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-content:start}
+.agent{height:96px;cursor:pointer;position:relative;overflow:hidden;border:2px solid transparent;background:#1c2631;transition:.12s}
 .agent:hover{transform:translateY(-2px)}
 .agent.on{border-color:var(--light)}
 .agent .bg{position:absolute;inset:0;opacity:.85}
-.agent .glyph{position:absolute;right:8px;top:2px;font:900 64px 'Noto Sans KR';opacity:.35}
+.agent .glyph{position:absolute;right:8px;top:2px;font:900 48px 'Noto Sans KR';opacity:.35}
 .agent .nm{position:absolute;left:12px;bottom:10px;font-weight:900;font-size:22px;text-shadow:0 2px 6px rgba(0,0,0,.5)}
 .agent .rl{position:absolute;left:12px;top:10px;font-size:11px;letter-spacing:2px;background:rgba(0,0,0,.35);padding:2px 6px}
 #agentInfo .big{font-family:'Noto Sans KR';font-weight:900;font-size:46px;line-height:1}
@@ -654,6 +654,38 @@ const AGENTS = [
           E: { name: 'Dismiss', cost: 0, max: 1, free: 1, type: 'dismiss', desc: 'Use right after a kill: 2s invulnerability + speed.' },
           X: { name: 'Empress', ult: 6, type: 'empress', desc: 'Faster fire rate for 30s. Resets on kill.' } } },
 ];
+AGENTS.push(
+  { id: 'omen', name: 'Omen', role: 'Controller', color: '#7b7fe0', glyph: 'OM', desc: 'A phantom who blinds, smokes and teleports across the map.',
+    ab: { C: { name: 'Shrouded Step', cost: 100, max: 2, free: 0, type: 'step', desc: 'Teleport a short distance to where you aim.' },
+          Q: { name: 'Paranoia', cost: 300, max: 1, free: 0, type: 'paranoia', desc: 'A shadow that flies through walls and nearsights every enemy it touches.' },
+          E: { name: 'Dark Cover', cost: 100, max: 2, free: 1, type: 'skySmoke', range: 50, r: 4.4, dur: 15, color: 0x4a3f7a, desc: 'Long-range shadow smoke. (1 free per round)' },
+          X: { name: 'From the Shadows', ult: 7, type: 'fts', desc: 'Teleport to any spot you aim at, up to 80 m away.' } } },
+  { id: 'raze', name: 'Raze', role: 'Duelist', color: '#f0a03a', glyph: 'RZ', desc: 'An explosives expert who clears corners with bombs and rockets.',
+    ab: { C: { name: 'Boom Bot', cost: 300, max: 1, free: 0, type: 'boombot', desc: 'A bot that rolls forward, chases the nearest enemy and explodes.' },
+          Q: { name: 'Blast Pack', cost: 200, max: 2, free: 0, type: 'shock', dmg: 55, rad: 4.5, color: 0xff9b3d, label: 'Blast Pack', desc: 'An explosive satchel that damages enemies around it.' },
+          E: { name: 'Paint Shells', cost: 0, max: 1, free: 1, type: 'paint', desc: 'A cluster grenade that splits into four more explosions.' },
+          X: { name: 'Showstopper', ult: 8, type: 'rocket', desc: 'Fire a rocket that explodes on impact with huge damage.' } } },
+  { id: 'killjoy', name: 'Killjoy', role: 'Sentinel', color: '#d8e04a', glyph: 'KJ', desc: 'A genius inventor who locks down sites with gadgets.',
+    ab: { C: { name: 'Nanoswarm', cost: 200, max: 2, free: 0, type: 'molly', zkind: 'fire', zr: 3.2, zt: 5, dps: 45, color: 0xd8e04a, desc: 'A grenade that bursts into a damaging swarm.' },
+          Q: { name: 'Alarmbot', cost: 200, max: 1, free: 0, type: 'alarm', desc: 'Reveals and slows enemies that walk near it.' },
+          E: { name: 'Turret', cost: 0, max: 1, free: 1, type: 'turret', desc: 'Automatically shoots enemies it can see for 45 seconds.' },
+          X: { name: 'Lockdown', ult: 9, type: 'lockdown', desc: 'After 3 seconds, enemies nearby are detained: slowed and unable to shoot.' } } },
+  { id: 'cypher', name: 'Cypher', role: 'Sentinel', color: '#c9c3ae', glyph: 'CY', desc: 'An information broker who watches every flank.',
+    ab: { C: { name: 'Trapwire', cost: 200, max: 2, free: 0, type: 'trap', desc: 'A hidden trap that reveals and slows the first enemy who steps in.' },
+          Q: { name: 'Cyber Cage', cost: 100, max: 2, free: 0, type: 'smokeSmall', range: 25, r: 3.2, dur: 8, color: 0x8e8a7a, desc: 'A quick smoke cage where you aim.' },
+          E: { name: 'Spycam', cost: 0, max: 1, free: 1, type: 'cam', desc: 'A camera that pulses to reveal nearby enemies for 15 seconds.' },
+          X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
+  { id: 'skye', name: 'Skye', role: 'Initiator', color: '#7fd36b', glyph: 'SK', desc: 'A guide who heals the team and hunts enemies with creatures of light.',
+    ab: { C: { name: 'Regrowth', cost: 150, max: 1, free: 0, type: 'regrowth', desc: 'Heal yourself and allies near you.' },
+          Q: { name: 'Trailblazer', cost: 250, max: 1, free: 0, type: 'trailblazer', desc: 'A tiger that runs forward and concusses the first enemy it reaches.' },
+          E: { name: 'Guiding Light', cost: 150, max: 2, free: 1, type: 'flash', life: .75, desc: 'A long-range hawk that bursts into a flash. (1 free per round)' },
+          X: { name: 'Seekers', ult: 8, type: 'seekers', desc: 'Three seekers hunt the nearest enemies and nearsight them.' } } },
+  { id: 'viper', name: 'Viper', role: 'Controller', color: '#3fbf7a', glyph: 'VP', desc: 'A chemist who chokes out areas with poison and acid.',
+    ab: { C: { name: 'Snake Bite', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'acid', zr: 3.6, zt: 6, dps: 32, color: 0x5fd35a, desc: 'A canister that bursts into a pool of acid.' },
+          Q: { name: 'Poison Cloud', cost: 200, max: 1, free: 0, type: 'skySmoke', range: 40, r: 4.6, dur: 14, color: 0x2f8f55, desc: 'A long-lasting toxic smoke.' },
+          E: { name: 'Toxic Screen', cost: 0, max: 1, free: 1, type: 'screen', desc: 'A long wall of toxic gas that blocks vision, even through walls.' },
+          X: { name: "Viper's Pit", ult: 8, type: 'pit', desc: 'A huge toxic cloud around you that hurts enemies inside it.' } } },
+);
 const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 
 /* ------------------------------ MAP ------------------------------ */
@@ -1388,16 +1420,41 @@ function makeSmoke(x, z, r, dur, color, owner) {
 }
 function makeZone(o) {
   const z = Object.assign({ t: 5, delay: 0, r: 4, kind: 'fire', dps: 0, owner: null }, o);
-  const colors = { fire: 0xff6a1a, slow: 0x7f9bff, stim: 0x4dff88, orbital: 0xff2a3a, blaze: 0xff7a22 };
+  const colors = { fire: 0xff6a1a, slow: 0x7f9bff, stim: 0x4dff88, orbital: 0xff2a3a, blaze: 0xff7a22, acid: 0x5fd35a, turret: 0xd8e04a, alarm: 0xd8e04a, lockdown: 0xd8e04a, trap: 0xc9c3ae, cam: 0xc9c3ae };
   const g = new THREE.Group();
   const disc = new THREE.Mesh(new THREE.CircleGeometry(z.r, 28), new THREE.MeshBasicMaterial({ color: colors[z.kind], transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = .05; g.add(disc);
+  if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap') disc.visible = false;
+  if (z.kind === 'acid') {
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(z.r, z.r, .9, 20, 1, true), new THREE.MeshBasicMaterial({ color: colors.acid, transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+    cyl.position.y = .45; g.add(cyl); z.cyl = cyl;
+  }
+  if (z.kind === 'turret') {
+    const yel = new THREE.MeshLambertMaterial({ color: 0xd8e04a });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(.25, .35, .7, 10), MAT.dark); base.position.y = .35; g.add(base);
+    const head = new THREE.Group(); head.position.y = .9; g.add(head); z.head = head;
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(.45, .3, .5), yel); head.add(hb);
+    const barrel = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, .45), MAT.dark); barrel.position.set(0, 0, -.42); head.add(barrel);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3344 })); eye.position.set(0, .08, -.26); head.add(eye);
+  }
+  if (z.kind === 'alarm') {
+    const bot = new THREE.Mesh(new THREE.SphereGeometry(.28, 12, 10), new THREE.MeshLambertMaterial({ color: 0xd8e04a, emissive: 0x3a3a00 })); bot.position.y = .3; g.add(bot);
+  }
+  if (z.kind === 'cam') {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 2, 6), MAT.dark); pole.position.y = 1; g.add(pole);
+    const camBox = new THREE.Mesh(new THREE.BoxGeometry(.3, .22, .35), new THREE.MeshLambertMaterial({ color: 0xc9c3ae })); camBox.position.y = 2.1; g.add(camBox); z.head = camBox;
+    const lens = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0x4fa3ff })); lens.position.set(0, 0, -.18); camBox.add(lens);
+  }
+  if (z.kind === 'trap') {
+    for (const sgn of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .5, 6), new THREE.MeshBasicMaterial({ color: 0xc9c3ae })); post.position.set(sgn * z.r * .8, .25, 0); g.add(post); }
+    const wire = new THREE.Mesh(new THREE.BoxGeometry(z.r * 1.6, .02, .02), new THREE.MeshBasicMaterial({ color: 0x9be8ff, transparent: true, opacity: .55 })); wire.position.y = .35; g.add(wire);
+  }
   if (z.kind === 'fire' || z.kind === 'orbital' || z.kind === 'blaze') {
     const cyl = new THREE.Mesh(new THREE.CylinderGeometry(z.r, z.r, z.kind === 'orbital' ? 30 : (z.kind === 'blaze' ? 3.2 : 1.1), 20, 1, true),
       new THREE.MeshBasicMaterial({ color: colors[z.kind], transparent: true, opacity: z.kind === 'blaze' ? .75 : .3, side: THREE.DoubleSide, depthWrite: false, blending: z.kind === 'blaze' ? THREE.NormalBlending : THREE.AdditiveBlending }));
     cyl.position.y = z.kind === 'orbital' ? 15 : (z.kind === 'blaze' ? 1.6 : .55); g.add(cyl); z.cyl = cyl; if (z.kind === 'orbital') cyl.visible = false;
   }
-  if (z.kind === 'slow' || z.kind === 'stim') { const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - .15, z.r, 32), new THREE.MeshBasicMaterial({ color: colors[z.kind], side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .07; g.add(ring); }
+  if (z.kind === 'slow' || z.kind === 'stim' || z.kind === 'alarm' || z.kind === 'lockdown') { const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - .15, z.r, 32), new THREE.MeshBasicMaterial({ color: colors[z.kind], side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .07; g.add(ring); }
   const gy = hAtPos(z.x, z.z); g.position.set(z.x, gy < WALL_H ? gy : 0, z.z); scene.add(g); z.mesh = g; z.disc = disc;
   zones.push(z); return z;
 }
@@ -1428,6 +1485,41 @@ function spawnProj(o) {
 function throwFrom(e, speed, up = 0) { const f = fwd(e); return { x: e.x + f.x * .6, y: eyeY(e) - .15, z: e.z + f.z * .6, vx: f.x * speed, vy: f.y * speed + up, vz: f.z * speed }; }
 function lobTo(e, tx, ty, tz, T = .9, g = 14) { const sx = e.x, sy = eyeY(e), sz = e.z; return { x: sx, y: sy, z: sz, vx: (tx - sx) / T, vy: (ty - sy + .5 * g * T * T) / T, vz: (tz - sz) / T, g }; }
 
+// explosion with falloff: full damage close to the center, less at the edge
+function explodeAt(x, y, z, owner, dmgIn, dmgOut, r, color, label) {
+  fx('boom', x, y, z, color);
+  for (const o of entities) {
+    if (!o.alive || !isEnemy(o, owner)) continue;
+    const d = Math.hypot(o.x - x, o.y - y, o.z - z);
+    if (d < r && los(x, y + .4, z, o.x, o.y + 1, o.z, true)) applyDamage(o, d < r * .45 ? dmgIn : dmgOut, owner, label);
+  }
+}
+// rolling bots: steer toward the nearest visible enemy and stop (detonate) when close
+function homeAndHit(p, owner, speed, range, hitR) {
+  let best = null, bd = range;
+  for (const o of entities) { if (!o.alive || !isEnemy(o, owner)) continue; const d = Math.hypot(o.x - p.x, o.z - p.z); if (d < bd && los(p.x, p.y + .3, p.z, o.x, o.y + 1, o.z, true)) { bd = d; best = o; } }
+  if (best) {
+    if (bd < hitR) { p.life = 0; return; }
+    const dx = best.x - p.x, dz = best.z - p.z, d = Math.hypot(dx, dz) || 1;
+    p.vx += (dx / d * speed - p.vx) * .12; p.vz += (dz / d * speed - p.vz) * .12;
+  }
+}
+// a spot on the floor up to maxD in front of e (pulled back from walls)
+function groundPoint(e, maxD) {
+  const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
+  let d = maxD; const t = rayGrid(e.x, e.y + .5, e.z, dx, 0, dz, maxD); if (t < d) d = Math.max(0, t - .8);
+  return { x: e.x + dx * d, z: e.z + dz * d };
+}
+function teleportTo(e, p) {
+  let c = cellOf(p.x), r = cellOf(p.z), x = p.x, z = p.z;
+  if (!walkable(c, r)) { [c, r] = nearestWalkable(c, r); ({ x, z } = cc(c, r)); }
+  if (game.phase === 'buy' && blockedAt(e, x, z)) { toastTo(e, 'Cannot leave the spawn yet'); return false; }
+  fx('parts', e.x, e.y + 1, e.z, 30, 0x7b7fe0, 3, .6);
+  Object.assign(e, { x, z, y: 0, vx: 0, vz: 0, vy: 0 });
+  if (e.path) { e.path = []; e.goal = null; }
+  teleported(e); fx('parts', x, 1, z, 30, 0x7b7fe0, 3, .6); fx('ab', x, z, e.id);
+  return true;
+}
 function addWallMesh(w) {
   const mat = new THREE.MeshLambertMaterial({ color: 0x9feeff, emissive: 0x2a8a9a, transparent: true, opacity: .88 });
   const h = w.y1 - w.y0, m = new THREE.Mesh(new THREE.BoxGeometry(w.x1 - w.x0, h, w.z1 - w.z0), mat);
@@ -1451,8 +1543,8 @@ function damageWall(w, dmg) {
 }
 
 const ABIL = {
-  smokeSmall(e) { const p = aimPoint(e, 18); makeSmoke(p.x, p.z, 3.4, 7, 0xdbe8f5, e); return true; },
-  skySmoke(e) { const p = aimPoint(e, 70); makeSmoke(p.x, p.z, 4.6, 19, 0x6a7d8e, e); return true; },
+  smokeSmall(e, ab) { const p = aimPoint(e, ab.range || 18); makeSmoke(p.x, p.z, ab.r || 3.4, ab.dur || 7, ab.color || 0xdbe8f5, e); return true; },
+  skySmoke(e, ab) { const p = aimPoint(e, ab.range || 70); makeSmoke(p.x, p.z, ab.r || 4.6, ab.dur || 19, ab.color || 0x6a7d8e, e); return true; },
   updraft(e) { e.vy = 11.5; e.onGround = false; spawnParticles(e.x, e.y, e.z, 20, 0xdff4ff, 3, .5); return true; },
   dash(e) {
     let dx = e.vx, dz = e.vz, l = Math.hypot(dx, dz);
@@ -1469,15 +1561,15 @@ const ABIL = {
     }
     return true;
   },
-  flash(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: .42, color: 0xffeecc, owner: e, land: false }));
+  flash(e, ab) {
+    const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false }));
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
   },
   molly(e, ab, target) {
     const o = target ? lobTo(e, target.x, target.y, target.z) : throwFrom(e, 17, 2.5);
     const isPhx = e.agent === 'phoenix';
-    const p = spawnProj(Object.assign(o, { life: 3, color: 0xff7a22, owner: e }));
-    p.onLand = () => makeZone({ x: p.x, z: p.z, r: isPhx ? 3.2 : 4.2, kind: 'fire', t: isPhx ? 4 : 7, dps: 60, owner: e, heal: isPhx }); return true;
+    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e }));
+    p.onLand = () => makeZone({ x: p.x, z: p.z, r: ab.zr || (isPhx ? 3.2 : 4.2), kind: ab.zkind || 'fire', t: ab.zt || (isPhx ? 4 : 7), dps: ab.dps || 60, owner: e, heal: isPhx, label: ab.name }); return true;
   },
   rib(e) {
     e.ribPos = { x: e.x, y: e.y, z: e.z }; e.ribT = 10;
@@ -1504,13 +1596,91 @@ const ABIL = {
     p.tick = 0; p.onUpdate = dt => { p.tick -= dt; if (p.tick <= 0) { p.tick = .5; for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 13 && los(p.x, p.y, p.z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = 1.2; if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } } };
     return true;
   },
-  shock(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: 0x7fb0ff, owner: e }));
-    p.onLand = () => {
-      fx('boom', p.x, p.y, p.z, 0x7fb0ff);
-      for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const d = Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z); if (d < 4.5 && los(p.x, p.y + .4, p.z, o.x, o.y + 1, o.z, true)) applyDamage(o, d < 2 ? 75 : 40, e, 'Shock Bolt'); }
-    }; return true;
+  shock(e, ab) {
+    const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: ab.color || 0x7fb0ff, owner: e }));
+    p.onLand = () => explodeAt(p.x, p.y, p.z, e, ab.dmg || 75, (ab.dmg || 75) * .55, ab.rad || 4.5, ab.color || 0x7fb0ff, ab.label || 'Shock Bolt');
+    return true;
   },
+  /* ---- Omen ---- */
+  step(e) { return teleportTo(e, aimPoint(e, 12)); },
+  fts(e) { return teleportTo(e, aimPoint(e, 80)); },
+  paranoia(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: 1.1, color: 0x7b7fe0, owner: e, land: false, ghost: true, size: .35 }));
+    p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1.2 - p.y, o.z - p.z) < 3.2) o.nearT = Math.max(o.nearT, 2.2); };
+    return true;
+  },
+  /* ---- Raze ---- */
+  boombot(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .35, z: e.z + f.z / l, vx: f.x / l * 9, vy: 0, vz: f.z / l * 9, g: 0, life: 7, color: 0xf0a03a, owner: e, land: false, bounce: 1, size: .3 });
+    p.onUpdate = () => homeAndHit(p, e, 9, 22, 1.8);
+    p.onExpire = () => explodeAt(p.x, p.y, p.z, e, 110, 55, 4, 0xf0a03a, 'Boom Bot');
+    return true;
+  },
+  paint(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 18, 2.5), { color: 0xff6fb0, owner: e }));
+    p.onLand = () => {
+      const x = p.x, y = p.y, z = p.z;
+      explodeAt(x, y, z, e, 55, 30, 4, 0xff6fb0, 'Paint Shells');
+      let k = 0; timedFx.push({ t: .9, update() { if (k === 0 && this.t < .45) { k = 1; for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + rand(-.4, .4), d = rand(2, 3.5), bx = x + Math.cos(a) * d, bz = z + Math.sin(a) * d; if (hAtPos(bx, bz) < 2) explodeAt(bx, y, bz, e, 45, 25, 2.8, 0xff6fb0, 'Paint Shells'); } } }, end() { } });
+    };
+    return true;
+  },
+  rocket(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 42), { g: 0, life: 3, color: 0xff7a22, owner: e, stick: true, size: .28 }));
+    const boom = () => explodeAt(p.x, p.y, p.z, e, 150, 80, 6.5, 0xff7a22, 'Showstopper');
+    p.onLand = boom; p.onExpire = boom;
+    p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1 - p.y, o.z - p.z) < 1.3) { p.life = 0; break; } };
+    return true;
+  },
+  /* ---- Killjoy ---- */
+  alarm(e) { const p = groundPoint(e, 10); makeZone({ x: p.x, z: p.z, r: 5.5, kind: 'alarm', t: 40, owner: e }); return true; },
+  turret(e) {
+    for (const z of zones) if (z.kind === 'turret' && z.owner === e) z.t = 0;  // only one turret at a time
+    const p = groundPoint(e, 3); makeZone({ x: p.x, z: p.z, r: .7, kind: 'turret', t: 45, owner: e, cd: .5 }); return true;
+  },
+  lockdown(e) { makeZone({ x: e.x, z: e.z, r: 14, kind: 'lockdown', t: 5, delay: 3, owner: e }); return true; },
+  /* ---- Cypher ---- */
+  trap(e) { const p = groundPoint(e, 12); makeZone({ x: p.x, z: p.z, r: 2.2, kind: 'trap', t: 60, owner: e }); return true; },
+  cam(e) { const p = groundPoint(e, 30); makeZone({ x: p.x, z: p.z, r: .4, kind: 'cam', t: 15, owner: e, pulseT: .4 }); return true; },
+  neural(e) {
+    const reveal = () => { for (const o of entities) if (o.alive && isEnemy(o, e)) { o.revealedT = Math.max(o.revealedT, 3); fx('pulse', o.x, o.y + 1, o.z, 3); } };
+    reveal(); let k = 0; timedFx.push({ t: 3.2, update() { if (k === 0 && this.t < .2) { k = 1; reveal(); } }, end() { } });
+    return true;
+  },
+  /* ---- Skye ---- */
+  regrowth(e) {
+    for (const o of entities) if (o.alive && !isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 12 && o.hp < 100) { o.healT = 3; o.healRate = 15; o.healCap = 100; fx('parts', o.x, o.y + 1, o.z, 15, 0x7fd36b, 2, .6); }
+    return true;
+  },
+  trailblazer(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .5, z: e.z + f.z / l, vx: f.x / l * 13, vy: 0, vz: f.z / l * 13, g: 0, life: 3, color: 0x7fd36b, owner: e, land: false, bounce: 1, size: .35 });
+    p.onUpdate = () => homeAndHit(p, e, 13, 14, 2);
+    p.onExpire = () => { fx('pop', p.x, p.y + .5, p.z, 'flash'); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 3.5) { o.slowT = Math.max(o.slowT, 2.5); o.nearT = Math.max(o.nearT, 1.2); applyDamage(o, 30, e, 'Trailblazer'); } };
+    return true;
+  },
+  seekers(e) {
+    const targets = entities.filter(o => o.alive && isEnemy(o, e)).sort((a, b) => Math.hypot(a.x - e.x, a.z - e.z) - Math.hypot(b.x - e.x, b.z - e.z)).slice(0, 3);
+    if (!targets.length) { toastTo(e, 'No enemies left to seek'); return false; }
+    targets.forEach((t, i) => {
+      const p = spawnProj({ x: e.x, y: eyeY(e), z: e.z, vx: rand(-4, 4), vy: 3, vz: rand(-4, 4), g: 0, life: 9, color: 0x9be86b, owner: e, land: false, ghost: true, size: .25 });
+      p.onUpdate = () => {
+        if (!t.alive) { p.life = 0; return; }
+        const dx = t.x - p.x, dy = t.y + 1.3 - p.y, dz = t.z - p.z, d = Math.hypot(dx, dy, dz) || 1;
+        p.vx += (dx / d * 14 - p.vx) * .08; p.vy += (dy / d * 14 - p.vy) * .08; p.vz += (dz / d * 14 - p.vz) * .08;
+        if (d < 1.6) { t.nearT = Math.max(t.nearT, 3); t.revealedT = Math.max(t.revealedT, 4); fx('pop', p.x, p.y, p.z, 'near'); p.life = 0; }
+      };
+    });
+    return true;
+  },
+  /* ---- Viper ---- */
+  screen(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
+    for (let i = 0; i < 11; i++) { const x = e.x + dx * (2.5 + i * 2.8), z = e.z + dz * (2.5 + i * 2.8); if (x < 2 || z < 2 || x > MAPW - 2 || z > MAPH - 2) break; makeSmoke(x, z, 1.9, 12, 0x2f8f55, e); }
+    return true;
+  },
+  pit(e) { makeSmoke(e.x, e.z, 10, 16, 0x2f8f55, e); makeZone({ x: e.x, z: e.z, r: 10, kind: 'acid', t: 16, dps: 9, owner: e, label: "Viper's Pit" }); return true; },
   recon(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 38, 1), { g: 8, color: 0x4fa3ff, owner: e, stick: true, life: 4 }));
     p.onLand = () => {
@@ -1533,13 +1703,15 @@ const ABIL = {
   dismiss(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
   empress(e) { e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
 };
+// abilities that would hurt, reveal or teleport during the buy phase are held until the round starts
+const BUY_BLOCKED = new Set(['molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit']);
 function castAbility(e, key, target) {
   if (net.role === 'client' && e === player) return clientCast(key);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
   if (key === 'X') { if (e.ult < ab.ult) { toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); if (e.isPlayer) SND.deny(); return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
-  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { toastTo(e, 'Cannot be used during the buy phase'); return false; }
+  if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toastTo(e, 'Cannot be used during the buy phase'); return false; }
   if (ABIL[ab.type](e, ab, target) === false) return false;
   if (key === 'X') e.ult = 0; else e.charges[key]--;
   fx('ab', e.x, e.z, e.id);
@@ -1558,6 +1730,25 @@ function fireFury(e) {
   }
 }
 
+// zones that act on their own (host only): Killjoy's turret, Cypher's camera
+const ZONE_TICK = {
+  turret(z, dt) {
+    z.cd -= dt; if (z.cd > 0 || !z.owner) return;
+    let best = null, bd = 30;
+    for (const o of entities) { if (!o.alive || !isEnemy(o, z.owner) || o.dismissT > 0) continue; const d = Math.hypot(o.x - z.x, o.z - z.z); if (d < bd && los(z.x, 1.1, z.z, o.x, o.y + 1.2, o.z)) { bd = d; best = o; } }
+    if (!best) { z.cd = .2; return; }
+    z.cd = .3;
+    if (z.head) z.head.rotation.y = Math.atan2(-(best.x - z.x), -(best.z - z.z));
+    const hit = Math.random() < .55;
+    if (hit) applyDamage(best, 11, z.owner, 'Turret');
+    fx('shot', z.x, 1.1, z.z, best.x + (hit ? 0 : rand(-1, 1)), best.y + 1.2, best.z + (hit ? 0 : rand(-1, 1)), 'smg', 0xfff07a, z.owner.id);
+  },
+  cam(z, dt) {
+    if (z.head) z.head.rotation.y += dt;
+    z.pulseT -= dt; if (z.pulseT > 0 || !z.owner) return;
+    z.pulseT = 2.5; revealPulse(z.x, 2.1, z.z, 22, z.owner.team, 1.8);
+  },
+};
 function updateEffects(dt) {
   for (let i = smokes.length - 1; i >= 0; i--) {
     const s = smokes[i]; s.t -= dt; s.grow = Math.min(1, s.grow + dt * 2.5);
@@ -1573,13 +1764,18 @@ function updateEffects(dt) {
     }
     z.t -= dt;
     if (z.cyl) { z.cyl.material.opacity = (z.kind === 'blaze' ? .55 : .25) + Math.random() * .15; if (z.kind === 'fire' && Math.random() < .3) spawnParticles(z.x + rand(-z.r, z.r) * .7, .3, z.z + rand(-z.r, z.r) * .7, 1, 0xff8a2a, 1.5, .5); }
+    if (net.role !== 'client' && ZONE_TICK[z.kind]) ZONE_TICK[z.kind](z, dt);
     if (net.role !== 'client') for (const e of entities) {
       if (!e.alive) continue;
       const d = Math.hypot(e.x - z.x, e.z - z.z); if (d > z.r + e.r * .5 || e.y > (z.kind === 'orbital' ? 30 : 3)) continue;
       if (z.kind === 'fire' || z.kind === 'blaze' || z.kind === 'orbital') {
         if (e === z.owner && z.heal) { if (e.hp < 100) e.hp = Math.min(100, e.hp + 12.5 * dt); }
         else if (isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.kind === 'orbital' ? 'Orbital Strike' : 'Fire');
-      } else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
+      } else if (z.kind === 'acid' && isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.label || 'Acid');
+      else if (z.kind === 'alarm' && isEnemy(e, z.owner)) { e.revealedT = Math.max(e.revealedT, 1); e.slowT = .15; }
+      else if (z.kind === 'lockdown' && isEnemy(e, z.owner)) { e.slowT = .15; e.detainT = .3; }
+      else if (z.kind === 'trap' && isEnemy(e, z.owner)) { e.revealedT = Math.max(e.revealedT, 3.5); e.slowT = Math.max(e.slowT, 2.5); toastTo(e, 'You tripped a Trapwire!'); fx('pop', z.x, 1, z.z, 'near'); z.t = 0; }
+      else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
       else if (z.kind === 'stim' && !isEnemy(e, z.owner)) e.stimT = .3;
     }
     if (z.t <= 0 && net.role !== 'client') { scene.remove(z.mesh); zones.splice(i, 1); }
@@ -1593,7 +1789,8 @@ function updateEffects(dt) {
     if (net.role === 'client') { p.vy -= p.g * dt; p.x += p.vx * dt; p.y = Math.max(.1, p.y + p.vy * dt); p.z += p.vz * dt; p.mesh.position.set(p.x, p.y, p.z); continue; }
     p.life -= dt; let done = false;
     if (p.onUpdate) p.onUpdate(dt);
-    for (let s = 0; s < 3 && !done; s++) {
+    if (p.ghost) { p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.y < .3) { p.y = .3; p.vy = Math.abs(p.vy); } }
+    for (let s = 0; s < 3 && !done && !p.ghost; s++) {
       const h = dt / 3; p.vy -= p.g * h;
       const nx = p.x + p.vx * h, nz = p.z + p.vz * h, ny = p.y + p.vy * h;
       if (hAtPos(nx, nz) > ny && hAtPos(nx, nz) > p.y - .01) {
@@ -1628,6 +1825,7 @@ function clearEffects() {
 /* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
+  e.detainT = Math.max(0, (e.detainT || 0) - dt);
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
   if (e.ribT > 0) { e.ribT -= dt; if (e.ribT <= 0 && e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; e.ribPos = null; } }
@@ -1679,7 +1877,7 @@ function switchSlot(s) {
 }
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
-  if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0) return;
+  if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0 || p.detainT > 0) return;
   if (w.model === 'knife') { // melee
     p.fireCD = .5; vmKick = 1; SND.shot('knife');
     const f = fwd(p), oy = eyeY(p); let best = null, bt = 2.6;
@@ -1787,6 +1985,7 @@ function updatePlayer(dt) {
   if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = '<b>4</b> Hold to plant the spike';
   if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = '<b>4</b> Hold to defuse the spike';
   if (game.phase === 'buy' && !shopOpen) hint = hint || '<b>B</b> Open shop';
+  if (p.detainT > 0) hint = 'DETAINED — you cannot shoot';
   setHint(hint);
 }
 function spikeAction(p, holding4, dt) {
@@ -1885,8 +2084,12 @@ function botPerceive(b) {
       b.reactT = D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
-      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C']) if ((ag.ab[k].type === 'flash' || ag.ab[k].type === 'leer') && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
-      if (b.ult >= ag.ab.X.ult) { if (ag.ab.X.type === 'empress') castAbility(b, 'X'); }
+      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
+      if (b.ult >= ag.ab.X.ult) {
+        const ut = ag.ab.X.type;
+        if (['empress', 'neural', 'seekers', 'pit', 'lockdown'].includes(ut)) castAbility(b, 'X');
+        else if (ut === 'rocket') { b.yaw = ty; b.pitch = Math.atan2(best.y + 1 - eyeY(b), bd); castAbility(b, 'X'); }
+      }
     }
     b.target = best; b.targetVisible = true; b.lastSeen = { x: best.x, z: best.z, t: game.time };
     game.intel[b.team] = { x: best.x, z: best.z, t: game.time, site: zoneAt(best.x, best.z) };
@@ -1895,7 +2098,7 @@ function botPerceive(b) {
 }
 function botShoot(b, t) {
   const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[settings.diff];
-  if (b.reloadT > 0 || b.fireCD > 0) return;
+  if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0) return;
   if (w.model === 'knife') {
     if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, 'Knife'); SND.shot('knife', b.x, b.z); }
     return;
@@ -2002,7 +2205,12 @@ function botObjective(b, dt) {
       const ty = b.holdYaw + Math.sin(game.time * .7 + b.id * 2) * .5;
       b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.pitch *= .9;
       const ag = AGENT[b.agent];
-      if (b.hp < 70 && ag.ab.E.type === 'heal' && b.charges.E > 0) castAbility(b, 'E');
+      for (const k of ['C', 'E']) if (b.hp < 70 && (ag.ab[k].type === 'heal' || ag.ab[k].type === 'regrowth') && b.charges[k] > 0) castAbility(b, k);
+      // sentinels set up their gadgets once per round, looking toward the entrance they hold
+      if (b.placedRound !== game.round && game.phase === 'live') {
+        b.placedRound = game.round; b.yaw = b.holdYaw; b.pitch = 0;
+        for (const k of ['C', 'Q', 'E']) if (['turret', 'alarm', 'trap', 'cam'].includes(ag.ab[k].type) && b.charges[k] > 0) castAbility(b, k);
+      }
     }
   }
 }
@@ -2037,7 +2245,7 @@ function updateBot(b, dt) {
     b.path = [];
     // deny defuse with fire
     const ag = AGENT[b.agent];
-    if (game.spike.defuser === t && sideOf(b) === 'atk') { for (const k of ['Q', 'E']) if (ag.ab[k].type === 'molly' && b.charges[k] > 0) { castAbility(b, k, { x: t.x, y: t.y, z: t.z }); break; } }
+    if (game.spike.defuser === t && sideOf(b) === 'atk') { for (const k of ['C', 'Q', 'E']) if (ag.ab[k].type === 'molly' && b.charges[k] > 0) { castAbility(b, k, { x: t.x, y: t.y, z: t.z }); break; } }
     if (b.ult >= ag.ab.X.ult && ag.ab.X.type === 'fury') castAbility(b, 'X');
   } else if (t && b.lastSeen && game.time - b.lastSeen.t < 2.5 && !b.hasSpike && !(game.phase === 'planted' && sideOf(b) === 'def')) {
     setGoal(b, b.lastSeen.x, b.lastSeen.z); followPath(b, dt, 4.5);
@@ -3151,7 +3359,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary), s: invRec(e.secondary), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), so: r2(e.soulT),
+    dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -3240,7 +3448,7 @@ function clientCast(key) {
   if (!ab || !p.alive || game.phase === 'end') return false;
   if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') toast(`Not enough ult points (${p.ult}/${ab.ult})`); SND.deny(); return false; }
   if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
-  if (game.phase === 'buy' && ['molly', 'shock', 'orbital', 'fury', 'revive', 'blades'].includes(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
+  if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
   if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades') ABIL[ab.type](p); // movement is ours to predict
   netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
@@ -3285,7 +3493,7 @@ function syncList(list, arr, create, update, remove) {
   }
   for (let i = arr.length - 1; i >= 0; i--) if (!seen.has(arr[i].nid)) { remove(arr[i]); arr.splice(i, 1); }
 }
-const ZONE_KINDS = new Set(['fire', 'slow', 'stim', 'orbital', 'blaze']);
+const ZONE_KINDS = new Set(['fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'turret', 'alarm', 'lockdown', 'trap', 'cam']);
 function applySnap(s) {
   const [ph, pt, s0, s1, side0, rd, ot] = s.g;
   if (s0 + s1 > game.score[0] + game.score[1]) game.history.push(s0 > game.score[0] ? 0 : 1);
@@ -3301,7 +3509,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
