@@ -413,6 +413,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #smokeOv{background:rgba(120,120,135,.92)}
 #dmgOv{background:radial-gradient(circle,transparent 45%,rgba(255,30,40,.55) 100%)}
 #lowOv{background:radial-gradient(circle,transparent 55%,rgba(255,30,40,.35) 100%)}
+#updateBar{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:80;background:#1c2631;border:1px solid var(--teal);padding:8px 10px 8px 16px;font-size:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#updateBar button{background:var(--teal);color:#0f1923;border:0;font:700 13px Oswald,sans-serif;letter-spacing:2px;padding:7px 14px;cursor:pointer}
 #buildTag{position:fixed;right:10px;bottom:6px;font:500 11px Oswald,sans-serif;letter-spacing:1px;opacity:.45;z-index:5;pointer-events:none}
 #shadeOv{position:fixed;inset:0;z-index:11;pointer-events:none;background:radial-gradient(circle,rgba(20,10,40,.75) 20%,rgba(10,4,24,.97) 75%);display:flex;align-items:center;justify-content:center}
 #shadeTxt{font:700 34px Oswald,sans-serif;letter-spacing:8px;color:#a58bff;text-shadow:0 0 20px #4b3fa0}
@@ -607,7 +609,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 19 (range agent switch)</div>
+<div id="buildTag">VALOR STRIKE · build 20</div>
+<div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
     <div class="ol">DAILY REWARD</div><h2>WELCOME BACK, AGENT</h2>
@@ -5710,6 +5713,17 @@ $('btnCopyCode').onclick = () => {
 };
 
 loadMap('dustwall'); renderMapCard();
+// tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
+const BUILD = 20;
+function checkForUpdate() {
+  if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
+  fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
+    const m = /const BUILD = (\d+);/.exec(t); const n = m ? +m[1] : 0;
+    if (n > BUILD) { $('updNum').textContent = 'build ' + n; $('updateBar').classList.remove('hidden'); }
+  }).catch(() => { });
+}
+$('btnUpdate').onclick = () => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); location.href = location.pathname + '?' + q.toString(); };
+setTimeout(checkForUpdate, 3000); setInterval(checkForUpdate, 120000);
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
 if (!profile.nameSet && profile.name === 'Player') openNameModal(true); else maybeDailyReward();
 ensureMissions();

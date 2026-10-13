@@ -72,6 +72,9 @@ Pick **PRACTICE RANGE** on the PLAY tab, press START and choose an agent. It's s
 - Skins show in your hands, on your character, on dropped guns, and on your Vandal in the lobby. Online players see each other's skins, and a gun you pick up keeps its owner's skin. Bots carry random skins too.
 - VP, owned skins and the Night Market are saved in your browser.
 
+## Updates
+The build number is in the bottom-right corner. When a newer build is online, a bar at the top says so; press **UPDATE NOW** to load it (GitHub Pages can keep serving an old copy for a few minutes).
+
 ## Steerable abilities and the time gauge
 Some abilities follow your aim, like in Valorant:
 - **Skye – Guiding Light (E)**: hold E and turn to curve the hawk. Let go of E and it flashes.
