@@ -11,7 +11,7 @@ Click the screen to lock the mouse.
 - **3 maps** (Dustwall, Frostline, Canal) plus a Random option, each with its own layout and color theme.
 - **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
 - **12 agents**, each with C / Q / E abilities and an X ultimate
-  - Jett: Cloudburst, Updraft, Tailwind (dash), Blade Storm
+  - Jett: Cloudburst, Updraft, Tailwind (press E to ready, E again to dash where you move; 2 kills recharge it), Blade Storm, passive Drift (hold Space in the air to glide)
   - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back
   - Sage: Barrier Orb (destructible, you can stand on it), Slow Orb, Healing Orb, Resurrection
   - Sova: Owl Drone, Shock Bolt, Recon Bolt, Hunter's Fury (pierces walls)
