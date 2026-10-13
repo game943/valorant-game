@@ -23,7 +23,7 @@ Click the screen to lock the mouse.
   - Cypher: Trapwire, Cyber Cage, Spycam (reveal pulses), Neural Theft (reveals every enemy)
   - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)
   - Viper: Snake Bite (acid), Poison Cloud and Toxic Screen (press the key again to switch them on/off; they burn fuel), Viper's Pit (lasts while you stay inside; you see nearby enemies in it)
-  - Neon: Fast Lane (two electric walls race forward), Relay Bolt (bounces once, then concusses), High Gear (E toggles a sprint that uses energy; press Crouch while sprinting to slide; kills give energy back), Overdrive (lightning beam from your hand for 20s, kills reset it)
+  - Neon: Fast Lane (two electric walls race forward), Relay Bolt (bounces once, then concusses), High Gear (E toggles a sprint that uses energy; press Crouch while sprinting to slide, every 4s; kills give energy back), Overdrive (lightning beam from your hand for 20s, kills reset it)
 - **17 weapons**, each with its own 3D model and colors (Sheriff revolver, Vandal with wood furniture, Operator with big scope and bipod, Odin with a drum…) shown in your hands, on other players, as drops, and as pictures in the shop and Collection. Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
 - **Shop and credit economy**: 200 per kill, 3000 per round win, loss bonus of 1900 / 2400 / 2900, 300 plant bonus, 9000 credit cap. Items bought this round can be sold back.
 - **Spike**: 4s plant, 45s fuse with beeps that speed up, 7s defuse with a halfway checkpoint. The spike can be dropped and picked up.

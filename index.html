@@ -612,7 +612,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 23</div>
+<div id="buildTag">VALOR STRIKE · build 24</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -2938,7 +2938,7 @@ function updatePlayer(dt) {
   if (p.sprint && p.crouch && !p.slideHeld && p.onGround && !(p.slideCD > 0)) { // Neon slide
     const ix = (kd('right') ? 1 : 0) - (kd('left') ? 1 : 0), iz = (kd('back') ? 1 : 0) - (kd('fwd') ? 1 : 0), s0 = Math.sin(p.yaw), c0 = Math.cos(p.yaw);
     let dx = -s0 * (-iz) + c0 * ix, dz = -c0 * (-iz) - s0 * ix; const l = Math.hypot(dx, dz); if (l < .3) { const f = fwd(p); dx = f.x; dz = f.z; } const L = Math.hypot(dx, dz) || 1;
-    p.dashX = dx / L * 17; p.dashZ = dz / L * 17; p.dashT = .38; p.slideCD = 6; p.sprint = false; equipView();
+    p.dashX = dx / L * 17; p.dashZ = dz / L * 17; p.dashT = .38; p.slideCD = 4; p.sprint = false; equipView();
     spawnParticles(p.x, p.y + .2, p.z, 20, 0x46b6ff, 3, .4); sndTone(900, .3, .15, 'sawtooth', 200);
   }
   p.slideHeld = p.crouch;
@@ -5841,7 +5841,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 23;
+const BUILD = 24;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
