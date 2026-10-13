@@ -35,7 +35,7 @@ Click the screen to lock the mouse.
 Pick **PRACTICE RANGE** on the PLAY tab, press START and choose an agent. It's solo, so leave your party first.
 - A shooting range with distance markers (15 / 30 / 60 / 84 m) and up to 8 target bots that come back after you kill them.
 - Buy any weapon or ability at any time with **B**. You have unlimited credits.
-- Press **H** for the range menu:
+- Press **H** for the range menu. At the top you can **switch to any agent** without leaving the Range; abilities and ultimate come back full.
   - **Target behavior:**
     - **Static:** targets stand still.
     - **Strafing:** targets move left and right.

@@ -250,6 +250,11 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .dmgNum{position:absolute;transform:translate(-50%,-50%);font:700 20px Oswald,sans-serif;color:#fff;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none}
 .dmgNum.head{color:#ffd24a;font-size:24px}
 #rangeMenu{background:rgba(10,16,22,.75);z-index:45}
+.rmAgents{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:6px 0 4px}
+.rmAgents button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;background:#1c2631;border:1px solid #3b4856;border-bottom:3px solid var(--ac);color:var(--light);cursor:pointer;font-size:11px}
+.rmAgents button b{font:700 17px Oswald,sans-serif;color:var(--ac)}
+.rmAgents button:hover{background:#26313d}
+.rmAgents button.on{background:rgba(255,255,255,.12);outline:2px solid var(--ac)}
 .btn.small{width:auto;margin:0;padding:6px 14px;font-size:13px}
 .mode.range{border-color:rgba(47,224,182,.5)}
 .mode.range .t{color:var(--teal)}
@@ -602,7 +607,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 18 (Sova · Omen · Viper · Sage)</div>
+<div id="buildTag">VALOR STRIKE · build 19 (range agent switch)</div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
     <div class="ol">DAILY REWARD</div><h2>WELCOME BACK, AGENT</h2>
@@ -5414,6 +5419,18 @@ function updateRangeHud() {
     ${T ? `<div class="rhTest">SHOOTING TEST · ${T.diff.toUpperCase()}<br><b>${T.kills}</b> hit · ${T.miss} missed · ${T.total - T.n} left</div>` : ''}
     <div class="rhKey"><b>${keyName(settings.binds.rangeMenu)}</b> Range menu · <b>${keyName(settings.binds.shop)}</b> Buy</div>`);
 }
+// change agent inside the Range without leaving it
+function switchRangeAgent(id) {
+  const p = player, ag = AGENT[id]; if (!ag || !RANGE()) return;
+  cancelPlace(); closeBrimMap(); gauge = null; reynaCast = 0;
+  if (p.satchel) { const i = projectiles.indexOf(p.satchel); if (i >= 0) { scene.remove(p.satchel.mesh); projectiles.splice(i, 1); } p.satchel = null; }
+  for (const s of [p.viperCloud, ...(p.viperWall || [])]) if (s) setSmokeOff(s, true);
+  Object.assign(p, { agent: id, ult: ag.ab.X.ult, charges: { C: ag.ab.C.max, Q: ag.ab.Q.max, E: ag.ab.E.max }, furyN: 0, furyManual: 0, tailwindT: 0, dashT: 0, bladeMag: 0, empressT: 0, soulT: 0, dismissT: 0, ribT: 0, ribPos: null,
+    viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, fuel: 100, healT: 0, hp: 100, slot: p.primary ? 1 : 2 });
+  if (p.ribMesh) { scene.remove(p.ribMesh); p.ribMesh = null; }
+  selectedAgent = id; buildAbilHud(); refreshAbilHud(); equipView(); SND.buy();
+  toastMenu(`Now playing ${ag.name} — abilities and ultimate are full`);
+}
 function startRangeTest(diff) {
   closeRangeMenu();
   for (const d of dummies()) hideDummy(d);
@@ -5445,6 +5462,8 @@ function renderRangeMenu() {
   const seg = (k, opts) => `<div class="seg">${opts.map(([v, t]) => `<button data-ro="${k}" data-v="${v}" class="${String(rangeOpts[k]) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const best = profile.rangeBest || {};
   $('rmBody').innerHTML = `
+    <div class="setSub">AGENT · switch any time</div>
+    <div class="rmAgents">${AGENTS.map(a => `<button data-agent="${a.id}" class="${player.agent === a.id ? 'on' : ''}" style="--ac:${a.color}"><b>${a.glyph}</b><span>${a.name}</span></button>`).join('')}</div>
     <div class="setSub">TARGETS</div>
     <div class="row"><label>Target behavior</label>${seg('mode', [['static', 'Static'], ['strafe', 'Strafing'], ['peek', 'Peeking'], ['fight', 'Fight back']])}</div>
     <div class="row"><label>Distance</label>${seg('dist', [['close', '15 m'], ['medium', '30 m'], ['far', '60 m'], ['mixed', 'Mixed']])}</div>
@@ -5465,6 +5484,7 @@ function renderRangeMenu() {
     renderRangeMenu();
   });
   $('rmBody').querySelectorAll('[data-test]').forEach(b => b.onclick = () => { tick(); startRangeTest(b.dataset.test); });
+  $('rmBody').querySelectorAll('[data-agent]').forEach(b => b.onclick = () => { switchRangeAgent(b.dataset.agent); renderRangeMenu(); });
   $('rmUlt').onclick = () => { player.ult = AGENT[player.agent].ab.X.ult; tick(); toastMenu('Ultimate ready'); };
   $('rmReset').onclick = () => { resetRangeStats(); tick(); updateRangeHud(); };
 }
