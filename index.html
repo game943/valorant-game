@@ -432,7 +432,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #fuelBar.neon #fuelFill{background:linear-gradient(90deg,#2f6fe0,#8fd0ff)}
 #brimOv{position:fixed;inset:0;pointer-events:none;z-index:12}
 #empOv{background:radial-gradient(circle,transparent 50%,rgba(170,60,255,.4) 100%);transition:opacity .3s}
-#abGauge{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:300px;text-align:center}
+#abGauge{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:420px;text-align:center;white-space:nowrap}
 #agLabel{font:600 13px Oswald,sans-serif;letter-spacing:2px;margin-bottom:5px;text-transform:uppercase}
 .agBar{height:8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.35)}
 #agFill{height:100%;width:0;background:linear-gradient(90deg,#2fe0b6,#f5d76e)}
@@ -612,7 +612,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 24</div>
+<div id="buildTag">VALOR STRIKE · build 25</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -2550,7 +2550,7 @@ function startGauge(ab, key) {
 }
 function updateGauge(dt) {
   const el = $('abGauge'), p = player;
-  if (gauge && (!p || !p.alive || game.state !== 'playing')) gauge = null;
+  if (gauge && (!p || !p.alive || game.state !== 'playing')) { if (p) p.ready = null; gauge = null; }
   let frac = -1, label = '';
   if (gauge && gauge.timed) {
     const left = gauge.timed === 'empress' ? p.empressT : p.ribT, tot = gauge.timed === 'empress' ? 30 : 10;
@@ -2560,8 +2560,8 @@ function updateGauge(dt) {
     const held = kd(gauge.key === 'X' ? 'ult' : 'ab' + gauge.key);
     if (gauge.mode === 'wait' && gauge.t >= .2) { gauge.mode = held ? 'steer' : 'auto'; if (held) gauge.max = gauge.steer; }
     if (gauge.mode === 'steer' && !held) { if (gauge.release === 'pop') gauge.t = gauge.max; else gauge.mode = 'auto'; }
-    if (gauge.t >= gauge.max) gauge = null;
-    else { frac = gauge.t / gauge.max; label = gauge.satchel ? `${gauge.name} · press ${keyName(settings.binds['ab' + gauge.key])} again to detonate` : gauge.tailwind ? `${gauge.name} ready · press ${keyName(settings.binds['ab' + gauge.key])} to dash` : gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
+    if (gauge.t >= gauge.max) { if (gauge.readyG && p) p.ready = null; gauge = null; }
+    else { frac = gauge.t / gauge.max; label = gauge.readyG ? `${gauge.name} ready · press ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} again or LEFT click` : gauge.satchel ? `${gauge.name} · press ${keyName(settings.binds['ab' + gauge.key])} again to detonate` : gauge.tailwind ? `${gauge.name} ready · press ${keyName(settings.binds['ab' + gauge.key])} to dash` : gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
   }
   if (frac < 0) { el.classList.add('hidden'); return; }
   el.classList.remove('hidden'); setText('agLabel', label); $('agFill').style.width = (Math.min(1, frac) * 100).toFixed(1) + '%';
@@ -2614,13 +2614,29 @@ function neonTick(e, dt) {
   else e.energy = Math.min(100, e.energy + 4 * dt);
   e.slideCD = Math.max(0, (e.slideCD || 0) - dt);
 }
+// Thrown / launched abilities: first press readies them (time gauge), second press or LEFT click uses them
+const READY_TYPES = new Set(['smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay']);
+function readyGate(e, ab, key) { // true = this press only readied the ability
+  if (e.isPlayer && e.ready && e.ready.key !== key) clearReady(e); // another ability replaces it
+  if (!e.isPlayer || e.agent === 'sova' || !READY_TYPES.has(ab.type)) return false;
+  if (e.ready && e.ready.key === key) { e.ready = null; if (gauge && gauge.readyG) gauge = null; return false; } // second press: use it
+  if (key === 'X' ? e.ult < ab.ult : e.charges[key] <= 0) return false; // the normal "not available" feedback
+  if (e.detainT > 0 || (e.sprint && !(e.odT > 0))) return false;
+  cancelPlace(); e.ready = { key };
+  gauge = { name: ab.name, key, t: 0, max: 7.5, readyG: true, mode: 'auto' };
+  sndTone(650, .1, .1, 'triangle', 950);
+  return true;
+}
+function clearReady(e) { if (e && e.ready) { e.ready = null; if (gauge && gauge.readyG) gauge = null; } }
 function castAbility(e, key, target) {
   if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
   if (e.agent === 'viper' && ab.type === 'screen' && e.viperWall) { toggleViper(e, 'wall'); return true; }
   if (e.agent === 'viper' && ab.type === 'skySmoke' && e.viperCloud) { toggleViper(e, 'cloud'); return true; }
+  if (!target && e.isPlayer && e.ready && e.ready.key !== key && !READY_TYPES.has(ab.type)) clearReady(e);
   if (!target && tryStartPlace(e, ab, key)) return false;
+  if (!target && readyGate(e, ab, key)) return false;
   if (ab.type === 'dash' && e.tailwindT > 0) { doDash(e); if (e.isPlayer && gauge && gauge.tailwind) gauge = null; return true; }
   if (ab.type === 'highgear') { toggleSprint(e); return true; }
   if (e.detainT > 0) { toastTo(e, 'Detained — you cannot use abilities'); if (e.isPlayer) SND.deny(); return false; }
@@ -2824,7 +2840,7 @@ function equipView() {
 }
 function switchSlot(s) {
   if (!player.alive) return;
-  cancelPlace();
+  cancelPlace(); clearReady(player);
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
   if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
   if (player.slot === s) return;
@@ -2964,7 +2980,9 @@ function updatePlayer(dt) {
   const spd = Math.hypot(p.vx, p.vz);
   if (p.onGround && spd > 5) { stepT -= dt; if (stepT <= 0) { stepT = .36; SND.step(undefined, undefined, .12); alertEnemies(p, 16); } }
   // shooting
-  if (p.sprint && !(p.odT > 0)) { triggerHeld = true; } // can't shoot while sprinting
+  if (!p.ready) p.readyPrev = true;
+  if (p.ready) { if (mouse[0] && !p.readyPrev) castAbility(p, p.ready.key); p.readyPrev = mouse[0]; triggerHeld = true; }
+  else if (p.sprint && !(p.odT > 0)) { triggerHeld = true; } // can't shoot while sprinting
   else if (updatePlace(dt) || furyInput(p, dt)) { triggerHeld = true; }
   else if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
   else if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
@@ -3355,7 +3373,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
   }
@@ -4492,7 +4510,9 @@ function clientSetupMatch(d) {
 function clientCast(key, target) {
   const p = player, ab = AGENT[p.agent].ab[key];
   if (!ab || !p.alive || game.phase === 'end') return false;
+  if (!target && p.ready && p.ready.key !== key && !READY_TYPES.has(ab.type)) clearReady(p);
   if (!target && tryStartPlace(p, ab, key)) return false;
+  if (!target && readyGate(p, ab, key)) return false;
   if (ab.type === 'highgear') { toggleSprint(p); return true; } // sprinting is our own movement
   if (p.agent === 'viper' && p.vState && ((ab.type === 'screen' && p.vState.w) || (ab.type === 'skySmoke' && p.vState.c))) { netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (ab.type === 'dash' && p.tailwindT > 0) { doDash(p); if (gauge && gauge.tailwind) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
@@ -5173,7 +5193,7 @@ function makeOrbHand(color) {
   g.userData.orb = orb; g.scale.setScalar(.5); g.position.set(.2, -.2, -.45); g.rotation.set(.35, -.25, .15);
   return g;
 }
-const ORB_COLOR = { neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d };
+const ORB_COLOR = { neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b };
 /* --- Viper: fuel, toggling the screen and the cloud --- */
 function setSmokeOff(s, off) { s.off = off; if (s.mesh) s.mesh.visible = !off; if (!off) s.grow = .2; }
 function toggleViper(e, which) {
@@ -5314,7 +5334,7 @@ function updateVmProps(dt) {
   if (brimMap && brimMap.theme === 'orange' && !ud.brimArm) { ud.brimArm = makeBrimArm(); vmRoot.add(ud.brimArm); }
   if (ud.brimArm) { ud.brimArm.visible = !!brimMap && brimMap.theme === 'orange'; ud.brimArm.userData.rings[0].rotation.z += dt * 2; ud.brimArm.userData.rings[1].rotation.z -= dt; if (!brimMap || brimMap.theme !== 'orange') { vmRoot.remove(ud.brimArm); ud.brimArm = null; } }
   const wantBow = (aimMode && aimMode.kind === 'bow') || (p.furyN > 0 && p.furyManual > 0);
-  const wantOrb = !wantBow && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)));
+  const wantOrb = !wantBow && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)) || !!p.ready);
   if (wantBow && !ud.bow) { ud.bow = makeBow(p.furyN > 0 && p.furyManual > 0); vmRoot.add(ud.bow); }
   if (!wantBow && ud.bow) { vmRoot.remove(ud.bow); ud.bow = null; }
   if (ud.bow) { const fury = p.furyN > 0 && p.furyManual > 0; setBowDraw(ud.bow, fury ? .6 + Math.sin(game.time * 6) * .1 : aimMode ? aimMode.power : 0); ud.bow.userData.arrow.visible = !fury || p.furyCD <= 0; }
@@ -5552,7 +5572,7 @@ function updateRangeHud() {
 // change agent inside the Range without leaving it
 function switchRangeAgent(id) {
   const p = player, ag = AGENT[id]; if (!ag || !RANGE()) return;
-  cancelPlace(); closeBrimMap(); gauge = null; reynaCast = 0;
+  cancelPlace(); closeBrimMap(); clearReady(p); gauge = null; reynaCast = 0;
   if (p.satchel) { const i = projectiles.indexOf(p.satchel); if (i >= 0) { scene.remove(p.satchel.mesh); projectiles.splice(i, 1); } p.satchel = null; }
   for (const s of [p.viperCloud, ...(p.viperWall || [])]) if (s) setSmokeOff(s, true);
   Object.assign(p, { agent: id, ult: ag.ab.X.ult, charges: { C: ag.ab.C.max, Q: ag.ab.Q.max, E: ag.ab.E.max }, furyN: 0, furyManual: 0, tailwindT: 0, dashT: 0, bladeMag: 0, empressT: 0, soulT: 0, dismissT: 0, ribT: 0, ribPos: null,
@@ -5841,7 +5861,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 24;
+const BUILD = 25;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {

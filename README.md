@@ -76,6 +76,10 @@ Pick **PRACTICE RANGE** on the PLAY tab, press START and choose an agent. It's s
 ## Updates
 The build number is in the bottom-right corner. When a newer build is online, a bar at the top says so; press **UPDATE NOW** to load it (GitHub Pages can keep serving an old copy for a few minutes).
 
+## Ready, then use (thrown abilities)
+Thrown or launched abilities work like Jett's dash. Press the key once to **ready** it: you hold it in your hand and a time gauge appears. Then press the key **again** or **left click** to use it. If you don't, it un-readies when the gauge fills, and you keep the charge. Switching weapons also cancels it.
+Sova's bow, Raze's Blast Pack, aimed abilities (Phoenix Curveball, Omen, Sage, Brimstone), Viper's toggles and movement abilities keep their own controls.
+
 ## Steerable abilities and the time gauge
 Some abilities follow your aim, like in Valorant:
 - **Skye – Guiding Light (E)**: hold E and turn to curve the hawk. Let go of E and it flashes.
