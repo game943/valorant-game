@@ -87,6 +87,28 @@ Ultimate changes:
 - **Empress**: +25% fire rate, faster reloads and movement, and a purple screen glow.
 - **Resurrection**: reaches fallen allies further away and tells you when nobody is dead.
 
+## Character and ability models
+- Every agent has their own look: hair or headgear, clothes in their colors, and gear.
+  - Jett: white hair bun and scarf
+  - Phoenix: spiky hair with orange tips
+  - Sage: long braid and jade sash
+  - Sova: hood, bow and eyepiece
+  - Brimstone: beret, beard and backpack
+  - Reyna: long hair and glowing eyes
+  - Omen: hood, cloak and three glowing eyes
+  - Raze: beanie and a grenade belt
+  - Killjoy: beanie and round glasses
+  - Cypher: fedora and a glowing mask
+  - Skye: hair bun and leaves
+  - Viper: respirator
+- Abilities have 3D models that face the way they fly and animate:
+  - Skye's hawk flaps its wings, her tiger runs and her Seekers swim through the air.
+  - Sova's owl drone spins its rotors, and his bolts are arrows.
+  - Raze's Boom Bot rolls on wheels, her Paint Shells are grenades and Showstopper is a rocket.
+  - Reyna's Leer is a giant eye, and Omen's Paranoia is a trail of shadow.
+  - Phoenix throws fireballs, and molotovs and other thrown utility fly as canisters.
+  - Killjoy's Alarmbot is a little robot.
+
 ## Blinded faces
 When an enemy (or ally) is flashed, their face turns into a dizzy **X_X** face, yellow stars spin over their head, they cover their eyes with a hand and point their gun at the floor. Nearsight (Reyna's Leer, Omen's Paranoia, Skye's Seekers) shows a purple X_X face instead. Online players see it too.
 

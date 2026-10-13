@@ -1478,28 +1478,90 @@ function updateFace(e, dt) {
   }
   if (fl) { ud.stars.rotation.y += dt * 4; ud.face.rotation.z = Math.sin(game.time * 9) * .12; }
 }
+// what each agent looks like: skin, hair, clothes and extra gear
+const LOOKS = {
+  jett: { skin: 0xf3d6c4, hair: 0xeef3f6, style: 'bun', top: 0xdfe9f0, top2: 0x4fa3c7, pants: 0x2f3a48, eye: 0x6fd0ff, gear: ['scarf'] },
+  phoenix: { skin: 0x8a5a3c, hair: 0x241610, style: 'spiky', tip: 0xff8a3d, top: 0xf2efe9, top2: 0xff7a2a, pants: 0x2b2b30, eye: 0xffb070, gear: ['flameShoulder'] },
+  sage: { skin: 0xe9c9aa, hair: 0x101010, style: 'longTail', top: 0xe8f3ef, top2: 0x2fd6a5, pants: 0xdfe8e4, eye: 0x2fd6a5, gear: ['sash'] },
+  sova: { skin: 0xecd0bb, hair: 0xd9c58a, style: 'short', top: 0x3a5f9e, top2: 0xc9d6e8, pants: 0x2a3348, eye: 0x6fb6ff, gear: ['hood', 'bow', 'eyePiece'] },
+  brim: { skin: 0xa47456, hair: 0x8a8a8a, style: 'none', top: 0x5a6a3e, top2: 0xff7a22, pants: 0x3b4430, eye: 0x2a2a2a, gear: ['beret', 'beard', 'backpack'], wide: 1.12 },
+  reyna: { skin: 0xc49a7c, hair: 0x2a1033, style: 'long', top: 0x2a1838, top2: 0xc25bff, pants: 0x1d1424, eye: 0xd17bff, glow: true, gear: ['shoulderPads'] },
+  omen: { skin: 0x22263a, hair: 0x1c1e2e, style: 'none', top: 0x1c1e2e, top2: 0x4b5fff, pants: 0x15161f, eye: 0x6f8bff, glow: true, gear: ['hood', 'cloak'], eyes3: true },
+  raze: { skin: 0x8a5a3c, hair: 0x1b1410, style: 'none', top: 0xf2b33a, top2: 0x3fa7d6, pants: 0x3a4d6e, eye: 0x2a2a2a, gear: ['beanie', 'grenades'] },
+  killjoy: { skin: 0xecd0bb, hair: 0x2a2620, style: 'bun', top: 0xf4d03a, top2: 0x2b2b30, pants: 0x3b3b44, eye: 0x2a2a2a, gear: ['beanieKj', 'glasses'] },
+  cypher: { skin: 0xb98c6c, hair: 0x1a1a1a, style: 'none', top: 0xd8d2bf, top2: 0x4fa3ff, pants: 0x3a3a3f, eye: 0x4fa3ff, glow: true, gear: ['fedora', 'mask', 'scarf'] },
+  skye: { skin: 0xecd0bb, hair: 0x8a5a2b, style: 'bun', top: 0x5a8a3a, top2: 0x9be86b, pants: 0x4a3a28, eye: 0x2a2a2a, gear: ['leaves'] },
+  viper: { skin: 0xecd0bb, hair: 0x141414, style: 'short', top: 0x1b1d22, top2: 0x3fbf7a, pants: 0x15161a, eye: 0x2a2a2a, gear: ['respirator'] },
+};
 function makeCharacter(agent) {
+  const L = LOOKS[agent.id] || { skin: 0xe0b896, hair: 0x2a2a2a, style: 'short', top: agent.color, top2: agent.color, pants: 0x2b2f38, eye: 0x2a2a2a, gear: [] };
   const g = new THREE.Group(); g.userData.outlines = [];
-  const body = new THREE.MeshLambertMaterial({ color: agent.color });
-  const darker = new THREE.MeshLambertMaterial({ color: new THREE.Color(agent.color).multiplyScalar(.45) });
-  const legL = new THREE.Group(), legR = new THREE.Group(); legL.position.set(-.13, .8, 0); legR.position.set(.13, .8, 0); g.add(legL, legR);
-  addPart(g, new THREE.BoxGeometry(.22, .8, .24), darker, 0, -.4, 0, legL);
-  addPart(g, new THREE.BoxGeometry(.22, .8, .24), darker, 0, -.4, 0, legR);
-  addPart(g, new THREE.BoxGeometry(.6, .6, .34), body, 0, 1.1, 0);
-  addPart(g, new THREE.BoxGeometry(.62, .12, .36), MAT.dark, 0, .86, 0);
-  const armL = addPart(g, new THREE.BoxGeometry(.16, .5, .16), body, -.36, 1.12, -.12); armL.rotation.x = -1.1;
-  const armR = addPart(g, new THREE.BoxGeometry(.16, .5, .16), body, .36, 1.12, -.12); armR.rotation.x = -1.1;
-  addPart(g, new THREE.SphereGeometry(.21, 14, 10), MAT.skin, 0, 1.58, 0);
-  addPart(g, new THREE.SphereGeometry(.225, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), darker, 0, 1.6, .02);
-  const visor = new THREE.Mesh(new THREE.BoxGeometry(.3, .06, .05), new THREE.MeshBasicMaterial({ color: agent.color })); visor.position.set(0, 1.6, -.2); g.add(visor);
+  const M = c => gm(c), skin = M(L.skin), top = M(L.top), acc = new THREE.MeshLambertMaterial({ color: L.top2, emissive: new THREE.Color(L.top2).multiplyScalar(.25) });
+  const pants = M(L.pants), boots = M(0x1b1d22), hairM = M(L.hair), W = L.wide || 1;
+  const box = (w, h, d, m, x, y, z, parent) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); (parent || g).add(me); return me; };
+  // legs: thigh/shin + boot, pivoting at the hip
+  const legL = new THREE.Group(), legR = new THREE.Group(); legL.position.set(-.13 * W, .82, 0); legR.position.set(.13 * W, .82, 0); g.add(legL, legR);
+  for (const leg of [legL, legR]) {
+    addPart(g, new THREE.BoxGeometry(.21 * W, .74, .23), pants, 0, -.37, 0, leg);
+    addPart(g, new THREE.BoxGeometry(.23 * W, .14, .32), boots, 0, -.75, -.04, leg);
+    box(.22 * W, .08, .06, acc, 0, -.42, -.12, leg); // knee pad
+  }
+  // hips, torso, chest plate, collar
+  addPart(g, new THREE.BoxGeometry(.5 * W, .14, .3), M(0x23262c), 0, .86, 0);
+  box(.12, .1, .04, acc, 0, .86, -.16); // belt buckle
+  addPart(g, new THREE.BoxGeometry(.52 * W, .56, .3), top, 0, 1.18, 0);
+  addPart(g, new THREE.BoxGeometry(.6 * W, .16, .34), top, 0, 1.4, 0); // shoulders
+  box(.3 * W, .22, .04, acc, 0, 1.2, -.165); // chest emblem
+  box(.06, .5, .02, acc, -.18 * W, 1.15, -.158); box(.06, .5, .02, acc, .18 * W, 1.15, -.158);
+  // arms with gloves
+  const armL = addPart(g, new THREE.BoxGeometry(.15, .5, .15), top, -.36 * W, 1.12, -.12); armL.rotation.x = -1.1;
+  const armR = addPart(g, new THREE.BoxGeometry(.15, .5, .15), top, .36 * W, 1.12, -.12); armR.rotation.x = -1.1;
+  for (const arm of [armL, armR]) { box(.16, .12, .16, acc, 0, .2, 0, arm); box(.13, .12, .13, M(0x23262c), 0, -.3, 0, arm); }
+  // neck + head
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(.08, .09, .12, 10), skin); neck.position.y = 1.5; g.add(neck);
+  addPart(g, new THREE.SphereGeometry(.2, 16, 12), skin, 0, 1.62, 0);
+  // eyes (hidden when the character is blinded)
+  const visor = new THREE.Group(); g.add(visor);
+  const eyeM = L.glow ? new THREE.MeshBasicMaterial({ color: L.eye }) : M(L.eye);
+  const eyeXs = L.eyes3 ? [-.07, 0, .07] : [-.07, .07];
+  for (const ex of eyeXs) box(L.eyes3 ? .04 : .05, L.eyes3 ? .02 : .035, .02, eyeM, ex, 1.64, -.19, visor);
+  if (!L.glow && !L.gear.includes('mask') && !L.gear.includes('respirator')) box(.08, .015, .02, M(0x7a3b30), 0, 1.53, -.185, visor); // mouth
+  // hair
+  const cap = (r, m) => { const c = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 8, 0, Math.PI * 2, 0, Math.PI * .55), m); c.position.set(0, 1.63, .015); g.add(c); return c; };
+  if (L.style !== 'none') cap(.215, hairM);
+  if (L.style === 'bun') { const b = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), hairM); b.position.set(0, 1.83, .1); g.add(b); }
+  if (L.style === 'longTail') box(.09, .55, .07, hairM, 0, 1.35, .2);
+  if (L.style === 'long') box(.36, .42, .1, hairM, 0, 1.47, .15);
+  if (L.style === 'spiky') for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(.05, .16, 5), i % 2 ? M(L.tip) : hairM); const a = -1 + i * .4; s.position.set(Math.sin(a) * .13, 1.83, Math.cos(a) * .04); s.rotation.z = -a * .5; g.add(s); }
+  // gear
+  const G = L.gear;
+  if (G.includes('hood')) { const h = new THREE.Mesh(new THREE.SphereGeometry(.25, 16, 10, Math.PI * 1.82, Math.PI * 1.36, 0, Math.PI * .62), new THREE.MeshLambertMaterial({ color: agent.id === 'omen' ? 0x1c1e2e : L.top, side: THREE.DoubleSide })); h.position.set(0, 1.62, .02); g.add(h); } // hood is open at the face
+  if (G.includes('cloak')) { const c = new THREE.Mesh(new THREE.ConeGeometry(.5, 1.25, 10, 1, true, Math.PI * .25, Math.PI * 1.5), new THREE.MeshLambertMaterial({ color: 0x15161f, side: THREE.DoubleSide })); c.position.set(0, .88, 0); c.rotation.y = Math.PI * .75; g.add(c); }
+  if (G.includes('beret')) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.21, .23, .08, 14), M(0x3d4a2e)); b.position.set(-.03, 1.81, .01); b.rotation.z = .25; g.add(b); }
+  if (G.includes('beard')) { box(.3, .14, .08, M(L.hair), 0, 1.5, -.15); box(.26, .05, .04, M(L.hair), 0, 1.58, -.19); }
+  if (G.includes('backpack')) { box(.42, .5, .2, M(0x4a4f38), 0, 1.15, .25); box(.1, .3, .1, M(0xff7a22), .14, 1.45, .3); }
+  if (G.includes('beanie')) { cap(.23, M(0xe8892c)); box(.46, .07, .46, M(0xd0701c), 0, 1.66, 0); }
+  if (G.includes('beanieKj')) { cap(.23, M(0x2b2b30)); const p = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), M(0xf4d03a)); p.position.set(0, 1.87, .03); g.add(p); }
+  if (G.includes('grenades')) for (let i = 0; i < 3; i++) { const n = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), M([0xff4fa3, 0x3fa7d6, 0xffd23a][i])); n.position.set(-.16 + i * .16, .86, -.18); g.add(n); }
+  if (G.includes('glasses')) for (const sx of [-.07, .07]) { const r = new THREE.Mesh(new THREE.TorusGeometry(.045, .012, 6, 14), M(0x111111)); r.position.set(sx, 1.64, -.2); g.add(r); }
+  if (G.includes('fedora')) { const b = new THREE.Mesh(new THREE.CylinderGeometry(.33, .33, .03, 18), M(0xd8d2bf)); b.position.y = 1.78; g.add(b); const c = new THREE.Mesh(new THREE.CylinderGeometry(.17, .2, .17, 14), M(0xd8d2bf)); c.position.y = 1.87; g.add(c); box(.41, .04, .41, M(0x2b2b30), 0, 1.81, 0).scale.set(.98, 1, .98); }
+  if (G.includes('mask')) { box(.34, .16, .06, M(0xf2efe9), 0, 1.55, -.17); const l = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0x4fa3ff })); l.position.set(0, 1.56, -.21); g.add(l); }
+  if (G.includes('respirator')) { box(.22, .13, .08, M(0x3fbf7a), 0, 1.54, -.18); for (const sx of [-.12, .12]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .09, 10), M(0x2a2f2c)); c.rotation.x = Math.PI / 2; c.position.set(sx, 1.52, -.2); g.add(c); } }
+  if (G.includes('scarf')) { const s = new THREE.Mesh(new THREE.TorusGeometry(.13, .045, 8, 16), M(agent.id === 'jett' ? 0xf2f6f8 : 0xc9c3ae)); s.rotation.x = Math.PI / 2; s.position.y = 1.47; g.add(s); }
+  if (G.includes('sash')) { const s = box(.08, .7, .03, acc, 0, 1.15, -.16); s.rotation.z = .6; }
+  if (G.includes('bow')) { const b = new THREE.Mesh(new THREE.TorusGeometry(.42, .025, 6, 20, Math.PI), M(0x5a4030)); b.position.set(0, 1.15, .22); b.rotation.z = Math.PI / 2; g.add(b); }
+  if (G.includes('eyePiece')) { const e = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .05, 10), new THREE.MeshBasicMaterial({ color: 0x6fb6ff })); e.rotation.x = Math.PI / 2; e.position.set(.07, 1.64, -.21); g.add(e); }
+  if (G.includes('shoulderPads')) for (const sx of [-.33, .33]) { const s = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), acc); s.position.set(sx * W, 1.45, 0); g.add(s); }
+  if (G.includes('flameShoulder')) { const f = new THREE.Mesh(new THREE.ConeGeometry(.08, .22, 6), new THREE.MeshBasicMaterial({ color: 0xff8a3d })); f.position.set(-.36, 1.55, 0); g.add(f); }
+  if (G.includes('leaves')) for (let i = 0; i < 4; i++) { const lf = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 4), M(0x9be86b)); lf.position.set(.3 - (i % 2) * .6, 1.5 + (i > 1 ? .05 : 0), (i > 1 ? .08 : -.05)); lf.rotation.z = (i % 2 ? 1 : -1) * .9; g.add(lf); }
   const gunHolder = new THREE.Group(); gunHolder.position.set(.16, 1.2, -.35); g.add(gunHolder);
   // ally marker
   const mk = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x2fe0b6, depthTest: false, transparent: true }));
-  mk.scale.set(.45, .45, 1); mk.position.y = 2.15; mk.renderOrder = 999; g.add(mk);
+  mk.scale.set(.45, .45, 1); mk.position.y = 2.2; mk.renderOrder = 999; g.add(mk);
   // blinded face (shown when flashed or nearsighted) + dizzy stars
   const face = new THREE.Mesh(new THREE.PlaneGeometry(.34, .22), new THREE.MeshBasicMaterial({ map: FACE_TEX.flash, transparent: true, depthWrite: false }));
-  face.position.set(0, 1.585, -.222); face.rotation.y = Math.PI; face.visible = false; g.add(face);
-  const stars = new THREE.Group(); stars.position.y = 2.0; stars.visible = false; g.add(stars);
+  face.position.set(0, 1.6, -.215); face.rotation.y = Math.PI; face.visible = false; face.renderOrder = 2; g.add(face);
+  const stars = new THREE.Group(); stars.position.y = 2.05; stars.visible = false; g.add(stars);
   for (let i = 0; i < 3; i++) { const st = new THREE.Sprite(new THREE.SpriteMaterial({ map: FACE_TEX.star, transparent: true, depthWrite: false })); const a = i / 3 * Math.PI * 2; st.position.set(Math.cos(a) * .24, 0, Math.sin(a) * .24); st.scale.set(.16, .16, 1); stars.add(st); }
   Object.assign(g.userData, { legL, legR, gunHolder, marker: mk, gunModel: null, armL, armR, visor, face, stars });
   g.traverse(o => { if (o.isMesh && o.material !== MAT.outline) o.castShadow = true; });
@@ -1887,7 +1949,12 @@ function makeZone(o) {
     const eye = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3344 })); eye.position.set(0, .08, -.26); head.add(eye);
   }
   if (z.kind === 'alarm') {
-    const bot = new THREE.Mesh(new THREE.SphereGeometry(.28, 12, 10), new THREE.MeshLambertMaterial({ color: 0xd8e04a, emissive: 0x3a3a00 })); bot.position.y = .3; g.add(bot);
+    // Killjoy's Alarmbot: a little yellow robot with a big eye and stubby legs
+    const yel = new THREE.MeshLambertMaterial({ color: 0xd8e04a, emissive: 0x3a3a00 }), dk = MAT.dark;
+    const bot = new THREE.Mesh(new THREE.SphereGeometry(.24, 14, 10), yel); bot.position.y = .42; bot.scale.set(1, .9, 1); g.add(bot);
+    const eye = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .08, 16), dk); eye.rotation.x = Math.PI / 2; eye.position.set(0, .45, -.21); g.add(eye);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(.07, 14), new THREE.MeshBasicMaterial({ color: 0x4fe0ff })); lens.position.set(0, .45, -.252); lens.rotation.y = Math.PI; g.add(lens);
+    for (const sx of [-1, 1]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(.07, .22, .07), dk); leg.position.set(sx * .12, .12, 0); g.add(leg); const ear = new THREE.Mesh(new THREE.BoxGeometry(.05, .12, .05), yel); ear.position.set(sx * .2, .66, 0); g.add(ear); }
   }
   if (z.kind === 'cam') {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 2, 6), MAT.dark); pole.position.y = 1; g.add(pole);
@@ -1925,8 +1992,124 @@ function popFlash(x, y, z, owner, dur, kind) {
     if (kind === 'near') e.nearT = Math.max(e.nearT, s * 1.2); else e.flashT = Math.max(e.flashT, s);
   }
 }
+// 3D models for thrown / flying abilities. Each faces +z (its flight direction) and may animate.
+const PROJ_MODELS = {
+  hawk(c) { // Skye's Guiding Light
+    const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: 0xd8ff9a }), w = new THREE.MeshBasicMaterial({ color: 0x9be86b, transparent: true, opacity: .9, side: THREE.DoubleSide });
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), m); b.scale.set(.8, .8, 1.6); g.add(b);
+    const h = new THREE.Mesh(new THREE.ConeGeometry(.05, .14, 6), new THREE.MeshBasicMaterial({ color: 0xffe14a })); h.rotation.x = Math.PI / 2; h.position.z = .22; g.add(h);
+    const tail = new THREE.Mesh(new THREE.PlaneGeometry(.18, .22), w); tail.rotation.x = -Math.PI / 2; tail.position.z = -.25; g.add(tail);
+    const wings = [];
+    for (const s of [-1, 1]) { const wp = new THREE.Group(); wp.position.x = s * .06; const wm = new THREE.Mesh(new THREE.PlaneGeometry(.42, .2), w); wm.rotation.x = -Math.PI / 2; wm.position.x = s * .21; wp.add(wm); g.add(wp); wings.push([wp, s]); }
+    return { g, anim(t) { for (const [wp, s] of wings) wp.rotation.z = s * Math.sin(t * 22) * .7; } };
+  },
+  tiger(c) { // Skye's Trailblazer
+    const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: 0x7fd36b, emissive: 0x2a6a1a, transparent: true, opacity: .92 }), dk = new THREE.MeshBasicMaterial({ color: 0x2e5a22 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(.36, .3, .8), m); body.position.y = .42; g.add(body);
+    for (let i = 0; i < 3; i++) { const st = new THREE.Mesh(new THREE.BoxGeometry(.37, .04, .08), dk); st.position.set(0, .58, -.2 + i * .2); g.add(st); }
+    const head = new THREE.Mesh(new THREE.BoxGeometry(.3, .28, .3), m); head.position.set(0, .58, .5); g.add(head);
+    for (const s of [-1, 1]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(.05, .1, 4), m); ear.position.set(s * .1, .76, .48); g.add(ear); const eye = new THREE.Mesh(new THREE.BoxGeometry(.05, .03, .02), new THREE.MeshBasicMaterial({ color: 0xffe14a })); eye.position.set(s * .08, .62, .66); g.add(eye); }
+    const legs = [];
+    for (const [x, z] of [[-.12, .28], [.12, .28], [-.12, -.28], [.12, -.28]]) { const lp = new THREE.Group(); lp.position.set(x, .32, z); const lm = new THREE.Mesh(new THREE.BoxGeometry(.1, .32, .1), m); lm.position.y = -.16; lp.add(lm); g.add(lp); legs.push(lp); }
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(.06, .06, .4), m); tail.position.set(0, .55, -.55); tail.rotation.x = -.5; g.add(tail);
+    return { g, ground: true, anim(t) { legs.forEach((l, i) => l.rotation.x = Math.sin(t * 16 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * .8); tail.rotation.y = Math.sin(t * 8) * .4; } };
+  },
+  owl(c) { // Sova's Owl Drone
+    const g = new THREE.Group(), body = new THREE.MeshLambertMaterial({ color: 0x8fa6c8 }), dark = new THREE.MeshLambertMaterial({ color: 0x2a3348 });
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 10), body); b.scale.set(1, .75, 1.2); g.add(b);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), new THREE.MeshBasicMaterial({ color: 0x4fa3ff })); eye.position.set(0, .02, .22); g.add(eye);
+    const props = [];
+    for (const s of [-1, 1]) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(.3, .04, .06), dark); arm.position.x = s * .3; g.add(arm);
+      const pr = new THREE.Group(); pr.position.set(s * .45, .06, 0); g.add(pr); props.push(pr);
+      for (let k = 0; k < 2; k++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(.32, .01, .05), dark); bl.rotation.y = k * Math.PI / 2; pr.add(bl); }
+    }
+    return { g, anim(t) { for (const p of props) p.rotation.y = t * 40; g.children[0].rotation.z = Math.sin(t * 3) * .1; } };
+  },
+  arrow(c) { // Sova's bolts
+    const g = new THREE.Group(), shaft = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .8, 6), new THREE.MeshLambertMaterial({ color: 0x5a4030 }));
+    shaft.rotation.x = Math.PI / 2; g.add(shaft);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(.06, .18, 8), new THREE.MeshBasicMaterial({ color: c })); head.rotation.x = Math.PI / 2; head.position.z = .48; g.add(head);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.6, .6, 1); glow.position.z = .45; g.add(glow);
+    for (let k = 0; k < 3; k++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.1, .14), new THREE.MeshBasicMaterial({ color: 0xece8e1, side: THREE.DoubleSide })); f.position.z = -.36; f.rotation.set(Math.PI / 2, 0, k * Math.PI * 2 / 3); f.translateX(.05); g.add(f); }
+    return { g };
+  },
+  boombot(c) { // Raze's Boom Bot
+    const g = new THREE.Group(), y = new THREE.MeshLambertMaterial({ color: 0xf0a03a }), dk = new THREE.MeshLambertMaterial({ color: 0x2b2b30 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(.26, 14, 10), y); body.position.y = .3; body.scale.set(1, .85, 1.1); g.add(body);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(.26, .03, 6, 20), dk); band.rotation.x = Math.PI / 2; band.position.y = .3; g.add(band);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.08, 10, 8), new THREE.MeshBasicMaterial({ color: 0x3fa7d6 })); eye.position.set(0, .38, .25); g.add(eye);
+    const wheels = [];
+    for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .08, 14), dk); w.rotation.z = Math.PI / 2; w.position.set(s * .28, .14, 0); g.add(w); wheels.push(w); }
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .25, 4), dk); ant.position.set(.1, .62, -.05); g.add(ant);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff3344 })); tip.position.set(.1, .75, -.05); g.add(tip);
+    return { g, ground: true, anim(t) { for (const w of wheels) w.rotation.x = t * 14; tip.visible = Math.sin(t * 12) > 0; } };
+  },
+  canister(c) { // molotovs, incendiaries, acid, nanoswarm, slow orb ...
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .2, 10), new THREE.MeshLambertMaterial({ color: 0x3b4048 })); body.rotation.x = Math.PI / 2; g.add(body);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .06, 10), new THREE.MeshBasicMaterial({ color: c })); cap.rotation.x = Math.PI / 2; cap.position.z = .12; g.add(cap);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.5, .5, 1); g.add(glow);
+    return { g, anim(t) { body.parent.rotation.z = t * 8; } };
+  },
+  grenade(c) { // Raze's Paint Shells
+    const g = new THREE.Group();
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 10), new THREE.MeshLambertMaterial({ color: c })); g.add(b);
+    for (const s of [-1, 1]) { const st = new THREE.Mesh(new THREE.TorusGeometry(.13, .02, 6, 16), new THREE.MeshLambertMaterial({ color: 0x2b2b30 })); st.rotation.y = s * .5; g.add(st); }
+    const pin = new THREE.Mesh(new THREE.TorusGeometry(.04, .01, 4, 10), new THREE.MeshLambertMaterial({ color: 0xffd23a })); pin.position.y = .15; g.add(pin);
+    return { g, anim(t) { g.children[0].rotation.x = t * 6; } };
+  },
+  rocket(c) { // Raze's Showstopper
+    const g = new THREE.Group(), body = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .6, 12), new THREE.MeshLambertMaterial({ color: 0x3fa7d6 }));
+    body.rotation.x = Math.PI / 2; g.add(body);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(.09, .22, 12), new THREE.MeshLambertMaterial({ color: 0xff4fa3 })); nose.rotation.x = Math.PI / 2; nose.position.z = .41; g.add(nose);
+    for (let k = 0; k < 4; k++) { const f = new THREE.Mesh(new THREE.BoxGeometry(.02, .16, .14), new THREE.MeshLambertMaterial({ color: 0xffd23a })); f.position.z = -.25; f.rotation.z = k * Math.PI / 2; f.translateY(.11); g.add(f); }
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(.08, .4, 8), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: .85 })); flame.rotation.x = -Math.PI / 2; flame.position.z = -.5; g.add(flame);
+    return { g, anim(t) { flame.scale.set(1, 1 + Math.sin(t * 40) * .3, 1); } };
+  },
+  seeker(c) { // Skye's Seekers
+    const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: 0x9be86b });
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), m); b.scale.set(1, 1, 1.4); g.add(b);
+    for (let k = 0; k < 3; k++) { const t = new THREE.Mesh(new THREE.ConeGeometry(.05, .3, 5), new THREE.MeshBasicMaterial({ color: 0x5fbf4a, transparent: true, opacity: .8 })); t.rotation.x = -Math.PI / 2; t.position.set((k - 1) * .07, 0, -.25); g.add(t); }
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.04, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff })); eye.position.z = .16; g.add(eye);
+    return { g, anim(t) { g.children.slice(1, 4).forEach((s, i) => s.rotation.y = Math.sin(t * 10 + i) * .4); } };
+  },
+  eye(c) { // Reyna's Leer
+    const g = new THREE.Group();
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(.25, 14, 12), new THREE.MeshBasicMaterial({ color: 0x2a0f45 })); g.add(ball);
+    const iris = new THREE.Mesh(new THREE.CircleGeometry(.16, 18), new THREE.MeshBasicMaterial({ color: 0xc25bff })); iris.position.z = .251; g.add(iris);
+    const pupil = new THREE.Mesh(new THREE.CircleGeometry(.07, 14), new THREE.MeshBasicMaterial({ color: 0xffffff })); pupil.position.z = .253; g.add(pupil);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(1.3, 1.3, 1); g.add(glow);
+    return { g };
+  },
+  shadow(c) { // Omen's Paranoia
+    const g = new THREE.Group();
+    for (let k = 0; k < 5; k++) { const s = new THREE.Mesh(new THREE.SphereGeometry(.3 - k * .04, 10, 8), new THREE.MeshBasicMaterial({ color: k % 2 ? 0x2a2050 : 0x4b3fa0, transparent: true, opacity: .55 })); s.position.z = -k * .22; g.add(s); }
+    return { g, anim(t) { g.children.forEach((s, i) => s.scale.setScalar(1 + Math.sin(t * 9 + i) * .15)); } };
+  },
+  fireball(c) { // Phoenix's Curveball / Blaze head
+    const g = new THREE.Group();
+    const core = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe0a0 })); g.add(core);
+    for (let k = 0; k < 4; k++) { const f = new THREE.Mesh(new THREE.ConeGeometry(.09, .32, 6), new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff7a22 : 0xffb347, transparent: true, opacity: .85 })); f.rotation.x = -Math.PI / 2; f.position.set(Math.sin(k) * .05, Math.cos(k) * .05, -.18); g.add(f); }
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff8a3d, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(1, 1, 1); g.add(glow);
+    return { g, anim(t) { g.children.slice(1, 5).forEach((f, i) => f.scale.set(1, 1 + Math.sin(t * 30 + i) * .3, 1)); } };
+  },
+};
+function projVisual(p, dt) {
+  const v = p.mesh.userData; if (!v.anim && !v.orient) return;
+  v.t = (v.t || 0) + dt;
+  const sp = Math.hypot(p.vx, p.vy, p.vz);
+  if (v.orient && sp > .3) { p.mesh.rotation.order = 'YXZ'; p.mesh.rotation.y = Math.atan2(p.vx, p.vz); p.mesh.rotation.x = v.ground ? 0 : -Math.atan2(p.vy, Math.hypot(p.vx, p.vz)); }
+  if (v.anim) v.anim(v.t);
+}
 function spawnProj(o) {
   const p = Object.assign({ g: 14, bounce: .45, life: 3, stick: false, land: true }, o);
+  if (p.model && PROJ_MODELS[p.model]) {
+    const md = PROJ_MODELS[p.model](p.color || 0xffffff), m = new THREE.Group(); m.add(md.g);
+    if (md.ground) { const fl = hAtPos(p.x, p.z); md.g.position.y = -(p.y - (fl < WALL_H ? fl : 0)); } // feet on the floor
+    Object.assign(m.userData, { anim: md.anim, ground: md.ground, orient: true });
+    m.position.set(p.x, p.y, p.z); scene.add(m); p.mesh = m; projectiles.push(p); return p;
+  }
   const m = new THREE.Mesh(new THREE.SphereGeometry(p.size || .12, 10, 8), new THREE.MeshBasicMaterial({ color: p.color || 0xffffff }));
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: p.color || 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.8, .8, 1); m.add(glow);
   m.position.set(p.x, p.y, p.z); scene.add(m); p.mesh = m; projectiles.push(p); return p;
@@ -2019,7 +2202,7 @@ const ABIL = {
   blades(e) { e.bladeMag = 5; e.slot = 'X'; e.reloadT = 0; if (e.isPlayer) equipView(); return true; },
   blaze(e, ab) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
-    const p = spawnProj({ x: e.x + f.x / l * .5, y: .5, z: e.z + f.z / l * .5, vx: f.x / l * 11, vy: 0, vz: f.z / l * 11, g: 0, life: 1.4, color: 0xff7a22, owner: e, land: false, bounce: 0, size: .28 });
+    const p = spawnProj({ x: e.x + f.x / l * .5, y: .5, z: e.z + f.z / l * .5, vx: f.x / l * 11, vy: 0, vz: f.z / l * 11, g: 0, life: 1.4, color: 0xff7a22, owner: e, land: false, bounce: 0, size: .28, model: 'fireball' });
     let n = 0, dist = 1.1, lx = p.x, lz = p.z;
     p.onUpdate = () => {
       dist += Math.hypot(p.x - lx, p.z - lz); lx = p.x; lz = p.z;
@@ -2035,14 +2218,14 @@ const ABIL = {
     return true;
   },
   flash(e, ab) {
-    const p = spawnProj(Object.assign(throwFrom(e, ab.guided ? 20 : 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false }));
+    const p = spawnProj(Object.assign(throwFrom(e, ab.guided ? 20 : 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false, model: ab.guided ? 'hawk' : 'fireball' }));
     if (ab.guided) guide(p, e, { turn: 3.2, maxLife: 2.4, release: 'pop' });
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
   },
   molly(e, ab, target) {
     const o = target ? lobTo(e, target.x, target.y, target.z) : throwFrom(e, 17, 2.5);
     const isPhx = e.agent === 'phoenix';
-    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e }));
+    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: 'canister' }));
     p.onLand = () => makeZone({ x: p.x, z: p.z, r: ab.zr || (isPhx ? 3.2 : 4.2), kind: ab.zkind || 'fire', t: ab.zt || (isPhx ? 4 : 7), dps: ab.dps || 60, owner: e, heal: isPhx, label: ab.name }); return true;
   },
   rib(e) {
@@ -2066,13 +2249,13 @@ const ABIL = {
     return true;
   },
   drone(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 9), { g: 0, life: 5, color: 0x5b86ff, owner: e, size: .2, bounce: 1, land: false }));
+    const p = spawnProj(Object.assign(throwFrom(e, 9), { g: 0, life: 5, color: 0x5b86ff, owner: e, size: .2, bounce: 1, land: false, model: 'owl' }));
     guide(p, e, { turn: 2.6, release: 'free' });
     p.tick = 0; p.onUpdate = dt => { p.tick -= dt; if (p.tick <= 0) { p.tick = .5; for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 13 && los(p.x, p.y, p.z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = 1.2; if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } } };
     return true;
   },
   shock(e, ab) {
-    const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: ab.color || 0x7fb0ff, owner: e }));
+    const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: ab.color || 0x7fb0ff, owner: e, model: 'arrow' }));
     p.onLand = () => explodeAt(p.x, p.y, p.z, e, ab.dmg || 75, (ab.dmg || 75) * .55, ab.rad || 4.5, ab.color || 0x7fb0ff, ab.label || 'Shock Bolt');
     return true;
   },
@@ -2080,20 +2263,20 @@ const ABIL = {
   step(e) { return teleportTo(e, aimPoint(e, 12)); },
   fts(e) { return teleportTo(e, aimPoint(e, 80)); },
   paranoia(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: 1.1, color: 0x7b7fe0, owner: e, land: false, ghost: true, size: .35 }));
+    const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: 1.1, color: 0x7b7fe0, owner: e, land: false, ghost: true, size: .35, model: 'shadow' }));
     p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1.2 - p.y, o.z - p.z) < 3.2) o.nearT = Math.max(o.nearT, 2.2); };
     return true;
   },
   /* ---- Raze ---- */
   boombot(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
-    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .35, z: e.z + f.z / l, vx: f.x / l * 9, vy: 0, vz: f.z / l * 9, g: 0, life: 7, color: 0xf0a03a, owner: e, land: false, bounce: 1, size: .3 });
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .35, z: e.z + f.z / l, vx: f.x / l * 9, vy: 0, vz: f.z / l * 9, g: 0, life: 7, color: 0xf0a03a, owner: e, land: false, bounce: 1, size: .3, model: 'boombot' });
     p.onUpdate = () => homeAndHit(p, e, 9, 22, 1.8);
     p.onExpire = () => explodeAt(p.x, p.y, p.z, e, 110, 55, 4, 0xf0a03a, 'Boom Bot');
     return true;
   },
   paint(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 18, 2.5), { color: 0xff6fb0, owner: e }));
+    const p = spawnProj(Object.assign(throwFrom(e, 18, 2.5), { color: 0xff6fb0, owner: e, model: 'grenade' }));
     p.onLand = () => {
       const x = p.x, y = p.y, z = p.z;
       explodeAt(x, y, z, e, 55, 30, 4, 0xff6fb0, 'Paint Shells');
@@ -2102,7 +2285,7 @@ const ABIL = {
     return true;
   },
   rocket(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 42), { g: 0, life: 3, color: 0xff7a22, owner: e, stick: true, size: .28 }));
+    const p = spawnProj(Object.assign(throwFrom(e, 42), { g: 0, life: 3, color: 0xff7a22, owner: e, stick: true, size: .28, model: 'rocket' }));
     const boom = () => explodeAt(p.x, p.y, p.z, e, 150, 80, 6.5, 0xff7a22, 'Showstopper');
     p.onLand = boom; p.onExpire = boom;
     p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1 - p.y, o.z - p.z) < 1.3) { p.life = 0; break; } };
@@ -2130,7 +2313,7 @@ const ABIL = {
   },
   trailblazer(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
-    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .5, z: e.z + f.z / l, vx: f.x / l * 13, vy: 0, vz: f.z / l * 13, g: 0, life: 3, color: 0x7fd36b, owner: e, land: false, bounce: 1, size: .35 });
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .5, z: e.z + f.z / l, vx: f.x / l * 13, vy: 0, vz: f.z / l * 13, g: 0, life: 3, color: 0x7fd36b, owner: e, land: false, bounce: 1, size: .35, model: 'tiger' });
     p.onUpdate = () => { if (!p.guide || p.guide.mode === 'auto') homeAndHit(p, e, 13, 14, 2); };
     guide(p, e, { turn: 3.6, maxLife: 4, ground: true, release: 'pop' });
     p.onExpire = () => { fx('pop', p.x, p.y + .5, p.z, 'flash'); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 3.5) { o.slowT = Math.max(o.slowT, 2.5); o.nearT = Math.max(o.nearT, 1.2); applyDamage(o, 30, e, 'Trailblazer'); } };
@@ -2140,7 +2323,7 @@ const ABIL = {
     const targets = entities.filter(o => o.alive && isEnemy(o, e)).sort((a, b) => Math.hypot(a.x - e.x, a.z - e.z) - Math.hypot(b.x - e.x, b.z - e.z)).slice(0, 3);
     if (!targets.length) { toastTo(e, 'No enemies left to seek'); return false; }
     targets.forEach((t, i) => {
-      const p = spawnProj({ x: e.x, y: eyeY(e), z: e.z, vx: rand(-4, 4), vy: 3, vz: rand(-4, 4), g: 0, life: 9, color: 0x9be86b, owner: e, land: false, ghost: true, size: .25 });
+      const p = spawnProj({ x: e.x, y: eyeY(e), z: e.z, vx: rand(-4, 4), vy: 3, vz: rand(-4, 4), g: 0, life: 9, color: 0x9be86b, owner: e, land: false, ghost: true, size: .25, model: 'seeker' });
       p.onUpdate = () => {
         if (!t.alive) { p.life = 0; return; }
         const dx = t.x - p.x, dy = t.y + 1.3 - p.y, dz = t.z - p.z, d = Math.hypot(dx, dy, dz) || 1;
@@ -2158,7 +2341,7 @@ const ABIL = {
   },
   pit(e) { makeSmoke(e.x, e.z, 10, 16, 0x2f8f55, e); makeZone({ x: e.x, z: e.z, r: 10, kind: 'acid', t: 16, dps: 9, owner: e, label: "Viper's Pit" }); return true; },
   recon(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 38, 1), { g: 8, color: 0x4fa3ff, owner: e, stick: true, life: 4 }));
+    const p = spawnProj(Object.assign(throwFrom(e, 38, 1), { g: 8, color: 0x4fa3ff, owner: e, stick: true, life: 4, model: 'arrow' }));
     p.onLand = () => {
       const x = p.x, y = p.y + .3, z = p.z;
       fx('recon', x, y, z);
@@ -2169,7 +2352,7 @@ const ABIL = {
   stim(e) { makeZone({ x: e.x, z: e.z, r: 6, kind: 'stim', t: 12, owner: e }); return true; },
   orbital(e) { const p = aimPoint(e, 90); makeZone({ x: p.x, z: p.z, r: 5.5, kind: 'orbital', t: 3, delay: 1.5, dps: 150, owner: e }); return true; },
   leer(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 14), { g: 0, life: .5, color: 0xc25bff, owner: e, land: false, size: .3 }));
+    const p = spawnProj(Object.assign(throwFrom(e, 14), { g: 0, life: .5, color: 0xc25bff, owner: e, land: false, size: .3, model: 'eye' }));
     p.onExpire = () => {
       const x = p.x, y = p.y, z = p.z; fx('leer', x, y, z);
       timedFx.push({ t: 2.5, update() { for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const ey = eyeY(o), dx = x - o.x, dy = y - ey, dz = z - o.z, d = Math.hypot(dx, dy, dz); if (d > 40) continue; const f = fwd(o); if ((dx * f.x + dy * f.y + dz * f.z) / d > .5 && los(o.x, ey, o.z, x, y, z, true)) o.nearT = Math.max(o.nearT, .5); } }, end() { } });
@@ -2291,7 +2474,8 @@ function updateEffects(dt) {
   }
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
-    if (net.role === 'client') { p.vy -= p.g * dt; p.x += p.vx * dt; p.y = Math.max(.1, p.y + p.vy * dt); p.z += p.vz * dt; p.mesh.position.set(p.x, p.y, p.z); continue; }
+    if (net.role === 'client') { p.vy -= p.g * dt; p.x += p.vx * dt; p.y = Math.max(.1, p.y + p.vy * dt); p.z += p.vz * dt; p.mesh.position.set(p.x, p.y, p.z); projVisual(p, dt); continue; }
+    projVisual(p, dt);
     p.life -= dt; let done = false;
     if (p.guide) guideStep(p, dt);
     if (p.onUpdate) p.onUpdate(dt);
@@ -3917,7 +4101,7 @@ function buildSnap() {
     sm: smokes.filter(s => s.mesh).map(s => [nidOf(s), r2(s.x), r2(s.y), r2(s.z), s.r, r2(s.t), s.max, s.color]),
     zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay)]),
     wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(w.t)]),
-    pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g]),
+    pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g, p.model || 0]),
     dr: drops.map(d => [nidOf(d), d.inst.key, r2(d.x), r2(d.z), d.inst.sk || 0]),
     ob: orbs.map(o => [r2(o.x), r2(o.z)]),
   };
@@ -4088,7 +4272,7 @@ function applySnap(s) {
   syncList(s.zn, zones, r => ZONE_KINDS.has(r[4]) ? makeZone({ x: r[1], z: r[2], r: r[3], kind: r[4], t: r[5], delay: r[6] }) : null,
     (o, r) => { o.t = r[5]; if (r[6] < o.delay) o.delay = Math.max(r[6], .0001); }, o => scene.remove(o.mesh));
   syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1 }); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
-  syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9] }),
+  syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9], model: PROJ_MODELS[r[10]] ? r[10] : undefined }),
     (o, r) => Object.assign(o, { x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6] }), o => scene.remove(o.mesh));
   syncList(s.dr, drops, r => WEAPONS[r[1]] ? dropWeapon({ key: r[1], mag: 0, reserve: 0, sk: SKINS[r[4]] ? r[4] : 0 }, r[2], r[3]) : null, () => { }, o => scene.remove(o.mesh));
   const want = s.ob || [];
