@@ -609,7 +609,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 20</div>
+<div id="buildTag">VALOR STRIKE · build 21</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -832,7 +832,7 @@ const AGENTS = [
           X: { name: 'Blade Storm', ult: 7, type: 'blades', desc: 'Summon 5 floating kunai. Left click throws one deadly accurate knife, right click throws all remaining knives in a fan. Kills refill all 5.' } } },
   { id: 'phoenix', name: 'Phoenix', role: 'Duelist', color: '#ff8a3d', glyph: 'PX', desc: 'An aggressive agent who heals himself with fire.',
     ab: { C: { name: 'Blaze', cost: 200, max: 1, free: 0, type: 'blaze', guided: 1, desc: 'A wall of fire that blocks vision and burns enemies (it heals you). Hold the key and turn to curve the wall.' },
-          Q: { name: 'Curveball', cost: 250, max: 2, free: 0, type: 'flash', desc: 'A flare that flies forward and bursts into a blinding flash.' },
+          Q: { name: 'Curveball', cost: 250, max: 2, free: 0, type: 'flash', desc: 'Press Q to ready a flare, then LEFT click to curve it left or RIGHT click to curve it right. It bursts into a blinding flash around the corner.' },
           E: { name: 'Hot Hands', cost: 0, max: 1, free: 1, type: 'molly', desc: 'Throw a fireball that burns an area. Heals you.' },
           X: { name: 'Run It Back', ult: 6, type: 'rib', desc: 'Leave a marker. If you die within 10s, or when the 10s run out, you come back to the marker with full health.' } } },
   { id: 'sage', name: 'Sage', role: 'Sentinel', color: '#5fe6c8', glyph: 'SG', desc: 'A guardian who protects the team with healing, revives and walls.',
@@ -2285,7 +2285,15 @@ const ABIL = {
     if (ab && ab.guided) guide(p, e, { turn: 2.8, maxLife: 2, ground: true, release: 'free' });
     return true;
   },
-  flash(e, ab) {
+  flash(e, ab, target) {
+    if (target && target.dir) { // Phoenix's Curveball: flies forward, then hooks left or right and pops
+      const dir = target.dir < 0 ? -1 : 1, f = fwd(e), l = Math.hypot(f.x, f.z) || 1, fx_ = f.x / l, fz = f.z / l, rx = -fz, rz = fx_; // right-hand side
+      const p = spawnProj({ x: e.x + fx_ * .6 - rx * dir * .3, y: eyeY(e) - .1, z: e.z + fz * .6 - rz * dir * .3, vx: fx_ * 17 - rx * dir * 3, vy: f.y * 6 + .6, vz: fz * 17 - rz * dir * 3, g: 0, life: .6, color: 0xffb347, owner: e, land: false, bounce: .4, model: 'fireball' });
+      p.onUpdate = dt => { p.vx += rx * dir * 46 * dt; p.vz += rz * dir * 46 * dt; p.vx *= 1 - dt * 1.2; p.vz *= 1 - dt * 1.2; };
+      p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.4, 'flash');
+      if (e.isPlayer) sndTone(500, .25, .15, 'sawtooth', 1100);
+      return true;
+    }
     const p = spawnProj(Object.assign(throwFrom(e, ab.guided ? 20 : 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false, model: ab.guided ? 'hawk' : 'fireball' }));
     if (ab.guided) guide(p, e, { turn: 3.2, maxLife: 2.4, release: 'pop' });
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
@@ -4205,7 +4213,7 @@ function hostRecv(conn, d) {
   }
 }
 function syncAmmo(inst, a) { if (inst && Array.isArray(a) && a[0] === inst.key) { inst.mag = a[1] | 0; inst.reserve = a[2] | 0; } }
-const cleanTarget = tg => { if (!tg || typeof tg !== 'object') return undefined; const o = {}; for (const k of ['x', 'y', 'z', 'rot', 'b', 'pw', 'id']) if (typeof tg[k] === 'number' && isFinite(tg[k])) o[k] = tg[k]; return Object.keys(o).length ? o : undefined; };
+const cleanTarget = tg => { if (!tg || typeof tg !== 'object') return undefined; const o = {}; for (const k of ['x', 'y', 'z', 'rot', 'b', 'pw', 'id', 'dir']) if (typeof tg[k] === 'number' && isFinite(tg[k])) o[k] = tg[k]; return Object.keys(o).length ? o : undefined; };
 function hostGameMsg(e, d) {
   if (d.t === 'fury') { if (e.alive && e.furyN > 0) { fireFury(e); e.furyN--; } return; }
   switch (d.t) {
@@ -4924,6 +4932,7 @@ function placeKind(e, ab) {
     case 'wall': return 'wall';
     case 'heal': return 'heal';
     case 'revive': return 'revive';
+    case 'flash': return e.agent === 'phoenix' ? 'curve' : null;
   }
   return null;
 }
@@ -4998,6 +5007,10 @@ function updatePlace(dt) {
     P.box.position.set(a.x, y + 1.9, a.z); P.box.rotation.y = along ? Math.PI / 2 : 0; P.edge.position.copy(P.box.position); P.edge.rotation.y = P.box.rotation.y;
     if (down0) { finishPlace({ x: a.x, z: a.z, rot: along }); return true; }
     hint = `<b>${ab.name}</b><br><small>LEFT click: build the wall · RIGHT click: rotate · ${kb}: cancel</small>`;
+  } else if (P.kind === 'curve') {
+    if (down0) { finishPlace({ dir: -1 }); return true; }
+    if (down2) { finishPlace({ dir: 1 }); return true; }
+    hint = `<b>${ab.name}</b><br><small>LEFT click: curve it LEFT · RIGHT click: curve it RIGHT · ${kb}: cancel</small>`;
   } else if (P.kind === 'heal') {
     const ally = aimedAlly(18, false);
     if (down0) { if (ally) { finishPlace({ id: ally.id }); return true; } toast('Aim at an ally to heal them — right click heals yourself'); }
@@ -5049,7 +5062,7 @@ function makeOrbHand(color) {
   g.userData.orb = orb; g.scale.setScalar(.5); g.position.set(.2, -.2, -.45); g.rotation.set(.35, -.25, .15);
   return g;
 }
-const ORB_COLOR = { omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a };
+const ORB_COLOR = { omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d };
 /* --- Viper: fuel, toggling the screen and the cloud --- */
 function setSmokeOff(s, off) { s.off = off; if (s.mesh) s.mesh.visible = !off; if (!off) s.grow = .2; }
 function toggleViper(e, which) {
@@ -5714,7 +5727,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 20;
+const BUILD = 21;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {

@@ -12,7 +12,7 @@ Click the screen to lock the mouse.
 - **Valorant-style lobby**: top nav (Home / Agents / Play / Career / Collection), your 5-agent party standing in 3D, a matchmaking queue with "Match Found", a favorite agent, account level & XP, saved match history, a weapon arsenal and a settings panel. Profile and settings are saved in the browser.
 - **12 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (press E to ready, E again to dash where you move; 2 kills recharge it), Blade Storm (5 floating kunai: left click throws one, right click throws the rest in a fan, kills refill them), passive Drift (hold Space in the air to glide)
-  - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back
+  - Phoenix: Blaze, Curveball (press Q, then left click curves it left or right click curves it right), Hot Hands (fire that heals you), Run It Back
   - Sage: Barrier Orb (preview the wall, right click rotates, left click builds; you can stand on it), Slow Orb, Healing Orb (left click heals the ally you aim at, right click heals you), Resurrection (aim at a fallen ally)
   - Sova: Owl Drone, Shock Bolt and Recon Bolt (draw your bow: hold left click to charge, right click sets 0–2 bounces, release to fire), Hunter's Fury (fire up to 3 wall-piercing blasts yourself)
   - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike (opens an orange holographic tactical map from his wrist: move the mouse to aim, left click to fire, right click to cancel)
