@@ -381,6 +381,12 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #smokeOv{background:rgba(120,120,135,.92)}
 #dmgOv{background:radial-gradient(circle,transparent 45%,rgba(255,30,40,.55) 100%)}
 #lowOv{background:radial-gradient(circle,transparent 55%,rgba(255,30,40,.35) 100%)}
+#empOv{background:radial-gradient(circle,transparent 50%,rgba(170,60,255,.4) 100%);transition:opacity .3s}
+#abGauge{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:300px;text-align:center}
+#agLabel{font:600 13px Oswald,sans-serif;letter-spacing:2px;margin-bottom:5px;text-transform:uppercase}
+.agBar{height:8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.35)}
+#agFill{height:100%;width:0;background:linear-gradient(90deg,#2fe0b6,#f5d76e)}
+#abGauge.steer #agFill{background:linear-gradient(90deg,#f5d76e,#ff4655)}
 #scopeOv{background:radial-gradient(circle at 50% 50%,transparent 0,transparent 30vh,#000 30.2vh)}
 #scopeOv:before,#scopeOv:after{content:'';position:absolute;background:#000}
 #scopeOv:before{left:50%;top:0;bottom:0;width:1px}
@@ -611,6 +617,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="ov" id="smokeOv"></div>
   <div class="ov" id="scopeOv"></div>
   <div class="ov" id="lowOv"></div>
+  <div class="ov" id="empOv"></div>
+  <div id="abGauge" class="hidden"><div id="agLabel"></div><div class="agBar"><div id="agFill"></div></div></div>
   <div class="ov" id="dmgOv"></div>
   <div class="ov" id="nearOv"></div>
   <div class="ov" id="flashOv"></div>
@@ -761,17 +769,17 @@ const AGENTS = [
           E: { name: 'Tailwind', cost: 0, max: 1, free: 1, type: 'dash', desc: 'Instantly dash in your movement direction. (Recharges every round)' },
           X: { name: 'Blade Storm', ult: 7, type: 'blades', desc: 'Equip 5 deadly accurate knives. Recharge on kill.' } } },
   { id: 'phoenix', name: 'Phoenix', role: 'Duelist', color: '#ff8a3d', glyph: 'PX', desc: 'An aggressive agent who heals himself with fire.',
-    ab: { C: { name: 'Blaze', cost: 200, max: 1, free: 0, type: 'blaze', desc: 'Raises a wall of fire that blocks vision and deals damage. Heals you.' },
+    ab: { C: { name: 'Blaze', cost: 200, max: 1, free: 0, type: 'blaze', guided: 1, desc: 'A wall of fire that blocks vision and burns enemies (it heals you). Hold the key and turn to curve the wall.' },
           Q: { name: 'Curveball', cost: 250, max: 2, free: 0, type: 'flash', desc: 'A flare that flies forward and bursts into a blinding flash.' },
           E: { name: 'Hot Hands', cost: 0, max: 1, free: 1, type: 'molly', desc: 'Throw a fireball that burns an area. Heals you.' },
-          X: { name: 'Run It Back', ult: 6, type: 'rib', desc: 'If you die within 10s, respawn at the marker.' } } },
+          X: { name: 'Run It Back', ult: 6, type: 'rib', desc: 'Leave a marker. If you die within 10s, or when the 10s run out, you come back to the marker with full health.' } } },
   { id: 'sage', name: 'Sage', role: 'Sentinel', color: '#5fe6c8', glyph: 'SG', desc: 'A guardian who protects the team with healing, revives and walls.',
     ab: { C: { name: 'Barrier Orb', cost: 400, max: 1, free: 0, type: 'wall', desc: 'Creates a large, destructible ice wall.' },
           Q: { name: 'Slow Orb', cost: 200, max: 2, free: 0, type: 'slow', desc: 'Creates a field that slows enemies.' },
           E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Restore 60 HP over 5 seconds.' },
           X: { name: 'Resurrection', ult: 8, type: 'revive', desc: 'Revive a nearby fallen ally.' } } },
   { id: 'sova', name: 'Sova', role: 'Initiator', color: '#5b86ff', glyph: 'SV', desc: 'A tracker who reveals enemies with his bow and drone.',
-    ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', desc: 'A drone that flies forward and reveals nearby enemies.' },
+    ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', guided: 1, desc: 'A drone that reveals nearby enemies. Hold the key and turn to steer it with your aim.' },
           Q: { name: 'Shock Bolt', cost: 150, max: 2, free: 0, type: 'shock', desc: 'Deals explosive damage where it lands.' },
           E: { name: 'Recon Bolt', cost: 0, max: 1, free: 1, type: 'recon', desc: 'Sticks where it lands and pulses twice to reveal enemies.' },
           X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Three wall-piercing energy blasts.' } } },
@@ -784,7 +792,7 @@ const AGENTS = [
     ab: { C: { name: 'Leer', cost: 250, max: 2, free: 0, type: 'leer', desc: 'An eye that nearsights enemies who look at it.' },
           Q: { name: 'Devour', cost: 200, max: 2, free: 0, type: 'devour', desc: 'Use right after a kill: heal a lot (up to 150).' },
           E: { name: 'Dismiss', cost: 0, max: 1, free: 1, type: 'dismiss', desc: 'Use right after a kill: 2s invulnerability + speed.' },
-          X: { name: 'Empress', ult: 6, type: 'empress', desc: 'Faster fire rate for 30s. Resets on kill.' } } },
+          X: { name: 'Empress', ult: 6, type: 'empress', desc: 'Frenzy for 30s: +25% fire rate, faster reloads and movement. Kills reset the timer.' } } },
 ];
 AGENTS.push(
   { id: 'omen', name: 'Omen', role: 'Controller', color: '#7b7fe0', glyph: 'OM', desc: 'A phantom who blinds, smokes and teleports across the map.',
@@ -809,8 +817,8 @@ AGENTS.push(
           X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
   { id: 'skye', name: 'Skye', role: 'Initiator', color: '#7fd36b', glyph: 'SK', desc: 'A guide who heals the team and hunts enemies with creatures of light.',
     ab: { C: { name: 'Regrowth', cost: 150, max: 1, free: 0, type: 'regrowth', desc: 'Heal yourself and allies near you.' },
-          Q: { name: 'Trailblazer', cost: 250, max: 1, free: 0, type: 'trailblazer', desc: 'A tiger that runs forward and concusses the first enemy it reaches.' },
-          E: { name: 'Guiding Light', cost: 150, max: 2, free: 1, type: 'flash', life: .75, desc: 'A long-range hawk that bursts into a flash. (1 free per round)' },
+          Q: { name: 'Trailblazer', cost: 250, max: 1, free: 0, type: 'trailblazer', guided: 1, desc: 'A tiger that concusses enemies. Tap to send it on its own, or hold the key and turn to steer it, then release to make it leap.' },
+          E: { name: 'Guiding Light', cost: 150, max: 2, free: 1, type: 'flash', life: .75, guided: 1, desc: 'A hawk that bursts into a flash. Hold the key and turn to curve it with your aim, release to pop it. (1 free per round)' },
           X: { name: 'Seekers', ult: 8, type: 'seekers', desc: 'Three seekers hunt the nearest enemies and nearsight them.' } } },
   { id: 'viper', name: 'Viper', role: 'Controller', color: '#3fbf7a', glyph: 'VP', desc: 'A chemist who chokes out areas with poison and acid.',
     ab: { C: { name: 'Snake Bite', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'acid', zr: 3.6, zt: 6, dps: 32, color: 0x5fd35a, desc: 'A canister that bursts into a pool of acid.' },
@@ -1859,6 +1867,22 @@ function spawnProj(o) {
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: p.color || 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.8, .8, 1); m.add(glow);
   m.position.set(p.x, p.y, p.z); scene.add(m); p.mesh = m; projectiles.push(p); return p;
 }
+// Guided abilities: tap = normal throw, hold the key = it turns toward where you aim, release = it pops / leaps.
+function guide(p, e, o) { p.guide = Object.assign({ e, key: e._castKey, age: 0, mode: 'wait' }, o); }
+const abHeld = (e, k) => !!(e.abHold && e.abHold[k]);
+function guideStep(p, dt) {
+  const G = p.guide, e = G.e; G.age += dt;
+  if (!e.alive) { G.mode = 'auto'; return; }
+  const held = abHeld(e, G.key);
+  if (G.mode === 'wait') { if (G.age < .2) return; G.mode = held ? 'steer' : 'auto'; if (G.mode === 'steer' && G.maxLife) p.life = Math.max(p.life, G.maxLife - G.age); }
+  if (G.mode !== 'steer') return;
+  if (!held) { G.mode = 'auto'; if (G.release === 'pop') p.life = 0; return; }
+  const a = aimPoint(e, 80); let dx = a.x - p.x, dy = G.ground ? 0 : a.y - p.y, dz = a.z - p.z;
+  const dl = Math.hypot(dx, dy, dz); if (dl < .5) return; dx /= dl; dy /= dl; dz /= dl;
+  const sp = Math.hypot(p.vx, p.vy, p.vz) || 1, k = Math.min(1, G.turn * dt);
+  let vx = p.vx / sp + (dx - p.vx / sp) * k, vy = G.ground ? 0 : p.vy / sp + (dy - p.vy / sp) * k, vz = p.vz / sp + (dz - p.vz / sp) * k;
+  const vl = Math.hypot(vx, vy, vz) || 1; p.vx = vx / vl * sp; p.vy = vy / vl * sp; p.vz = vz / vl * sp;
+}
 function throwFrom(e, speed, up = 0) { const f = fwd(e); return { x: e.x + f.x * .6, y: eyeY(e) - .15, z: e.z + f.z * .6, vx: f.x * speed, vy: f.y * speed + up, vz: f.z * speed }; }
 function lobTo(e, tx, ty, tz, T = .9, g = 14) { const sx = e.x, sy = eyeY(e), sz = e.z; return { x: sx, y: sy, z: sz, vx: (tx - sx) / T, vy: (ty - sy + .5 * g * T * T) / T, vz: (tz - sz) / T, g }; }
 
@@ -1929,17 +1953,26 @@ const ABIL = {
     e.dashX = dx / l * 30; e.dashZ = dz / l * 30; e.dashT = .22; spawnParticles(e.x, e.y + 1, e.z, 20, 0xdff4ff, 3, .4); return true;
   },
   blades(e) { e.bladeMag = 5; e.slot = 'X'; e.reloadT = 0; if (e.isPlayer) equipView(); return true; },
-  blaze(e) {
-    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
-    for (let i = 1; i <= 9; i++) {
-      const x = e.x + dx * (i * 1.6 + .5), z = e.z + dz * (i * 1.6 + .5); if (hAtPos(x, z) >= WALL_H) break;
-      makeZone({ x, z, r: 1, kind: 'blaze', t: 8, dps: 40, owner: e, heal: true });
-      smokes.push({ x, y: 1.5, z, r: 1.15, t: 8, max: 8, mesh: null, grow: 1, owner: e });
-    }
+  blaze(e, ab) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l * .5, y: .5, z: e.z + f.z / l * .5, vx: f.x / l * 11, vy: 0, vz: f.z / l * 11, g: 0, life: 1.4, color: 0xff7a22, owner: e, land: false, bounce: 0, size: .28 });
+    let n = 0, dist = 1.1, lx = p.x, lz = p.z;
+    p.onUpdate = () => {
+      dist += Math.hypot(p.x - lx, p.z - lz); lx = p.x; lz = p.z;
+      if (hAtPos(p.x + p.vx * .07, p.z + p.vz * .07) >= 2) p.life = 0;
+      while (dist >= 1.6 && n < 9) {
+        dist -= 1.6; n++;
+        makeZone({ x: p.x, z: p.z, r: 1, kind: 'blaze', t: 8, dps: 40, owner: e, heal: true });
+        smokes.push({ x: p.x, y: 1.5, z: p.z, r: 1.15, t: 8, max: 8, mesh: null, grow: 1, owner: e });
+      }
+      if (n >= 9) p.life = 0;
+    };
+    if (ab && ab.guided) guide(p, e, { turn: 2.8, maxLife: 2, ground: true, release: 'free' });
     return true;
   },
   flash(e, ab) {
-    const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false }));
+    const p = spawnProj(Object.assign(throwFrom(e, ab.guided ? 20 : 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false }));
+    if (ab.guided) guide(p, e, { turn: 3.2, maxLife: 2.4, release: 'pop' });
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
   },
   molly(e, ab, target) {
@@ -1957,9 +1990,9 @@ const ABIL = {
   slow(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
   heal(e) { if (e.hp >= 100) { toastTo(e, 'Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
   revive(e) {
-    let best = null, bd = 25;
+    let best = null, bd = 60;
     for (const o of entities) if (!o.alive && o.team === e.team && o !== e && o.deathPos) { const d = Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z); if (d < bd) { bd = d; best = o; } }
-    if (!best) { toastTo(e, 'No fallen ally nearby to revive'); return false; }
+    if (!best) { toastTo(e, 'Resurrection needs a fallen ally — no teammate is dead right now'); if (e.isPlayer) SND.deny(); return false; }
     Object.assign(best, { alive: true, hp: 100, armor: 0, x: best.deathPos.x, y: best.deathPos.y, z: best.deathPos.z, vy: 0, flashT: 0, target: null, path: [], slot: best.primary ? 1 : 2 });
     if (!best.secondary) best.secondary = mkWeapon('classic');
     if (best.mesh) { best.mesh.rotation.set(0, best.yaw, 0); best.mesh.position.y = best.y; }
@@ -1970,6 +2003,7 @@ const ABIL = {
   },
   drone(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 9), { g: 0, life: 5, color: 0x5b86ff, owner: e, size: .2, bounce: 1, land: false }));
+    guide(p, e, { turn: 2.6, release: 'free' });
     p.tick = 0; p.onUpdate = dt => { p.tick -= dt; if (p.tick <= 0) { p.tick = .5; for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 13 && los(p.x, p.y, p.z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = 1.2; if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } } };
     return true;
   },
@@ -2033,7 +2067,8 @@ const ABIL = {
   trailblazer(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
     const p = spawnProj({ x: e.x + f.x / l, y: e.y + .5, z: e.z + f.z / l, vx: f.x / l * 13, vy: 0, vz: f.z / l * 13, g: 0, life: 3, color: 0x7fd36b, owner: e, land: false, bounce: 1, size: .35 });
-    p.onUpdate = () => homeAndHit(p, e, 13, 14, 2);
+    p.onUpdate = () => { if (!p.guide || p.guide.mode === 'auto') homeAndHit(p, e, 13, 14, 2); };
+    guide(p, e, { turn: 3.6, maxLife: 4, ground: true, release: 'pop' });
     p.onExpire = () => { fx('pop', p.x, p.y + .5, p.z, 'flash'); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 3.5) { o.slowT = Math.max(o.slowT, 2.5); o.nearT = Math.max(o.nearT, 1.2); applyDamage(o, 30, e, 'Trailblazer'); } };
     return true;
   },
@@ -2082,6 +2117,34 @@ const ABIL = {
 };
 // abilities that would hurt, reveal or teleport during the buy phase are held until the round starts
 const BUY_BLOCKED = new Set(['molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit']);
+// HUD time gauge for steerable abilities and timed ultimates: it fills up, and the ability ends when it is full
+const GAUGE_DEF = { flash: { steer: 2.4 }, trailblazer: { steer: 4, auto: 3, release: 'pop' }, drone: { steer: 5, auto: 5, release: 'free' }, blaze: { steer: 2, auto: 1.3, release: 'free' } };
+let gauge = null;
+function startGauge(ab, key) {
+  const G = GAUGE_DEF[ab.type];
+  if (ab.type === 'empress' || ab.type === 'rib') { gauge = { name: ab.name, timed: ab.type }; return; }
+  if (!G || !ab.guided) return;
+  gauge = { name: ab.name, key, t: 0, max: G.auto || ab.life || .75, steer: G.steer, release: G.release || 'pop', mode: 'wait' };
+}
+function updateGauge(dt) {
+  const el = $('abGauge'), p = player;
+  if (gauge && (!p || !p.alive || game.state !== 'playing')) gauge = null;
+  let frac = -1, label = '';
+  if (gauge && gauge.timed) {
+    const left = gauge.timed === 'empress' ? p.empressT : p.ribT, tot = gauge.timed === 'empress' ? 30 : 10;
+    if (left > 0) { frac = 1 - left / tot; label = `${gauge.name} · ${Math.ceil(left)}s`; } else if ((gauge.t = (gauge.t || 0) + dt) > .5) gauge = null;
+  } else if (gauge) {
+    gauge.t += dt;
+    const held = kd(gauge.key === 'X' ? 'ult' : 'ab' + gauge.key);
+    if (gauge.mode === 'wait' && gauge.t >= .2) { gauge.mode = held ? 'steer' : 'auto'; if (held) gauge.max = gauge.steer; }
+    if (gauge.mode === 'steer' && !held) { if (gauge.release === 'pop') gauge.t = gauge.max; else gauge.mode = 'auto'; }
+    if (gauge.t >= gauge.max) gauge = null;
+    else { frac = gauge.t / gauge.max; label = gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
+  }
+  if (frac < 0) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden'); setText('agLabel', label); $('agFill').style.width = (Math.min(1, frac) * 100).toFixed(1) + '%';
+  $('abGauge').classList.toggle('steer', !!(gauge && gauge.mode === 'steer'));
+}
 function castAbility(e, key, target) {
   if (net.role === 'client' && e === player) return clientCast(key);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
@@ -2089,10 +2152,11 @@ function castAbility(e, key, target) {
   if (key === 'X') { if (e.ult < ab.ult) { toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); if (e.isPlayer) SND.deny(); return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
   if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toastTo(e, 'Cannot be used during the buy phase'); return false; }
+  e._castKey = key;
   if (ABIL[ab.type](e, ab, target) === false) return false;
   if (key === 'X') e.ult = 0; else e.charges[key]--;
   fx('ab', e.x, e.z, e.id);
-  if (e.isPlayer) refreshAbilHud();
+  if (e.isPlayer) { refreshAbilHud(); startGauge(ab, key); }
   return true;
 }
 function fireFury(e) {
@@ -2165,6 +2229,7 @@ function updateEffects(dt) {
     const p = projectiles[i];
     if (net.role === 'client') { p.vy -= p.g * dt; p.x += p.vx * dt; p.y = Math.max(.1, p.y + p.vy * dt); p.z += p.vz * dt; p.mesh.position.set(p.x, p.y, p.z); continue; }
     p.life -= dt; let done = false;
+    if (p.guide) guideStep(p, dt);
     if (p.onUpdate) p.onUpdate(dt);
     if (p.ghost) { p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.y < .3) { p.y = .3; p.vy = Math.abs(p.vy); } }
     for (let s = 0; s < 3 && !done && !p.ghost; s++) {
@@ -2205,7 +2270,16 @@ function updateStatus(e, dt) {
   e.detainT = Math.max(0, (e.detainT || 0) - dt);
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
-  if (e.ribT > 0) { e.ribT -= dt; if (e.ribT <= 0 && e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; e.ribPos = null; } }
+  if (e.ribT > 0) {
+    e.ribT -= dt;
+    if (e.ribT <= 0) {
+      if (e.ribPos && e.alive && net.role !== 'client') { // time is up: Phoenix returns to the marker with full health
+        Object.assign(e, { hp: 100, x: e.ribPos.x, y: e.ribPos.y, z: e.ribPos.z, vx: 0, vz: 0, vy: 0, flashT: 0 });
+        teleported(e); fx('parts', e.x, e.y + 1, e.z, 40, 0xff8a3d, 4, .7); toastTo(e, 'Run It Back — back at your marker');
+      }
+      if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; } e.ribPos = null; e.ribT = 0;
+    }
+  }
   if (e.healT > 0) { e.healT -= dt; if (e.hp < e.healCap) e.hp = Math.min(e.healCap, e.hp + e.healRate * dt); }
   else if (e.hp > 100) e.hp = Math.max(100, e.hp - 3 * dt);
   if (e.furyN > 0) { e.furyT -= dt; if (e.furyT <= 0) { fireFury(e); e.furyN--; e.furyT = 1.1; } }
@@ -2218,7 +2292,7 @@ function updateStatus(e, dt) {
 function startReload(e) {
   const w = curWeapon(e), W0 = WEAPONS[w.key];
   if (!W0.reload || e.reloadT > 0 || w.mag >= W0.mag || w.reserve <= 0) return;
-  e.reloadT = W0.reload; if (e.isPlayer) SND.reload();
+  e.reloadT = W0.reload * (e.empressT > 0 ? .6 : 1); if (e.isPlayer) SND.reload();
 }
 function finishReload(e) {
   const w = curWeapon(e), W0 = WEAPONS[w.key]; if (!W0.reload) return;
@@ -2264,7 +2338,7 @@ function playerFire() {
     return;
   }
   if (inst.mag <= 0) { startReload(p); if (p.reloadT <= 0) SND.deny(); p.fireCD = .2; return; }
-  const rate = w.rate * (p.empressT > 0 ? 1.15 : 1) * (p.stimT > 0 ? 1.1 : 1);
+  const rate = w.rate * (p.empressT > 0 ? 1.25 : 1) * (p.stimT > 0 ? 1.1 : 1);
   p.fireCD = 1 / rate;
   if (inst.key === 'blades') { p.bladeMag--; } else inst.mag--;
   if (game.time - p.lastShot > Math.max(.32, 1.6 / rate)) p.shotIdx = 0;
@@ -2324,11 +2398,12 @@ function updatePlayer(dt) {
   updateStatus(p, dt);
   if (!p.alive) return;
   const busy = p.plantHold > 0;
+  p.abHold = { C: kd('abC'), Q: kd('abQ'), E: kd('abE') };
   p.crouch = settings.crouchToggle ? crouchOn : kd('crouch');
   const walk = kd('walk');
   let ix = 0, iz = 0; if (kd('fwd')) iz -= 1; if (kd('back')) iz += 1; if (kd('left')) ix -= 1; if (kd('right')) ix += 1;
   const w = WEAPONS[curWeapon(p).key];
-  let sp = (p.crouch ? 2.6 : walk ? 3.8 : 6.75) * w.speedMul * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (adsT > .5 && w.scope ? .75 : 1);
+  let sp = (p.crouch ? 2.6 : walk ? 3.8 : 6.75) * w.speedMul * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1);
   if (shopOpen) ix = iz = 0;
   const s = Math.sin(p.yaw), c = Math.cos(p.yaw);
   let wx = -s * (-iz) + c * ix, wz = -c * (-iz) - s * ix; const l = Math.hypot(wx, wz);
@@ -2486,7 +2561,7 @@ function botShoot(b, t) {
     startReload(b); return;
   }
   inst.mag--;
-  const rate = w.rate * (b.empressT > 0 ? 1.15 : 1) * (b.stimT > 0 ? 1.1 : 1);
+  const rate = w.rate * (b.empressT > 0 ? 1.25 : 1) * (b.stimT > 0 ? 1.1 : 1);
   b.fireCD = 1 / rate; if (!w.auto) b.fireCD = Math.max(b.fireCD, (w.scope ? .9 : .3) + Math.random() * .2);
   b.burst++;
   if (w.auto && b.burst >= randi(3, 7)) { b.fireCD += .2 + Math.random() * .25; b.burst = 0; }
@@ -3013,6 +3088,8 @@ function refreshAbilHud() {
   }
 }
 function updateHUD(dt) {
+  updateGauge(dt);
+  $('empOv').style.opacity = player && player.alive && player.empressT > 0 ? .9 : 0;
   const p = player;
   // top bar
   const aliveHTML = team => entities.filter(e => e.team === team).map(e => `<i class="${e.alive ? '' : 'dead'}" style="border-color:${AGENT[e.agent].color};color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</i>`).join('');
@@ -3684,7 +3761,7 @@ function hostGameMsg(e, d) {
   switch (d.t) {
     case 'st':
       if (d.tp === e.tpSeq && e.alive) { e.nx = +d.x || 0; e.ny = +d.y || 0; e.nz = +d.z || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.crouch = !!d.cr; e.onGround = !!d.og; }
-      e.netA4 = !!d.a4; if ([1, 2, 3, 'X'].includes(d.sl)) e.slot = d.sl; e.bladeMag = d.bm | 0;
+      e.netA4 = !!d.a4; e.abHold = { C: !!(d.ah & 1), Q: !!(d.ah & 2), E: !!(d.ah & 4) }; if ([1, 2, 3, 'X'].includes(d.sl)) e.slot = d.sl; e.bladeMag = d.bm | 0;
       if (d.iv === e.invSeq) { syncAmmo(e.primary, d.p); syncAmmo(e.secondary, d.s); }
       break;
     case 'shot':
@@ -3758,7 +3835,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), so: r2(e.soulT),
+    dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -3851,7 +3928,7 @@ function clientCast(key) {
   if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades') ABIL[ab.type](p); // movement is ours to predict
   netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
-  refreshAbilHud();
+  refreshAbilHud(); startGauge(ab, key);
   return true;
 }
 function clientSpikeUI(p) {
@@ -3878,7 +3955,7 @@ function clientTick(dt) {
   net.sendT -= dt;
   if (net.sendT <= 0) {
     net.sendT = 1 / 30; const p = player;
-    netSend({ t: 'st', x: r2(p.x), y: r2(p.y), z: r2(p.z), vx: r2(p.vx), vz: r2(p.vz), yw: r2(p.yaw), pt: r2(p.pitch), cr: p.crouch ? 1 : 0, og: p.onGround ? 1 : 0, sl: p.slot, a4: p.netA4 ? 1 : 0, bm: p.bladeMag, p: invRec(p.primary), s: invRec(p.secondary), tp: p.tpSeq, iv: p.invSeq });
+    netSend({ t: 'st', x: r2(p.x), y: r2(p.y), z: r2(p.z), vx: r2(p.vx), vz: r2(p.vz), yw: r2(p.yaw), pt: r2(p.pitch), cr: p.crouch ? 1 : 0, og: p.onGround ? 1 : 0, sl: p.slot, a4: p.netA4 ? 1 : 0, ah: p.abHold ? (p.abHold.C ? 1 : 0) | (p.abHold.Q ? 2 : 0) | (p.abHold.E ? 4 : 0) : 0, bm: p.bladeMag, p: invRec(p.primary), s: invRec(p.secondary), tp: p.tpSeq, iv: p.invSeq });
   }
 }
 const fromInv = a => Array.isArray(a) && WEAPONS[a[0]] ? { key: a[0], mag: a[1] | 0, reserve: a[2] | 0, sk: SKINS[a[3]] && SKINS[a[3]].key === a[0] ? a[3] : 0 } : null;
@@ -3908,7 +3985,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
@@ -4586,7 +4663,7 @@ $('homePlay').onclick = () => showTab('play');
 
 /* news carousel */
 const NEWS = [
-  { k: 'WELCOME', h: 'Welcome to VALOR STRIKE', b: '5v5 tactical shooter with 6 agents, 17 weapons, a full credit economy and spike rounds.' },
+  { k: 'WELCOME', h: 'Welcome to VALOR STRIKE', b: '5v5 tactical shooter with 12 agents, 17 weapons, a full credit economy and spike rounds.' },
   { k: 'PATCH NOTES', h: 'Steadier sprays', b: 'Crouching now cuts your spray and recoil in half. Bots react slower and miss more often.' },
   { k: 'TIP', h: 'Walk quietly', b: 'Hold Shift to walk silently. Running footsteps can be heard by enemies — and by you.' },
   { k: 'CAREER', h: 'Earn XP every match', b: '+200 per match, +20 per kill and +500 for a win. Level up and track your history in CAREER.' },

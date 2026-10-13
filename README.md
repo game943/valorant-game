@@ -67,6 +67,21 @@ Pick **PRACTICE RANGE** on the PLAY tab, press START and choose an agent. It's s
 - Skins show in your hands, on your character, on dropped guns, and on your Vandal in the lobby. Online players see each other's skins, and a gun you pick up keeps its owner's skin. Bots carry random skins too.
 - VP, owned skins and the Night Market are saved in your browser.
 
+## Steerable abilities and the time gauge
+Some abilities follow your aim, like in Valorant:
+- **Skye – Guiding Light (E)**: hold E and turn to curve the hawk. Let go of E and it flashes.
+- **Skye – Trailblazer (Q)**: hold Q and turn to steer the tiger. Let go of Q and it leaps and concusses.
+- **Sova – Owl Drone (C)**: hold C and turn to fly the drone.
+- **Phoenix – Blaze (C)**: hold C and turn to curve the fire wall.
+
+If you just tap the key, the ability goes straight like before. A **time gauge** appears above your abilities and fills up. When it's full, the ability ends.
+The gauge also shows how long **Run It Back** and **Empress** have left.
+
+Ultimate changes:
+- **Run It Back**: Phoenix now also returns to the marker when the 10 seconds run out.
+- **Empress**: +25% fire rate, faster reloads and movement, and a purple screen glow.
+- **Resurrection**: reaches fallen allies further away and tells you when nobody is dead.
+
 ## Maps
 Pick the map on the PLAY tab with the ‹ › arrows (or click the map card). In a party, the host picks and everyone sees it.
 - **Dustwall**: desert outpost with a long mid corridor and a courtyard.
