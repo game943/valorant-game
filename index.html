@@ -609,7 +609,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 21</div>
+<div id="buildTag">VALOR STRIKE · build 22</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -869,9 +869,9 @@ AGENTS.push(
           X: { name: 'Showstopper', ult: 8, type: 'rocket', desc: 'Fire a rocket that explodes on impact with huge damage.' } } },
   { id: 'killjoy', name: 'Killjoy', role: 'Sentinel', color: '#d8e04a', glyph: 'KJ', desc: 'A genius inventor who locks down sites with gadgets.',
     ab: { C: { name: 'Nanoswarm', cost: 200, max: 2, free: 0, type: 'molly', zkind: 'fire', zr: 3.2, zt: 5, dps: 45, color: 0xd8e04a, desc: 'A grenade that bursts into a damaging swarm.' },
-          Q: { name: 'Alarmbot', cost: 200, max: 1, free: 0, type: 'alarm', desc: 'Reveals and slows enemies that walk near it.' },
+          Q: { name: 'Alarmbot', cost: 200, max: 1, free: 0, type: 'alarm', desc: 'A little robot that waits for enemies. When one comes close it hops at them and bursts: they are revealed and VULNERABLE (take double damage) for 4s.' },
           E: { name: 'Turret', cost: 0, max: 1, free: 1, type: 'turret', desc: 'Automatically shoots enemies it can see for 45 seconds.' },
-          X: { name: 'Lockdown', ult: 9, type: 'lockdown', desc: 'After 3 seconds, enemies nearby are detained: slowed and unable to shoot.' } } },
+          X: { name: 'Lockdown', ult: 9, type: 'lockdown', desc: 'Place a device that charges for 6 seconds, then detains every enemy in a huge radius for 8 seconds: slowed, unable to shoot or use abilities.' } } },
   { id: 'cypher', name: 'Cypher', role: 'Sentinel', color: '#c9c3ae', glyph: 'CY', desc: 'An information broker who watches every flank.',
     ab: { C: { name: 'Trapwire', cost: 200, max: 2, free: 0, type: 'trap', desc: 'A hidden trap that reveals and slows the first enemy who steps in.' },
           Q: { name: 'Cyber Cage', cost: 100, max: 2, free: 0, type: 'smokeSmall', range: 25, r: 3.2, dur: 8, color: 0x8e8a7a, desc: 'A quick smoke cage where you aim.' },
@@ -1515,7 +1515,8 @@ const FACE_TEX = (() => {
     x.lineWidth = 6; x.beginPath(); x.moveTo(44, 64); x.quadraticCurveTo(54, 56, 64, 64); x.quadraticCurveTo(74, 72, 84, 64); x.stroke();
   };
   const star = mk(x => { x.fillStyle = '#ffe14a'; x.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 14 : 34, a = i / 10 * Math.PI * 2 - Math.PI / 2; x.lineTo(64 + Math.cos(a) * r, 40 + Math.sin(a) * r); } x.fill(); });
-  return { flash: mk(face('#ffffff', '#1b1d22')), near: mk(face('#b04fff', '#ffffff')), star };
+  const vuln = mk(x => { x.fillStyle = '#ff3fb8'; x.beginPath(); x.moveTo(64, 4); x.lineTo(118, 76); x.lineTo(10, 76); x.closePath(); x.fill(); x.fillStyle = '#fff'; x.font = '900 46px Oswald, sans-serif'; x.textAlign = 'center'; x.fillText('!', 64, 70); });
+  return { flash: mk(face('#ffffff', '#1b1d22')), near: mk(face('#b04fff', '#ffffff')), star, vuln };
 })();
 function updateFace(e, dt) {
   const ud = e.mesh && e.mesh.userData; if (!ud || !ud.face) return;
@@ -1529,6 +1530,8 @@ function updateFace(e, dt) {
     ud.gunHolder.rotation.x = on ? -.9 : 0;
   }
   if (fl) { ud.stars.rotation.y += dt * 4; ud.face.rotation.z = Math.sin(game.time * 9) * .12; }
+  if (ud.cage) { ud.cage.visible = e.alive && e.detainT > .05; if (ud.cage.visible) ud.cage.rotation.y += dt * 1.5; }
+  if (ud.vuln) ud.vuln.visible = e.alive && e.vulnT > .05;
 }
 // what each agent looks like: skin, hair, clothes and extra gear
 const LOOKS = {
@@ -1615,7 +1618,11 @@ function makeCharacter(agent) {
   face.position.set(0, 1.6, -.215); face.rotation.y = Math.PI; face.visible = false; face.renderOrder = 2; g.add(face);
   const stars = new THREE.Group(); stars.position.y = 2.05; stars.visible = false; g.add(stars);
   for (let i = 0; i < 3; i++) { const st = new THREE.Sprite(new THREE.SpriteMaterial({ map: FACE_TEX.star, transparent: true, depthWrite: false })); const a = i / 3 * Math.PI * 2; st.position.set(Math.cos(a) * .24, 0, Math.sin(a) * .24); st.scale.set(.16, .16, 1); stars.add(st); }
-  Object.assign(g.userData, { legL, legR, gunHolder, marker: mk, gunModel: null, armL, armR, visor, face, stars });
+  const cage = new THREE.Group(); cage.visible = false; g.add(cage);
+  for (const y of [.35, .9, 1.45]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.5, .025, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffe14a })); ring.rotation.x = Math.PI / 2; ring.position.y = y; cage.add(ring); }
+  for (let i = 0; i < 4; i++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.03, 1.3, .03), new THREE.MeshBasicMaterial({ color: 0xffe14a })); const a = i / 4 * Math.PI * 2; bar.position.set(Math.cos(a) * .5, .9, Math.sin(a) * .5); cage.add(bar); }
+  const vuln = new THREE.Sprite(new THREE.SpriteMaterial({ map: FACE_TEX.vuln, transparent: true, depthTest: false })); vuln.scale.set(.32, .32, 1); vuln.position.y = 2.45; vuln.visible = false; vuln.renderOrder = 998; g.add(vuln);
+  Object.assign(g.userData, { legL, legR, gunHolder, marker: mk, gunModel: null, armL, armR, visor, face, stars, cage, vuln });
   g.traverse(o => { if (o.isMesh && o.material !== MAT.outline) o.castShadow = true; });
   scene.add(g); return g;
 }
@@ -1886,6 +1893,7 @@ let smokes = [], zones = [], dynWalls = [], projectiles = [], timedFx = [], drop
 /* --- Damage --- */
 function applyDamage(t, dmg, src, label, head) {
   if (!t.alive || t.dismissT > 0 || dmg <= 0) return;
+  if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
   if (t.dummy && src === player && RANGE()) rangeHit(t, dmg, head);
@@ -2013,6 +2021,15 @@ function makeZone(o) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 2, 6), MAT.dark); pole.position.y = 1; g.add(pole);
     const camBox = new THREE.Mesh(new THREE.BoxGeometry(.3, .22, .35), new THREE.MeshLambertMaterial({ color: 0xc9c3ae })); camBox.position.y = 2.1; g.add(camBox); z.head = camBox;
     const lens = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0x4fa3ff })); lens.position.set(0, 0, -.18); camBox.add(lens);
+  }
+  if (z.kind === 'lockdown') {
+    z.delay0 = z.delay || 6;
+    const yel = new THREE.MeshLambertMaterial({ color: 0xffe14a, emissive: 0x4a3a00 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, .5, 12), MAT.dark); base.position.y = .25; g.add(base);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(.22, .22, .7, 12), yel); core.position.y = .8; g.add(core);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .6, 6), MAT.dark); ant.position.y = 1.45; g.add(ant);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(.08, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe14a })); tip.position.y = 1.78; g.add(tip);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(z.r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: .15, wireframe: true, depthWrite: false })); dome.scale.setScalar(.15); g.add(dome); z.dome = dome;
   }
   if (z.kind === 'trap') {
     for (const sgn of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .5, 6), new THREE.MeshBasicMaterial({ color: 0xc9c3ae })); post.position.set(sgn * z.r * .8, .25, 0); g.add(post); }
@@ -2393,7 +2410,7 @@ const ABIL = {
     for (const z of zones) if (z.kind === 'turret' && z.owner === e) z.t = 0;  // only one turret at a time
     const p = groundPoint(e, 3); makeZone({ x: p.x, z: p.z, r: .7, kind: 'turret', t: 45, owner: e, cd: .5 }); return true;
   },
-  lockdown(e) { makeZone({ x: e.x, z: e.z, r: 14, kind: 'lockdown', t: 5, delay: 3, owner: e }); return true; },
+  lockdown(e) { const p = groundPoint(e, 3); makeZone({ x: p.x, z: p.z, r: 14, kind: 'lockdown', t: 1, delay: 6, owner: e }); if (e.isPlayer) toast('Lockdown is charging… enemies inside will be detained in 6s'); return true; },
   /* ---- Cypher ---- */
   trap(e) { const p = groundPoint(e, 12); makeZone({ x: p.x, z: p.z, r: 2.2, kind: 'trap', t: 60, owner: e }); return true; },
   cam(e) { const p = groundPoint(e, 30); makeZone({ x: p.x, z: p.z, r: .4, kind: 'cam', t: 15, owner: e, pulseT: .4 }); return true; },
@@ -2545,6 +2562,7 @@ function castAbility(e, key, target) {
   if (e.agent === 'viper' && ab.type === 'skySmoke' && e.viperCloud) { toggleViper(e, 'cloud'); return true; }
   if (!target && tryStartPlace(e, ab, key)) return false;
   if (ab.type === 'dash' && e.tailwindT > 0) { doDash(e); if (e.isPlayer && gauge && gauge.tailwind) gauge = null; return true; }
+  if (e.detainT > 0) { toastTo(e, 'Detained — you cannot use abilities'); if (e.isPlayer) SND.deny(); return false; }
   if (ab.type === 'satchel' && e.satchel && projectiles.includes(e.satchel)) { e.satchel.life = 0; e.satchel = null; if (e.isPlayer && gauge && gauge.satchel) gauge = null; return true; }
   if (key === 'X') { if (e.ult < ab.ult) { if (e.isPlayer) ultNotReady(ab, e.ult); else toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
@@ -2569,7 +2587,26 @@ function fireFury(e) {
 }
 
 // zones that act on their own (host only): Killjoy's turret, Cypher's camera
+// Killjoy's Lockdown fires once when its charge-up ends
+function lockdownFire(z) {
+  fx('pop', z.x, 2, z.z, 'flash'); fx('parts', z.x, 1.5, z.z, 60, 0xffe14a, 9, .8);
+  for (const e of entities) if (e.alive && isEnemy(e, z.owner) && Math.hypot(e.x - z.x, e.z - z.z) < z.r) { e.detainT = 8; e.slowT = Math.max(e.slowT, 8); toastTo(e, 'DETAINED by Lockdown!'); }
+  z.t = .8;
+}
 const ZONE_TICK = {
+  alarm(z, dt) { // arm, wait, then hop at the first enemy that comes close and burst
+    z.armT = (z.armT || 0) + dt;
+    if (!z.trig && z.armT > 1) for (const e of entities) if (e.alive && isEnemy(e, z.owner) && Math.hypot(e.x - z.x, e.z - z.z) < z.r && los(z.x, .5, z.z, e.x, e.y + 1, e.z, true)) { z.trig = e; z.trigT = .6; SND.beep(z.x, z.z); break; }
+    if (z.trig) {
+      const e = z.trig, k = Math.min(1, dt * 7); z.x += (e.x - z.x) * k; z.z += (e.z - z.z) * k; z.mesh.position.x = z.x; z.mesh.position.z = z.z;
+      z.trigT -= dt;
+      if (z.trigT <= 0) {
+        fx('pop', z.x, 1, z.z, 'near'); fx('parts', z.x, 1, z.z, 30, 0xff5fd2, 4, .6);
+        for (const o of entities) if (o.alive && isEnemy(o, z.owner) && Math.hypot(o.x - z.x, o.z - z.z) < 3.5) { o.vulnT = 4; o.revealedT = Math.max(o.revealedT, 4); toastTo(o, 'An Alarmbot made you VULNERABLE!'); }
+        z.t = 0;
+      }
+    }
+  },
   turret(z, dt) {
     z.cd -= dt; if (z.cd > 0 || !z.owner) return;
     let best = null, bd = 30;
@@ -2597,9 +2634,11 @@ function updateEffects(dt) {
     const z = zones[i];
     if (z.delay > 0) {
       z.delay -= dt; z.disc.material.opacity = .2 + .3 * Math.abs(Math.sin(game.time * 12));
-      if (z.delay <= 0) { if (z.cyl) z.cyl.visible = true; SND.boom(z.x, z.z); }
+      if (z.dome) { const k = 1 - z.delay / (z.delay0 || 6); z.dome.scale.setScalar(.15 + .85 * k); z.dome.material.opacity = .12 + .1 * Math.abs(Math.sin(game.time * 6)); z.dome.rotation.y += dt * .6; z.beepT = (z.beepT || 0) - dt; if (z.beepT <= 0) { z.beepT = Math.max(.15, z.delay / 6); SND.beep(z.x, z.z); } }
+      if (z.delay <= 0) { if (z.cyl) z.cyl.visible = true; SND.boom(z.x, z.z); if (z.kind === 'lockdown' && net.role !== 'client') lockdownFire(z); if (z.dome) { z.dome.material.opacity = .5; z.dome.scale.setScalar(1); } }
       continue;
     }
+    if (z.dome) z.dome.material.opacity *= .9;
     z.t -= dt;
     if (z.cyl) { z.cyl.material.opacity = (z.kind === 'blaze' ? .55 : .25) + Math.random() * .15; if (z.kind === 'fire' && Math.random() < .3) spawnParticles(z.x + rand(-z.r, z.r) * .7, .3, z.z + rand(-z.r, z.r) * .7, 1, 0xff8a2a, 1.5, .5); }
     if (net.role !== 'client' && ZONE_TICK[z.kind]) ZONE_TICK[z.kind](z, dt);
@@ -2610,8 +2649,6 @@ function updateEffects(dt) {
         if (e === z.owner && z.heal) { if (e.hp < 100) e.hp = Math.min(100, e.hp + 12.5 * dt); }
         else if (isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.kind === 'orbital' ? 'Orbital Strike' : 'Fire');
       } else if (z.kind === 'acid' && isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.label || 'Acid');
-      else if (z.kind === 'alarm' && isEnemy(e, z.owner)) { e.revealedT = Math.max(e.revealedT, 1); e.slowT = .15; }
-      else if (z.kind === 'lockdown' && isEnemy(e, z.owner)) { e.slowT = .15; e.detainT = .3; }
       else if (z.kind === 'trap' && isEnemy(e, z.owner)) { e.revealedT = Math.max(e.revealedT, 3.5); e.slowT = Math.max(e.slowT, 2.5); toastTo(e, 'You tripped a Trapwire!'); fx('pop', z.x, 1, z.z, 'near'); z.t = 0; }
       else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
       else if (z.kind === 'stim' && !isEnemy(e, z.owner)) e.stimT = .3;
@@ -2667,7 +2704,7 @@ function clearEffects() {
 /* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
-  e.detainT = Math.max(0, (e.detainT || 0) - dt);
+  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt);
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
   if (e.tailwindT > 0) e.tailwindT -= dt;
@@ -2879,7 +2916,8 @@ function updatePlayer(dt) {
   if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to plant the spike`;
   if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to defuse the spike`;
   if (game.phase === 'buy' && !shopOpen) hint = hint || `<b>${keyName(settings.binds.shop)}</b> Open shop`;
-  if (p.detainT > 0) hint = 'DETAINED — you cannot shoot';
+  if (p.vulnT > 0) hint = '<b style="color:#ff5fd2">VULNERABLE</b> — you take double damage';
+  if (p.detainT > 0) hint = '<b style="color:#ffe14a">DETAINED</b> — you can\'t shoot or use abilities';
   setHint(hint);
 }
 function spikeAction(p, holding4, dt) {
@@ -4293,7 +4331,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
+    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -4453,7 +4491,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
@@ -4484,7 +4522,7 @@ function applySnap(s) {
   }
   syncList(s.sm, smokes, r => makeSmoke(r[1], r[3], r[4], r[6], r[7], null), (o, r) => { o.t = r[5]; }, o => o.mesh && scene.remove(o.mesh));
   syncList(s.zn, zones, r => ZONE_KINDS.has(r[4]) ? makeZone({ x: r[1], z: r[2], r: r[3], kind: r[4], t: r[5], delay: r[6] }) : null,
-    (o, r) => { o.t = r[5]; if (r[6] < o.delay) o.delay = Math.max(r[6], .0001); }, o => scene.remove(o.mesh));
+    (o, r) => { o.t = r[5]; if (r[6] < o.delay) o.delay = Math.max(r[6], .0001); if (o.kind === 'alarm' && (o.x !== r[1] || o.z !== r[2])) { o.x = r[1]; o.z = r[2]; o.mesh.position.x = o.x; o.mesh.position.z = o.z; } }, o => scene.remove(o.mesh));
   syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1 }); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
   syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9], model: PROJ_MODELS[r[10]] ? r[10] : undefined }),
     (o, r) => Object.assign(o, { x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6] }), o => scene.remove(o.mesh));
@@ -5390,6 +5428,7 @@ function rangeTick(dt) {
   }
   for (const d of dummies()) {
     if (d.off) { d.mesh.visible = false; continue; }
+    for (const k of ['flashT', 'nearT', 'slowT', 'revealedT', 'detainT', 'vulnT']) d[k] = Math.max(0, (d[k] || 0) - dt);
     if (!d.alive) {
       if (!T && d.deadT > 1.4) { const ax = d.ax, az = d.az; placeDummy(d, ax, az); }
       animateNetChar(d, dt); continue;
@@ -5408,7 +5447,7 @@ function rangeTick(dt) {
       vx = Math.abs(dx) < .05 ? 0 : Math.sign(dx) * Math.min(6.5, Math.abs(dx) / dt);
     }
     d.x += vx * dt; d.vx = vx; d.vz = 0;
-    if (mode === 'fight' && p.alive) {
+    if (mode === 'fight' && p.alive && !(d.detainT > 0)) {
       d.shootT -= dt;
       if (d.shootT <= 0) {
         d.shootT = rand(.9, 1.5);
@@ -5727,7 +5766,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 21;
+const BUILD = 22;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {

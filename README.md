@@ -19,7 +19,7 @@ Click the screen to lock the mouse.
   - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress (raises glowing purple hands, then your gun hand glows purple)
   - Omen: Shrouded Step (preview the spot, click to teleport), Paranoia (nearsights through walls), Dark Cover (aim a shadow sphere, hold right click to push it through walls), From the Shadows (pick any spot on a purple map)
   - Raze: Boom Bot (chases and explodes), Blast Pack (throw it, press Q again to blow it up and launch yourself — QQ to fly), Paint Shells (cluster grenade), Showstopper (rocket)
-  - Killjoy: Nanoswarm, Alarmbot (reveals and slows), Turret (shoots enemies), Lockdown (detained enemies can't shoot)
+  - Killjoy: Nanoswarm, Alarmbot (hops at an enemy and makes them VULNERABLE: double damage for 4s), Turret (shoots enemies), Lockdown (charges for 6s under a growing dome, then cages every enemy inside for 8s: no shooting, no abilities)
   - Cypher: Trapwire, Cyber Cage, Spycam (reveal pulses), Neural Theft (reveals every enemy)
   - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)
   - Viper: Snake Bite (acid), Poison Cloud and Toxic Screen (press the key again to switch them on/off; they burn fuel), Viper's Pit (lasts while you stay inside; you see nearby enemies in it)
