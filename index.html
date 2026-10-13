@@ -316,6 +316,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .item .n{font-weight:900;font-size:15px}
 .item .p{position:absolute;right:10px;top:9px;font:500 15px Oswald}
 .item .s{font-size:11px;opacity:.6;margin-top:3px}
+.item .gicon{position:absolute;right:8px;bottom:4px;width:96px;height:36px;object-fit:contain;opacity:.9;pointer-events:none}
+.item .s{padding-right:96px}
+.wcard .wicon{display:block;width:100%;height:64px;object-fit:contain;margin:6px 0 2px}
 .item.own{border-color:var(--teal);background:rgba(47,224,182,.15)}
 .item.poor{opacity:.38}
 .item.poor .p{color:var(--red)}
@@ -1012,11 +1015,145 @@ function buildBarriers() {
 
 /* --- Gun models --- */
 const MUZZLE_Z = { pistol: -.26, smg: -.5, rifle: -.78, sniper: -1.08, shotgun: -.52, heavy: -.86, knife: -.3, blades: -.3 };
-function buildGun(model, accent) {
+const GUN_MATS = {};
+const gm = (c, em) => GUN_MATS[c + ':' + (em || 0)] || (GUN_MATS[c + ':' + (em || 0)] = new THREE.MeshLambertMaterial({ color: c, emissive: em || 0 }));
+const GC = { blk: 0x1b1d22, dk: 0x2b3038, mt: 0x5a616c, lt: 0x8e959f, wood: 0x7a4a26, wood2: 0x9a6236, tan: 0xb89c6a, olive: 0x5b6146, white: 0xd8cfc0, glass: 0x4fc3ff };
+// Each builder gets (B box, C z-cylinder, X x-cylinder, Y y-cylinder) and returns the muzzle z.
+const GUN_BUILDERS = {
+  classic(B, C) {
+    B(.058, .07, .27, 0, .02, -.1, gm(GC.dk)); B(.05, .05, .22, 0, -.04, -.11, gm(GC.white));
+    B(.05, .15, .075, 0, -.1, .0, gm(GC.dk), .22); C(.014, .04, 0, .02, -.25, gm(GC.mt)); B(.03, .02, .06, 0, -.06, -.06, gm(GC.mt));
+    return -.27;
+  },
+  shorty(B, C) {
+    C(.021, .3, -.022, .02, -.22, gm(GC.mt)); C(.021, .3, .022, .02, -.22, gm(GC.mt));
+    B(.075, .08, .14, 0, .0, .0, gm(GC.dk)); B(.07, .05, .14, 0, -.03, -.2, gm(0xa8342a));
+    B(.055, .15, .075, 0, -.11, .07, gm(GC.wood), .3);
+    return -.38;
+  },
+  frenzy(B, C) {
+    B(.06, .09, .26, 0, .02, -.08, gm(GC.dk)); B(.062, .025, .2, 0, .075, -.08, gm(0xe0702a));
+    B(.05, .3, .06, 0, -.17, .02, gm(GC.blk), .12); B(.04, .1, .045, 0, -.07, -.17, gm(GC.mt));
+    C(.016, .06, 0, .03, -.24, gm(GC.mt));
+    return -.28;
+  },
+  ghost(B, C) {
+    B(.056, .072, .26, 0, .02, -.08, gm(0x3a4656)); B(.05, .045, .2, 0, -.035, -.1, gm(GC.dk));
+    B(.05, .15, .075, 0, -.1, .02, gm(GC.blk), .22); C(.028, .24, 0, .02, -.33, gm(GC.blk)); C(.03, .02, 0, .02, -.44, gm(GC.mt));
+    return -.46;
+  },
+  sheriff(B, C, X, Y) {
+    C(.022, .26, 0, .04, -.22, gm(GC.lt)); B(.03, .03, .26, 0, .07, -.2, gm(GC.mt)); B(.03, .025, .02, 0, .09, -.32, gm(GC.mt));
+    C(.05, .1, 0, .015, -.04, gm(GC.mt)); B(.06, .07, .12, 0, .02, .04, gm(GC.dk));
+    B(.055, .17, .08, 0, -.1, .1, gm(GC.wood2), .45); B(.02, .05, .03, 0, -.04, .02, gm(GC.mt));
+    return -.35;
+  },
+  stinger(B, C) {
+    B(.065, .1, .36, 0, 0, -.12, gm(GC.dk)); B(.067, .03, .2, 0, .05, -.18, gm(0xc0392b));
+    B(.045, .22, .06, 0, -.15, -.12, gm(GC.blk)); B(.05, .14, .06, 0, -.1, .04, gm(GC.dk), .25);
+    B(.01, .01, .26, -.025, -.02, .19, gm(GC.mt)); B(.01, .01, .26, .025, -.02, .19, gm(GC.mt)); B(.06, .08, .015, 0, -.02, .32, gm(GC.mt));
+    C(.016, .1, 0, .01, -.35, gm(GC.mt));
+    return -.4;
+  },
+  spectre(B, C) {
+    B(.07, .11, .4, 0, 0, -.12, gm(0x2f3640)); B(.072, .03, .3, 0, .06, -.12, gm(0x2fe0b6));
+    B(.045, .2, .065, 0, -.15, -.13, gm(GC.blk)); B(.055, .14, .06, 0, -.1, .04, gm(GC.blk), .25);
+    B(.05, .09, .2, 0, -.01, .17, gm(GC.dk)); C(.032, .26, 0, .01, -.45, gm(GC.blk));
+    return -.6;
+  },
+  bucky(B, C) {
+    C(.022, .62, 0, .03, -.28, gm(GC.mt)); C(.018, .5, 0, -.02, -.24, gm(GC.dk));
+    B(.07, .1, .2, 0, .01, 0, gm(GC.dk)); B(.07, .07, .18, 0, -.03, -.34, gm(GC.wood2));
+    B(.06, .12, .28, 0, -.03, .23, gm(GC.wood), -.1); B(.05, .13, .06, 0, -.11, .05, gm(GC.wood), .25);
+    return -.6;
+  },
+  judge(B, C, X) {
+    B(.1, .14, .52, 0, 0, -.16, gm(GC.olive)); C(.035, .2, 0, .03, -.5, gm(GC.blk)); B(.104, .03, .3, 0, .08, -.18, gm(GC.blk));
+    X(.1, .07, 0, -.15, -.08, gm(GC.blk)); B(.06, .14, .06, 0, -.11, .05, gm(GC.blk), .25);
+    B(.075, .13, .2, 0, -.01, .2, gm(GC.olive)); B(.04, .12, .05, 0, -.11, -.32, gm(GC.dk));
+    return -.6;
+  },
+  bulldog(B, C) {
+    B(.075, .12, .54, 0, 0, -.18, gm(GC.tan)); B(.077, .05, .26, 0, -.02, -.3, gm(GC.dk));
+    B(.02, .07, .03, 0, .09, -.06, gm(GC.dk)); B(.02, .07, .03, 0, .09, -.26, gm(GC.dk)); B(.03, .025, .24, 0, .13, -.16, gm(GC.dk));
+    B(.05, .2, .08, 0, -.15, -.16, gm(GC.dk)); B(.055, .14, .06, 0, -.11, .02, gm(GC.dk), .25);
+    B(.06, .12, .22, 0, -.01, .2, gm(GC.tan)); C(.02, .2, 0, .02, -.54, gm(GC.mt)); B(.04, .04, .05, 0, .02, -.66, gm(GC.blk));
+    return -.7;
+  },
+  guardian(B, C, X, Y) {
+    B(.07, .11, .52, 0, 0, -.14, gm(GC.dk)); B(.072, .08, .3, 0, -.01, -.38, gm(GC.wood2));
+    B(.06, .14, .32, 0, -.02, .26, gm(GC.wood), -.08); B(.05, .14, .07, 0, -.13, -.08, gm(GC.blk));
+    B(.05, .14, .06, 0, -.11, .05, gm(GC.wood), .25); C(.018, .4, 0, .02, -.72, gm(GC.mt));
+    C(.03, .2, 0, .11, -.12, gm(GC.blk)); B(.02, .04, .03, 0, .07, -.12, gm(GC.mt)); C(.033, .01, 0, .11, -.225, gm(GC.glass, 0x123c55));
+    return -.94;
+  },
+  phantom(B, C) {
+    B(.072, .12, .56, 0, 0, -.18, gm(GC.blk)); B(.074, .025, .5, 0, .065, -.2, gm(GC.dk)); B(.074, .02, .3, 0, -.02, -.32, gm(0x37d6ff, 0x0b4a5a));
+    B(.05, .2, .08, 0, -.15, -.12, gm(GC.dk), -.08); B(.055, .14, .06, 0, -.11, .04, gm(GC.blk), .25);
+    B(.05, .14, .24, 0, -.03, .22, gm(GC.dk), .12); B(.04, .06, .1, 0, .1, -.14, gm(GC.mt));
+    C(.036, .3, 0, .01, -.6, gm(GC.blk)); C(.038, .02, 0, .01, -.75, gm(GC.mt));
+    return -.78;
+  },
+  vandal(B, C) {
+    B(.07, .11, .44, 0, 0, -.12, gm(GC.dk)); B(.072, .085, .24, 0, -.005, -.42, gm(GC.wood2)); C(.012, .26, 0, .06, -.36, gm(GC.mt));
+    B(.05, .1, .07, 0, -.1, -.14, gm(0xe0702a), -.15); B(.05, .12, .07, 0, -.2, -.1, gm(0xe0702a), -.45);
+    B(.055, .14, .06, 0, -.11, .04, gm(GC.wood), .25); B(.06, .11, .3, 0, -.03, .24, gm(GC.wood), -.12);
+    C(.018, .24, 0, .01, -.64, gm(GC.mt)); B(.015, .06, .02, 0, .06, -.74, gm(GC.mt)); B(.03, .04, .06, 0, .075, -.08, gm(GC.mt));
+    return -.78;
+  },
+  marshal(B, C, X, Y) {
+    B(.06, .09, .7, 0, 0, -.22, gm(GC.wood2)); B(.06, .13, .3, 0, -.03, .26, gm(GC.wood), -.1);
+    C(.016, .44, 0, .03, -.78, gm(GC.mt)); B(.05, .06, .2, 0, .045, -.02, gm(GC.mt));
+    X(.012, .08, .05, .05, .06, gm(GC.lt)); Y(.015, .03, .09, .03, .06, gm(GC.lt));
+    C(.026, .2, 0, .12, -.04, gm(GC.dk)); B(.02, .04, .03, 0, .08, -.04, gm(GC.mt)); C(.03, .01, 0, .12, -.145, gm(GC.glass, 0x123c55));
+    return -1.0;
+  },
+  outlaw(B, C) {
+    C(.026, .66, 0, .055, -.48, gm(GC.dk)); C(.026, .66, 0, .0, -.48, gm(GC.dk)); B(.062, .1, .04, 0, .03, -.78, gm(0xb3322a));
+    B(.08, .14, .22, 0, -.01, -.04, gm(GC.blk)); B(.07, .08, .2, 0, -.02, -.3, gm(0xb3322a));
+    B(.06, .14, .3, 0, -.04, .22, gm(GC.dk), -.1); B(.055, .14, .06, 0, -.12, .07, gm(GC.blk), .25);
+    C(.04, .3, 0, .15, -.12, gm(GC.blk)); B(.02, .05, .04, 0, .1, -.1, gm(GC.mt)); C(.042, .01, 0, .15, -.275, gm(GC.glass, 0x123c55));
+    return -.84;
+  },
+  operator(B, C, X, Y) {
+    B(.08, .13, .66, 0, 0, -.18, gm(0x3e4a3c)); B(.07, .16, .3, 0, -.02, .3, gm(0x3e4a3c), -.06); B(.072, .05, .16, 0, .09, .34, gm(GC.dk));
+    C(.024, .5, 0, .03, -.76, gm(GC.dk)); B(.07, .05, .1, 0, .03, -1.06, gm(GC.blk)); B(.074, .012, .02, 0, .03, -1.02, gm(GC.mt));
+    C(.06, .44, 0, .17, -.12, gm(GC.blk)); C(.066, .06, 0, .17, -.35, gm(GC.dk)); C(.066, .06, 0, .17, .1, gm(GC.dk));
+    C(.058, .01, 0, .17, -.385, gm(GC.glass, 0x123c55)); B(.03, .07, .05, 0, .09, -.22, gm(GC.mt)); B(.03, .07, .05, 0, .09, -.02, gm(GC.mt));
+    X(.014, .1, .05, .06, .06, gm(GC.lt)); B(.05, .16, .08, 0, -.15, -.1, gm(GC.blk));
+    B(.055, .15, .06, 0, -.12, .07, gm(GC.dk), .25);
+    const l1 = B(.015, .2, .015, -.035, -.1, -.5, gm(GC.mt)); l1.rotation.z = .35; const l2 = B(.015, .2, .015, .035, -.1, -.5, gm(GC.mt)); l2.rotation.z = -.35;
+    return -1.12;
+  },
+  ares(B, C) {
+    B(.1, .15, .56, 0, 0, -.16, gm(GC.dk)); B(.102, .03, .4, 0, .085, -.16, gm(0xe8b923));
+    C(.045, .34, 0, .01, -.6, gm(GC.mt)); for (let i = 0; i < 4; i++) C(.05, .025, 0, .01, -.47 - i * .08, gm(GC.blk));
+    C(.02, .08, 0, .01, -.8, gm(GC.blk));
+    B(.13, .17, .17, 0, -.15, -.08, gm(GC.olive)); B(.06, .15, .07, 0, -.13, .07, gm(GC.blk), .25);
+    B(.07, .13, .24, 0, -.01, .24, gm(GC.dk)); B(.03, .07, .03, 0, .13, -.06, gm(GC.mt)); B(.03, .02, .2, 0, .17, -.08, gm(GC.mt));
+    return -.84;
+  },
+  odin(B, C, X) {
+    B(.12, .17, .62, 0, 0, -.18, gm(GC.blk)); B(.122, .04, .44, 0, .09, -.2, gm(0x8a2be2, 0x220a3a));
+    C(.065, .4, 0, .01, -.68, gm(GC.dk)); for (let i = 0; i < 5; i++) C(.07, .02, 0, .01, -.52 - i * .08, gm(GC.mt));
+    C(.026, .12, 0, .01, -.92, gm(GC.mt));
+    X(.13, .1, 0, -.18, -.1, gm(GC.dk)); X(.06, .104, 0, -.18, -.1, gm(GC.mt));
+    B(.065, .15, .07, 0, -.14, .08, gm(GC.blk), .25); B(.08, .15, .26, 0, -.01, .26, gm(GC.dk));
+    B(.03, .09, .03, 0, .14, -.04, gm(GC.mt)); B(.03, .09, .03, 0, .14, -.3, gm(GC.mt)); B(.035, .03, .3, 0, .2, -.17, gm(GC.mt));
+    B(.05, .13, .06, 0, -.13, -.42, gm(GC.blk));
+    return -.98;
+  },
+};
+// Build a gun by weapon key (unique model) or by model type (knife / blades / fallback shapes).
+function buildGun(key, accent) {
   const g = new THREE.Group();
-  const acc = accent ? new THREE.MeshLambertMaterial({ color: accent }) : MAT.gunAcc;
+  const model = WEAPONS[key] ? WEAPONS[key].model : key;
+  const acc = accent ? gm(accent) : MAT.gunAcc;
   const B = (w, h, d, x, y, z, m, rx = 0) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.rotation.x = rx; g.add(me); return me; };
-  const C = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 10), m); me.rotation.x = Math.PI / 2; me.position.set(x, y, z); g.add(me); return me; };
+  const C = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 12), m); me.rotation.x = Math.PI / 2; me.position.set(x, y, z); g.add(me); return me; };
+  const X = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 14), m); me.rotation.z = Math.PI / 2; me.position.set(x, y, z); g.add(me); return me; };
+  const Y = (r, l, x, y, z, m) => { const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 10), m); me.position.set(x, y, z); g.add(me); return me; };
+  if (GUN_BUILDERS[key]) { g.userData.muzzleZ = GUN_BUILDERS[key](B, C, X, Y); return g; }
   switch (model) {
     case 'pistol': B(.06, .09, .27, 0, 0, -.1, MAT.gunDark); B(.055, .15, .07, 0, -.1, .0, MAT.gunMetal, .25); C(.016, .06, 0, .01, -.25, MAT.gunMetal); B(.062, .02, .2, 0, .05, -.1, acc); break;
     case 'smg': B(.07, .11, .44, 0, 0, -.16, MAT.gunDark); B(.045, .2, .07, 0, -.14, -.14, MAT.gunMetal); B(.06, .09, .18, 0, -.01, .14, acc); C(.018, .14, 0, .01, -.44, MAT.gunMetal); B(.05, .14, .06, 0, -.1, .02, MAT.gunMetal, .25); break;
@@ -1024,10 +1161,27 @@ function buildGun(model, accent) {
     case 'sniper': B(.07, .12, .88, 0, 0, -.32, MAT.gunDark); B(.05, .16, .07, 0, -.13, -.08, MAT.gunMetal); B(.06, .13, .26, 0, -.02, .26, acc); C(.04, .32, 0, .12, -.18, MAT.gunMetal); C(.022, .3, 0, .02, -.92, MAT.gunMetal); B(.055, .14, .06, 0, -.11, .05, MAT.gunMetal, .25); break;
     case 'shotgun': B(.08, .12, .6, 0, 0, -.2, MAT.gunDark); B(.07, .07, .32, 0, -.09, -.33, acc); B(.06, .11, .22, 0, -.03, .18, MAT.gunMetal); C(.025, .1, 0, .02, -.52, MAT.gunMetal); B(.055, .14, .06, 0, -.11, .03, MAT.gunMetal, .25); break;
     case 'heavy': B(.12, .16, .7, 0, 0, -.24, MAT.gunDark); B(.14, .15, .16, 0, -.15, -.12, acc); C(.03, .3, 0, .01, -.72, MAT.gunMetal); B(.06, .15, .07, 0, -.13, .06, MAT.gunMetal, .25); break;
-    case 'knife': B(.015, .05, .3, 0, 0, -.22, new THREE.MeshLambertMaterial({ color: 0xcfd6de })); B(.035, .045, .13, 0, 0, -.03, MAT.gunDark); B(.07, .02, .02, 0, 0, -.08, MAT.gunMetal); break;
-    case 'blades': for (let i = 0; i < 3; i++) { const k = B(.012, .04, .26, (i - 1) * .05, 0, -.2, new THREE.MeshLambertMaterial({ color: 0xbfeaff, emissive: 0x3aa6d6 })); k.rotation.y = (i - 1) * .15; } break;
+    case 'knife': B(.015, .05, .3, 0, 0, -.22, gm(0xcfd6de)); B(.035, .045, .13, 0, 0, -.03, MAT.gunDark); B(.07, .02, .02, 0, 0, -.08, MAT.gunMetal); break;
+    case 'blades': for (let i = 0; i < 3; i++) { const k = B(.012, .04, .26, (i - 1) * .05, 0, -.2, gm(0xbfeaff, 0x3aa6d6)); k.rotation.y = (i - 1) * .15; } break;
   }
+  g.userData.muzzleZ = MUZZLE_Z[model] ?? -.5;
   return g;
+}
+// Side-view icon of each weapon (rendered once, cached as a data URL).
+const gunIconCache = {};
+function gunIcon(key) {
+  if (gunIconCache[key] !== undefined) return gunIconCache[key];
+  try {
+    const W = 240, H = 90;
+    const r = gunIcon.r || (gunIcon.r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })); r.setSize(W, H); r.setClearColor(0, 0); r.clear();
+    const sc = new THREE.Scene(); sc.add(new THREE.AmbientLight(0xffffff, .75)); const dl = new THREE.DirectionalLight(0xffffff, .8); dl.position.set(3, 4, 2); sc.add(dl);
+    const g = buildGun(key); sc.add(g);
+    const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
+    const half = Math.max(s.z / 2 * H / W, s.y / 2) * 1.1, cam = new THREE.OrthographicCamera(-half * W / H, half * W / H, half, -half, .1, 20);
+    cam.position.set(c.x + 5, c.y, c.z); cam.lookAt(c); r.render(sc, cam);
+    gunIconCache[key] = r.domElement.toDataURL();
+  } catch (e) { gunIconCache[key] = ''; }
+  return gunIconCache[key];
 }
 
 /* --- Character models --- */
@@ -1062,7 +1216,7 @@ function setCharGun(e) {
   const key = curWeapon(e).key, ud = e.mesh.userData;
   if (ud.gunKey === key) return; ud.gunKey = key;
   if (ud.gunModel) ud.gunHolder.remove(ud.gunModel);
-  ud.gunModel = buildGun(WEAPONS[key].model); ud.gunModel.scale.setScalar(1.2); ud.gunHolder.add(ud.gunModel);
+  ud.gunModel = buildGun(key); ud.gunModel.scale.setScalar(1.2); ud.gunHolder.add(ud.gunModel);
 }
 
 /* --- Particles / tracers / decals --- */
@@ -1368,7 +1522,7 @@ function falloffMul(w, d) { return (w.falloff && d > w.falloff[0]) ? w.falloff[1
 
 /* --- Drops / spike / orbs --- */
 function dropWeapon(inst, x, z) {
-  const m = buildGun(WEAPONS[inst.key].model); m.scale.setScalar(1.5);
+  const m = buildGun(inst.key); m.scale.setScalar(1.5);
   const g = new THREE.Group(); g.add(m); g.position.set(x, .25 + Math.max(0, hAtPos(x, z) < WALL_H ? hAtPos(x, z) : 0), z); scene.add(g);
   const d = { inst: { ...inst }, x, z, mesh: g }; drops.push(d); return d;
 }
@@ -1859,12 +2013,12 @@ let shopOpen = false, boardOpen = false;
 function equipView() {
   while (vmRoot.children.length) vmRoot.remove(vmRoot.children[0]);
   const w = curWeapon(player), model = WEAPONS[w.key].model;
-  const gun = buildGun(model, AGENT[player.agent].color);
+  const gun = buildGun(w.key, AGENT[player.agent].color);
   const hand = new THREE.Mesh(new THREE.BoxGeometry(.09, .1, .16), MAT.glove); hand.position.set(0, -.08, .02); gun.add(hand);
   const arm = new THREE.Mesh(new THREE.BoxGeometry(.1, .1, .5), new THREE.MeshLambertMaterial({ color: AGENT[player.agent].color })); arm.position.set(.03, -.12, .3); gun.add(arm);
   if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = new THREE.Mesh(new THREE.BoxGeometry(.09, .09, .14), MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-  mf.scale.set(.35, .35, 1); mf.position.set(0, .02, MUZZLE_Z[model] - .05); mf.visible = false; gun.add(mf);
+  mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(.4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
   player.shotIdx = 0; player.recoil = 0;
 }
@@ -2519,7 +2673,7 @@ function renderShop() {
     for (const k of list) {
       const w = WEAPONS[k], own = (p.primary && p.primary.key === k) || (p.secondary && p.secondary.key === k);
       const it = document.createElement('div'); it.className = 'item' + (own ? ' own' : '') + (!own && p.credits < w.price ? ' poor' : '');
-      it.innerHTML = `<div class="n">${w.name}</div><div class="p">${w.price}</div><div class="s">${w.cat} · Head ${w.dmg[0]} / Body ${w.dmg[1]}${w.pellets > 1 ? ' ×' + w.pellets : ''} · ${w.mag} rds</div>`;
+      it.innerHTML = `<img class="gicon" src="${gunIcon(k)}" alt=""><div class="n">${w.name}</div><div class="p">${w.price}</div><div class="s">${w.cat} · Head ${w.dmg[0]} / Body ${w.dmg[1]}${w.pellets > 1 ? ' ×' + w.pellets : ''} · ${w.mag} rds</div>`;
       it.onclick = () => buyWeapon(k); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('w:' + k); };
       col.appendChild(it);
     }
@@ -3609,7 +3763,7 @@ let party = [], lobbyChars = [], lobbyView = 'party', lobbyMX = 0, lobbyMY = 0;
 function makeLobbyChar(agentId) {
   const g = makeCharacter(AGENT[agentId]); scene.remove(g);
   g.userData.marker.visible = false;
-  const gun = buildGun('rifle', AGENT[agentId].color); gun.scale.setScalar(1.2); g.userData.gunHolder.add(gun);
+  const gun = buildGun('vandal', AGENT[agentId].color); gun.scale.setScalar(1.2); g.userData.gunHolder.add(gun);
   const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .015; g.add(sh);
   lobbyScene.add(g); return g;
 }
@@ -3854,6 +4008,7 @@ function renderCollection() {
   const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
   $('collBox').innerHTML = groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; return `<div class="wcard"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
+    <img class="wicon" src="${gunIcon(k)}" alt="">
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
 }
