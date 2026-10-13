@@ -43,15 +43,16 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #menu{background:transparent;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden}
 .mVig{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(12,20,28,.7) 0,rgba(12,20,28,0) 22%,rgba(12,20,28,0) 62%,rgba(12,20,28,.92) 100%),linear-gradient(90deg,rgba(12,20,28,.8) 0,rgba(12,20,28,0) 45%)}
 .topnav{position:relative;z-index:4;height:64px;flex:none;display:flex;align-items:center;padding:0 22px;background:rgba(15,25,35,.78);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px)}
-.brand{font:700 22px Oswald,sans-serif;letter-spacing:3px;display:flex;gap:6px;width:240px}
+.brand{font:700 22px Oswald,sans-serif;letter-spacing:3px;display:flex;gap:6px;width:auto;flex:none}
 .brand .bv{color:var(--red)}
-#navTabs{flex:1;display:flex;justify-content:center;align-items:stretch;gap:2px;height:100%}
+#navTabs{flex:1;min-width:0;display:flex;justify-content:center;align-items:stretch;gap:2px;height:100%}
 #navTabs button{background:none;border:0;color:rgba(236,232,225,.55);font:700 15px Oswald,sans-serif;letter-spacing:3px;padding:0 20px;cursor:pointer;position:relative;transition:color .12s}
 #navTabs button:hover{color:var(--light)}
 #navTabs button.on{color:var(--light)}
 #navTabs button.on:after{content:'';position:absolute;left:16px;right:16px;bottom:0;height:3px;background:var(--red)}
 #navTabs button.play{font-size:24px;letter-spacing:5px;padding:0 40px;color:var(--light);background:linear-gradient(180deg,rgba(255,70,85,0) 0,rgba(255,70,85,.28) 100%)}
-.navRight{min-width:240px;display:flex;justify-content:flex-end;align-items:center;gap:14px}
+.navRight{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:12px}
+@media (max-width:1380px){#navTabs button{padding:0 12px;letter-spacing:2px;font-size:14px}#navTabs button.play{padding:0 22px;font-size:21px}.brand{font-size:19px}}
 .partyBtn{height:38px;padding:0 14px;border:1px solid rgba(255,255,255,.25);background:rgba(15,25,35,.5);color:var(--light);font:700 13px Oswald,sans-serif;letter-spacing:3px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.12s}
 .partyBtn:hover,.partyBtn.open{background:var(--light);color:var(--dark)}
 .partyBtn.on b{color:var(--teal)}
@@ -184,6 +185,60 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .mrow .res{font:700 16px Oswald,sans-serif;letter-spacing:2px}
 .mrow.w .res{color:var(--teal)}.mrow.l .res{color:var(--red)}
 .empty{opacity:.6;padding:30px 0;text-align:center}
+.vpBox{display:flex;align-items:center;gap:6px;cursor:pointer;font:600 15px Oswald,sans-serif;padding:4px 8px;border:1px solid rgba(255,255,255,.12)}
+.vpBox:hover{background:rgba(255,255,255,.08)}
+.vpI{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--light);margin-right:4px;vertical-align:-1px;position:relative}
+.vpI::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--light)}
+.storeTabs{display:flex;gap:4px}
+.storeTabs button{background:#26313d;border:0;color:var(--light);font:600 14px Oswald,sans-serif;letter-spacing:2px;padding:9px 18px;cursor:pointer}
+.storeTabs button.on{background:var(--red);color:#fff}
+.storeTabs .nmBtn{background:linear-gradient(90deg,#3a1660,#6a1b5a)}
+.storeTabs .nmBtn.on{background:linear-gradient(90deg,#8a2be2,#ff4fa3)}
+.feat{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:18px;padding:18px;background:linear-gradient(110deg,rgba(0,0,0,.35),rgba(255,255,255,.04));border:1px solid var(--tc);border-left:4px solid var(--tc)}
+.feat h3{font:700 30px Oswald,sans-serif;letter-spacing:3px;margin:4px 0}
+.featNote{font-size:13px;opacity:.7;margin-bottom:12px}
+.feat .btn{width:auto;padding:10px 18px}
+.feat .btn:disabled{opacity:.5;cursor:default}
+.featGuns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:center}
+.featGuns img{width:100%;height:70px;object-fit:contain;cursor:pointer;background:rgba(255,255,255,.03);transition:.12s}
+.featGuns img:hover{background:rgba(255,255,255,.1);transform:scale(1.04)}
+.skGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.skCard{position:relative;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(0,0,0,.25));border:1px solid rgba(255,255,255,.08);border-bottom:3px solid var(--tc);padding:10px 12px;cursor:pointer;transition:.12s}
+.skCard:hover{transform:translateY(-2px);border-color:var(--tc)}
+.skCard img{display:block;width:100%;height:72px;object-fit:contain;margin:4px 0}
+.skTier{font:600 11px Oswald,sans-serif;letter-spacing:2px;color:var(--tc)}
+.skName{font-weight:900;font-size:14px}
+.skPrice{font:500 14px Oswald,sans-serif;margin-top:3px;opacity:.9}
+.skPrice s{opacity:.45;margin-right:4px}
+.skCard.own .skPrice,.skCard.eq .skPrice{color:var(--teal)}
+.skCard.eq{outline:2px solid var(--teal)}
+.skCard.locked img{filter:grayscale(.7) brightness(.7)}
+.nmHead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px;padding:16px;background:linear-gradient(90deg,#2a0f45,#5a1550 60%,#1a1030);border:1px solid #8a2be2}
+.nmHead h3{font:700 34px Oswald,sans-serif;letter-spacing:6px;background:linear-gradient(90deg,#d28cff,#ff7ac0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.nmGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.nmCard{position:relative;min-height:170px}
+.nmCard .skCard{height:100%;background:linear-gradient(160deg,rgba(138,43,226,.25),rgba(0,0,0,.35))}
+.nmCard.flip{animation:nmFlip .5s}
+@keyframes nmFlip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+.nmBack{height:170px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:repeating-linear-gradient(45deg,#2a0f45 0 14px,#3a1660 14px 28px);border:1px solid #8a2be2;transition:.15s}
+.nmBack:hover{transform:translateY(-3px);box-shadow:0 0 24px rgba(210,140,255,.45)}
+.nmBack span{font:700 54px Oswald,sans-serif;color:#d28cff;text-shadow:0 0 18px #8a2be2}
+.nmOff{position:absolute;top:8px;right:8px;background:linear-gradient(90deg,#8a2be2,#ff4fa3);color:#fff;font:700 15px Oswald,sans-serif;padding:3px 8px}
+#skinModal,#skinPicker{background:rgba(10,16,22,.82);z-index:45}
+.skmPanel{width:min(720px,94vw);border-top:4px solid var(--tc)}
+.skmPanel h2{font:700 30px Oswald,sans-serif;letter-spacing:2px}
+.skmStage{background:radial-gradient(ellipse at center,rgba(255,255,255,.12),rgba(0,0,0,.2) 70%);margin:12px 0;display:flex;justify-content:center}
+.skmStage img{width:100%;max-width:640px;height:240px;object-fit:contain}
+.skmFoot{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.skmFoot .btn{width:auto;margin:0;padding:10px 22px}
+.skmFoot .btn:disabled{opacity:.55;cursor:default}
+.skpPanel{width:min(900px,94vw);max-height:86vh;overflow:auto}
+.wcard.pick{cursor:pointer;transition:.12s}
+.wcard.pick:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25)}
+.wskin{font-size:12px;font-weight:700;margin-bottom:4px}
+#menuToast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);background:rgba(15,25,35,.95);border:1px solid var(--teal);padding:10px 18px;font-size:14px;z-index:70;opacity:0;pointer-events:none;transition:.25s}
+#menuToast.on{opacity:1;transform:translate(-50%,0)}
+@media (max-width:820px){.feat{grid-template-columns:1fr}.nmGrid{grid-template-columns:repeat(2,1fr)}}
 .collCat{font:500 12px Oswald,sans-serif;letter-spacing:4px;opacity:.6;margin:16px 0 8px}
 .collGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .wcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
@@ -378,8 +433,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <button data-tab="play" class="play">PLAY</button>
       <button data-tab="career">CAREER</button>
       <button data-tab="collection">COLLECTION</button>
+      <button data-tab="store">STORE</button>
     </nav>
     <div class="navRight">
+      <div class="vpBox" id="vpBox" title="Valor Points — open the Store"><b class="vpI"></b><span id="vpNum">0</span></div>
       <button class="partyBtn" id="partyBtn" title="Party">PARTY <b id="partyCount"></b></button>
       <div class="acct" id="acctBtn" title="Change your name"><div class="lvlBadge"><span id="lvlNum">1</span></div><div><div class="nm"><span id="nameTag">Player</span> <span class="pen">✎</span></div><div class="xpbar"><div id="xpFill"></div></div></div></div>
       <button class="iconBtn" id="btnSettings" title="Settings">⚙</button>
@@ -448,7 +505,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </section>
 
   <section class="tab hidden" id="tab-collection">
-    <div class="tabPanel"><div class="pHead"><h2>COLLECTION</h2><span class="ol">Arsenal · damage per bullet (head / body / legs)</span></div><div id="collBox"></div></div>
+    <div class="tabPanel"><div class="pHead"><h2>COLLECTION</h2><span class="ol">Click a weapon to equip a skin · damage per bullet (head / body / legs)</span></div><div id="collBox"></div></div>
+  </section>
+
+  <section class="tab hidden" id="tab-store">
+    <div class="tabPanel"><div class="pHead"><h2>STORE</h2><div class="storeTabs" id="storeTabs"><button data-sv="offers" class="on">OFFERS</button><button data-sv="night" class="nmBtn">NIGHT MARKET</button></div></div><div id="storeBox"></div></div>
   </section>
 </div>
 <div id="matchFound" class="hidden"><div class="mfBand"><div class="mfT">MATCH FOUND</div><div class="mfS" id="mfSub">COMPETITIVE · DUSTWALL</div></div></div>
@@ -466,6 +527,20 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 </div>
 
 <!-- ================= SETTINGS ================= -->
+<div id="skinModal" class="screen hidden">
+  <div class="panel skmPanel" id="skmPanel">
+    <div class="pHead"><div><div class="ol" id="skmTier">PREMIUM EDITION</div><h2 id="skmName">Skin</h2></div><button class="iconBtn" id="skmClose">✕</button></div>
+    <div class="skmStage"><img id="skmImg" alt=""></div>
+    <div class="skmFoot"><span class="note" id="skmNote" style="margin:0"></span><button class="btn primary" id="skmBuy">BUY</button></div>
+  </div>
+</div>
+<div id="skinPicker" class="screen hidden">
+  <div class="panel skpPanel">
+    <div class="pHead"><h2 id="skpTitle">SKINS</h2><button class="iconBtn" id="skpClose">✕</button></div>
+    <div class="skGrid" id="skpGrid"></div>
+  </div>
+</div>
+<div id="menuToast"></div>
 <div id="fps" class="hidden"></div>
 <div id="settingsModal" class="screen hidden">
   <div class="panel setPanel">
@@ -1176,7 +1251,10 @@ const GUN_BUILDERS = {
   },
 };
 // Build a gun by weapon key (unique model) or by model type (knife / blades / fallback shapes).
-function buildGun(key, accent) {
+function buildGun(key, accent, skin) {
+  const g = buildGunBase(key, accent); if (skin) applySkin(g, skin); return g;
+}
+function buildGunBase(key, accent) {
   const g = new THREE.Group();
   const model = WEAPONS[key] ? WEAPONS[key].model : key;
   const acc = accent ? gm(accent) : MAT.gunAcc;
@@ -1200,20 +1278,98 @@ function buildGun(key, accent) {
 }
 // Side-view icon of each weapon (rendered once, cached as a data URL).
 const gunIconCache = {};
-function gunIcon(key) {
-  if (gunIconCache[key] !== undefined) return gunIconCache[key];
+const bigGunIcon = (key, skin) => gunIcon(key, skin, 480, 180);
+function gunIcon(key, skin = 0, W = 240, H = 90) {
+  const ck = key + ':' + (skin || '') + ':' + W;
+  if (gunIconCache[ck] !== undefined) return gunIconCache[ck];
   try {
-    const W = 240, H = 90;
     const r = gunIcon.r || (gunIcon.r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })); r.setSize(W, H); r.setClearColor(0, 0); r.clear();
     const sc = new THREE.Scene(); sc.add(new THREE.AmbientLight(0xffffff, .75)); const dl = new THREE.DirectionalLight(0xffffff, .8); dl.position.set(3, 4, 2); sc.add(dl);
-    const g = buildGun(key); sc.add(g);
+    const g = buildGun(key, null, skin); sc.add(g);
     const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
     const half = Math.max(s.z / 2 * H / W, s.y / 2) * 1.1, cam = new THREE.OrthographicCamera(-half * W / H, half * W / H, half, -half, .1, 20);
     cam.position.set(c.x + 5, c.y, c.z); cam.lookAt(c); r.render(sc, cam);
-    gunIconCache[key] = r.domElement.toDataURL();
-  } catch (e) { gunIconCache[key] = ''; }
-  return gunIconCache[key];
+    gunIconCache[ck] = r.domElement.toDataURL();
+  } catch (e) { gunIconCache[ck] = ''; }
+  return gunIconCache[ck];
 }
+/* --- Weapon skins --- */
+const TIERS = {
+  select: { name: 'Select', price: 875, color: '#5a9fe2' },
+  deluxe: { name: 'Deluxe', price: 1275, color: '#009587' },
+  premium: { name: 'Premium', price: 1775, color: '#d1548d' },
+  exclusive: { name: 'Exclusive', price: 2175, color: '#f5955b' },
+  ultra: { name: 'Ultra', price: 2475, color: '#fad663' },
+};
+// Skin lines: colors per part role (body / furniture / metal / accent), optional glow and a procedural pattern.
+const SKIN_LINES = [
+  { id: 'prime', name: 'Prime', tier: 'premium', body: 0xe9e3d2, furn: 0xf4efe2, metal: 0xd4af37, acc: 0xffd75e, glow: 0x6a4e00, pat: ['marble', '#efe9da', '#cdbf9c'], guns: ['classic', 'spectre', 'guardian', 'vandal', 'odin', 'knife'] },
+  { id: 'glitch', name: 'Glitchpop', tier: 'exclusive', body: 0x2a1240, furn: 0x15c8ff, metal: 0xff2fa8, mglow: 0x7a0050, acc: 0x15f0ff, glow: 0x0a6a80, pat: ['circuit', '#26103c', '#ff2fa8'], guns: ['frenzy', 'judge', 'bulldog', 'odin', 'operator', 'knife'] },
+  { id: 'reaver', name: 'Reaver', tier: 'premium', body: 0x1d1a24, furn: 0x2c2734, metal: 0x6b6280, acc: 0xff2a3a, glow: 0x9a0010, pat: ['hex', '#1d1a24', '#3a3248'], guns: ['sheriff', 'guardian', 'vandal', 'operator', 'knife'] },
+  { id: 'ion', name: 'Ion', tier: 'premium', body: 0xf3f5f9, furn: 0xdfe5ec, metal: 0x9fb0c2, acc: 0x3fb6ff, glow: 0x0a5a9a, pat: ['grad', '#ffffff', '#c9d6e3'], guns: ['sheriff', 'bucky', 'phantom', 'operator', 'knife'] },
+  { id: 'elder', name: 'Elderflame', tier: 'ultra', body: 0x3a2618, furn: 0x6a3b1d, metal: 0xc9a14a, acc: 0xff7a1a, glow: 0xb03000, pat: ['flame', '#2a1a10', '#ff6a00'], guns: ['frenzy', 'judge', 'vandal', 'operator', 'knife'] },
+  { id: 'oni', name: 'Oni', tier: 'premium', body: 0xb3141f, furn: 0x151518, metal: 0x2a2a30, acc: 0xf2f2f2, pat: ['stripes', '#b3141f', '#151518'], guns: ['shorty', 'bulldog', 'guardian', 'phantom', 'knife'] },
+  { id: 'sing', name: 'Singularity', tier: 'ultra', body: 0x140a24, furn: 0x24123d, metal: 0x7a3cff, mglow: 0x3a0a8a, acc: 0xd28cff, glow: 0x8a2be2, pat: ['stars', '#120820', '#b070ff'], guns: ['sheriff', 'spectre', 'phantom', 'ares', 'knife'] },
+  { id: 'spline', name: 'Spline', tier: 'deluxe', body: 0x3b6fe0, furn: 0xe8eef6, metal: 0xe8eef6, acc: 0xff7a2f, pat: ['stripes', '#3b6fe0', '#e8eef6'], guns: ['classic', 'stinger', 'spectre', 'phantom', 'marshal'] },
+  { id: 'sakura', name: 'Sakura', tier: 'deluxe', body: 0xf4b6c8, furn: 0xfaf3f0, metal: 0x8b5a6a, acc: 0xff6f9a, pat: ['marble', '#f6c3d2', '#e48aa6'], guns: ['ghost', 'stinger', 'outlaw', 'vandal'] },
+  { id: 'tiger', name: 'Tigris', tier: 'deluxe', body: 0xe0761f, furn: 0x1b1b1b, metal: 0x2b2b2b, acc: 0xf5f0e6, pat: ['tiger', '#e0761f', '#141414'], guns: ['frenzy', 'bucky', 'outlaw', 'phantom'] },
+  { id: 'waste', name: 'Wasteland', tier: 'select', body: 0xb59a6a, furn: 0x6e5a3a, metal: 0x5b5446, acc: 0x8a7a50, pat: ['camo', '#b59a6a', '#6e5a3a', '#8c7a52'], guns: ['ghost', 'stinger', 'bucky', 'bulldog', 'marshal'] },
+  { id: 'rush', name: 'Rush', tier: 'select', body: 0x1c1f22, furn: 0x2a2f33, metal: 0x3a4045, acc: 0x7dff3a, glow: 0x2a7a00, pat: ['stripes', '#1c1f22', '#7dff3a'], guns: ['shorty', 'ghost', 'marshal', 'ares', 'outlaw'] },
+  { id: 'arctic', name: 'Arctic', tier: 'select', body: 0xe6eef4, furn: 0x9fb8cc, metal: 0x5d7488, acc: 0x7fd0ff, pat: ['camo', '#e6eef4', '#9fb8cc', '#c3d4e2'], guns: ['classic', 'sheriff', 'judge', 'guardian', 'odin'] },
+];
+const SKINS = {};
+for (const L of SKIN_LINES) for (const g of L.guns) {
+  const id = L.id + ':' + g, t = TIERS[L.tier];
+  SKINS[id] = { id, line: L, key: g, name: L.name + ' ' + (g === 'knife' ? 'Knife' : WEAPONS[g].name), tier: L.tier, price: g === 'knife' ? t.price * 2 : t.price };
+}
+const SKIN_IDS = Object.keys(SKINS);
+// procedural pattern textures (one per skin line)
+const skinTexCache = {};
+function skinTex(L) {
+  if (skinTexCache[L.id]) return skinTexCache[L.id];
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d');
+  const [kind, a, b, c] = L.pat; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  x.fillStyle = a; x.fillRect(0, 0, 128, 128);
+  if (kind === 'stripes') { x.fillStyle = b; for (let i = -128; i < 256; i += 32) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 12, 0); x.lineTo(i + 140, 128); x.lineTo(i + 128, 128); x.fill(); } }
+  else if (kind === 'camo') { for (let i = 0; i < 26; i++) { x.fillStyle = i % 2 ? b : c; x.beginPath(); x.ellipse(rnd() * 128, rnd() * 128, 8 + rnd() * 18, 5 + rnd() * 10, rnd() * 3, 0, 7); x.fill(); } }
+  else if (kind === 'marble') { x.strokeStyle = b; for (let i = 0; i < 9; i++) { x.lineWidth = .6 + rnd() * 1.6; x.beginPath(); let px = rnd() * 128, py = 0; x.moveTo(px, py); while (py < 128) { px += (rnd() - .5) * 26; py += 8 + rnd() * 10; x.lineTo(px, py); } x.stroke(); } }
+  else if (kind === 'hex') { x.strokeStyle = b; x.lineWidth = 2; for (let r = 0; r < 9; r++) for (let q = 0; q < 6; q++) { const cx = q * 24 + (r % 2) * 12, cy = r * 14; x.beginPath(); for (let k = 0; k < 7; k++) { const an = Math.PI / 3 * k + Math.PI / 6; x.lineTo(cx + Math.cos(an) * 8, cy + Math.sin(an) * 8); } x.stroke(); } }
+  else if (kind === 'circuit') { x.strokeStyle = b; x.lineWidth = 2; for (let i = 0; i < 22; i++) { let px = Math.round(rnd() * 8) * 16, py = Math.round(rnd() * 8) * 16; x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 3; k++) { if (rnd() < .5) px += (rnd() < .5 ? -1 : 1) * 16; else py += (rnd() < .5 ? -1 : 1) * 16; x.lineTo(px, py); } x.stroke(); x.fillStyle = b; x.fillRect(px - 2, py - 2, 4, 4); } }
+  else if (kind === 'flame') { const g = x.createLinearGradient(0, 128, 0, 0); g.addColorStop(0, b); g.addColorStop(.55, a); g.addColorStop(1, a); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.fillStyle = b; for (let i = 0; i < 9; i++) { const px = rnd() * 128; x.beginPath(); x.moveTo(px - 10, 128); x.quadraticCurveTo(px + (rnd() - .5) * 20, 70, px + (rnd() - .5) * 10, 40 + rnd() * 30); x.quadraticCurveTo(px + 6, 90, px + 10, 128); x.fill(); } }
+  else if (kind === 'grad') { const g = x.createLinearGradient(0, 0, 128, 128); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.strokeStyle = 'rgba(63,182,255,.5)'; x.lineWidth = 1; for (let i = 0; i < 128; i += 16) { x.beginPath(); x.moveTo(0, i); x.lineTo(128, i); x.stroke(); } }
+  else if (kind === 'stars') { for (let i = 0; i < 70; i++) { x.fillStyle = rnd() < .3 ? b : '#ffffff'; const s = rnd() * 2 + .5; x.fillRect(rnd() * 128, rnd() * 128, s, s); } x.strokeStyle = b; x.globalAlpha = .4; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.stroke(); x.globalAlpha = 1; }
+  else if (kind === 'tiger') { x.fillStyle = b; for (let i = 0; i < 9; i++) { const py = i * 15 + rnd() * 6; x.beginPath(); x.moveTo(0, py); x.quadraticCurveTo(40 + rnd() * 30, py - 6, 70 + rnd() * 30, py + 4); x.quadraticCurveTo(50, py + 7, 0, py + 5); x.fill(); } }
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
+  return skinTexCache[L.id] = t;
+}
+const ROLE_OF = { [GC.blk]: 'body', [GC.dk]: 'body', 0x2f3640: 'body', 0x3a4656: 'body', 0x3e4a3c: 'body', [GC.olive]: 'body', [GC.tan]: 'body', [GC.wood]: 'furn', [GC.wood2]: 'furn', [GC.mt]: 'metal', [GC.lt]: 'metal', 0xcfd6de: 'metal' };
+const skinMatCache = {};
+function skinMat(L, role) {
+  const k = L.id + ':' + role; if (skinMatCache[k]) return skinMatCache[k];
+  let m;
+  if (role === 'body') m = new THREE.MeshLambertMaterial({ map: skinTex(L), color: 0xffffff });
+  else if (role === 'furn') m = new THREE.MeshLambertMaterial({ color: L.furn });
+  else if (role === 'metal') m = new THREE.MeshLambertMaterial({ color: L.metal, emissive: L.mglow || 0 });
+  else m = new THREE.MeshLambertMaterial({ color: L.acc, emissive: L.glow || 0 });
+  return skinMatCache[k] = m;
+}
+// repaint a built gun with a skin line
+function applySkin(g, skinId) {
+  const S = SKINS[skinId]; if (!S) return;
+  g.traverse(o => {
+    if (!o.isMesh || !o.material.color) return;
+    const hex = o.material.color.getHex();
+    if (hex === GC.glass) return;
+    o.material = skinMat(S.line, ROLE_OF[hex] || 'acc');
+  });
+  g.userData.skin = skinId;
+}
+const skinOf = (e, inst) => inst ? (inst.sk !== undefined ? inst.sk : (e && e.skins && e.skins[inst.key]) || 0) : 0;
+const cleanSkins = o => { const r = {}; if (o && typeof o === 'object') for (const k in o) if (SKINS[o[k]] && SKINS[o[k]].key === k) r[k] = o[k]; return r; };
+function randomBotSkins() {
+  const r = {}; for (const id of SKIN_IDS) if (Math.random() < .12 && !r[SKINS[id].key]) r[SKINS[id].key] = id; return r;
+}
+
 
 /* --- Character models --- */
 function addPart(g, geo, mat, x, y, z, parent) {
@@ -1244,10 +1400,10 @@ function makeCharacter(agent) {
   scene.add(g); return g;
 }
 function setCharGun(e) {
-  const key = curWeapon(e).key, ud = e.mesh.userData;
-  if (ud.gunKey === key) return; ud.gunKey = key;
+  const inst = curWeapon(e), key = inst.key, sk = skinOf(e, inst), ud = e.mesh.userData;
+  if (ud.gunKey === key + sk) return; ud.gunKey = key + sk;
   if (ud.gunModel) ud.gunHolder.remove(ud.gunModel);
-  ud.gunModel = buildGun(key); ud.gunModel.scale.setScalar(1.2); ud.gunHolder.add(ud.gunModel);
+  ud.gunModel = buildGun(key, null, sk); ud.gunModel.scale.setScalar(1.2); ud.gunHolder.add(ud.gunModel);
 }
 
 /* --- Particles / tracers / decals --- */
@@ -1539,7 +1695,7 @@ function killEntity(t, src, label, head) {
   }
   // weapon drop
   const dw = t.primary || (t.secondary && t.secondary.key !== 'classic' ? t.secondary : null);
-  if (dw) dropWeapon(dw, t.x, t.z);
+  if (dw) { dw.sk = skinOf(t, dw); dropWeapon(dw, t.x, t.z); }
   if (t.primary === dw) t.primary = null; else if (t.secondary === dw) t.secondary = null;
   t.armor = 0; t.bladeMag = 0;
   if (t.hasSpike) { t.hasSpike = false; dropSpike(t.x, t.y, t.z); }
@@ -1553,7 +1709,7 @@ function falloffMul(w, d) { return (w.falloff && d > w.falloff[0]) ? w.falloff[1
 
 /* --- Drops / spike / orbs --- */
 function dropWeapon(inst, x, z) {
-  const m = buildGun(inst.key); m.scale.setScalar(1.5);
+  const m = buildGun(inst.key, null, inst.sk); m.scale.setScalar(1.5);
   const g = new THREE.Group(); g.add(m); g.position.set(x, .25 + Math.max(0, hAtPos(x, z) < WALL_H ? hAtPos(x, z) : 0), z); scene.add(g);
   const d = { inst: { ...inst }, x, z, mesh: g }; drops.push(d); return d;
 }
@@ -2044,7 +2200,7 @@ let shopOpen = false, boardOpen = false;
 function equipView() {
   while (vmRoot.children.length) vmRoot.remove(vmRoot.children[0]);
   const w = curWeapon(player), model = WEAPONS[w.key].model;
-  const gun = buildGun(w.key, AGENT[player.agent].color);
+  const gun = buildGun(w.key, AGENT[player.agent].color, skinOf(player, w));
   const hand = new THREE.Mesh(new THREE.BoxGeometry(.09, .1, .16), MAT.glove); hand.position.set(0, -.08, .02); gun.add(hand);
   const arm = new THREE.Mesh(new THREE.BoxGeometry(.1, .1, .5), new THREE.MeshLambertMaterial({ color: AGENT[player.agent].color })); arm.position.set(.03, -.12, .3); gun.add(arm);
   if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = new THREE.Mesh(new THREE.BoxGeometry(.09, .09, .14), MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
@@ -2201,7 +2357,7 @@ function interact(p = player) {
   if (orb) { scene.remove(orb.mesh); orbs.splice(orbs.indexOf(orb), 1); p.ult = Math.min(AGENT[p.agent].ab.X.ult, p.ult + 1); toastTo(p, 'Ult point +1'); if (p.isPlayer) { SND.buy(); refreshAbilHud(); } return; }
   const d = nearestDrop(p); if (!d) return;
   const slot = WEAPONS[d.inst.key].slot, cur = slot === 1 ? p.primary : p.secondary;
-  if (cur) dropWeapon(cur, p.x, p.z);
+  if (cur) { cur.sk = skinOf(p, cur); dropWeapon(cur, p.x, p.z); }
   if (slot === 1) p.primary = d.inst; else p.secondary = d.inst;
   scene.remove(d.mesh); drops.splice(drops.indexOf(d), 1);
   p.slot = slot; p.invSeq = (p.invSeq || 0) + 1;
@@ -2484,16 +2640,16 @@ function setupMatch(agentId, humans = []) {
   clearEffects(); clearDrops();
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
-  entities = [player]; bots = []; net.ents = {};
+  player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {};
   if (DUEL()) {
     // 1v1: a friend from the party is the opponent, otherwise a bot
     const h = humans[0];
-    if (h) { const e = makeEntity({ id: 1, name: h.name, team: 1, agent: h.agent, remote: h.peer }); e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e; }
+    if (h) { const e = makeEntity({ id: 1, name: h.name, team: 1, agent: h.agent, remote: h.peer }); e.skins = cleanSkins(h.sk); e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e; }
     else { const b = makeEntity({ id: 1, name: ENEMY_NAMES[0], team: 1, agent: pick(AGENTS.filter(a => a.id !== agentId)).id }); b.mesh = makeCharacter(AGENT[b.agent]); Object.assign(b, { path: [], think: 0, reactT: 0 }); entities.push(b); bots.push(b); }
     humans = [];
   }
   for (const h of humans) {
-    const e = makeEntity({ id: entities.length, name: h.name, team: 0, agent: h.agent, remote: h.peer });
+    const e = makeEntity({ id: entities.length, name: h.name, team: 0, agent: h.agent, remote: h.peer }); e.skins = cleanSkins(h.sk);
     e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
   }
   // allies are the lobby party; swap out anyone who shares the player's agent
@@ -2504,7 +2660,7 @@ function setupMatch(agentId, humans = []) {
   const enemyPool = shuffle(AGENTS.map(a => a.id));
   for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
   for (let i = 0; i < (DUEL() ? 0 : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
-  for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.path = []; b.think = 0; b.reactT = 0; }
+  for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; }
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0 });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
@@ -2648,6 +2804,7 @@ function finishMatch() {
   const mvp = all[0], p = player;
   const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
   profile.xp += gain;
+  const vpGain = (won ? 250 : 100) + p.kills * 10; profile.vp += vpGain;
   profile.matches.unshift({ map: game.mapId, won, score: [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
   profile.matches = profile.matches.slice(0, 30); saveProfile();
   $('overStats').innerHTML = `
@@ -2655,6 +2812,7 @@ function finishMatch() {
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
     <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
     <div class="stat"><span>Match MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills} kills</b></div>
+    <div class="stat"><span>VP Earned</span><b class="os" style="color:var(--teal)">+${vpGain} VP · total ${profile.vp.toLocaleString()}</b></div>
     <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
   $('btnAgain').classList.toggle('hidden', net.role !== 'off'); $('btnMenu').textContent = net.role !== 'off' ? 'Back to Party Lobby' : 'Main Menu';
@@ -3235,7 +3393,7 @@ function animateNetChar(e, dt) {
    PARTY (lobby)
    ===================================================================== */
 function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
-function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host' }; }
+function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host', sk: { ...profile.equip } }; }
 function setPartyStatus(m) { $('ppStatus').textContent = m || ''; }
 function resetNet() {
   const peer = net.peer;
@@ -3268,7 +3426,7 @@ function createParty(code, pub = false, slot = 0) {
 /* --- public matchmaking: probe every public lobby slot, join the fullest open one, otherwise open a new one --- */
 function attachHost(conn, code) {
   net.host = conn; net.role = 'client'; net.code = code; net.chat = []; net.searching = false;
-  conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) });
+  conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip });
   setPartyStatus(''); refreshPartyUI();
 }
 function findPublicMatch() {
@@ -3379,7 +3537,7 @@ function joinParty(code) {
     net.myId = id;
     const conn = peer.connect(NET_PREFIX + code, { reliable: true, serialization: 'json' });
     net.host = conn;
-    conn.on('open', () => { net.role = 'client'; net.code = code; net.chat = []; conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) }); setPartyStatus(''); refreshPartyUI(); });
+    conn.on('open', () => { net.role = 'client'; net.code = code; net.chat = []; conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip }); setPartyStatus(''); refreshPartyUI(); });
     conn.on('data', d => { if (net.host === conn) clientRecv(d); });
     conn.on('close', () => { if (net.host === conn) onHostLost(); });
     conn.on('error', () => { if (net.host === conn) onHostLost(); });
@@ -3401,7 +3559,7 @@ function onHostLost() {
   else if (!$('select').classList.contains('hidden')) { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); showTab('home'); }
 }
 function netProfileChanged() {
-  if (net.role === 'client') netSend({ t: 'prof', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) });
+  if (net.role === 'client') netSend({ t: 'prof', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip });
   else if (net.role === 'host') partyChanged();
 }
 function partyChanged() {
@@ -3464,7 +3622,7 @@ function hostRecv(conn, d) {
     if (net.members.length >= partyCap()) return deny(playMode === 'duel' ? 'That 1v1 lobby already has two players.' : 'That party is full.');
     if (net.phase !== 'lobby' || game.state !== 'menu') return deny('That party is already in a match — try again after it ends.');
     net.conns[id] = conn;
-    const m = { id, name: cleanName(d.name), fav: AGENT[d.fav] ? d.fav : 'jett', lv: Math.max(1, d.lv | 0), host: false };
+    const m = { id, name: cleanName(d.name), fav: AGENT[d.fav] ? d.fav : 'jett', lv: Math.max(1, d.lv | 0), host: false, sk: cleanSkins(d.sk) };
     net.members.push(m);
     partyChanged(); conn.send({ t: 'chatlog', log: net.chat }); partyMsg(null, `${m.name} joined the party`);
     return;
@@ -3472,7 +3630,7 @@ function hostRecv(conn, d) {
   if (!net.conns[id]) return;
   const m = net.members.find(x => x.id === id), e = net.ents[id];
   switch (d.t) {
-    case 'prof': if (m) { m.name = cleanName(d.name); if (AGENT[d.fav]) m.fav = d.fav; m.lv = Math.max(1, d.lv | 0); partyChanged(); } break;
+    case 'prof': if (m) { m.name = cleanName(d.name); if (AGENT[d.fav]) m.fav = d.fav; m.lv = Math.max(1, d.lv | 0); m.sk = cleanSkins(d.sk); partyChanged(); } break;
     case 'chat': if (m) partyMsg(m.name, String(d.m || '').slice(0, 140)); break;
     case 'pick': hostPick(id, d.a, !!d.lock); break;
     case 'bye': hostDrop(id); break;
@@ -3540,7 +3698,7 @@ function checkAllLocked() { if (net.phase === 'select' && net.members.length && 
 let lastBanner = null;
 function startNetMatch() {
   net.phase = 'match'; net.selAt = 0;
-  const humans = net.members.filter(m => m.id !== net.myId).map(m => ({ peer: m.id, name: m.name, agent: net.picks[m.id].a }));
+  const humans = net.members.filter(m => m.id !== net.myId).map(m => ({ peer: m.id, name: m.name, agent: net.picks[m.id].a, sk: m.sk }));
   selectedAgent = net.picks[net.myId].a;
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
   setupMatch(selectedAgent, humans);
@@ -3553,10 +3711,10 @@ function startNetMatch() {
 
 /* --- host: snapshots --- */
 let nidSeq = 0; const nidOf = o => o.nid || (o.nid = ++nidSeq);
-const invRec = i => i ? [i.key, i.mag, i.reserve] : 0;
+const invRec = (i, e) => i ? [i.key, i.mag, i.reserve, skinOf(e, i)] : 0;
 function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
-    hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary), s: invRec(e.secondary), bm: e.bladeMag,
+    hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
     dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
@@ -3572,7 +3730,7 @@ function buildSnap() {
     zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay)]),
     wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(w.t)]),
     pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g]),
-    dr: drops.map(d => [nidOf(d), d.inst.key, r2(d.x), r2(d.z)]),
+    dr: drops.map(d => [nidOf(d), d.inst.key, r2(d.x), r2(d.z), d.inst.sk || 0]),
     ob: orbs.map(o => [r2(o.x), r2(o.z)]),
   };
 }
@@ -3631,7 +3789,7 @@ function clientSetupMatch(d) {
   for (const r of d.roster || []) {
     const e = makeEntity({ id: r.id | 0, name: cleanName(r.name), team: r.team ? 1 : 0, agent: AGENT[r.agent] ? r.agent : 'jett', isPlayer: r.peer === net.myId });
     e.secondary = mkWeapon('classic'); e.slot = 2; e.tpSeq = -1; e.invSeq = -1;
-    if (e.isPlayer) player = e; else { e.mesh = makeCharacter(AGENT[e.agent]); if (r.peer) addNameTag(e); }
+    if (e.isPlayer) { player = e; e.skins = { ...profile.equip }; } else { e.mesh = makeCharacter(AGENT[e.agent]); if (r.peer) addNameTag(e); }
     entities[e.id] = e;
   }
   if (!player) { onHostLost(); return; }
@@ -3681,7 +3839,7 @@ function clientTick(dt) {
     netSend({ t: 'st', x: r2(p.x), y: r2(p.y), z: r2(p.z), vx: r2(p.vx), vz: r2(p.vz), yw: r2(p.yaw), pt: r2(p.pitch), cr: p.crouch ? 1 : 0, og: p.onGround ? 1 : 0, sl: p.slot, a4: p.netA4 ? 1 : 0, bm: p.bladeMag, p: invRec(p.primary), s: invRec(p.secondary), tp: p.tpSeq, iv: p.invSeq });
   }
 }
-const fromInv = a => Array.isArray(a) && WEAPONS[a[0]] ? { key: a[0], mag: a[1] | 0, reserve: a[2] | 0 } : null;
+const fromInv = a => Array.isArray(a) && WEAPONS[a[0]] ? { key: a[0], mag: a[1] | 0, reserve: a[2] | 0, sk: SKINS[a[3]] && SKINS[a[3]].key === a[0] ? a[3] : 0 } : null;
 function syncList(list, arr, create, update, remove) {
   const seen = new Set();
   for (const rec of list || []) {
@@ -3743,7 +3901,7 @@ function applySnap(s) {
   syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1 }); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
   syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9] }),
     (o, r) => Object.assign(o, { x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6] }), o => scene.remove(o.mesh));
-  syncList(s.dr, drops, r => WEAPONS[r[1]] ? dropWeapon({ key: r[1], mag: 0, reserve: 0 }, r[2], r[3]) : null, () => { }, o => scene.remove(o.mesh));
+  syncList(s.dr, drops, r => WEAPONS[r[1]] ? dropWeapon({ key: r[1], mag: 0, reserve: 0, sk: SKINS[r[4]] ? r[4] : 0 }, r[2], r[3]) : null, () => { }, o => scene.remove(o.mesh));
   const want = s.ob || [];
   if (want.length !== orbs.length || want.some((o, i) => Math.abs(o[0] - orbs[i].x) > .1 || Math.abs(o[1] - orbs[i].z) > .1)) {
     orbs.forEach(o => scene.remove(o.mesh)); orbs = []; want.forEach(o => makeOrb(o[0], o[1]));
@@ -3758,14 +3916,16 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
 };
-const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [] }, store.get('vs_profile', {}));
+const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9) }, store.get('vs_profile', {}));
+profile.owned = (profile.owned || []).filter(id => SKINS[id]); profile.equip = cleanSkins(profile.equip); for (const k in profile.equip) if (!profile.owned.includes(profile.equip[k])) delete profile.equip[k];
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 const saveProfile = () => store.set('vs_profile', profile);
+saveProfile();
 const levelOf = xp => Math.floor(xp / 1000) + 1;
 Object.assign(settings, store.get('vs_settings', {}));
 const saveSettings = () => store.set('vs_settings', settings);
 function refreshAccount() {
-  $('nameTag').textContent = profile.name; $('lvlNum').textContent = levelOf(profile.xp);
+  $('nameTag').textContent = profile.name; $('lvlNum').textContent = levelOf(profile.xp); if ($('vpNum')) $('vpNum').textContent = profile.vp.toLocaleString();
   $('xpFill').style.width = (profile.xp % 1000) / 10 + '%';
 }
 
@@ -3805,17 +3965,17 @@ for (let i = 0; i < 16; i++) {
 const LOBBY_SLOTS = [[0, 0], [-1.75, -1.1], [1.75, -1.1], [-3.4, -2.2], [3.4, -2.2]];
 const shadowGeo = new THREE.CircleGeometry(.55, 24), shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .45 });
 let party = [], lobbyChars = [], lobbyView = 'party', lobbyMX = 0, lobbyMY = 0;
-function makeLobbyChar(agentId) {
+function makeLobbyChar(agentId, skin) {
   const g = makeCharacter(AGENT[agentId]); scene.remove(g);
   g.userData.marker.visible = false;
-  const gun = buildGun('vandal', AGENT[agentId].color); gun.scale.setScalar(1.2); g.userData.gunHolder.add(gun);
+  const gun = buildGun('vandal', AGENT[agentId].color, skin); gun.scale.setScalar(1.2); g.userData.gunHolder.add(gun); g.userData.lobbyGun = gun;
   const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .015; g.add(sh);
   lobbyScene.add(g); return g;
 }
 function setLobbyAgent(i, agentId) {
   const c = lobbyChars[i]; if (!c || c.agent === agentId) return;
   const pos = c.g.position.clone(); lobbyScene.remove(c.g);
-  c.g = makeLobbyChar(agentId); c.g.position.copy(pos); c.agent = agentId; c.pop = 1;
+  c.g = makeLobbyChar(agentId, i === 0 ? profile.equip.vandal : 0); c.g.position.copy(pos); c.agent = agentId; c.pop = 1;
   updatePlates();
 }
 function buildParty() {
@@ -4062,14 +4222,128 @@ $('btnPauseSet').onclick = openSettings;
 $('btnSettings').onclick = openSettings; $('btnCloseSet').onclick = closeSettings;
 $('settingsModal').onclick = e => { if (e.target.id === 'settingsModal') closeSettings(); };
 
+/* =====================================================================
+   STORE · NIGHT MARKET · SKIN COLLECTION
+   ===================================================================== */
+const DAY = 864e5, WEEK = 7 * DAY;
+const seeded = s => () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const seededPick = (rng, list, n) => { const a = list.slice(), out = []; while (a.length && out.length < n) out.push(a.splice(Math.floor(rng() * a.length), 1)[0]); return out; };
+const owns = id => profile.owned.includes(id);
+const fmtLeft = ms => { const h = Math.floor(ms / 36e5), m = Math.floor(ms % 36e5 / 6e4); return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${m}m`; };
+function dailyOffers() {
+  const day = Math.floor(Date.now() / DAY), rng = seeded(day * 7919 + profile.seed);
+  return { ids: seededPick(rng, SKIN_IDS.filter(id => SKINS[id].key !== 'knife'), 4), left: (day + 1) * DAY - Date.now() };
+}
+function featuredLine() {
+  const p = Math.floor(Date.now() / (3 * DAY)), rng = seeded(p * 104729 + 17);
+  return { line: SKIN_LINES[Math.floor(rng() * SKIN_LINES.length)], left: (p + 1) * 3 * DAY - Date.now() };
+}
+function nightMarket() {
+  const wk = Math.floor(Date.now() / WEEK), rng = seeded(wk * 15485863 + profile.seed);
+  const ids = seededPick(rng, SKIN_IDS, 6).map(id => ({ id, off: 10 + Math.floor(rng() * 40) }));
+  if (!profile.nm || profile.nm.wk !== wk) { profile.nm = { wk, rev: [] }; saveProfile(); }
+  return { ids, left: (wk + 1) * WEEK - Date.now(), wk };
+}
+const bundlePrice = L => Math.round(L.guns.filter(g => !owns(L.id + ':' + g)).reduce((s, g) => s + SKINS[L.id + ':' + g].price, 0) * .8);
+function refreshVP() { $('vpNum').textContent = profile.vp.toLocaleString(); }
+function skinCard(id, price, extra = '') {
+  const S = SKINS[id], T = TIERS[S.tier], own = owns(id);
+  return `<div class="skCard${own ? ' own' : ''}" data-sk="${id}" data-price="${price}" style="--tc:${T.color}">
+    <div class="skTier">${T.name}</div><img src="${gunIcon(S.key, id)}" alt=""><div class="skName">${S.name}</div>
+    <div class="skPrice">${own ? 'OWNED' : extra + '<b class="vpI"></b>' + price.toLocaleString()}</div></div>`;
+}
+let storeView = 'offers';
+function renderStore() {
+  refreshVP();
+  document.querySelectorAll('#storeTabs button').forEach(b => b.classList.toggle('on', b.dataset.sv === storeView));
+  const box = $('storeBox');
+  if (storeView === 'offers') {
+    const f = featuredLine(), d = dailyOffers(), L = f.line, bp = bundlePrice(L);
+    box.innerHTML = `<div class="feat" style="--tc:${TIERS[L.tier].color}">
+        <div class="featTxt"><div class="ol">FEATURED BUNDLE · ${fmtLeft(f.left)} left</div><h3>${L.name.toUpperCase()} COLLECTION</h3>
+        <div class="featNote">${L.guns.length} skins · ${TIERS[L.tier].name} edition · 20% off as a bundle</div>
+        <button class="btn primary" id="btnBundle" ${bp === 0 ? 'disabled' : ''}>${bp === 0 ? 'ALL OWNED' : `BUY BUNDLE · <b class="vpI"></b>${bp.toLocaleString()}`}</button></div>
+        <div class="featGuns">${L.guns.map(g => `<img src="${gunIcon(g, L.id + ':' + g)}" title="${SKINS[L.id + ':' + g].name}" data-sk="${L.id}:${g}">`).join('')}</div></div>
+      <div class="collCat">DAILY OFFERS · refresh in ${fmtLeft(d.left)}</div>
+      <div class="skGrid">${d.ids.map(id => skinCard(id, SKINS[id].price)).join('')}</div>
+      <div class="note">Earn VP by playing matches: +250 for a win, +100 for a loss and +10 per kill. Owned skins are equipped in the Collection tab.</div>`;
+    $('btnBundle').onclick = () => buySkins(L.guns.map(g => L.id + ':' + g).filter(id => !owns(id)), bp, `${L.name} Collection`);
+    box.querySelectorAll('.featGuns img').forEach(im => im.onclick = () => openSkinModal(im.dataset.sk, SKINS[im.dataset.sk].price));
+  } else {
+    const nm = nightMarket();
+    box.innerHTML = `<div class="nmHead"><div><div class="ol">YOUR NIGHT MARKET · ends in ${fmtLeft(nm.left)}</div><h3>NIGHT MARKET</h3></div><div class="note" style="margin:0">Six hidden offers picked just for you. Click a card to reveal its skin and discount.</div></div>
+      <div class="nmGrid">${nm.ids.map(({ id, off }, i) => {
+        const rev = profile.nm.rev.includes(i), S = SKINS[id], price = Math.round(S.price * (100 - off) / 100);
+        if (!rev) return `<div class="nmCard hidden-card" data-i="${i}"><div class="nmBack"><span>?</span></div></div>`;
+        return `<div class="nmCard" data-i="${i}">${skinCard(id, price, `<s>${S.price.toLocaleString()}</s> `)}<div class="nmOff">-${off}%</div></div>`;
+      }).join('')}</div>`;
+    box.querySelectorAll('.nmCard.hidden-card').forEach(c => c.onclick = () => { profile.nm.rev.push(+c.dataset.i); saveProfile(); SND.buy(); renderStore(); const el = box.querySelector(`.nmCard[data-i="${c.dataset.i}"]`); if (el) el.classList.add('flip'); });
+  }
+  box.querySelectorAll('.skCard').forEach(c => c.onclick = () => openSkinModal(c.dataset.sk, +c.dataset.price));
+}
+document.querySelectorAll('#storeTabs button').forEach(b => b.onclick = () => { storeView = b.dataset.sv; tick(); renderStore(); });
+function buySkins(ids, price, label) {
+  if (!ids.length) return;
+  if (profile.vp < price) { SND.deny(); toastMenu(`Not enough VP — you need ${(price - profile.vp).toLocaleString()} more. Play matches to earn VP.`); return; }
+  profile.vp -= price; for (const id of ids) if (!owns(id)) profile.owned.push(id);
+  for (const id of ids) profile.equip[SKINS[id].key] = id; // equip right away
+  saveProfile(); netProfileChanged(); SND.buy(); toastMenu(`Purchased ${label} — equipped!`);
+  closeSkinModal(); renderStore(); refreshLobbyGuns();
+}
+let skinModalId = null;
+function openSkinModal(id, price) {
+  const S = SKINS[id], T = TIERS[S.tier], own = owns(id); skinModalId = id;
+  $('skmTier').textContent = T.name.toUpperCase() + ' EDITION'; $('skmTier').style.color = T.color;
+  $('skmName').textContent = S.name; $('skmImg').src = bigGunIcon(S.key, id);
+  $('skmPanel').style.setProperty('--tc', T.color);
+  const eq = profile.equip[S.key] === id;
+  $('skmBuy').innerHTML = own ? (eq ? 'EQUIPPED' : 'EQUIP') : `BUY · <b class="vpI"></b>${price.toLocaleString()}`;
+  $('skmBuy').disabled = own && eq;
+  $('skmBuy').onclick = () => { if (own) { profile.equip[S.key] = id; saveProfile(); netProfileChanged(); SND.buy(); closeSkinModal(); refreshLobbyGuns(); if (curTab === 'collection') renderCollection(); else renderStore(); } else buySkins([id], price, S.name); };
+  $('skmNote').textContent = own ? 'You own this skin.' : profile.vp < price ? `You have ${profile.vp.toLocaleString()} VP — ${(price - profile.vp).toLocaleString()} more needed.` : `You have ${profile.vp.toLocaleString()} VP.`;
+  $('skinModal').classList.remove('hidden'); tick();
+}
+function closeSkinModal() { $('skinModal').classList.add('hidden'); skinModalId = null; }
+$('skmClose').onclick = closeSkinModal;
+$('skinModal').onclick = e => { if (e.target.id === 'skinModal') closeSkinModal(); };
+// skin picker for one weapon (Collection tab)
+function openSkinPicker(key) {
+  const list = [0, ...SKIN_IDS.filter(id => SKINS[id].key === key)], cur = profile.equip[key] || 0;
+  $('skpTitle').textContent = (key === 'knife' ? 'Knife' : WEAPONS[key].name).toUpperCase() + ' SKINS';
+  $('skpGrid').innerHTML = list.map(id => {
+    const S = SKINS[id], own = !id || owns(id), T = S && TIERS[S.tier];
+    return `<div class="skCard${cur === id ? ' eq' : ''}${own ? '' : ' locked'}" data-sk="${id}" style="--tc:${T ? T.color : '#8a96a3'}">
+      <div class="skTier">${T ? T.name : 'Standard'}</div><img src="${gunIcon(key, id || 0)}" alt=""><div class="skName">${S ? S.name : 'Standard'}</div>
+      <div class="skPrice">${cur === id ? 'EQUIPPED' : own ? 'EQUIP' : '🔒 ' + S.price.toLocaleString() + ' VP'}</div></div>`;
+  }).join('');
+  $('skpGrid').querySelectorAll('.skCard').forEach(c => c.onclick = () => {
+    const id = c.dataset.sk === '0' ? 0 : c.dataset.sk;
+    if (id && !owns(id)) { closeSkinPicker(); openSkinModal(id, SKINS[id].price); return; }
+    if (id) profile.equip[key] = id; else delete profile.equip[key];
+    saveProfile(); netProfileChanged(); tick(); openSkinPicker(key); renderCollection(); refreshLobbyGuns();
+  });
+  $('skinPicker').classList.remove('hidden');
+}
+function closeSkinPicker() { $('skinPicker').classList.add('hidden'); }
+$('skpClose').onclick = closeSkinPicker;
+$('skinPicker').onclick = e => { if (e.target.id === 'skinPicker') closeSkinPicker(); };
+let menuToastT = 0;
+function toastMenu(m) { const t = $('menuToast'); t.textContent = m; t.classList.add('on'); clearTimeout(menuToastT); menuToastT = setTimeout(() => t.classList.remove('on'), 3200); }
+$('vpBox').onclick = () => showTab('store');
+function refreshLobbyGuns() {
+  refreshVP(); const c = lobbyChars[0]; if (!c) return;
+  const ud = c.g.userData; if (ud.lobbyGun) ud.gunHolder.remove(ud.lobbyGun);
+  ud.lobbyGun = buildGun('vandal', AGENT[c.agent].color, profile.equip.vandal); ud.lobbyGun.scale.setScalar(1.2); ud.gunHolder.add(ud.lobbyGun);
+}
 function showTab(t) {
   curTab = t; tick();
   document.querySelectorAll('#navTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  ['home', 'play', 'agents', 'career', 'collection'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
+  ['home', 'play', 'agents', 'career', 'collection', 'store'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
   lobbyView = t === 'agents' ? 'solo' : (t === 'home' || t === 'play') ? 'party' : 'dim';
   if (t === 'agents') { previewAgent = profile.fav; renderAgentTab(); } else setLobbyAgent(0, profile.fav);
   if (t === 'career') renderCareer();
   if (t === 'collection') renderCollection();
+  if (t === 'store') renderStore();
 }
 document.querySelectorAll('#navTabs button').forEach(b => { b.onclick = () => showTab(b.dataset.tab); b.onmouseenter = tick; });
 $('homePlay').onclick = () => showTab('play');
@@ -4192,10 +4466,11 @@ function renderCollection() {
   const maxD = Math.max(...all.map(w => w.dmg[1] * w.pellets)), maxR = 16, maxM = 100;
   const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
-  $('collBox').innerHTML = groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; return `<div class="wcard"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
-    <img class="wicon" src="${gunIcon(k)}" alt="">
+  $('collBox').innerHTML = groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
+    <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
+  $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
 }
 
 /* agent select / match flow */

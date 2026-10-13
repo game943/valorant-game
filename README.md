@@ -31,6 +31,27 @@ Click the screen to lock the mouse.
 - Ult orbs, weapon drops and pickups, spectating allies after death, minimap spotting, kill feed, scoreboard, damage direction indicator, flash effects, red outlines on enemies
 - Positional sound effects synthesized with WebAudio (gunshots, enemy footsteps, spike beeps)
 
+## Skins, Store and Night Market
+- Earn **VP** (Valor Points) by playing: +250 for a win, +100 for a loss and +10 per kill. You start with 2,500 VP. Your VP shows in the top bar.
+- **STORE** tab:
+  - **Offers**: a featured skin bundle (20% off, changes every 3 days) and 4 daily skins (refresh every day).
+  - **Night Market**: 6 hidden offers picked just for you, each 10–49% off. Click a card to flip it and reveal the skin. It refreshes every week.
+- 13 skin lines with procedural patterns and glowing parts, in 5 editions:
+
+  | Edition | Price | Lines |
+  |---|---|---|
+  | Select | 875 VP | Wasteland, Rush, Arctic |
+  | Deluxe | 1,275 VP | Spline, Sakura, Tigris |
+  | Premium | 1,775 VP | Prime, Reaver, Ion, Oni |
+  | Exclusive | 2,175 VP | Glitchpop |
+  | Ultra | 2,475 VP | Elderflame, Singularity |
+
+  Knife skins cost double.
+- Click a skin to see a big preview and buy it. New skins are equipped right away.
+- **COLLECTION** tab: click any weapon to choose which owned skin it uses, or go back to Standard.
+- Skins show in your hands, on your character, on dropped guns, and on your Vandal in the lobby. Online players see each other's skins, and a gun you pick up keeps its owner's skin. Bots carry random skins too.
+- VP, owned skins and the Night Market are saved in your browser.
+
 ## Maps
 Pick the map on the PLAY tab with the ‹ › arrows (or click the map card). In a party, the host picks and everyone sees it.
 - **Dustwall**: desert outpost with a long mid corridor and a courtyard.
