@@ -82,6 +82,9 @@ Ultimate changes:
 - **Empress**: +25% fire rate, faster reloads and movement, and a purple screen glow.
 - **Resurrection**: reaches fallen allies further away and tells you when nobody is dead.
 
+## Blinded faces
+When an enemy (or ally) is flashed, their face turns into a dizzy **X_X** face, yellow stars spin over their head, they cover their eyes with a hand and point their gun at the floor. Nearsight (Reyna's Leer, Omen's Paranoia, Skye's Seekers) shows a purple X_X face instead. Online players see it too.
+
 ## Maps
 Pick the map on the PLAY tab with the ‹ › arrows (or click the map card). In a party, the host picks and everyone sees it.
 - **Dustwall**: desert outpost with a long mid corridor and a courtyard.
