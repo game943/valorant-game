@@ -406,6 +406,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #smokeOv{background:rgba(120,120,135,.92)}
 #dmgOv{background:radial-gradient(circle,transparent 45%,rgba(255,30,40,.55) 100%)}
 #lowOv{background:radial-gradient(circle,transparent 55%,rgba(255,30,40,.35) 100%)}
+#brimOv{position:fixed;inset:0;pointer-events:none;z-index:12}
 #empOv{background:radial-gradient(circle,transparent 50%,rgba(170,60,255,.4) 100%);transition:opacity .3s}
 #abGauge{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:300px;text-align:center}
 #agLabel{font:600 13px Oswald,sans-serif;letter-spacing:2px;margin-bottom:5px;text-transform:uppercase}
@@ -652,6 +653,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="ov" id="scopeOv"></div>
   <div class="ov" id="lowOv"></div>
   <div class="ov" id="empOv"></div>
+  <canvas id="brimOv" class="hidden"></canvas>
   <div id="abGauge" class="hidden"><div id="agLabel"></div><div class="agBar"><div id="agFill"></div></div></div>
   <div class="ov" id="dmgOv"></div>
   <div class="ov" id="nearOv"></div>
@@ -2395,7 +2397,7 @@ const ABIL = {
   },
   fury(e) { e.furyN = 3; e.furyT = 0; return true; },
   stim(e) { makeZone({ x: e.x, z: e.z, r: 6, kind: 'stim', t: 12, owner: e }); return true; },
-  orbital(e) { const p = aimPoint(e, 90); makeZone({ x: p.x, z: p.z, r: 5.5, kind: 'orbital', t: 3, delay: 1.5, dps: 150, owner: e }); return true; },
+  orbital(e, ab, target) { const p = target ? { x: clamp(target.x, 1, MAPW - 1), z: clamp(target.z, 1, MAPH - 1) } : aimPoint(e, 90); makeZone({ x: p.x, z: p.z, r: 5.5, kind: 'orbital', t: 3, delay: 1.5, dps: 150, owner: e }); return true; },
   leer(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 14), { g: 0, life: .5, color: 0xc25bff, owner: e, land: false, size: .3, model: 'eye' }));
     p.onExpire = () => {
@@ -2405,7 +2407,7 @@ const ABIL = {
   },
   devour(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.healT = 3; e.healRate = 34; e.healCap = 150; spawnParticles(e.x, e.y + 1, e.z, 25, 0xc25bff, 2, .6); return true; },
   dismiss(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
-  empress(e) { e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
+  empress(e) { if (e.isPlayer) { reynaCast = 1.1; sndTone(220, .9, .25, 'sawtooth', 660); sndTone(880, .6, .12, 'sine', 330, undefined, undefined, .2); } e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
 };
 // abilities that would hurt, reveal or teleport during the buy phase are held until the round starts
 const BUY_BLOCKED = new Set(['molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit']);
@@ -2473,9 +2475,10 @@ function doDash(e) {
   if (e.isPlayer) { sndTone(1400, .22, .22, 'sawtooth', 260); sndTone(700, .18, .12, 'triangle', 200, undefined, undefined, .03); }
 }
 function castAbility(e, key, target) {
-  if (net.role === 'client' && e === player) return clientCast(key);
+  if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
+  if (ab.type === 'orbital' && e.isPlayer && !target && e.ult >= ab.ult && e.alive) { if (brimMap) closeBrimMap(); else openBrimMap(); return false; }
   if (ab.type === 'dash' && e.tailwindT > 0) { doDash(e); if (e.isPlayer && gauge && gauge.tailwind) gauge = null; return true; }
   if (ab.type === 'satchel' && e.satchel && projectiles.includes(e.satchel)) { e.satchel.life = 0; e.satchel = null; if (e.isPlayer && gauge && gauge.satchel) gauge = null; return true; }
   if (key === 'X') { if (e.ult < ab.ult) { toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); if (e.isPlayer) SND.deny(); return false; } }
@@ -2644,6 +2647,8 @@ function equipView() {
   const gun = buildGun(w.key, AGENT[player.agent].color, skinOf(player, w));
   const hand = new THREE.Mesh(new THREE.BoxGeometry(.09, .1, .16), MAT.glove); hand.position.set(0, -.08, .02); gun.add(hand);
   const arm = new THREE.Mesh(new THREE.BoxGeometry(.1, .1, .5), new THREE.MeshLambertMaterial({ color: AGENT[player.agent].color })); arm.position.set(.03, -.12, .3); gun.add(arm);
+  const es = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending })); es.scale.set(.32, .32, 1); es.material.opacity = .45; es.position.set(0, -.08, .05); es.visible = false; gun.add(es);
+  Object.assign(gun.userData, { armMesh: arm, armMat: arm.material, handMesh: hand, empSprite: es });
   if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = new THREE.Mesh(new THREE.BoxGeometry(.09, .09, .14), MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
@@ -2782,7 +2787,8 @@ function updatePlayer(dt) {
   const spd = Math.hypot(p.vx, p.vz);
   if (p.onGround && spd > 5) { stepT -= dt; if (stepT <= 0) { stepT = .36; SND.step(undefined, undefined, .12); alertEnemies(p, 16); } }
   // shooting
-  if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
+  if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
+  else if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
   if (mouse[2] && w.model === 'knife' && !shopOpen && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
   if (w.model === 'blades' && !shopOpen) { if (mouse[2] && !p.rmbBlade) throwBlades(p, true); p.rmbBlade = mouse[2]; }
   if (!mouse[0]) p.recoil = Math.max(0, p.recoil - dt * 1.2);
@@ -3458,6 +3464,7 @@ function refreshAbilHud() {
   }
 }
 function updateHUD(dt) {
+  drawBrimMap(dt);
   updateGauge(dt);
   $('empOv').style.opacity = player && player.alive && player.empressT > 0 ? .9 : 0;
   const p = player;
@@ -3605,7 +3612,7 @@ function updateCamera(dt) {
   const g = vmRoot.userData.gun;
   if (g && p.alive) {
     const spd = Math.hypot(p.vx, p.vz), bob = p.onGround ? spd / 6.75 : 0;
-    vmKick = Math.max(0, vmKick - dt * 8); vmEquip = Math.max(0, vmEquip - dt * 4);
+    vmKick = Math.max(0, vmKick - dt * 8); vmEquip = Math.max(0, vmEquip - dt * 4); updateVmProps(dt);
     const ks = vmRoot.userData.gun && vmRoot.userData.gun.userData.kunai;
     if (ks) ks.forEach((k, i) => { const order = [2, 1, 3, 0, 4][i]; k.visible = order < p.bladeMag; k.position.y = .05 - Math.abs(i - 2) * .02 + Math.sin(game.time * 3 + i) * .012; k.rotation.z = Math.sin(game.time * 2 + i) * .15; });
     const t = game.time * 9;
@@ -3672,12 +3679,13 @@ function loop(now) {
 function lockPointer() { const c = renderer.domElement; if (c.requestPointerLock) { try { const r = c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { } } }
 const isLocked = () => document.pointerLockElement === renderer.domElement;
 document.addEventListener('pointerlockchange', () => {
-  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
+  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { closeBrimMap(); game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
 });
 document.addEventListener('mousemove', e => {
   if (!isLocked() || game.state !== 'playing' || game.paused || !player.alive) return;
   const w = WEAPONS[curWeapon(player).key];
   const zoom = w.scope && adsT > .5 ? settings.scopeSens / w.scope : (1 + (settings.adsSens - 1) * adsT) / (1 + (w.ads - 1) * adsT);
+  if (brimMap) { const k = .09 * settings.sens; brimMap.x = clamp(brimMap.x + e.movementX * k, 0, MAPW); brimMap.z = clamp(brimMap.z + e.movementY * k, 0, MAPH); return; }
   const s = .0022 * settings.sens * zoom;
   player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s * (settings.invertY ? -1 : 1), -1.5, 1.5);
 });
@@ -4142,7 +4150,7 @@ function hostGameMsg(e, d) {
       break;
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
     case 'cast':
-      if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k); }
+      if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k, d.tx !== undefined && d.tz !== undefined ? { x: +d.tx || 0, y: 0, z: +d.tz || 0 } : undefined); }
       break;
     case 'buy':
       if (game.phase !== 'buy' || !e.alive) break;
@@ -4294,18 +4302,20 @@ function clientSetupMatch(d) {
   $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden');
   buildAbilHud(); equipView(); refreshAbilHud(); lockPointer();
 }
-function clientCast(key) {
+function clientCast(key, target) {
   const p = player, ab = AGENT[p.agent].ab[key];
   if (!ab || !p.alive || game.phase === 'end') return false;
+  if (ab.type === 'orbital' && !target && p.ult >= ab.ult) { if (brimMap) closeBrimMap(); else openBrimMap(); return false; }
   if (ab.type === 'dash' && p.tailwindT > 0) { doDash(p); if (gauge && gauge.tailwind) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (ab.type === 'satchel' && p.satchelUntil > game.time) { p.satchelUntil = 0; if (gauge && gauge.satchel) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') toast(`Not enough ult points (${p.ult}/${ab.ult})`); SND.deny(); return false; }
   if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
   if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
   if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades') ABIL[ab.type](p); // movement is ours to predict
-  netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq });
+  netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq, tx: target ? r2(target.x) : undefined, tz: target ? r2(target.z) : undefined });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
   refreshAbilHud(); startGauge(ab, key); matchStats.abil++;
+  if (ab.type === 'empress') reynaCast = 1.1;
   if (ab.type === 'satchel') p.satchelUntil = game.time + 5;
   return true;
 }
@@ -4829,6 +4839,117 @@ let menuToastT = 0;
 function toastMenu(m) { const t = $('menuToast'); t.textContent = m; t.classList.add('on'); clearTimeout(menuToastT); menuToastT = setTimeout(() => t.classList.remove('on'), 3200); }
 $('vpBox').onclick = () => showTab('store');
 /* =====================================================================
+   BRIMSTONE ORBITAL STRIKE MAP · REYNA EMPRESS HANDS (first-person)
+   ===================================================================== */
+let brimMap = null; // { x, z } cursor in world units while the tactical map is open
+const brimCv = document.createElement('canvas');
+function openBrimMap() {
+  const p = player; brimMap = { x: p.x, z: p.z, open: 0 };
+  // orange holographic copy of the map
+  const K = 6; brimCv.width = GW * K; brimCv.height = GH * K; const x = brimCv.getContext('2d');
+  for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
+    const h = grid[r * GW + c], z = zoneG[r * GW + c]; if (h >= WALL_H) continue;
+    x.fillStyle = h > 0 ? 'rgba(255,190,90,.55)' : z === 1 || z === 2 ? 'rgba(255,150,40,.62)' : 'rgba(255,120,30,.42)'; x.fillRect(c * K, r * K, K + .5, K + .5);
+  }
+  x.strokeStyle = 'rgba(255,215,140,.9)'; x.lineWidth = 1.2;
+  for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) { if (grid[r * GW + c] >= WALL_H) continue; for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (hAt(c + dc, r + dr) >= WALL_H) { x.beginPath(); const x0 = (c + (dc > 0 ? 1 : 0)) * K, y0 = (r + (dr > 0 ? 1 : 0)) * K; if (dc) { x.moveTo(x0, r * K); x.lineTo(x0, r * K + K); } else { x.moveTo(c * K, y0); x.lineTo(c * K + K, y0); } x.stroke(); } }
+  x.font = '700 22px Oswald, sans-serif'; x.fillStyle = '#fff3d6'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (const k of [1, 2]) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(k === 1 ? 'A' : 'B', (c0 + c1 + 1) / 2 * K, (r0 + r1 + 1) / 2 * K); }
+  $('brimOv').classList.remove('hidden'); mouse[0] = mouse[2] = false; brimMap.click = true;
+  sndTone(300, .25, .15, 'square', 900); sndTone(900, .2, .1, 'triangle', 1400, undefined, undefined, .1);
+  equipView();
+}
+function closeBrimMap() { if (!brimMap) return; brimMap = null; $('brimOv').classList.add('hidden'); if (player) equipView(); }
+function confirmBrimMap() {
+  const t = { x: brimMap.x, y: 0, z: brimMap.z }; closeBrimMap();
+  if (net.role === 'client') { clientCast('X', t); return; }
+  castAbility(player, 'X', t);
+}
+function drawBrimMap(dt) {
+  if (!brimMap) return;
+  brimMap.open = Math.min(1, brimMap.open + dt * 5);
+  const cv = $('brimOv'), D = Math.min(innerWidth, innerHeight) * .82;
+  if (cv.width !== innerWidth || cv.height !== innerHeight) { cv.width = innerWidth; cv.height = innerHeight; }
+  const x = cv.getContext('2d'), cx = innerWidth / 2, cy = innerHeight / 2, R = D / 2 * (.6 + .4 * brimMap.open);
+  x.clearRect(0, 0, cv.width, cv.height);
+  x.save(); x.globalAlpha = brimMap.open;
+  // disc
+  const gr = x.createRadialGradient(cx, cy, R * .2, cx, cy, R); gr.addColorStop(0, 'rgba(255,120,30,.22)'); gr.addColorStop(1, 'rgba(255,90,20,.42)');
+  x.fillStyle = gr; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill();
+  x.save(); x.beginPath(); x.arc(cx, cy, R * .97, 0, 7); x.clip();
+  const K = R * 1.9 / Math.max(MAPW, MAPH), ox = cx - MAPW * K / 2, oy = cy - MAPH * K / 2;
+  x.drawImage(brimCv, ox, oy, MAPW * K, MAPH * K);
+  // scan lines
+  x.fillStyle = 'rgba(255,200,120,.06)'; for (let yy = cy - R; yy < cy + R; yy += 4) x.fillRect(cx - R, yy, R * 2, 1);
+  // teammates + you
+  for (const e of entities) { if (!e || !e.alive || e.team !== player.team) continue; x.fillStyle = e === player ? '#fff6d8' : '#ffd27a'; x.beginPath(); x.arc(ox + e.x * K, oy + e.z * K, e === player ? 6 : 4.5, 0, 7); x.fill(); }
+  const px = ox + player.x * K, py = oy + player.z * K; x.strokeStyle = '#fff6d8'; x.lineWidth = 2; x.beginPath(); x.moveTo(px, py); x.lineTo(px - Math.sin(player.yaw) * 16, py - Math.cos(player.yaw) * 16); x.stroke();
+  // strike reticle (orbital radius 5.5 m)
+  const tx = ox + brimMap.x * K, ty = oy + brimMap.z * K, rr = 5.5 * K, pulse = 1 + Math.sin(game.time * 8) * .05;
+  x.strokeStyle = '#ffe14a'; x.lineWidth = 3; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.stroke();
+  x.fillStyle = 'rgba(255,60,40,.25)'; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.fill();
+  x.lineWidth = 1.5; x.beginPath(); x.moveTo(tx - rr - 8, ty); x.lineTo(tx - rr + 6, ty); x.moveTo(tx + rr - 6, ty); x.lineTo(tx + rr + 8, ty); x.moveTo(tx, ty - rr - 8); x.lineTo(tx, ty - rr + 6); x.moveTo(tx, ty + rr - 6); x.lineTo(tx, ty + rr + 8); x.stroke();
+  x.restore();
+  // rim, ticks
+  x.strokeStyle = 'rgba(255,170,60,.95)'; x.lineWidth = 4; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.stroke();
+  x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy, R + 12, 0, 7); x.stroke();
+  for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2 + game.time * .2, l = i % 6 ? 6 : 14; x.beginPath(); x.moveTo(cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14)); x.lineTo(cx + Math.cos(a) * (R + 14 + l), cy + Math.sin(a) * (R + 14 + l)); x.stroke(); }
+  x.font = '600 15px Oswald, sans-serif'; x.fillStyle = '#ffd9a0'; x.textAlign = 'center';
+  x.fillText('ORBITAL STRIKE · move the mouse to aim · LEFT CLICK to fire · RIGHT CLICK to cancel', cx, cy + R + 44);
+  x.restore();
+}
+// first-person props: Brimstone's wrist projector, Reyna's ethereal hands
+const VM_MAT = {
+  brim: new THREE.MeshBasicMaterial({ color: 0xff8a2a, transparent: true, opacity: .85, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }),
+  glove: new THREE.MeshLambertMaterial({ color: 0x2a2a2e }),
+  reyna: new THREE.MeshBasicMaterial({ color: 0xb03ce0, transparent: true, opacity: .8, depthWrite: false }),
+  reynaCore: new THREE.MeshBasicMaterial({ color: 0xe9a6ff, transparent: true, opacity: .85 }),
+};
+function makeBrimArm() {
+  const g = new THREE.Group();
+  const fore = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, .45), VM_MAT.glove); fore.position.set(0, 0, .2); g.add(fore);
+  const hand = new THREE.Mesh(new THREE.BoxGeometry(.13, .06, .14), VM_MAT.glove); hand.position.set(0, 0, -.08); g.add(hand);
+  const dev = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 16), new THREE.MeshLambertMaterial({ color: 0x3b3f44 })); dev.position.set(0, .07, .12); g.add(dev);
+  const ring1 = new THREE.Mesh(new THREE.RingGeometry(.16, .2, 40, 1, 0, Math.PI * 1.5), VM_MAT.brim); ring1.rotation.x = -Math.PI / 2; ring1.position.set(0, .1, .12); g.add(ring1);
+  const ring2 = new THREE.Mesh(new THREE.RingGeometry(.24, .26, 40), VM_MAT.brim); ring2.rotation.x = -Math.PI / 2; ring2.position.set(0, .1, .12); g.add(ring2);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff8a2a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.35, .35, 1); glow.material.opacity = .6; glow.position.set(0, .12, .12); g.add(glow);
+  g.userData.rings = [ring1, ring2];
+  g.position.set(.26, -.3, -.62); g.rotation.set(.55, -.35, .25); g.scale.setScalar(.6);
+  return g;
+}
+function makeReynaHand(side) {
+  const g = new THREE.Group();
+  const palm = new THREE.Mesh(new THREE.BoxGeometry(.11, .14, .04), VM_MAT.reyna); g.add(palm);
+  const core = new THREE.Mesh(new THREE.BoxGeometry(.06, .08, .03), VM_MAT.reynaCore); g.add(core);
+  const fingers = [];
+  for (let i = 0; i < 5; i++) { const f = new THREE.Group(); f.position.set((i - 2) * .026 + (i === 0 ? -side * .02 : 0), .07, 0); const seg = new THREE.Mesh(new THREE.BoxGeometry(.018, .11, .02), VM_MAT.reyna); seg.position.y = .05; f.add(seg); const tip = new THREE.Mesh(new THREE.ConeGeometry(.01, .05, 4), VM_MAT.reynaCore); tip.position.y = .12; f.add(tip); if (i === 0) f.rotation.z = side * .7; g.add(f); fingers.push(f); }
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(.08, .32, .06), VM_MAT.reyna); arm.position.y = -.22; g.add(arm);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, opacity: .45, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.3, .3, 1); g.add(glow);
+  g.userData.fingers = fingers; return g;
+}
+let reynaCast = 0;
+function updateVmProps(dt) {
+  const p = player, ud = vmRoot.userData; if (!p) return;
+  // Brimstone wrist projector while the map is open
+  if (brimMap && !ud.brimArm) { ud.brimArm = makeBrimArm(); vmRoot.add(ud.brimArm); }
+  if (ud.brimArm) { ud.brimArm.visible = !!brimMap; ud.brimArm.userData.rings[0].rotation.z += dt * 2; ud.brimArm.userData.rings[1].rotation.z -= dt; if (!brimMap) { vmRoot.remove(ud.brimArm); ud.brimArm = null; } }
+  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0;
+  // Reyna: both ethereal hands rise and clench when Empress starts
+  if (reynaCast > 0) {
+    reynaCast -= dt;
+    if (!ud.rHands) { ud.rHands = [makeReynaHand(-1), makeReynaHand(1)]; ud.rHands.forEach(h => vmRoot.add(h)); }
+    const t = 1 - reynaCast / 1.1, rise = Math.min(1, t * 3), clench = Math.max(0, Math.min(1, (t - .45) * 3));
+    ud.rHands.forEach((h, i) => { const s = i ? 1 : -1; h.position.set(s * (.24 - .06 * rise), -.5 + .3 * rise, -.6); h.rotation.set(-.25, s * .2, -s * .35); h.userData.fingers.forEach(f => f.rotation.x = -clench * 1.2); h.scale.setScalar(.6 * (1 + Math.sin(game.time * 20) * .02)); });
+    if (reynaCast <= 0) { ud.rHands.forEach(h => vmRoot.remove(h)); ud.rHands = null; }
+  }
+  // Reyna: the arm holding the gun glows purple during Empress
+  if (ud.gun && ud.gun.userData.armMesh) {
+    const emp = p.empressT > 0, a = ud.gun.userData;
+    if (emp !== !!a.empGlow) { a.empGlow = emp; a.armMesh.material = emp ? VM_MAT.reyna : a.armMat; a.handMesh.material = emp ? VM_MAT.reynaCore : MAT.glove; if (a.empSprite) a.empSprite.visible = emp; }
+  }
+}
+
+/* =====================================================================
    EARNING VP: daily reward · daily missions · level-ups · shooting test
    ===================================================================== */
 const today = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / DAY);
@@ -5281,7 +5402,7 @@ $('btnLock').onclick = () => {
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
   game.mapId = null;
-  game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null;
+  game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); reynaCast = 0;
   $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
   document.exitPointerLock && document.exitPointerLock();

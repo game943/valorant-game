@@ -15,8 +15,8 @@ Click the screen to lock the mouse.
   - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back
   - Sage: Barrier Orb (destructible, you can stand on it), Slow Orb, Healing Orb, Resurrection
   - Sova: Owl Drone, Shock Bolt, Recon Bolt, Hunter's Fury (pierces walls)
-  - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike
-  - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress
+  - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike (opens an orange holographic tactical map from his wrist: move the mouse to aim, left click to fire, right click to cancel)
+  - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress (raises glowing purple hands, then your gun hand glows purple)
   - Omen: Shrouded Step (short teleport), Paranoia (nearsights through walls), Dark Cover, From the Shadows (long teleport)
   - Raze: Boom Bot (chases and explodes), Blast Pack (throw it, press Q again to blow it up and launch yourself — QQ to fly), Paint Shells (cluster grenade), Showstopper (rocket)
   - Killjoy: Nanoswarm, Alarmbot (reveals and slows), Turret (shoots enemies), Lockdown (detained enemies can't shoot)
