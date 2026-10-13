@@ -431,6 +431,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #fuelBar.neon .fb{border-color:rgba(70,182,255,.6)}
 #fuelBar.neon #fuelFill{background:linear-gradient(90deg,#2f6fe0,#8fd0ff)}
 #brimOv{position:fixed;inset:0;pointer-events:none;z-index:12}
+#healOv{background:radial-gradient(circle,transparent 55%,rgba(60,230,150,.35) 100%);transition:opacity .2s;opacity:0}
+.healPop{position:absolute;left:150px;bottom:110px;font:700 24px Oswald,sans-serif;color:#5fe6a8;text-shadow:0 0 6px #000;animation:healUp .9s forwards;pointer-events:none}
+@keyframes healUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-50px);opacity:0}}
 #empOv{background:radial-gradient(circle,transparent 50%,rgba(170,60,255,.4) 100%);transition:opacity .3s}
 #abGauge{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:420px;text-align:center;white-space:nowrap}
 #agLabel{font:600 13px Oswald,sans-serif;letter-spacing:2px;margin-bottom:5px;text-transform:uppercase}
@@ -612,7 +615,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 27</div>
+<div id="buildTag">VALOR STRIKE · build 28</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -679,6 +682,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="ov" id="scopeOv"></div>
   <div class="ov" id="lowOv"></div>
   <div class="ov" id="empOv"></div>
+  <div class="ov" id="healOv"></div>
   <canvas id="brimOv" class="hidden"></canvas>
   <div id="shadeOv" class="hidden"><div id="shadeTxt"></div></div>
   <div id="placeHint" class="hidden"></div>
@@ -842,7 +846,7 @@ const AGENTS = [
   { id: 'sage', name: 'Sage', role: 'Sentinel', color: '#5fe6c8', glyph: 'SG', desc: 'A guardian who protects the team with healing, revives and walls.',
     ab: { C: { name: 'Barrier Orb', cost: 400, max: 1, free: 0, type: 'wall', desc: 'Preview the wall, right click to rotate it, left click to build. Destructible.' },
           Q: { name: 'Slow Orb', cost: 200, max: 2, free: 0, type: 'slow', desc: 'Creates a field that slows enemies.' },
-          E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Left click heals the ally you aim at, right click heals yourself (60 HP over 5s).' },
+          E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Press E, then LEFT click to heal the ally you aim at or RIGHT click to heal yourself (60 HP over 4s).' },
           X: { name: 'Resurrection', ult: 8, type: 'revive', desc: 'Aim at a fallen ally and left click to bring them back.' } } },
   { id: 'sova', name: 'Sova', role: 'Initiator', color: '#5b86ff', glyph: 'SV', desc: 'A tracker who reveals enemies with his bow and drone.',
     ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', guided: 1, desc: 'A drone that reveals nearby enemies. Hold the key and turn to steer it with your aim.' },
@@ -882,7 +886,7 @@ AGENTS.push(
           E: { name: 'Spycam', cost: 0, max: 1, free: 1, type: 'cam', desc: 'A camera that pulses to reveal nearby enemies for 15 seconds.' },
           X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
   { id: 'skye', name: 'Skye', role: 'Initiator', color: '#7fd36b', glyph: 'SK', desc: 'A guide who heals the team and hunts enemies with creatures of light.',
-    ab: { C: { name: 'Regrowth', cost: 150, max: 1, free: 0, type: 'regrowth', desc: 'Heal yourself and allies near you.' },
+    ab: { C: { name: 'Regrowth', cost: 150, max: 1, free: 0, type: 'regrowth', desc: 'Heal yourself and every hurt ally you can see within 14 m (60 HP over 3s). Not used up if nobody is hurt.' },
           Q: { name: 'Trailblazer', cost: 250, max: 1, free: 0, type: 'trailblazer', guided: 1, desc: 'A tiger that concusses enemies. Tap to send it on its own, or hold the key and turn to steer it, then release to make it leap.' },
           E: { name: 'Guiding Light', cost: 150, max: 2, free: 1, type: 'flash', life: .75, guided: 1, desc: 'A hawk that bursts into a flash. Hold the key and turn to curve it with your aim, release to pop it. (1 free per round)' },
           X: { name: 'Seekers', ult: 8, type: 'seekers', desc: 'Three seekers hunt the nearest enemies and nearsight them.' } } },
@@ -2350,8 +2354,8 @@ const ABIL = {
   wall(e, ab, target) { return sageWall(e, target); },
   slow(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
   heal(e, ab, target) {
-    if (target && target.id >= 0) { const a = entities[target.id]; if (a && a.alive && a !== e && !isEnemy(a, e) && Math.hypot(a.x - e.x, a.z - e.z) < 20) { if (a.hp >= 100) { toastTo(e, `${a.name} is already at full health`); return false; } a.healT = 5; a.healRate = 12; a.healCap = 100; fx('parts', a.x, a.y + 1, a.z, 20, 0x5fe6c8, 2, .7); toastTo(a, `${e.name} is healing you`); return true; } }
-    if (e.hp >= 100) { toastTo(e, 'Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
+    if (target && target.id >= 0) { const a = entities[target.id]; if (a && a.alive && a !== e && !isEnemy(a, e) && Math.hypot(a.x - e.x, a.z - e.z) < 20) { if (a.hp >= 100) { toastTo(e, `${a.name} is already at full health`); return false; } a.healT = 4; a.healRate = 15; a.healCap = 100; fx('parts', a.x, a.y + 1, a.z, 20, 0x5fe6c8, 2, .7); toastTo(a, `${e.name} is healing you`); toastTo(e, `Healing ${a.name}`); return true; } }
+    if (e.hp >= 100) { toastTo(e, 'Health is already full — nothing to heal'); if (e.isPlayer) SND.deny(); return false; } e.healT = 4; e.healRate = 15; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
   revive(e, ab, target) {
     let best = null, bd = 60;
     if (target && target.id >= 0) { const o = entities[target.id]; if (o && !o.alive && o.team === e.team && o.deathPos && Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z) < 20) best = o; }
@@ -2478,7 +2482,11 @@ const ABIL = {
   },
   /* ---- Skye ---- */
   regrowth(e) {
-    for (const o of entities) if (o.alive && !isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 12 && o.hp < 100) { o.healT = 3; o.healRate = 15; o.healCap = 100; fx('parts', o.x, o.y + 1, o.z, 15, 0x7fd36b, 2, .6); }
+    const hurt = entities.filter(o => o.alive && !isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 14 && o.hp < 100 && (o === e || los(e.x, eyeY(e), e.z, o.x, o.y + 1, o.z, true)));
+    if (!hurt.length) { toastTo(e, 'Nobody nearby is hurt — Regrowth not used'); if (e.isPlayer) SND.deny(); return false; }
+    for (const o of hurt) { o.healT = 3; o.healRate = 20; o.healCap = 100; fx('parts', o.x, o.y + 1, o.z, 18, 0x7fd36b, 2, .7); if (o !== e) toastTo(o, `${e.name} is healing you`); }
+    fx('pulse', e.x, e.y + 1, e.z, 14);
+    toastTo(e, `Regrowth: healing ${hurt.length === 1 && hurt[0] === e ? 'yourself' : hurt.length + (hurt.length === 1 ? ' player' : ' players')}`);
     return true;
   },
   trailblazer(e) {
@@ -3666,6 +3674,7 @@ function refreshAbilHud() {
     else { dots.innerHTML = Array.from({ length: a.max }, (_, i) => `<i class="${i < player.charges[k] ? '' : 'off'}"></i>`).join(''); el.classList.toggle('empty', player.charges[k] <= 0); }
   }
 }
+function healPop(n) { const el = document.createElement('div'); el.className = 'healPop'; el.textContent = '+' + n; $('hud').appendChild(el); setTimeout(() => el.remove(), 900); }
 function updateHUD(dt) {
   drawBrimMap(dt);
   updateGauge(dt);
@@ -3686,7 +3695,12 @@ function updateHUD(dt) {
   const shownHp = Math.ceil(p.alive ? p.hp : 0);
   setText('hpNum', String(shownHp)); setText('armorNum', String(Math.ceil(p.armor)));
   $('hpBar').firstChild.style.width = Math.min(100, shownHp) + '%';
-  $('hpNum').style.color = shownHp > 100 ? '#d8a8ff' : shownHp < 30 ? 'var(--red)' : '';
+  const healing = p.alive && p.healT > 0 && p.hp < p.healCap;
+  $('hpNum').style.color = healing ? '#5fe6a8' : shownHp > 100 ? '#d8a8ff' : shownHp < 30 ? 'var(--red)' : '';
+  $('hpBar').firstChild.style.background = healing ? '#5fe6a8' : '';
+  $('healOv').style.opacity = healing ? .55 + Math.sin(game.time * 6) * .15 : 0;
+  if (healing) { p.healAcc = (p.healAcc || 0) + (shownHp - (p.lastShownHp ?? shownHp)); if (p.healAcc >= 5) { healPop(Math.round(p.healAcc)); p.healAcc = 0; } } else p.healAcc = 0;
+  p.lastShownHp = shownHp;
   const inst = curWeapon(p), w = WEAPONS[inst.key];
   if (w.model === 'knife') setText('ammo', '—'); else if (inst.key === 'neonbeam') setText('ammo', `∞<small>${Math.ceil(p.odT)}s</small>`); else if (inst.key === 'blades') setText('ammo', `${p.bladeMag}<small>blades</small>`);
   else setText('ammo', `${p.reloadT > 0 ? '<span style="opacity:.4">' + inst.mag + '</span>' : inst.mag}<small>/${inst.reserve}</small>`);
@@ -4421,7 +4435,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), od: r2(e.odT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
+    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), od: r2(e.odT || 0), hl: r2(e.healT || 0), hc: e.healCap || 100, fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -4584,7 +4598,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, odT: e.isPlayer && e.odT > 0 && !(r.od > 0) ? e.odT : (r.od || 0), flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, healT: r.hl || 0, healCap: r.hc || 100, odT: e.isPlayer && e.odT > 0 && !(r.od > 0) ? e.odT : (r.od || 0), flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
@@ -5145,7 +5159,7 @@ function updatePlace(dt) {
   } else if (P.kind === 'heal') {
     const ally = aimedAlly(18, false);
     if (down0) { if (ally) { finishPlace({ id: ally.id }); return true; } toast('Aim at an ally to heal them — right click heals yourself'); }
-    if (down2) { if (p.hp < 100) { finishPlace({ id: -1 }); return true; } toast('Your health is already full'); }
+    if (down2) { if (p.hp < 100) { finishPlace({ id: -1 }); return true; } toast('Your health is already full — nothing to heal'); SND.deny(); cancelPlace(); return true; }
     hint = `<b>${ab.name}</b> ${ally ? '→ <b style="color:#5fe6c8">' + esc(ally.name) + '</b>' : ''}<br><small>LEFT click: heal the ally you aim at · RIGHT click: heal yourself · ${kb}: cancel</small>`;
   } else if (P.kind === 'revive') {
     const ally = aimedAlly(15, true);
@@ -5649,6 +5663,7 @@ function renderRangeMenu() {
     <div class="row"><label>Infinite ammo (no reloads)</label>${seg('ammo', [[true, 'On'], [false, 'Off']])}</div>
     <div class="row"><label>Infinite abilities</label>${seg('abil', [[true, 'On'], [false, 'Off']])}</div>
     <div class="row"><label>Ultimate</label><button class="btn small" id="rmUlt">Fill ultimate</button></div>
+    <div class="row"><label>Test healing</label><button class="btn small" id="rmHurt">Lose 50 HP</button></div>
     <div class="row"><label>Stats</label><button class="btn small" id="rmReset">Reset stats</button></div>
     <div class="setSub">SHOOTING TEST · 30 targets pop up one by one</div>
     <div class="row"><label>Start a test</label><div class="seg">${['easy', 'medium', 'hard'].map(d => `<button data-test="${d}">${d[0].toUpperCase() + d.slice(1)}${best[d] ? ' · best ' + best[d] : ''}</button>`).join('')}</div></div>`;
@@ -5661,6 +5676,7 @@ function renderRangeMenu() {
   });
   $('rmBody').querySelectorAll('[data-test]').forEach(b => b.onclick = () => { tick(); startRangeTest(b.dataset.test); });
   $('rmBody').querySelectorAll('[data-agent]').forEach(b => b.onclick = () => { switchRangeAgent(b.dataset.agent); renderRangeMenu(); });
+  $('rmHurt').onclick = () => { player.hp = Math.max(1, player.hp - 50); player.armor = 0; tick(); toastMenu('You lost 50 HP — try a heal now'); };
   $('rmUlt').onclick = () => { player.ult = AGENT[player.agent].ab.X.ult; tick(); toastMenu('Ultimate ready'); };
   $('rmReset').onclick = () => { resetRangeStats(); tick(); updateRangeHud(); };
 }
@@ -5887,7 +5903,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 27;
+const BUILD = 28;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
