@@ -195,9 +195,28 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .sbar .b{height:4px;background:rgba(255,255,255,.12)}
 .sbar .b div{height:100%;background:var(--light)}
 .sbar .n{font-family:Oswald,sans-serif;text-align:right;opacity:.85}
-#settingsModal{background:rgba(10,16,22,.8);z-index:42}
+#settingsModal{background:rgba(10,16,22,.8);z-index:62}
 .setPanel{width:min(860px,94vw)}
 .setGrid{display:grid;grid-template-columns:1fr 1fr;gap:36px}
+.setTabs{display:flex;gap:2px;border-bottom:1px solid rgba(255,255,255,.12);margin:4px 0 6px;flex-wrap:wrap}
+.setTabs button{background:none;border:0;color:var(--light);opacity:.55;font:600 14px Oswald,sans-serif;letter-spacing:2px;padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent}
+.setTabs button.on{opacity:1;border-bottom-color:var(--red)}
+.setBody{max-height:min(62vh,560px);overflow:auto;padding-right:8px}
+.setBody .row{margin:0;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.05)}
+.setBody .row:hover{background:rgba(255,255,255,.03)}
+.setBody .row .ctl{display:flex;align-items:center;gap:10px}
+.setBody .row .os{min-width:42px;text-align:right;font-family:Oswald;opacity:.85}
+.setSub{font:600 12px Oswald,sans-serif;letter-spacing:3px;opacity:.5;margin:14px 0 2px}
+.setFoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px}
+.setFoot .btn{width:auto;margin:0;padding:8px 16px}
+.bindRow{display:flex;justify-content:space-between;align-items:center;padding:6px 6px;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.bindRow button{min-width:110px;padding:6px 10px;background:#26313d;border:1px solid #3b4856;color:var(--light);font:500 14px Oswald,sans-serif;cursor:pointer}
+.bindRow button:hover{border-color:var(--light)}
+.bindRow button.wait{background:var(--red);border-color:var(--red);color:#fff}
+#chPreview{position:relative;height:120px;margin:6px 0 4px;background:linear-gradient(180deg,#8db3c9 0%,#c9d6dc 48%,#b59a72 52%,#7f6a4d 100%);border:1px solid rgba(255,255,255,.12)}
+#chPreview .chx{position:absolute;left:50%;top:50%}
+.chx div{position:absolute}
+#fps{position:fixed;top:8px;right:10px;z-index:60;font:500 13px Oswald,sans-serif;color:#9ef7c9;background:rgba(0,0,0,.45);padding:2px 8px;pointer-events:none}
 input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);padding:6px 10px;font:inherit;width:170px}
 /* agent select */
 #select{background:linear-gradient(120deg,#0f1923 0%,#18222d 60%,#2a1a22 100%);flex-direction:column}
@@ -242,7 +261,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .kf .w{font-size:11px;opacity:.75;font-weight:400;padding:1px 6px;background:rgba(255,255,255,.08)}
 .kf .hs{color:var(--gold);font-size:11px}
 #crosshair{position:absolute;left:50%;top:50%}
-#crosshair div{position:absolute;background:var(--ch,#00ff9c);box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+#crosshair div{position:absolute}
 #hitmark{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%) rotate(45deg);opacity:0}
 #hitmark:before,#hitmark:after{content:'';position:absolute;background:#fff}
 #hitmark:before{left:10px;top:0;width:2px;height:22px}
@@ -447,40 +466,31 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 </div>
 
 <!-- ================= SETTINGS ================= -->
+<div id="fps" class="hidden"></div>
 <div id="settingsModal" class="screen hidden">
   <div class="panel setPanel">
     <div class="pHead"><h2>SETTINGS</h2><button class="iconBtn" id="btnCloseSet">✕</button></div>
-    <div class="setGrid">
-      <div>
-        <h3>GENERAL</h3>
-        <div class="row"><label>Player Name</label><input type="text" id="nameInput" maxlength="16" spellcheck="false"></div>
-        <div class="row"><label>Sensitivity <span id="sensVal" class="os">1.00</span></label><input type="range" id="sens" min="0.2" max="3" step="0.05" value="1"></div>
-        <div class="row"><label>Volume <span id="volVal" class="os">60</span></label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.6"></div>
-        <div class="row"><label>Crosshair Color</label><input type="color" id="chColor" value="#00ff9c"></div>
-        <div class="row"><label>Shadows</label><div class="seg" id="shadowSeg"><button data-v="1" class="on">On</button><button data-v="0">Off</button></div></div>
-        <div class="note">Desktop browser with keyboard &amp; mouse only. Click the screen in a match to lock the mouse.</div>
-      </div>
-      <div>
-        <h3>CONTROLS</h3>
-        <div class="keys">
-          <span><b>WASD</b></span><span>Move</span>
-          <span><b>Shift</b></span><span>Walk (silent footsteps)</span>
-          <span><b>Ctrl</b></span><span>Crouch</span>
-          <span><b>Space</b></span><span>Jump</span>
-          <span><b>LMB</b></span><span>Fire / RMB: Aim · Scope</span>
-          <span><b>R</b></span><span>Reload</span>
-          <span><b>1 2 3</b></span><span>Primary / Sidearm / Knife</span>
-          <span><b>C Q E</b></span><span>Abilities</span>
-          <span><b>X</b></span><span>Ultimate</span>
-          <span><b>4 (hold)</b></span><span>Plant / Defuse spike</span>
-          <span><b>F</b></span><span>Pick up weapon · Collect ult orb</span>
-          <span><b>G</b></span><span>Drop spike</span>
-          <span><b>B</b></span><span>Shop (buy phase)</span>
-          <span><b>Tab</b></span><span>Scoreboard</span>
-          <span><b>Esc</b></span><span>Pause</span>
-        </div>
-      </div>
+    <div class="setTabs" id="setTabs">
+      <button data-st="general" class="on">GENERAL</button><button data-st="controls">CONTROLS</button><button data-st="crosshair">CROSSHAIR</button><button data-st="video">VIDEO</button><button data-st="audio">AUDIO</button>
     </div>
+    <div class="setBody">
+      <div class="setPage" data-st="general">
+        <div class="row"><label>Player Name</label><input type="text" id="nameInput" maxlength="16" spellcheck="false"></div>
+        <div id="setRows_general"></div>
+      </div>
+      <div class="setPage hidden" data-st="controls">
+        <div class="note" style="margin:0 0 8px">Click a key, then press the new key (Esc cancels). A key that is already used swaps with it. Fire = left mouse, Aim / Scope = right mouse, Pause = Esc.</div>
+        <div id="bindList"></div>
+      </div>
+      <div class="setPage hidden" data-st="crosshair">
+        <div id="chPreview"><div class="chx" id="chPrevX"></div></div>
+        <div class="row"><label>Presets</label><div class="seg" id="chPresets"></div></div>
+        <div id="setRows_crosshair"></div>
+      </div>
+      <div class="setPage hidden" data-st="video"><div id="setRows_video"></div></div>
+      <div class="setPage hidden" data-st="audio"><div id="setRows_audio"></div></div>
+    </div>
+    <div class="setFoot"><span class="note" style="margin:0">Saved automatically in this browser.</span><button class="btn" id="btnResetSet">Reset tab to default</button></div>
   </div>
 </div>
 
@@ -517,7 +527,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <canvas id="minimap" width="240" height="200"></canvas>
   <div id="sideTag"></div>
   <div id="killfeed"></div>
-  <div id="crosshair"></div>
+  <div id="crosshair" class="chx"></div>
   <div id="hitmark"></div>
   <div id="dmgDirs"></div>
   <div id="revealWarn" class="hidden">⚠ YOUR POSITION IS REVEALED</div>
@@ -556,6 +566,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <button class="btn primary" id="btnResume">Resume</button>
     <div class="row"><label>Sensitivity <span id="sensVal2" class="os">1.00</span></label><input type="range" id="sens2" min="0.2" max="3" step="0.05" value="1"></div>
     <div class="row"><label>Volume</label><input type="range" id="vol2" min="0" max="1" step="0.05" value="0.6"></div>
+    <button class="btn" id="btnPauseSet">Settings</button>
     <button class="btn" id="btnQuit">Main Menu</button>
   </div>
 </div>
@@ -588,7 +599,27 @@ const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI;
 const fmtTime = t => { t = Math.max(0, Math.ceil(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
 
 /* ------------------------------ SETTINGS ------------------------------ */
-const settings = { sens: 1, diff: 'normal', vol: 0.6, ch: '#00ff9c', shadows: true, map: 'dustwall' };
+const SET_DEFAULTS = {
+  sens: 1, adsSens: 1, scopeSens: 1, invertY: false, adsToggle: false, crouchToggle: false, showMinimap: true, diff: 'normal', map: 'dustwall',
+  ch: '#00ff9c', chOutline: true, chOutOp: .55, chDot: false, chDotSize: 2, chInner: true, chLen: 6, chThick: 2, chGap: 3, chOp: 1, chMoveErr: true, chOuter: false, chOLen: 2, chOGap: 10,
+  fov: 72, quality: 1.5, shadows: true, showFps: false,
+  vol: 0.6, menuSfx: true, hitSfx: true,
+};
+const settings = { ...SET_DEFAULTS };
+const BIND_DEFS = [
+  ['fwd', 'Move forward', 'KeyW'], ['back', 'Move back', 'KeyS'], ['left', 'Strafe left', 'KeyA'], ['right', 'Strafe right', 'KeyD'],
+  ['walk', 'Walk', 'ShiftLeft'], ['crouch', 'Crouch', 'ControlLeft'], ['jump', 'Jump', 'Space'],
+  ['prim', 'Primary weapon', 'Digit1'], ['sec', 'Sidearm', 'Digit2'], ['melee', 'Knife', 'Digit3'], ['reload', 'Reload', 'KeyR'],
+  ['abC', 'Ability (C slot)', 'KeyC'], ['abQ', 'Ability (Q slot)', 'KeyQ'], ['abE', 'Signature ability (E slot)', 'KeyE'], ['ult', 'Ultimate', 'KeyX'],
+  ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
+  ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'],
+];
+const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
+settings.binds = { ...BIND_DEFAULT };
+const PAIR_KEY = { ControlLeft: 'ControlRight', ShiftLeft: 'ShiftRight', AltLeft: 'AltRight' };
+const kd = a => { const c = settings.binds[a]; return !!(keys[c] || (PAIR_KEY[c] && keys[PAIR_KEY[c]])); };
+const actionOf = code => { const b = settings.binds; for (const a in b) if (b[a] === code || PAIR_KEY[b[a]] === code) return a; return null; };
+let crouchOn = false, adsOn = false;
 const DIFF = {
   easy:   { react: 0.80, acc: 0.16, head: 0.05, turn: 3.5, fov: 0.45 },
   normal: { react: 0.55, acc: 0.26, head: 0.11, turn: 5.5, fov: 0.30 },
@@ -869,7 +900,7 @@ function raySphere(ox, oy, oz, dx, dy, dz, cx, cy, cz, r) {
    THREE.JS SCENE
    ===================================================================== */
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); // replaced by the Quality setting once settings load
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.autoClear = false;
@@ -877,7 +908,7 @@ $('game').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa9cbe0);
 scene.fog = new THREE.Fog(0xa9cbe0, 70, 200);
-const BASE_FOV = 72;
+let BASE_FOV = 72;
 const camera = new THREE.PerspectiveCamera(BASE_FOV, innerWidth / innerHeight, .05, 400);
 camera.rotation.order = 'YXZ'; scene.add(camera);
 scene.add(new THREE.HemisphereLight(0xe6f2ff, 0x6b5a48, .78));
@@ -1318,8 +1349,8 @@ const SND = {
     const cfg = { pistol: [.12, 2600, .5], smg: [.1, 2200, .45], rifle: [.18, 1700, .6], sniper: [.4, 900, .9], shotgun: [.3, 1100, .8], heavy: [.15, 1500, .55], blades: [.08, 5000, .25], knife: [.12, 4000, .2] }[model] || [.15, 1800, .5];
     sndNoise(cfg[0], cfg[1], .7, cfg[2], x, z); if (model !== 'knife' && model !== 'blades') sndTone(140, cfg[0] * .8, cfg[2] * .6, 'triangle', 45, x, z);
   },
-  hit() { sndTone(900, .05, .15, 'square', 600); },
-  head() { sndTone(1800, .12, .25, 'sine', 1500); sndTone(2400, .1, .12, 'sine', 0, undefined, undefined, .03); },
+  hit() { if (settings.hitSfx) sndTone(900, .05, .15, 'square', 600); },
+  head() { if (!settings.hitSfx) return; sndTone(1800, .12, .25, 'sine', 1500); sndTone(2400, .1, .12, 'sine', 0, undefined, undefined, .03); },
   kill() { sndTone(660, .12, .2, 'triangle'); sndTone(990, .18, .2, 'triangle', 0, undefined, undefined, .08); },
   step(x, z, v = .25) { sndNoise(.07, 400, 1, v, x, z); },
   reload() { sndTone(300, .05, .15, 'square', 200); sndTone(500, .05, .15, 'square', 400, undefined, undefined, .25); },
@@ -2020,7 +2051,7 @@ function equipView() {
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(.4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
-  player.shotIdx = 0; player.recoil = 0;
+  player.shotIdx = 0; player.recoil = 0; adsOn = false;
 }
 function switchSlot(s) {
   if (!player.alive) return;
@@ -2087,7 +2118,7 @@ function playerFire() {
   SND.shot(w.model);
   netShot(p, muz.x, muz.y, muz.z, tr0[0], tr0[1], tr0[2], w.model, inst.key === 'blades' ? 0xa6e6ff : 0xfff2b0);
   if (net.role !== 'client') alertEnemies(p, 38);
-  if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; } // unscope after sniper shot
+  if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; adsOn = false; } // unscope after sniper shot
   if (inst.key === 'blades' && p.bladeMag <= 0 && !killed) { p.slot = p.primary ? 1 : 2; equipView(); }
   else if (inst.key === 'blades' && p.bladeMag <= 0 && killed) { p.bladeMag = 5; }
   if (inst.mag === 0 && inst.key !== 'blades') setTimeout(() => { if (player.alive && curWeapon(player) === inst) startReload(player); }, 200);
@@ -2100,9 +2131,9 @@ function updatePlayer(dt) {
   updateStatus(p, dt);
   if (!p.alive) return;
   const busy = p.plantHold > 0;
-  p.crouch = !!(keys.ControlLeft || keys.ControlRight);
-  const walk = !!(keys.ShiftLeft || keys.ShiftRight);
-  let ix = 0, iz = 0; if (keys.KeyW) iz -= 1; if (keys.KeyS) iz += 1; if (keys.KeyA) ix -= 1; if (keys.KeyD) ix += 1;
+  p.crouch = settings.crouchToggle ? crouchOn : kd('crouch');
+  const walk = kd('walk');
+  let ix = 0, iz = 0; if (kd('fwd')) iz -= 1; if (kd('back')) iz += 1; if (kd('left')) ix -= 1; if (kd('right')) ix += 1;
   const w = WEAPONS[curWeapon(p).key];
   let sp = (p.crouch ? 2.6 : walk ? 3.8 : 6.75) * w.speedMul * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (adsT > .5 && w.scope ? .75 : 1);
   if (shopOpen) ix = iz = 0;
@@ -2113,7 +2144,7 @@ function updatePlayer(dt) {
   const acc = p.onGround ? 16 : 1.5;
   p.vx += (wx - p.vx) * Math.min(1, acc * dt); p.vz += (wz - p.vz) * Math.min(1, acc * dt);
   if (p.dashT > 0) { p.dashT -= dt; p.vx = p.dashX; p.vz = p.dashZ; }
-  if (keys.Space && p.onGround && !busy && !shopOpen) { p.vy = JUMP; p.onGround = false; }
+  if (kd('jump') && p.onGround && !busy && !shopOpen) { p.vy = JUMP; p.onGround = false; }
   physics(p, dt);
   // footsteps
   const spd = Math.hypot(p.vx, p.vz);
@@ -2123,22 +2154,22 @@ function updatePlayer(dt) {
   if (mouse[2] && w.model === 'knife' && !shopOpen && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
   if (!mouse[0]) p.recoil = Math.max(0, p.recoil - dt * 1.2);
   // aiming
-  const wantAds = mouse[2] && w.model !== 'knife' && w.model !== 'blades' && p.reloadT <= 0;
+  const wantAds = (settings.adsToggle ? adsOn : mouse[2]) && w.model !== 'knife' && w.model !== 'blades' && p.reloadT <= 0;
   adsT = clamp(adsT + (wantAds ? dt : -dt) * 7, 0, 1);
   // spike plant / defuse
   const sp2 = game.spike;
-  const holding4 = !!keys.Digit4 && !shopOpen;
+  const holding4 = kd('spike') && !shopOpen;
   let doing = null;
   if (net.role === 'client') { p.netA4 = holding4; doing = clientSpikeUI(p); }
   else doing = spikeAction(p, holding4, dt);
   // interaction hint
   let hint = '';
   const near = nearestDrop(p);
-  if (near) hint = `<b>F</b> Pick up ${WEAPONS[near.inst.key].name}`;
-  const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8); if (orb) hint = '<b>F</b> Collect ult orb';
-  if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = '<b>4</b> Hold to plant the spike';
-  if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = '<b>4</b> Hold to defuse the spike';
-  if (game.phase === 'buy' && !shopOpen) hint = hint || '<b>B</b> Open shop';
+  if (near) hint = `<b>${keyName(settings.binds.use)}</b> Pick up ${WEAPONS[near.inst.key].name}`;
+  const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8); if (orb) hint = `<b>${keyName(settings.binds.use)}</b> Collect ult orb`;
+  if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to plant the spike`;
+  if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to defuse the spike`;
+  if (game.phase === 'buy' && !shopOpen) hint = hint || `<b>${keyName(settings.binds.shop)}</b> Open shop`;
   if (p.detainT > 0) hint = 'DETAINED — you cannot shoot';
   setHint(hint);
 }
@@ -2758,15 +2789,23 @@ function addKillfeed(src, vic, label, head) {
 }
 function addFeedText(txt, team) {
   if (net.role === 'host') netBroadcast({ t: 'ui', f: 'feed', a: [txt, team] }); const el = document.createElement('div'); el.className = 'kf'; el.innerHTML = `<span class="${team === myTeam() ? 'a' : 'e'}">${txt}</span>`; $('killfeed').appendChild(el); setTimeout(() => el.remove(), 4500); }
-function buildCrosshair() {
-  const c = $('crosshair'); c.style.setProperty('--ch', settings.ch);
-  c.innerHTML = '<div style="left:-1px;top:-1px;width:2px;height:2px"></div>' + [[-1, -11, 2, 6], [-1, 5, 2, 6], [-11, -1, 6, 2], [5, -1, 6, 2]].map(([l, t, w, h]) => `<div class="ln" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px"></div>`).join('');
+// Draw a crosshair from the settings into a container centered on the aim point.
+function drawCrosshair(c, s) {
+  const sh = s.chOutline ? `box-shadow:0 0 0 1px rgba(0,0,0,${s.chOutOp})` : '';
+  const part = (l, t, w, h, cls = '') => `<div class="${cls}" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px;background:${s.ch};opacity:${s.chOp};${sh}"></div>`;
+  const lines = (len, th, gap, cls) => { const h = Math.floor(th / 2); return [[-h, -gap - len, th, len], [-h, gap, th, len], [-gap - len, -h, len, th], [gap, -h, len, th]].map(([l, t, w, hh], i) => part(l, t, w, hh, cls + ' d' + i)).join(''); };
+  let html = '';
+  if (s.chDot) { const d = s.chDotSize, h = Math.floor(d / 2); html += part(-h, -h, d, d); }
+  if (s.chInner && s.chLen > 0) html += lines(s.chLen, s.chThick, s.chGap, 'ln');
+  if (s.chOuter && s.chOLen > 0) html += lines(s.chOLen, s.chThick, s.chOGap, 'lo');
+  c.innerHTML = html;
 }
+function buildCrosshair() { drawCrosshair($('crosshair'), settings); if ($('chPrevX')) drawCrosshair($('chPrevX'), settings); }
 function buildAbilHud() {
   const ag = AGENT[player.agent], el = $('abil'); el.innerHTML = '';
   for (const k of ['C', 'Q', 'E', 'X']) {
     const a = ag.ab[k], d = document.createElement('div'); d.className = 'ab' + (k === 'X' ? ' ult' : ''); d.id = 'ab' + k;
-    d.innerHTML = `<div class="ic">${a.name}<div class="dots"></div></div><div class="key">${k}</div>`; el.appendChild(d);
+    d.innerHTML = `<div class="ic">${a.name}<div class="dots"></div></div><div class="key">${keyName(settings.binds[k === 'X' ? 'ult' : 'ab' + k])}</div>`; el.appendChild(d);
   }
 }
 function refreshAbilHud() {
@@ -2813,9 +2852,9 @@ function updateHUD(dt) {
   $('scopeOv').style.opacity = scoped ? 1 : 0; $('crosshair').style.opacity = scoped ? 0 : 1;
   // dynamic crosshair spread
   const moveF = Math.hypot(p.vx, p.vz) / 6.75 + (p.onGround ? 0 : 1) + Math.min(p.shotIdx, 8) * .08;
-  const gap = 3 + moveF * 8;
+  const gap = settings.chGap + (settings.chMoveErr ? moveF * 8 : 0), L = settings.chLen;
   const lines = $('crosshair').querySelectorAll('.ln');
-  if (lines.length === 4) { lines[0].style.top = (-gap - 6) + 'px'; lines[1].style.top = gap + 'px'; lines[2].style.left = (-gap - 6) + 'px'; lines[3].style.left = gap + 'px'; }
+  if (lines.length === 4) { lines[0].style.top = (-gap - L) + 'px'; lines[1].style.top = gap + 'px'; lines[2].style.left = (-gap - L) + 'px'; lines[3].style.left = gap + 'px'; }
   hitT -= dt; if (hitT <= 0) $('hitmark').style.opacity = 0;
   toastT -= dt; if (toastT <= 0) $('toast').style.opacity = 0;
   bannerT -= dt; if (bannerT <= 0) $('centerMsg').style.opacity = 0;
@@ -2960,9 +2999,11 @@ function simStep(dt) {
     if (boardOpen) renderBoard();
   }
 }
+let fpsN = 0, fpsT = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   let dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (settings.showFps) { fpsN++; if (now - fpsT > 500) { $('fps').textContent = Math.round(fpsN * 1000 / (now - fpsT)) + ' FPS'; fpsN = 0; fpsT = now; } }
   simStep(dt);
   if (game.state === 'playing') {
     updateCamera(dt);
@@ -2989,9 +3030,9 @@ document.addEventListener('pointerlockchange', () => {
 document.addEventListener('mousemove', e => {
   if (!isLocked() || game.state !== 'playing' || game.paused || !player.alive) return;
   const w = WEAPONS[curWeapon(player).key];
-  const zoom = w.scope && adsT > .5 ? 1 / w.scope : 1 / (1 + (w.ads - 1) * adsT);
+  const zoom = w.scope && adsT > .5 ? settings.scopeSens / w.scope : (1 + (settings.adsSens - 1) * adsT) / (1 + (w.ads - 1) * adsT);
   const s = .0022 * settings.sens * zoom;
-  player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s, -1.5, 1.5);
+  player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s * (settings.invertY ? -1 : 1), -1.5, 1.5);
 });
 renderer.domElement.addEventListener('mousedown', e => {
   initAudio();
@@ -2999,32 +3040,36 @@ renderer.domElement.addEventListener('mousedown', e => {
   if (!isLocked()) { if (!shopOpen && !game.paused) lockPointer(); return; }
   if (!player.alive && e.button === 0) { spectateIdx++; return; }
   mouse[e.button] = true;
+  if (e.button === 2) adsOn = !adsOn;
 });
 document.addEventListener('mouseup', e => { mouse[e.button] = false; });
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
   if (game.state !== 'playing') return;
-  if (e.code === 'Tab') { e.preventDefault(); boardOpen = true; $('board').classList.remove('hidden'); renderBoard(); return; }
+  const act = actionOf(e.code);
+  if (e.code === 'Tab') e.preventDefault();
+  if (act === 'board') { boardOpen = true; $('board').classList.remove('hidden'); renderBoard(); return; }
   if (e.code === 'Escape' && shopOpen) { closeShop(); return; }
-  if (e.code === 'KeyB') { shopOpen ? closeShop() : openShop(); return; }
+  if (act === 'shop') { shopOpen ? closeShop() : openShop(); return; }
   if (game.paused) return;
-  if (['Space', 'ControlLeft', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) e.preventDefault();
+  if (act || e.code === 'Space' || e.code.startsWith('Control')) e.preventDefault();
   keys[e.code] = true;
   if (e.repeat || !player.alive || shopOpen) return;
-  switch (e.code) {
-    case 'Digit1': switchSlot(1); break;
-    case 'Digit2': switchSlot(2); break;
-    case 'Digit3': switchSlot(3); break;
-    case 'KeyR': startReload(player); break;
-    case 'KeyF': interact(); break;
-    case 'KeyG': if (net.role === 'client') { netSend({ t: 'g' }); break; } if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
-    case 'KeyC': castAbility(player, 'C'); break;
-    case 'KeyQ': castAbility(player, 'Q'); break;
-    case 'KeyE': castAbility(player, 'E'); break;
-    case 'KeyX': if (player.bladeMag > 0 && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
+  if (act === 'crouch') crouchOn = !crouchOn;
+  switch (act) {
+    case 'prim': switchSlot(1); break;
+    case 'sec': switchSlot(2); break;
+    case 'melee': switchSlot(3); break;
+    case 'reload': startReload(player); break;
+    case 'use': interact(); break;
+    case 'drop': if (net.role === 'client') { netSend({ t: 'g' }); break; } if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
+    case 'abC': castAbility(player, 'C'); break;
+    case 'abQ': castAbility(player, 'Q'); break;
+    case 'abE': castAbility(player, 'E'); break;
+    case 'ult': if (player.bladeMag > 0 && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
   }
 });
-document.addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Tab') { boardOpen = false; $('board').classList.add('hidden'); } });
+document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
 window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; });
 window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = lobbyCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); lobbyCam.updateProjectionMatrix();
@@ -3831,18 +3876,157 @@ document.addEventListener('mousemove', e => { if (game.state === 'menu') { lobby
    MENU UI
    ===================================================================== */
 let selectedAgent = profile.fav, curTab = 'home', playMode = 'comp', previewAgent = profile.fav;
-const tick = () => { if (AC) sndTone(1300, .03, .05, 'triangle'); };
+const tick = () => { if (AC && settings.menuSfx) sndTone(1300, .03, .05, 'triangle'); };
 document.addEventListener('mousedown', () => initAudio(), { capture: true });
 function segBind(id, fn) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b.dataset.v); tick(); }); }
 function segSet(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v))); }
-segBind('diffSeg', v => { settings.diff = v; saveSettings(); if (net.role === 'host') partyChanged(); });
+segBind('diffSeg', v => { settings.diff = v; saveSettings(); syncSettingCtl('diff'); if (net.role === 'host') partyChanged(); });
 function applyShadows() { renderer.shadowMap.enabled = settings.shadows; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
-segBind('shadowSeg', v => { settings.shadows = v === '1'; applyShadows(); saveSettings(); });
-function setSens(v) { settings.sens = +v; $('sens').value = $('sens2').value = v; $('sensVal').textContent = $('sensVal2').textContent = (+v).toFixed(2); saveSettings(); }
-function setVol(v) { settings.vol = +v; $('vol').value = $('vol2').value = v; $('volVal').textContent = Math.round(v * 100); if (master) master.gain.value = settings.vol; saveSettings(); }
-$('sens').oninput = e => setSens(e.target.value); $('sens2').oninput = e => setSens(e.target.value);
-$('vol').oninput = e => setVol(e.target.value); $('vol2').oninput = e => setVol(e.target.value);
-$('chColor').oninput = e => { settings.ch = e.target.value; buildCrosshair(); saveSettings(); };
+/* --- Settings menu (built from this table) --- */
+const SET_PAGES = {
+  general: [
+    ['sub', 'MOUSE'],
+    ['sens', 'Sensitivity', 'range', .05, 3, .01, v => v.toFixed(2)],
+    ['adsSens', 'Aim (ADS) sensitivity multiplier', 'range', .2, 2, .05, v => v.toFixed(2)],
+    ['scopeSens', 'Scoped sensitivity multiplier', 'range', .2, 2, .05, v => v.toFixed(2)],
+    ['invertY', 'Invert mouse', 'toggle'],
+    ['sub', 'GAMEPLAY'],
+    ['adsToggle', 'Aim / scope', 'seg', [[false, 'Hold'], [true, 'Toggle']]],
+    ['crouchToggle', 'Crouch', 'seg', [[false, 'Hold'], [true, 'Toggle']]],
+    ['showMinimap', 'Show minimap', 'toggle'],
+    ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']]],
+  ],
+  crosshair: [
+    ['sub', 'GENERAL'],
+    ['ch', 'Color', 'color'],
+    ['chOutline', 'Outlines', 'toggle'],
+    ['chOutOp', 'Outline opacity', 'range', 0, 1, .05, v => v.toFixed(2)],
+    ['chDot', 'Center dot', 'toggle'],
+    ['chDotSize', 'Center dot thickness', 'range', 1, 8, 1, v => v],
+    ['chMoveErr', 'Movement / firing error (lines spread)', 'toggle'],
+    ['sub', 'INNER LINES'],
+    ['chInner', 'Show inner lines', 'toggle'],
+    ['chOp', 'Line opacity', 'range', .1, 1, .05, v => v.toFixed(2)],
+    ['chLen', 'Line length', 'range', 0, 20, 1, v => v],
+    ['chThick', 'Line thickness', 'range', 1, 10, 1, v => v],
+    ['chGap', 'Line offset (gap)', 'range', 0, 20, 1, v => v],
+    ['sub', 'OUTER LINES'],
+    ['chOuter', 'Show outer lines', 'toggle'],
+    ['chOLen', 'Outer line length', 'range', 0, 20, 1, v => v],
+    ['chOGap', 'Outer line offset', 'range', 0, 40, 1, v => v],
+  ],
+  video: [
+    ['fov', 'Field of view', 'range', 55, 100, 1, v => v + '°'],
+    ['quality', 'Render quality', 'seg', [[.6, 'Low'], [1, 'Medium'], [1.5, 'High'], [2, 'Ultra']]],
+    ['shadows', 'Shadows', 'toggle'],
+    ['showFps', 'Show FPS counter', 'toggle'],
+  ],
+  audio: [
+    ['vol', 'Master volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
+    ['hitSfx', 'Hit sound', 'toggle'],
+    ['menuSfx', 'Menu click sounds', 'toggle'],
+  ],
+};
+const CH_PRESETS = {
+  Default: { ch: '#00ff9c', chDot: false, chInner: true, chLen: 6, chThick: 2, chGap: 3, chOp: 1, chOuter: false, chOutline: true, chMoveErr: true },
+  Dot: { ch: '#00ffff', chDot: true, chDotSize: 4, chInner: false, chOuter: false, chOutline: true },
+  Small: { ch: '#ffffff', chDot: false, chInner: true, chLen: 4, chThick: 2, chGap: 2, chOp: 1, chOuter: false, chOutline: true, chMoveErr: false },
+  Big: { ch: '#ffff00', chDot: true, chDotSize: 2, chInner: true, chLen: 8, chThick: 2, chGap: 4, chOp: 1, chOuter: true, chOLen: 4, chOGap: 16, chOutline: true, chMoveErr: true },
+};
+function applySetting(k) {
+  const v = settings[k];
+  if (k === 'sens') { $('sens2').value = v; $('sensVal2').textContent = (+v).toFixed(2); }
+  else if (k === 'vol') { $('vol2').value = v; if (master) master.gain.value = v; }
+  else if (k === 'shadows') applyShadows();
+  else if (k === 'fov') { BASE_FOV = v; camera.fov = v; camera.updateProjectionMatrix(); }
+  else if (k === 'quality') { renderer.setPixelRatio(Math.min(devicePixelRatio, v)); renderer.setSize(innerWidth, innerHeight); }
+  else if (k === 'showFps') $('fps').classList.toggle('hidden', !v);
+  else if (k === 'showMinimap') $('minimap').style.display = v ? '' : 'none';
+  else if (k === 'crouchToggle') crouchOn = false;
+  else if (k === 'adsToggle') adsOn = false;
+  else if (k === 'diff') { segSet('diffSeg', v); if (net.role === 'host') partyChanged(); }
+  else if (k.startsWith('ch')) buildCrosshair();
+}
+function setSetting(k, v, quiet) { settings[k] = v; applySetting(k); saveSettings(); if (!quiet) syncSettingCtl(k); }
+function syncSettingCtl(k) {
+  const el = document.querySelector(`[data-set="${k}"]`); if (!el) return;
+  const v = settings[k];
+  if (el.type === 'range') { el.value = v; const o = el.parentNode.querySelector('.os'); if (o) o.textContent = el._fmt(+v); }
+  else if (el.type === 'color') el.value = v;
+  else el.querySelectorAll('button').forEach(b => b.classList.toggle('on', b._v === v));
+}
+function renderSettings() {
+  for (const page in SET_PAGES) {
+    const box = $('setRows_' + page); box.innerHTML = '';
+    for (const def of SET_PAGES[page]) {
+      const [k, label, type] = def;
+      if (k === 'sub') { const h = document.createElement('div'); h.className = 'setSub'; h.textContent = label; box.appendChild(h); continue; }
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = `<label>${label}</label><div class="ctl"></div>`; const ctl = row.lastChild;
+      if (type === 'range') {
+        const [, , , min, max, step, fmt] = def, r = document.createElement('input');
+        Object.assign(r, { type: 'range', min, max, step, value: settings[k] }); r.dataset.set = k; r._fmt = fmt;
+        const o = document.createElement('span'); o.className = 'os'; o.textContent = fmt(+settings[k]);
+        r.oninput = () => { o.textContent = fmt(+r.value); setSetting(k, +r.value, true); };
+        ctl.append(r, o);
+      } else if (type === 'color') {
+        const c = document.createElement('input'); c.type = 'color'; c.value = settings[k]; c.dataset.set = k;
+        c.oninput = () => setSetting(k, c.value, true); ctl.appendChild(c);
+      } else {
+        const opts = type === 'toggle' ? [[true, 'On'], [false, 'Off']] : def[3], seg = document.createElement('div'); seg.className = 'seg'; seg.dataset.set = k;
+        for (const [v, t] of opts) { const b = document.createElement('button'); b._v = v; b.textContent = t; b.classList.toggle('on', settings[k] === v); b.onclick = () => { setSetting(k, v); tick(); }; seg.appendChild(b); }
+        ctl.appendChild(seg);
+      }
+      box.appendChild(row);
+    }
+  }
+  $('chPresets').innerHTML = '';
+  for (const name in CH_PRESETS) { const b = document.createElement('button'); b.textContent = name; b.onclick = () => { for (const k in CH_PRESETS[name]) setSetting(k, CH_PRESETS[name][k]); tick(); }; $('chPresets').appendChild(b); }
+  renderBinds(); buildCrosshair();
+}
+const keyName = c => !c ? '—' : c.startsWith('Key') ? c.slice(3) : c.startsWith('Digit') ? c.slice(5) : c.startsWith('Numpad') ? 'Num ' + c.slice(6) :
+  ({ ControlLeft: 'L-Ctrl', ControlRight: 'R-Ctrl', ShiftLeft: 'L-Shift', ShiftRight: 'R-Shift', AltLeft: 'L-Alt', AltRight: 'R-Alt', Space: 'Space', Tab: 'Tab', CapsLock: 'Caps', Backquote: '`', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' })[c] || c;
+let bindWait = null;
+function renderBinds() {
+  const box = $('bindList'); box.innerHTML = '';
+  for (const [a, label] of BIND_DEFS) {
+    const r = document.createElement('div'); r.className = 'bindRow';
+    r.innerHTML = `<span>${label}</span>`; const b = document.createElement('button');
+    b.textContent = bindWait === a ? 'Press a key…' : keyName(settings.binds[a]); b.classList.toggle('wait', bindWait === a);
+    b.onclick = () => { bindWait = bindWait === a ? null : a; renderBinds(); tick(); };
+    r.appendChild(b); box.appendChild(r);
+  }
+}
+// key capture for rebinding (runs before every other key handler)
+document.addEventListener('keydown', e => {
+  if ($('settingsModal').classList.contains('hidden')) return;
+  if (bindWait) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (e.code !== 'Escape') {
+      const old = settings.binds[bindWait], other = Object.keys(settings.binds).find(a => a !== bindWait && settings.binds[a] === e.code);
+      if (other) settings.binds[other] = old;
+      settings.binds[bindWait] = e.code; saveSettings();
+    }
+    bindWait = null; renderBinds(); return;
+  }
+  if (e.code === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeSettings(); }
+}, true);
+function showSetTab(t) {
+  bindWait = null; renderBinds();
+  document.querySelectorAll('#setTabs button').forEach(b => b.classList.toggle('on', b.dataset.st === t));
+  document.querySelectorAll('.setPage').forEach(p => p.classList.toggle('hidden', p.dataset.st !== t));
+}
+document.querySelectorAll('#setTabs button').forEach(b => b.onclick = () => { showSetTab(b.dataset.st); tick(); });
+$('btnResetSet').onclick = () => {
+  const t = document.querySelector('#setTabs button.on').dataset.st;
+  if (t === 'controls') { settings.binds = { ...BIND_DEFAULT }; saveSettings(); renderBinds(); }
+  else for (const d of SET_PAGES[t]) if (d[0] !== 'sub') setSetting(d[0], SET_DEFAULTS[d[0]]);
+  tick();
+};
+function setSens(v) { setSetting('sens', +v); }
+function setVol(v) { setSetting('vol', +v); }
+$('sens2').oninput = e => setSens(e.target.value);
+$('vol2').oninput = e => setVol(e.target.value);
 function setPlayerName(n) {
   profile.name = cleanName(n); profile.nameSet = true;
   if (party[0]) party[0].name = profile.name;
@@ -3868,14 +4052,15 @@ $('nameCancel').onclick = () => $('nameModal').classList.add('hidden');
 $('nameField').onkeydown = e => { if (e.key === 'Enter') confirmName(); if (e.key === 'Escape' && profile.nameSet) $('nameModal').classList.add('hidden'); };
 $('acctBtn').onclick = () => { initAudio(); openNameModal(false); };
 // apply saved settings
-setSens(settings.sens); setVol(settings.vol); $('chColor').value = settings.ch; segSet('diffSeg', settings.diff); segSet('shadowSeg', settings.shadows ? 1 : 0); if (!settings.shadows) applyShadows();
+settings.binds = { ...BIND_DEFAULT, ...(settings.binds || {}) };
+renderSettings(); for (const k of ['sens', 'vol', 'fov', 'quality', 'showFps', 'showMinimap', 'diff']) applySetting(k); if (!settings.shadows) applyShadows();
 $('nameInput').value = profile.name;
 
-function openSettings() { $('settingsModal').classList.remove('hidden'); tick(); }
-function closeSettings() { $('settingsModal').classList.add('hidden'); }
+function openSettings() { renderSettings(); showSetTab('general'); $('settingsModal').classList.remove('hidden'); tick(); }
+function closeSettings() { bindWait = null; $('settingsModal').classList.add('hidden'); }
+$('btnPauseSet').onclick = openSettings;
 $('btnSettings').onclick = openSettings; $('btnCloseSet').onclick = closeSettings;
 $('settingsModal').onclick = e => { if (e.target.id === 'settingsModal') closeSettings(); };
-document.addEventListener('keydown', e => { if (game.state === 'menu' && e.code === 'Escape') closeSettings(); });
 
 function showTab(t) {
   curTab = t; tick();

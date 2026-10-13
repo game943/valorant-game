@@ -68,7 +68,16 @@ How it works:
 - Testing with two tabs works — the match keeps running even when the host's tab is in the background. Both tabs share the saved profile, so give the second tab a different name.
 - To test on one PC without internet, serve the folder with any local web server and open `index.html?local` in two tabs.
 
-## Controls
+## Settings
+Open **Settings** with the ⚙ button in the lobby, or from the pause menu (Esc) during a match. Everything is saved in your browser.
+- **General**: sensitivity, aim (ADS) and scoped sensitivity multipliers, invert mouse, hold or toggle for aim and crouch, show minimap, bot difficulty.
+- **Controls**: rebind every key. Click a key and press the new one; a key that is already used swaps over.
+- **Crosshair**: color, outlines, center dot, inner and outer lines (length, thickness, gap, opacity), movement/firing spread on or off, presets, and a live preview.
+- **Video**: field of view, render quality (Low to Ultra), shadows, FPS counter.
+- **Audio**: master volume, hit sounds, menu click sounds.
+- **Reset tab to default** restores the current tab.
+
+## Controls (defaults — change them in Settings › Controls)
 | Key | Action |
 |---|---|
 | WASD / Shift / Ctrl / Space | Move / Walk (silent) / Crouch / Jump |
