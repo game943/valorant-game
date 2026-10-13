@@ -615,7 +615,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 28</div>
+<div id="buildTag">VALOR STRIKE · build 29</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -3244,6 +3244,21 @@ function botObjective(b, dt) {
     }
   }
 }
+// Sage / Skye bots heal hurt teammates (you included) when they are not in a fight
+function botSupport(b) {
+  if (!b.alive || game.phase === 'buy' || (b.target && b.targetVisible) || b.healCD > game.time) return;
+  const ag = AGENT[b.agent];
+  for (const k of ['C', 'E']) {
+    const ab = ag.ab[k]; if ((ab.type !== 'heal' && ab.type !== 'regrowth') || b.charges[k] <= 0) continue;
+    const hurt = entities.filter(o => o.alive && o !== b && !isEnemy(o, b) && o.hp < 70 && !(o.healT > 0) && Math.hypot(o.x - b.x, o.z - b.z) < (ab.type === 'heal' ? 16 : 13) && los(b.x, eyeY(b), b.z, o.x, o.y + 1, o.z, true))
+      .sort((a, c) => a.hp - c.hp);
+    const t = hurt[0];
+    if (t) {
+      b.yaw = Math.atan2(-(t.x - b.x), -(t.z - b.z));
+      if (castAbility(b, k, ab.type === 'heal' ? { id: t.id } : undefined)) { b.healCD = game.time + 2; if (t.isPlayer || t.remote) toastTo(t, `${b.name} (${ag.name}) is healing you`); return; }
+    } else if (b.hp < 70 && !(b.healT > 0)) { if (castAbility(b, k, ab.type === 'heal' ? { id: -1 } : undefined)) { b.healCD = game.time + 2; return; } }
+  }
+}
 function updateBot(b, dt) {
   updateStatus(b, dt);
   const m = b.mesh;
@@ -3253,7 +3268,7 @@ function updateBot(b, dt) {
     m.userData.outlines.forEach(o => o.visible = false); return;
   }
   const D = DIFF[settings.diff];
-  b.think -= dt; if (b.think <= 0) { b.think = .12 + Math.random() * .06; botPerceive(b); }
+  b.think -= dt; if (b.think <= 0) { b.think = .12 + Math.random() * .06; botPerceive(b); botSupport(b); }
   const t = b.target;
   if (!(t && t.alive && b.targetVisible)) b.engageT = 0;
   if (game.phase === 'buy') { b.vx = b.vz = 0; }
@@ -5903,7 +5918,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 28;
+const BUILD = 29;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
