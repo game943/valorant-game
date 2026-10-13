@@ -253,6 +253,31 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .btn.small{width:auto;margin:0;padding:6px 14px;font-size:13px}
 .mode.range{border-color:rgba(47,224,182,.5)}
 .mode.range .t{color:var(--teal)}
+.storeTabs .earnBtn{background:linear-gradient(90deg,#0d5a4a,#1a7a5e)}
+.storeTabs .earnBtn.on{background:linear-gradient(90deg,#1fb08c,#2fe0b6);color:#0f1923}
+.msList{display:grid;gap:8px;margin-bottom:18px}
+.msRow{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(255,255,255,.05);border-left:3px solid var(--gold)}
+.msRow.done{border-left-color:var(--teal);opacity:.75}
+.msTxt{flex:1}.msTxt b{font-size:15px}
+.msBar{height:6px;background:rgba(255,255,255,.12);margin:6px 0 4px}
+.msBar div{height:100%;background:linear-gradient(90deg,var(--gold),#ffb347)}
+.msRow.done .msBar div{background:var(--teal)}
+.msVp{font:600 20px Oswald,sans-serif;min-width:80px;text-align:right}
+.msRow.done .msVp{color:var(--teal)}
+.earnGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.earnCard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:14px 16px}
+.earnCard h4{font:600 18px Oswald,sans-serif;margin:4px 0 6px}
+.earnCard p{font-size:12px;opacity:.7;line-height:1.5;margin-bottom:8px}
+#dailyModal{background:rgba(10,16,22,.85);z-index:46}
+.drPanel{width:min(620px,94vw);text-align:center}
+.drPanel h2{font:700 30px Oswald,sans-serif;letter-spacing:4px;margin:4px 0 14px}
+.drStreak{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}
+.drDay{padding:8px 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:11px}
+.drDay b{display:block;font:600 16px Oswald,sans-serif;margin-top:2px}
+.drDay.got{background:rgba(47,224,182,.15);border-color:rgba(47,224,182,.5)}
+.drDay.now{background:rgba(245,215,110,.2);border-color:var(--gold);transform:scale(1.06)}
+.drAmount{font:700 42px Oswald,sans-serif;color:var(--gold);margin-bottom:6px}
+.drPanel .btn{margin-top:14px}
 .collCat{font:500 12px Oswald,sans-serif;letter-spacing:4px;opacity:.6;margin:16px 0 8px}
 .collGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .wcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
@@ -530,7 +555,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </section>
 
   <section class="tab hidden" id="tab-store">
-    <div class="tabPanel"><div class="pHead"><h2>STORE</h2><div class="storeTabs" id="storeTabs"><button data-sv="offers" class="on">OFFERS</button><button data-sv="night" class="nmBtn">NIGHT MARKET</button></div></div><div id="storeBox"></div></div>
+    <div class="tabPanel"><div class="pHead"><h2>STORE</h2><div class="storeTabs" id="storeTabs"><button data-sv="offers" class="on">OFFERS</button><button data-sv="night" class="nmBtn">NIGHT MARKET</button><button data-sv="earn" class="earnBtn">EARN VP</button></div></div><div id="storeBox"></div></div>
   </section>
 </div>
 <div id="matchFound" class="hidden"><div class="mfBand"><div class="mfT">MATCH FOUND</div><div class="mfS" id="mfSub">COMPETITIVE · DUSTWALL</div></div></div>
@@ -562,6 +587,15 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
+<div id="dailyModal" class="screen hidden">
+  <div class="panel drPanel">
+    <div class="ol">DAILY REWARD</div><h2>WELCOME BACK, AGENT</h2>
+    <div class="drStreak" id="drStreak"></div>
+    <div class="drAmount" id="drAmount"></div>
+    <div class="note" id="drNote" style="text-align:center"></div>
+    <button class="btn primary center" id="drClaim">CLAIM</button>
+  </div>
+</div>
 <div id="rangeMenu" class="screen hidden">
   <div class="panel setPanel">
     <div class="pHead"><h2>PRACTICE RANGE</h2><button class="iconBtn" id="rmClose">✕</button></div>
@@ -2186,7 +2220,7 @@ function castAbility(e, key, target) {
   if (ABIL[ab.type](e, ab, target) === false) return false;
   if (key === 'X') e.ult = 0; else e.charges[key]--;
   fx('ab', e.x, e.z, e.id);
-  if (e.isPlayer) { refreshAbilHud(); startGauge(ab, key); }
+  if (e.isPlayer) { refreshAbilHud(); startGauge(ab, key); if (!RANGE()) matchStats.abil++; }
   return true;
 }
 function fireFury(e) {
@@ -2782,7 +2816,7 @@ function setupMatch(agentId, humans = []) {
   clearEffects(); clearDrops();
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
-  player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {};
+  player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {}; matchStats = { hs: 0, abil: 0 };
   if (RANGE()) return setupRange();
   if (DUEL()) {
     // 1v1: a friend from the party is the opponent, otherwise a bot
@@ -2948,14 +2982,18 @@ function finishMatch() {
   const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
   profile.xp += gain;
   const vpGain = (won ? 250 : 100) + p.kills * 10; profile.vp += vpGain;
+  const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
+  const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
   profile.matches.unshift({ map: game.mapId, won, score: [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
-  profile.matches = profile.matches.slice(0, 30); saveProfile();
+  profile.matches = profile.matches.slice(0, 30); saveProfile(); refreshVP();
   $('overStats').innerHTML = `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
     <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
     <div class="stat"><span>Match MVP</span><b>${mvp.name} (${AGENT[mvp.agent].name}) · ${mvp.kills} kills</b></div>
-    <div class="stat"><span>VP Earned</span><b class="os" style="color:var(--teal)">+${vpGain} VP · total ${profile.vp.toLocaleString()}</b></div>
+    <div class="stat"><span>VP Earned</span><b class="os" style="color:var(--teal)">+${vpGain + lvVp + doneMs.reduce((a, m) => a + m.vp, 0)} VP · total ${profile.vp.toLocaleString()}</b></div>
+    ${lvVp ? `<div class="stat"><span>Level-up reward</span><b class="os" style="color:var(--gold)">+${lvVp} VP</b></div>` : ''}
+    ${doneMs.map(m => `<div class="stat"><span>Mission complete</span><b style="color:var(--teal)">${m.txt} · +${m.vp} VP</b></div>`).join('')}
     <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
   $('btnAgain').classList.toggle('hidden', net.role !== 'off'); $('btnMenu').textContent = net.role !== 'off' ? 'Back to Party Lobby' : 'Main Menu';
@@ -3453,6 +3491,7 @@ function netSnd(n) { netBroadcast({ t: 'snd', n }); }
 function toastTo(e, msg) { if (!e) return; if (e.isPlayer) toast(msg); else if (e.remote) netTo(e.remote, { t: 'toast', m: msg }); }
 function teleported(e) { e.tpSeq = (e.tpSeq || 0) + 1; e.nx = e.x; e.ny = e.y; e.nz = e.z; }
 function dealDamage(t, dmg, src, label, head) {
+  if (head && src === player && t !== player && !RANGE()) matchStats.hs++;
   if (net.role === 'client') { netSend({ t: 'hit', id: t.id, dmg: r2(dmg), l: label, h: head ? 1 : 0 }); return; }
   applyDamage(t, dmg, src, label, head);
 }
@@ -3930,6 +3969,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
+  matchStats = { hs: 0, abil: 0 };
   game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops(); orbs.forEach(o => scene.remove(o.mesh)); orbs = [];
@@ -3958,7 +3998,7 @@ function clientCast(key) {
   if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades') ABIL[ab.type](p); // movement is ours to predict
   netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
-  refreshAbilHud(); startGauge(ab, key);
+  refreshAbilHud(); startGauge(ab, key); matchStats.abil++;
   return true;
 }
 function clientSpikeUI(p) {
@@ -4354,7 +4394,7 @@ function confirmName() {
   const raw = $('nameField').value, n = cleanName(raw);
   if (!raw.trim()) { $('nameErr').textContent = 'Please type a name.'; return; }
   if (n !== raw.trim()) { $('nameField').value = n; $('nameErr').textContent = 'Some symbols are not allowed and were removed — press Confirm again.'; return; }
-  setPlayerName(n); $('nameModal').classList.add('hidden'); SND.buy();
+  setPlayerName(n); $('nameModal').classList.add('hidden'); SND.buy(); setTimeout(maybeDailyReward, 400);
 }
 $('nameOk').onclick = confirmName;
 $('nameCancel').onclick = () => $('nameModal').classList.add('hidden');
@@ -4406,6 +4446,7 @@ function renderStore() {
   refreshVP();
   document.querySelectorAll('#storeTabs button').forEach(b => b.classList.toggle('on', b.dataset.sv === storeView));
   const box = $('storeBox');
+  if (storeView === 'earn') { renderEarn(box); return; }
   if (storeView === 'offers') {
     const f = featuredLine(), d = dailyOffers(), L = f.line, bp = bundlePrice(L);
     box.innerHTML = `<div class="feat" style="--tc:${TIERS[L.tier].color}">
@@ -4479,6 +4520,70 @@ $('skinPicker').onclick = e => { if (e.target.id === 'skinPicker') closeSkinPick
 let menuToastT = 0;
 function toastMenu(m) { const t = $('menuToast'); t.textContent = m; t.classList.add('on'); clearTimeout(menuToastT); menuToastT = setTimeout(() => t.classList.remove('on'), 3200); }
 $('vpBox').onclick = () => showTab('store');
+/* =====================================================================
+   EARNING VP: daily reward · daily missions · level-ups · shooting test
+   ===================================================================== */
+const today = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / DAY);
+const DAILY_VP = streak => 200 + 50 * Math.min(streak, 6); // 250 on day 1 … 500 from day 6
+const MISSION_POOL = [
+  { id: 'k15', type: 'kills', n: 15, vp: 200, txt: 'Get 15 kills' }, { id: 'k30', type: 'kills', n: 30, vp: 350, txt: 'Get 30 kills' },
+  { id: 'h8', type: 'heads', n: 8, vp: 200, txt: 'Land 8 headshots' }, { id: 'h20', type: 'heads', n: 20, vp: 300, txt: 'Land 20 headshots' },
+  { id: 'w1', type: 'wins', n: 1, vp: 250, txt: 'Win a match' }, { id: 'w2', type: 'wins', n: 2, vp: 400, txt: 'Win 2 matches' },
+  { id: 'p2', type: 'play', n: 2, vp: 200, txt: 'Finish 2 matches' }, { id: 'p3', type: 'play', n: 3, vp: 300, txt: 'Finish 3 matches' },
+  { id: 'a10', type: 'abil', n: 10, vp: 150, txt: 'Use 10 abilities in matches' }, { id: 'a25', type: 'abil', n: 25, vp: 250, txt: 'Use 25 abilities in matches' },
+  { id: 'r20', type: 'range', n: 20, vp: 200, txt: 'Hit 20+ targets in a Range shooting test' },
+];
+const LEVEL_VP = 500, RANGE_TESTS_PER_DAY = 5;
+let matchStats = { hs: 0, abil: 0 };
+function ensureMissions() {
+  const d = today();
+  if (!profile.missions || profile.missions.day !== d) {
+    const rng = seeded(d * 2654435761 + profile.seed), types = new Set(), list = [];
+    for (const m of seededPick(rng, MISSION_POOL, MISSION_POOL.length)) { if (types.has(m.type)) continue; types.add(m.type); list.push({ id: m.id, prog: 0, done: false }); if (list.length === 3) break; }
+    profile.missions = { day: d, list }; saveProfile();
+  }
+  if (!profile.rangeVp || profile.rangeVp.day !== d) profile.rangeVp = { day: d, n: 0 };
+  return profile.missions.list;
+}
+// add progress to every mission of a type; 'range' missions take a score instead of a count. Returns the missions finished now.
+function missionProgress(type, amount, isScore) {
+  const done = [];
+  for (const m of ensureMissions()) {
+    const M = MISSION_POOL.find(x => x.id === m.id); if (!M || M.type !== type || m.done) continue;
+    m.prog = isScore ? Math.max(m.prog, amount) : m.prog + amount;
+    if (m.prog >= M.n) { m.prog = M.n; m.done = true; profile.vp += M.vp; done.push(M); }
+  }
+  saveProfile(); return done;
+}
+function maybeDailyReward() {
+  const d = today(), D = profile.daily || {};
+  if (D.claimed === d) return;
+  const streak = D.claimed === d - 1 ? (D.streak || 0) + 1 : 1, vp = DAILY_VP(streak);
+  const wk = (streak - 1) % 7; // position in the 7-day strip
+  $('drStreak').innerHTML = Array.from({ length: 7 }, (_, i) => `<div class="drDay${i < wk ? ' got' : ''}${i === wk ? ' now' : ''}"><span>DAY ${i + 1 + streak - 1 - wk}</span><b>${DAILY_VP(i + 1 + streak - 1 - wk)}</b></div>`).join('');
+  $('drAmount').innerHTML = `<b class="vpI"></b>+${vp} VP`;
+  $('drNote').textContent = streak > 1 ? `${streak}-day streak! Come back tomorrow for more.` : 'Come back every day to grow your streak and your reward.';
+  $('dailyModal').classList.remove('hidden');
+  $('drClaim').onclick = () => { profile.daily = { claimed: d, streak }; profile.vp += vp; saveProfile(); refreshVP(); SND.buy(); $('dailyModal').classList.add('hidden'); toastMenu(`Daily reward claimed: +${vp} VP`); if (curTab === 'store') renderStore(); };
+}
+function renderEarn(box) {
+  const ms = ensureMissions(), D = profile.daily || {}, d = today();
+  const left = (d + 1) * DAY - (Date.now() - new Date().getTimezoneOffset() * 6e4);
+  const lv = levelOf(profile.xp), xpIn = profile.xp % 1000;
+  box.innerHTML = `
+    <div class="collCat">DAILY MISSIONS · new missions in ${fmtLeft(left)}</div>
+    <div class="msList">${ms.map(m => { const M = MISSION_POOL.find(x => x.id === m.id); return `<div class="msRow${m.done ? ' done' : ''}">
+      <div class="msTxt"><b>${M.txt}</b><div class="msBar"><div style="width:${m.prog / M.n * 100}%"></div></div><span class="ol">${m.done ? 'COMPLETE' : `${m.prog} / ${M.n}`}</span></div>
+      <div class="msVp">${m.done ? '✓' : '<b class="vpI"></b>' + M.vp}</div></div>`; }).join('')}</div>
+    <div class="earnGrid">
+      <div class="earnCard"><div class="ol">DAILY LOGIN</div><h4>${D.claimed === d ? 'Claimed today ✓' : 'Ready to claim!'}</h4><p>${D.streak ? `${D.streak}-day streak · ` : ''}250 VP on day 1, up to 500 VP a day from day 6. Miss a day and the streak restarts.</p>${D.claimed === d ? '' : '<button class="btn primary small" id="btnClaimDaily">CLAIM</button>'}</div>
+      <div class="earnCard"><div class="ol">PLAY MATCHES</div><h4>+250 win · +100 loss</h4><p>Plus +10 VP for every kill. Swiftplay is the quickest way.</p></div>
+      <div class="earnCard"><div class="ol">LEVEL UP</div><h4>+${LEVEL_VP} VP per level</h4><p>Level ${lv} · ${xpIn} / 1000 XP to level ${lv + 1}. Earn XP by finishing matches.</p><div class="msBar"><div style="width:${xpIn / 10}%"></div></div></div>
+      <div class="earnCard"><div class="ol">PRACTICE RANGE</div><h4>Shooting test: 4 VP per hit</h4><p>Up to 120 VP per test, for ${RANGE_TESTS_PER_DAY} tests a day (${Math.max(0, RANGE_TESTS_PER_DAY - profile.rangeVp.n)} left today). Press H in the Range to start one.</p></div>
+    </div>`;
+  const c = $('btnClaimDaily'); if (c) c.onclick = () => maybeDailyReward();
+}
+
 /* =====================================================================
    PRACTICE RANGE
    ===================================================================== */
@@ -4634,6 +4739,10 @@ function finishRangeTest() {
   const rank = T.kills >= 28 ? 'AGENT 0' : T.kills >= 24 ? 'EXPERT' : T.kills >= 18 ? 'MARKSMAN' : T.kills >= 10 ? 'RECRUIT' : 'ROOKIE';
   banner(`${T.kills} / 30 · ${rank}`, `Shooting test (${T.diff}) · avg. reaction ${avg}${nb ? ' · NEW BEST!' : ' · best ' + best}`, '', 5);
   if (T.kills >= 24) SND.kill();
+  ensureMissions(); let vpMsg = '';
+  if (profile.rangeVp.n < RANGE_TESTS_PER_DAY) { const v = Math.min(120, T.kills * 4); profile.rangeVp.n++; profile.vp += v; vpMsg = `+${v} VP`; }
+  const ms = missionProgress('range', T.kills, true); for (const m of ms) vpMsg += ` · Mission complete +${m.vp} VP`;
+  saveProfile(); if (vpMsg) toastMenu(vpMsg.replace(/^ · /, ''));
   layoutDummies();
 }
 function openRangeMenu() {
@@ -4893,7 +5002,8 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
-if (!profile.nameSet && profile.name === 'Player') openNameModal(true);
+if (!profile.nameSet && profile.name === 'Player') openNameModal(true); else maybeDailyReward();
+ensureMissions();
 { const jm = location.search.match(/[?&]join=([A-Za-z0-9]{5})\b/); if (jm) { $('partyPanel').classList.remove('hidden'); joinParty(jm[1]); } }
 window.__vs = { game, get player() { return player; }, get bots() { return bots; }, entities: () => entities, castAbility, nextRound, endRound };
 requestAnimationFrame(loop);

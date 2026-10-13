@@ -47,7 +47,12 @@ Pick **PRACTICE RANGE** on the PLAY tab, press START and choose an agent. It's s
 - The stats panel shows shots, accuracy, headshot %, kills, average time to kill and your last hit. Damage numbers float over each target you hit, and headshots show in gold.
 
 ## Skins, Store and Night Market
-- Earn **VP** (Valor Points) by playing: +250 for a win, +100 for a loss and +10 per kill. You start with 2,500 VP. Your VP shows in the top bar.
+- Earn **VP** (Valor Points). You start with 2,500 VP; your VP shows in the top bar. See STORE › **EARN VP** for your progress.
+  - **Matches:** +250 for a win, +100 for a loss, +10 per kill.
+  - **Daily login reward:** 250 VP on day 1, growing by 50 each day in a row, up to 500 VP a day. Miss a day and the streak restarts.
+  - **3 daily missions** (new ones every day), worth 150–400 VP each. Examples: get 15 or 30 kills, land headshots, win matches, finish matches, use abilities, hit 20+ targets in a shooting test.
+  - **Level-up reward:** +500 VP every time your account level goes up.
+  - **Practice Range shooting test:** 4 VP per target hit (up to 120 VP), for 5 tests a day.
 - **STORE** tab:
   - **Offers**: a featured skin bundle (20% off, changes every 3 days) and 4 daily skins (refresh every day).
   - **Night Market**: 6 hidden offers picked just for you, each 10–49% off. Click a card to flip it and reveal the skin. It refreshes every week.
