@@ -13,16 +13,16 @@ Click the screen to lock the mouse.
 - **12 agents**, each with C / Q / E abilities and an X ultimate
   - Jett: Cloudburst, Updraft, Tailwind (press E to ready, E again to dash where you move; 2 kills recharge it), Blade Storm (5 floating kunai: left click throws one, right click throws the rest in a fan, kills refill them), passive Drift (hold Space in the air to glide)
   - Phoenix: Blaze, Curveball (flash), Hot Hands (fire that heals you), Run It Back
-  - Sage: Barrier Orb (destructible, you can stand on it), Slow Orb, Healing Orb, Resurrection
-  - Sova: Owl Drone, Shock Bolt, Recon Bolt, Hunter's Fury (pierces walls)
+  - Sage: Barrier Orb (preview the wall, right click rotates, left click builds; you can stand on it), Slow Orb, Healing Orb (left click heals the ally you aim at, right click heals you), Resurrection (aim at a fallen ally)
+  - Sova: Owl Drone, Shock Bolt and Recon Bolt (draw your bow: hold left click to charge, right click sets 0–2 bounces, release to fire), Hunter's Fury (fire up to 3 wall-piercing blasts yourself)
   - Brimstone: Stim Beacon, Incendiary, Sky Smoke, Orbital Strike (opens an orange holographic tactical map from his wrist: move the mouse to aim, left click to fire, right click to cancel)
   - Reyna: Leer (nearsight), Devour (overheal), Dismiss (invulnerable), Empress (raises glowing purple hands, then your gun hand glows purple)
-  - Omen: Shrouded Step (short teleport), Paranoia (nearsights through walls), Dark Cover, From the Shadows (long teleport)
+  - Omen: Shrouded Step (preview the spot, click to teleport), Paranoia (nearsights through walls), Dark Cover (aim a shadow sphere, hold right click to push it through walls), From the Shadows (pick any spot on a purple map)
   - Raze: Boom Bot (chases and explodes), Blast Pack (throw it, press Q again to blow it up and launch yourself — QQ to fly), Paint Shells (cluster grenade), Showstopper (rocket)
   - Killjoy: Nanoswarm, Alarmbot (reveals and slows), Turret (shoots enemies), Lockdown (detained enemies can't shoot)
   - Cypher: Trapwire, Cyber Cage, Spycam (reveal pulses), Neural Theft (reveals every enemy)
   - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)
-  - Viper: Snake Bite (acid), Poison Cloud, Toxic Screen (smoke wall through walls), Viper's Pit
+  - Viper: Snake Bite (acid), Poison Cloud and Toxic Screen (press the key again to switch them on/off; they burn fuel), Viper's Pit (lasts while you stay inside; you see nearby enemies in it)
 - **17 weapons**, each with its own 3D model and colors (Sheriff revolver, Vandal with wood furniture, Operator with big scope and bipod, Odin with a drum…) shown in your hands, on other players, as drops, and as pictures in the shop and Collection. Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
 - **Shop and credit economy**: 200 per kill, 3000 per round win, loss bonus of 1900 / 2400 / 2900, 300 plant bonus, 9000 credit cap. Items bought this round can be sold back.
 - **Spike**: 4s plant, 45s fuse with beeps that speed up, 7s defuse with a halfway checkpoint. The spike can be dropped and picked up.

@@ -409,6 +409,17 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #dmgOv{background:radial-gradient(circle,transparent 45%,rgba(255,30,40,.55) 100%)}
 #lowOv{background:radial-gradient(circle,transparent 55%,rgba(255,30,40,.35) 100%)}
 #buildTag{position:fixed;right:10px;bottom:6px;font:500 11px Oswald,sans-serif;letter-spacing:1px;opacity:.45;z-index:5;pointer-events:none}
+#shadeOv{position:fixed;inset:0;z-index:11;pointer-events:none;background:radial-gradient(circle,rgba(20,10,40,.75) 20%,rgba(10,4,24,.97) 75%);display:flex;align-items:center;justify-content:center}
+#shadeTxt{font:700 34px Oswald,sans-serif;letter-spacing:8px;color:#a58bff;text-shadow:0 0 20px #4b3fa0}
+#placeHint{position:absolute;left:50%;bottom:190px;transform:translateX(-50%);text-align:center;background:rgba(15,25,35,.7);border:1px solid rgba(255,255,255,.15);padding:8px 16px;font-size:14px;line-height:1.5;white-space:nowrap}
+#placeHint small{opacity:.75;font-size:12px}
+.pwBars{display:inline-flex;gap:3px;margin:0 8px;vertical-align:middle}
+.pwBars i{width:22px;height:8px;background:rgba(255,255,255,.2);transform:skewX(-20deg)}
+.pwBars i.on{background:#6fb6ff;box-shadow:0 0 6px #4fa3ff}
+#fuelBar{position:absolute;left:50%;bottom:122px;transform:translateX(-50%);width:200px;text-align:center}
+#fuelTxt{font:600 11px Oswald,sans-serif;letter-spacing:2px;color:#8fe88a;margin-bottom:3px}
+#fuelBar .fb{height:6px;background:rgba(0,0,0,.5);border:1px solid rgba(95,211,90,.5)}
+#fuelFill{height:100%;background:linear-gradient(90deg,#2f8f55,#7fe86b)}
 #brimOv{position:fixed;inset:0;pointer-events:none;z-index:12}
 #empOv{background:radial-gradient(circle,transparent 50%,rgba(170,60,255,.4) 100%);transition:opacity .3s}
 #abGauge{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);width:300px;text-align:center}
@@ -591,7 +602,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 17 (ult maps &amp; hands)</div>
+<div id="buildTag">VALOR STRIKE · build 18 (Sova · Omen · Viper · Sage)</div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
     <div class="ol">DAILY REWARD</div><h2>WELCOME BACK, AGENT</h2>
@@ -658,6 +669,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="ov" id="lowOv"></div>
   <div class="ov" id="empOv"></div>
   <canvas id="brimOv" class="hidden"></canvas>
+  <div id="shadeOv" class="hidden"><div id="shadeTxt"></div></div>
+  <div id="placeHint" class="hidden"></div>
+  <div id="fuelBar" class="hidden"><div id="fuelTxt">FUEL</div><div class="fb"><div id="fuelFill"></div></div></div>
   <div id="abGauge" class="hidden"><div id="agLabel"></div><div class="agBar"><div id="agFill"></div></div></div>
   <div class="ov" id="dmgOv"></div>
   <div class="ov" id="nearOv"></div>
@@ -814,15 +828,15 @@ const AGENTS = [
           E: { name: 'Hot Hands', cost: 0, max: 1, free: 1, type: 'molly', desc: 'Throw a fireball that burns an area. Heals you.' },
           X: { name: 'Run It Back', ult: 6, type: 'rib', desc: 'Leave a marker. If you die within 10s, or when the 10s run out, you come back to the marker with full health.' } } },
   { id: 'sage', name: 'Sage', role: 'Sentinel', color: '#5fe6c8', glyph: 'SG', desc: 'A guardian who protects the team with healing, revives and walls.',
-    ab: { C: { name: 'Barrier Orb', cost: 400, max: 1, free: 0, type: 'wall', desc: 'Creates a large, destructible ice wall.' },
+    ab: { C: { name: 'Barrier Orb', cost: 400, max: 1, free: 0, type: 'wall', desc: 'Preview the wall, right click to rotate it, left click to build. Destructible.' },
           Q: { name: 'Slow Orb', cost: 200, max: 2, free: 0, type: 'slow', desc: 'Creates a field that slows enemies.' },
-          E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Restore 60 HP over 5 seconds.' },
-          X: { name: 'Resurrection', ult: 8, type: 'revive', desc: 'Revive a nearby fallen ally.' } } },
+          E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Left click heals the ally you aim at, right click heals yourself (60 HP over 5s).' },
+          X: { name: 'Resurrection', ult: 8, type: 'revive', desc: 'Aim at a fallen ally and left click to bring them back.' } } },
   { id: 'sova', name: 'Sova', role: 'Initiator', color: '#5b86ff', glyph: 'SV', desc: 'A tracker who reveals enemies with his bow and drone.',
     ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', guided: 1, desc: 'A drone that reveals nearby enemies. Hold the key and turn to steer it with your aim.' },
-          Q: { name: 'Shock Bolt', cost: 150, max: 2, free: 0, type: 'shock', desc: 'Deals explosive damage where it lands.' },
-          E: { name: 'Recon Bolt', cost: 0, max: 1, free: 1, type: 'recon', desc: 'Sticks where it lands and pulses twice to reveal enemies.' },
-          X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Three wall-piercing energy blasts.' } } },
+          Q: { name: 'Shock Bolt', cost: 150, max: 2, free: 0, type: 'shock', desc: 'Draw your bow: HOLD left click to charge, right click to set bounces (0–2), release to fire. Explodes where it lands.' },
+          E: { name: 'Recon Bolt', cost: 0, max: 1, free: 1, type: 'recon', desc: 'Draw your bow (hold to charge, right click for bounces). The bolt sticks and pulses twice to reveal enemies.' },
+          X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Draw your glowing bow and fire up to three wall-piercing energy blasts yourself (left click) within 6 seconds.' } } },
   { id: 'brim', name: 'Brimstone', role: 'Controller', color: '#d29a52', glyph: 'BR', desc: 'A commander who rains smokes and fire from the sky.',
     ab: { C: { name: 'Stim Beacon', cost: 200, max: 1, free: 0, type: 'stim', desc: 'A field that boosts allies\' fire rate and speed.' },
           Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'A grenade that creates a zone of fire.' },
@@ -836,10 +850,10 @@ const AGENTS = [
 ];
 AGENTS.push(
   { id: 'omen', name: 'Omen', role: 'Controller', color: '#7b7fe0', glyph: 'OM', desc: 'A phantom who blinds, smokes and teleports across the map.',
-    ab: { C: { name: 'Shrouded Step', cost: 100, max: 2, free: 0, type: 'step', desc: 'Teleport a short distance to where you aim.' },
+    ab: { C: { name: 'Shrouded Step', cost: 100, max: 2, free: 0, type: 'step', desc: 'Shows where you will appear; left click to teleport there after a short shroud.' },
           Q: { name: 'Paranoia', cost: 300, max: 1, free: 0, type: 'paranoia', desc: 'A shadow that flies through walls and nearsights every enemy it touches.' },
-          E: { name: 'Dark Cover', cost: 100, max: 2, free: 1, type: 'skySmoke', range: 50, r: 4.4, dur: 15, color: 0x4a3f7a, desc: 'Long-range shadow smoke. (1 free per round)' },
-          X: { name: 'From the Shadows', ult: 7, type: 'fts', desc: 'Teleport to any spot you aim at, up to 80 m away.' } } },
+          E: { name: 'Dark Cover', cost: 100, max: 2, free: 1, type: 'skySmoke', range: 50, r: 4.4, dur: 15, color: 0x4a3f7a, desc: 'Aim a shadow sphere; hold right click to push it further, even through walls; left click to place. (1 free per round)' },
+          X: { name: 'From the Shadows', ult: 7, type: 'fts', desc: 'Open the map and pick any spot; after 2.5s in the shadows you appear there.' } } },
   { id: 'raze', name: 'Raze', role: 'Duelist', color: '#f0a03a', glyph: 'RZ', desc: 'An explosives expert who clears corners with bombs and rockets.',
     ab: { C: { name: 'Boom Bot', cost: 300, max: 1, free: 0, type: 'boombot', desc: 'A bot that rolls forward, chases the nearest enemy and explodes.' },
           Q: { name: 'Blast Pack', cost: 200, max: 2, free: 0, type: 'satchel', dmg: 50, rad: 4.5, color: 0xff9b3d, label: 'Blast Pack', desc: 'Throw a satchel that sticks to surfaces. Press Q again to blow it up and launch everyone nearby — yourself too. Press Q twice fast to blast yourself into the air.' },
@@ -862,9 +876,9 @@ AGENTS.push(
           X: { name: 'Seekers', ult: 8, type: 'seekers', desc: 'Three seekers hunt the nearest enemies and nearsight them.' } } },
   { id: 'viper', name: 'Viper', role: 'Controller', color: '#3fbf7a', glyph: 'VP', desc: 'A chemist who chokes out areas with poison and acid.',
     ab: { C: { name: 'Snake Bite', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'acid', zr: 3.6, zt: 6, dps: 32, color: 0x5fd35a, desc: 'A canister that bursts into a pool of acid.' },
-          Q: { name: 'Poison Cloud', cost: 200, max: 1, free: 0, type: 'skySmoke', range: 40, r: 4.6, dur: 14, color: 0x2f8f55, desc: 'A long-lasting toxic smoke.' },
-          E: { name: 'Toxic Screen', cost: 0, max: 1, free: 1, type: 'screen', desc: 'A long wall of toxic gas that blocks vision, even through walls.' },
-          X: { name: "Viper's Pit", ult: 8, type: 'pit', desc: 'A huge toxic cloud around you that hurts enemies inside it.' } } },
+          Q: { name: 'Poison Cloud', cost: 200, max: 1, free: 0, type: 'skySmoke', range: 40, r: 4.6, dur: 14, color: 0x2f8f55, desc: 'Throw a toxic cloud. Press Q again to turn it off or on. Uses fuel while active.' },
+          E: { name: 'Toxic Screen', cost: 0, max: 1, free: 1, type: 'screen', desc: 'A long toxic wall that goes through walls. Press E again to turn it off or on. Uses fuel while active.' },
+          X: { name: "Viper's Pit", ult: 8, type: 'pit', desc: 'A huge toxic cloud that lasts while you stay inside it. You see enemies close to you inside it.' } } },
 );
 const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 
@@ -1803,7 +1817,7 @@ function separate() {
 function smokeBlocks(ax, ay, az, bx, by, bz) {
   const dx = bx - ax, dy = by - ay, dz = bz - az, L2 = dx * dx + dy * dy + dz * dz;
   for (const s of smokes) {
-    if (s.grow < .5) continue;
+    if (s.grow < .5 || s.off) continue;
     let t = L2 > 0 ? ((s.x - ax) * dx + (s.y - ay) * dy + (s.z - az) * dz) / L2 : 0; t = clamp(t, 0, 1);
     const px = ax + dx * t - s.x, py = ay + dy * t - s.y, pz = az + dz * t - s.z, r = s.r * s.grow;
     if (px * px + py * py + pz * pz < r * r) return true;
@@ -2213,9 +2227,10 @@ function addWallMesh(w) {
   m.position.set((w.x0 + w.x1) / 2, w.y0 + h / 2, (w.z0 + w.z1) / 2); m.castShadow = true;
   m.scale.y = .05; scene.add(m); w.mesh = m; return w;
 }
-function sageWall(e) {
-  const f = fwd(e), along = Math.abs(f.x) > Math.abs(f.z) ? 'z' : 'x';
-  const p = { x: e.x + f.x * 5, z: e.z + f.z * 5 };
+function sageWall(e, target) {
+  const f = fwd(e); let along = Math.abs(f.x) > Math.abs(f.z) ? 'z' : 'x';
+  let p = { x: e.x + f.x * 5, z: e.z + f.z * 5 };
+  if (target && typeof target.x === 'number') { p = { x: target.x, z: target.z }; along = target.rot ? 'z' : 'x'; }
   const len = 9, th = .8, h = 3.8, base = 0;
   const w = along === 'x' ? { x0: p.x - len / 2, x1: p.x + len / 2, z0: p.z - th / 2, z1: p.z + th / 2 } : { x0: p.x - th / 2, x1: p.x + th / 2, z0: p.z - len / 2, z1: p.z + len / 2 };
   Object.assign(w, { y0: base, y1: base + h, hp: 900, t: 30 });
@@ -2231,7 +2246,12 @@ function damageWall(w, dmg) {
 
 const ABIL = {
   smokeSmall(e, ab) { const p = aimPoint(e, ab.range || 18); makeSmoke(p.x, p.z, ab.r || 3.4, ab.dur || 7, ab.color || 0xdbe8f5, e); return true; },
-  skySmoke(e, ab) { const p = aimPoint(e, ab.range || 70); makeSmoke(p.x, p.z, ab.r || 4.6, ab.dur || 19, ab.color || 0x6a7d8e, e); return true; },
+  skySmoke(e, ab, target) {
+    const p = target ? { x: clamp(target.x, 2, MAPW - 2), z: clamp(target.z, 2, MAPH - 2) } : aimPoint(e, ab.range || 70);
+    const sm = makeSmoke(p.x, p.z, ab.r || 4.6, ab.dur || 19, ab.color || 0x6a7d8e, e);
+    if (e.agent === 'viper') { sm.t = sm.max = 1e6; e.viperCloud = sm; } // Viper turns her cloud on and off with fuel
+    return true;
+  },
   updraft(e) { e.vy = 11.5; e.onGround = false; spawnParticles(e.x, e.y, e.z, 20, 0xdff4ff, 3, .5); return true; },
   dash(e) {
     if (!e.isPlayer && !e.remote) { doDash(e); return true; } // bots dash right away
@@ -2273,11 +2293,15 @@ const ABIL = {
     const m = new THREE.Mesh(new THREE.ConeGeometry(.4, 1, 6), new THREE.MeshBasicMaterial({ color: 0xff8a3d, transparent: true, opacity: .7 }));
     m.position.set(e.x, e.y + .6, e.z); m.rotation.x = Math.PI; scene.add(m); e.ribMesh = m; return true;
   },
-  wall(e) { return sageWall(e); },
+  wall(e, ab, target) { return sageWall(e, target); },
   slow(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
-  heal(e) { if (e.hp >= 100) { toastTo(e, 'Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
-  revive(e) {
+  heal(e, ab, target) {
+    if (target && target.id >= 0) { const a = entities[target.id]; if (a && a.alive && a !== e && !isEnemy(a, e) && Math.hypot(a.x - e.x, a.z - e.z) < 20) { if (a.hp >= 100) { toastTo(e, `${a.name} is already at full health`); return false; } a.healT = 5; a.healRate = 12; a.healCap = 100; fx('parts', a.x, a.y + 1, a.z, 20, 0x5fe6c8, 2, .7); toastTo(a, `${e.name} is healing you`); return true; } }
+    if (e.hp >= 100) { toastTo(e, 'Health is already full'); return false; } e.healT = 5; e.healRate = 12; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
+  revive(e, ab, target) {
     let best = null, bd = 60;
+    if (target && target.id >= 0) { const o = entities[target.id]; if (o && !o.alive && o.team === e.team && o.deathPos && Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z) < 20) best = o; }
+    if (!best)
     for (const o of entities) if (!o.alive && o.team === e.team && o !== e && o.deathPos) { const d = Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z); if (d < bd) { bd = d; best = o; } }
     if (!best) { toastTo(e, 'Resurrection needs a fallen ally — no teammate is dead right now'); if (e.isPlayer) SND.deny(); return false; }
     Object.assign(best, { alive: true, hp: 100, armor: 0, x: best.deathPos.x, y: best.deathPos.y, z: best.deathPos.z, vy: 0, flashT: 0, target: null, path: [], slot: best.primary ? 1 : 2 });
@@ -2294,14 +2318,30 @@ const ABIL = {
     p.tick = 0; p.onUpdate = dt => { p.tick -= dt; if (p.tick <= 0) { p.tick = .5; for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 13 && los(p.x, p.y, p.z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = 1.2; if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } } };
     return true;
   },
-  shock(e, ab) {
-    const p = spawnProj(Object.assign(throwFrom(e, 30, 1), { g: 12, color: ab.color || 0x7fb0ff, owner: e, model: 'arrow' }));
+  shock(e, ab, target) {
+    const pw = target && target.pw ? clamp(target.pw, .2, 1) : 1, b = target && target.b !== undefined ? clamp(target.b | 0, 0, 2) : 1;
+    const p = spawnProj(Object.assign(throwFrom(e, 12 + 24 * pw, 1), { g: 12, color: ab.color || 0x7fb0ff, owner: e, model: 'arrow', stick: true, bounces: b }));
     p.onLand = () => explodeAt(p.x, p.y, p.z, e, ab.dmg || 75, (ab.dmg || 75) * .55, ab.rad || 4.5, ab.color || 0x7fb0ff, ab.label || 'Shock Bolt');
     return true;
   },
   /* ---- Omen ---- */
-  step(e) { return teleportTo(e, aimPoint(e, 12)); },
-  fts(e) { return teleportTo(e, aimPoint(e, 80)); },
+  step(e, ab, target) {
+    if (!target) return teleportTo(e, aimPoint(e, 12));
+    const pt = { x: target.x, z: target.z };
+    if (Math.hypot(pt.x - e.x, pt.z - e.z) > 14) { toastTo(e, 'Too far'); return false; }
+    if (game.phase === 'buy' && blockedAt(e, pt.x, pt.z)) { toastTo(e, 'Cannot leave the spawn yet'); return false; }
+    fx('parts', e.x, e.y + 1, e.z, 24, 0x7b7fe0, 2, .8); fx('parts', pt.x, 1, pt.z, 24, 0x4b3fa0, 2, .9);
+    if (e.isPlayer) shadeScreen(.9, '');
+    timedFx.push({ t: .9, update() { }, end() { if (e.alive) teleportTo(e, pt); } });
+    return true;
+  },
+  fts(e, ab, target) {
+    if (!target) return teleportTo(e, aimPoint(e, 80));
+    const pt = { x: clamp(target.x, 1, MAPW - 1), z: clamp(target.z, 1, MAPH - 1) };
+    if (e.isPlayer) shadeScreen(2.5, 'FROM THE SHADOWS');
+    let k = 0; timedFx.push({ t: 2.5, update() { if (k++ % 12 === 0) fx('parts', pt.x, 1.2, pt.z, 18, 0x4b3fa0, 1.5, 1); }, end() { if (e.alive) teleportTo(e, pt); } });
+    return true;
+  },
   paranoia(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 26), { g: 0, life: 1.1, color: 0x7b7fe0, owner: e, land: false, ghost: true, size: .35, model: 'shadow' }));
     p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1.2 - p.y, o.z - p.z) < 3.2) o.nearT = Math.max(o.nearT, 2.2); };
@@ -2387,19 +2427,22 @@ const ABIL = {
   /* ---- Viper ---- */
   screen(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
-    for (let i = 0; i < 11; i++) { const x = e.x + dx * (2.5 + i * 2.8), z = e.z + dz * (2.5 + i * 2.8); if (x < 2 || z < 2 || x > MAPW - 2 || z > MAPH - 2) break; makeSmoke(x, z, 1.9, 12, 0x2f8f55, e); }
+    const wall = [];
+    for (let i = 0; i < 11; i++) { const x = e.x + dx * (2.5 + i * 2.8), z = e.z + dz * (2.5 + i * 2.8); if (x < 2 || z < 2 || x > MAPW - 2 || z > MAPH - 2) break; const sm = makeSmoke(x, z, 1.9, 1e6, 0x2f8f55, e); wall.push(sm); }
+    if (wall.length) e.viperWall = wall;
     return true;
   },
-  pit(e) { makeSmoke(e.x, e.z, 10, 16, 0x2f8f55, e); makeZone({ x: e.x, z: e.z, r: 10, kind: 'acid', t: 16, dps: 9, owner: e, label: "Viper's Pit" }); return true; },
-  recon(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 38, 1), { g: 8, color: 0x4fa3ff, owner: e, stick: true, life: 4, model: 'arrow' }));
+  pit(e) { e.pitSmoke = makeSmoke(e.x, e.z, 10, 8, 0x2f8f55, e); e.pitZone = makeZone({ x: e.x, z: e.z, r: 10, kind: 'acid', t: 8, dps: 9, owner: e, label: "Viper's Pit" }); e.pitLeft = 45; return true; },
+  recon(e, ab, target) {
+    const pw = target && target.pw ? clamp(target.pw, .2, 1) : 1, b = target && target.b !== undefined ? clamp(target.b | 0, 0, 2) : 0;
+    const p = spawnProj(Object.assign(throwFrom(e, 14 + 26 * pw, 1), { g: 8, color: 0x4fa3ff, owner: e, stick: true, life: 4, model: 'arrow', bounces: b }));
     p.onLand = () => {
       const x = p.x, y = p.y + .3, z = p.z;
       fx('recon', x, y, z);
       let k = 0; timedFx.push({ t: 3.4, update() { if (k === 0 && this.t < 2.8) { k = 1; revealPulse(x, y, z, 32, e.team, 2.5); } if (k === 1 && this.t < 1.0) { k = 2; revealPulse(x, y, z, 32, e.team, 2.5); } }, end() { } });
     }; return true;
   },
-  fury(e) { e.furyN = 3; e.furyT = 0; return true; },
+  fury(e) { e.furyN = 3; e.furyT = 0; if (e.isPlayer || e.remote) { e.furyManual = 6.5; e.furyCD = .3; e.furyPrev = true; } return true; },
   stim(e) { makeZone({ x: e.x, z: e.z, r: 6, kind: 'stim', t: 12, owner: e }); return true; },
   orbital(e, ab, target) { const p = target ? { x: clamp(target.x, 1, MAPW - 1), z: clamp(target.z, 1, MAPH - 1) } : aimPoint(e, 90); makeZone({ x: p.x, z: p.z, r: 5.5, kind: 'orbital', t: 3, delay: 1.5, dps: 150, owner: e }); return true; },
   leer(e) {
@@ -2482,7 +2525,9 @@ function castAbility(e, key, target) {
   if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
-  if (ab.type === 'orbital' && e.isPlayer && !target && e.ult >= ab.ult && e.alive) { if (brimMap) closeBrimMap(); else openBrimMap(); return false; }
+  if (e.agent === 'viper' && ab.type === 'screen' && e.viperWall) { toggleViper(e, 'wall'); return true; }
+  if (e.agent === 'viper' && ab.type === 'skySmoke' && e.viperCloud) { toggleViper(e, 'cloud'); return true; }
+  if (!target && tryStartPlace(e, ab, key)) return false;
   if (ab.type === 'dash' && e.tailwindT > 0) { doDash(e); if (e.isPlayer && gauge && gauge.tailwind) gauge = null; return true; }
   if (ab.type === 'satchel' && e.satchel && projectiles.includes(e.satchel)) { e.satchel.life = 0; e.satchel = null; if (e.isPlayer && gauge && gauge.satchel) gauge = null; return true; }
   if (key === 'X') { if (e.ult < ab.ult) { if (e.isPlayer) ultNotReady(ab, e.ult); else toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); return false; } }
@@ -2573,14 +2618,16 @@ function updateEffects(dt) {
       const h = dt / 3; p.vy -= p.g * h;
       const nx = p.x + p.vx * h, nz = p.z + p.vz * h, ny = p.y + p.vy * h;
       if (hAtPos(nx, nz) > ny && hAtPos(nx, nz) > p.y - .01) {
-        if (p.stick) { done = true; break; }
         const bx = hAtPos(nx, p.z) > ny, bz = hAtPos(p.x, nz) > ny;
+        if (p.stick && !(p.bounces > 0)) { done = true; break; }
+        if (p.stick) { p.bounces--; if (bx || !bz) p.vx *= -.85; if (bz || !bx) p.vz *= -.85; fx('parts', p.x, p.y, p.z, 6, p.color, 1.5, .3); continue; }
         if (bx || !bz) p.vx *= -p.bounce; if (bz || !bx) p.vz *= -p.bounce;
       } else { p.x = nx; p.z = nz; }
       p.y = ny;
       const gh = hAtPos(p.x, p.z) < WALL_H ? hAtPos(p.x, p.z) : 0;
       if (p.y <= gh + .1) {
         p.y = gh + .1;
+        if (p.stick && p.bounces > 0) { p.bounces--; p.vy = Math.abs(p.vy) * .7; continue; }
         if (p.land || p.stick) { done = true; break; }
         p.vy = Math.abs(p.vy) * p.bounce;
       }
@@ -2620,7 +2667,8 @@ function updateStatus(e, dt) {
   }
   if (e.healT > 0) { e.healT -= dt; if (e.hp < e.healCap) e.hp = Math.min(e.healCap, e.hp + e.healRate * dt); }
   else if (e.hp > 100) e.hp = Math.max(100, e.hp - 3 * dt);
-  if (e.furyN > 0) { e.furyT -= dt; if (e.furyT <= 0) { fireFury(e); e.furyN--; e.furyT = 1.1; } }
+  if (e.furyN > 0) { if (e.furyManual > 0) { e.furyManual -= dt; if (e.furyManual <= 0) e.furyN = 0; } else { e.furyT -= dt; if (e.furyT <= 0) { fireFury(e); e.furyN--; e.furyT = 1.1; } } }
+  if (net.role !== 'client') viperTick(e, dt);
   if (e.reloadT > 0) { e.reloadT -= dt; if (e.reloadT <= 0) finishReload(e); }
   e.fireCD -= dt;
   // spike pickup
@@ -2661,6 +2709,7 @@ function equipView() {
 }
 function switchSlot(s) {
   if (!player.alive) return;
+  cancelPlace();
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
   if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
   if (player.slot === s) return;
@@ -2791,13 +2840,14 @@ function updatePlayer(dt) {
   const spd = Math.hypot(p.vx, p.vz);
   if (p.onGround && spd > 5) { stepT -= dt; if (stepT <= 0) { stepT = .36; SND.step(undefined, undefined, .12); alertEnemies(p, 16); } }
   // shooting
-  if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
+  if (updatePlace(dt) || furyInput(p, dt)) { triggerHeld = true; }
+  else if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
   else if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
-  if (mouse[2] && w.model === 'knife' && !shopOpen && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
+  if (mouse[2] && w.model === 'knife' && !shopOpen && !aimMode && !brimMap && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
   if (w.model === 'blades' && !shopOpen) { if (mouse[2] && !p.rmbBlade) throwBlades(p, true); p.rmbBlade = mouse[2]; }
   if (!mouse[0]) p.recoil = Math.max(0, p.recoil - dt * 1.2);
   // aiming
-  const wantAds = (settings.adsToggle ? adsOn : mouse[2]) && w.model !== 'knife' && w.model !== 'blades' && p.reloadT <= 0;
+  const wantAds = (settings.adsToggle ? adsOn : mouse[2]) && !aimMode && !brimMap && !(p.furyN > 0 && p.furyManual > 0) && w.model !== 'knife' && w.model !== 'blades' && p.reloadT <= 0;
   adsT = clamp(adsT + (wantAds ? dt : -dt) * 7, 0, 1);
   // spike plant / defuse
   const sp2 = game.spike;
@@ -3179,7 +3229,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, fuel: 100, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
   }
@@ -3504,7 +3554,7 @@ function updateHUD(dt) {
   $('flashOv').style.opacity = viewer ? Math.min(1, p.flashT / .8) : 0;
   $('nearOv').style.opacity = viewer ? Math.min(1, p.nearT * 2) : 0;
   let inSmoke = false; const cp = camera.position;
-  for (const s of smokes) if (s.mesh && (cp.x - s.x) ** 2 + (cp.y - s.y) ** 2 + (cp.z - s.z) ** 2 < (s.r * s.grow * .95) ** 2) inSmoke = true;
+  for (const s of smokes) if (s.mesh && !s.off && (cp.x - s.x) ** 2 + (cp.y - s.y) ** 2 + (cp.z - s.z) ** 2 < (s.r * s.grow * .95) ** 2) inSmoke = true;
   $('smokeOv').style.opacity = inSmoke ? 1 : 0;
   $('lowOv').style.opacity = p.alive && p.hp < 35 ? .6 + Math.sin(game.time * 6) * .25 : 0;
   dmgT = Math.max(0, dmgT - dt); $('dmgOv').style.opacity = dmgT * 2;
@@ -3545,7 +3595,7 @@ function loadMap(id) {
 function drawMinimap() {
   mmx.clearRect(0, 0, mm.width, mm.height); mmx.drawImage(mmBase, 0, 0);
   const P = (x, z) => [x * MMS, z * MMS];
-  for (const s of smokes) if (s.mesh) { const [x, y] = P(s.x, s.z); mmx.fillStyle = 'rgba(200,210,225,.55)'; mmx.beginPath(); mmx.arc(x, y, s.r * MMS * s.grow, 0, 7); mmx.fill(); }
+  for (const s of smokes) if (s.mesh && !s.off) { const [x, y] = P(s.x, s.z); mmx.fillStyle = 'rgba(200,210,225,.55)'; mmx.beginPath(); mmx.arc(x, y, s.r * MMS * s.grow, 0, 7); mmx.fill(); }
   for (const z of zones) { const [x, y] = P(z.x, z.z); mmx.strokeStyle = z.kind === 'fire' || z.kind === 'orbital' ? '#ff7a22' : z.kind === 'slow' ? '#7f9bff' : '#4dff88'; mmx.beginPath(); mmx.arc(x, y, z.r * MMS, 0, 7); mmx.stroke(); }
   const sp = game.spike;
   if (sp && (sp.state === 'dropped' || sp.state === 'planted')) { const [x, y] = P(sp.x, sp.z); mmx.fillStyle = sp.state === 'planted' && Math.floor(game.time * 4) % 2 ? '#fff' : '#ff4655'; mmx.fillRect(x - 4, y - 4, 8, 8); }
@@ -3688,7 +3738,7 @@ function loop(now) {
 function lockPointer() { const c = renderer.domElement; if (c.requestPointerLock) { try { const r = c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { } } }
 const isLocked = () => document.pointerLockElement === renderer.domElement;
 document.addEventListener('pointerlockchange', () => {
-  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { closeBrimMap(); game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
+  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { closeBrimMap(); cancelPlace(); game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
 });
 document.addEventListener('mousemove', e => {
   if (!isLocked() || game.state !== 'playing' || game.paused || !player.alive) return;
@@ -4147,7 +4197,9 @@ function hostRecv(conn, d) {
   }
 }
 function syncAmmo(inst, a) { if (inst && Array.isArray(a) && a[0] === inst.key) { inst.mag = a[1] | 0; inst.reserve = a[2] | 0; } }
+const cleanTarget = tg => { if (!tg || typeof tg !== 'object') return undefined; const o = {}; for (const k of ['x', 'y', 'z', 'rot', 'b', 'pw', 'id']) if (typeof tg[k] === 'number' && isFinite(tg[k])) o[k] = tg[k]; return Object.keys(o).length ? o : undefined; };
 function hostGameMsg(e, d) {
+  if (d.t === 'fury') { if (e.alive && e.furyN > 0) { fireFury(e); e.furyN--; } return; }
   switch (d.t) {
     case 'st':
       if (d.tp === e.tpSeq && e.alive) { e.nx = +d.x || 0; e.ny = +d.y || 0; e.nz = +d.z || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.crouch = !!d.cr; e.onGround = !!d.og; }
@@ -4159,7 +4211,7 @@ function hostGameMsg(e, d) {
       break;
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
     case 'cast':
-      if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k, d.tx !== undefined && d.tz !== undefined ? { x: +d.tx || 0, y: 0, z: +d.tz || 0 } : undefined); }
+      if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k, cleanTarget(d.tg)); }
       break;
     case 'buy':
       if (game.phase !== 'buy' || !e.alive) break;
@@ -4225,7 +4277,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), so: r2(e.soulT),
+    dn: r2(e.detainT || 0), fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -4235,7 +4287,7 @@ function buildSnap() {
     g: [game.phase, r2(game.phaseT), game.score[0], game.score[1], game.side[0], game.round, game.ot ? 1 : 0],
     sp: sp ? [sp.state, r2(sp.x || 0), r2(sp.y || 0), r2(sp.z || 0), r2(sp.timer || 0), r2(sp.defuseProg || 0), sp.half ? 1 : 0, sp.carrier ? sp.carrier.id : -1, sp.defuser ? sp.defuser.id : -1, sp.site || 0] : null,
     e: entities.map(entSnap),
-    sm: smokes.filter(s => s.mesh).map(s => [nidOf(s), r2(s.x), r2(s.y), r2(s.z), s.r, r2(s.t), s.max, s.color]),
+    sm: smokes.filter(s => s.mesh && !s.off).map(s => [nidOf(s), r2(s.x), r2(s.y), r2(s.z), s.r, r2(s.t), s.max, s.color]),
     zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay)]),
     wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(w.t)]),
     pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g, p.model || 0]),
@@ -4314,17 +4366,20 @@ function clientSetupMatch(d) {
 function clientCast(key, target) {
   const p = player, ab = AGENT[p.agent].ab[key];
   if (!ab || !p.alive || game.phase === 'end') return false;
-  if (ab.type === 'orbital' && !target && p.ult >= ab.ult) { if (brimMap) closeBrimMap(); else openBrimMap(); return false; }
+  if (!target && tryStartPlace(p, ab, key)) return false;
+  if (p.agent === 'viper' && p.vState && ((ab.type === 'screen' && p.vState.w) || (ab.type === 'skySmoke' && p.vState.c))) { netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (ab.type === 'dash' && p.tailwindT > 0) { doDash(p); if (gauge && gauge.tailwind) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (ab.type === 'satchel' && p.satchelUntil > game.time) { p.satchelUntil = 0; if (gauge && gauge.satchel) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') ultNotReady(ab, p.ult); else SND.deny(); return false; }
   if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
   if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
   if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades') ABIL[ab.type](p); // movement is ours to predict
-  netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq, tx: target ? r2(target.x) : undefined, tz: target ? r2(target.z) : undefined });
+  netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq, tg: target ? Object.fromEntries(Object.entries(target).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, r2(v)])) : undefined });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
   refreshAbilHud(); startGauge(ab, key); matchStats.abil++;
   if (ab.type === 'empress') reynaCast = 1.1;
+  if (ab.type === 'fury') { p.furyN = 3; p.furyManual = 6.5; p.furyCD = .3; p.furyPrev = true; }
+  if (target && ab.type === 'step') shadeScreen(.9, ''); if (target && ab.type === 'fts') shadeScreen(2.5, 'FROM THE SHADOWS');
   if (ab.type === 'satchel') p.satchelUntil = game.time + 5;
   return true;
 }
@@ -4382,7 +4437,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
@@ -4848,12 +4903,196 @@ let menuToastT = 0;
 function toastMenu(m) { const t = $('menuToast'); t.textContent = m; t.classList.add('on'); clearTimeout(menuToastT); menuToastT = setTimeout(() => t.classList.remove('on'), 3200); }
 $('vpBox').onclick = () => showTab('store');
 /* =====================================================================
+   AIMED ABILITIES (player): preview first, click to use
+   Sova bow · Omen step / dark cover · Sage wall / heal / revive
+   ===================================================================== */
+let aimMode = null;
+function placeKind(e, ab) {
+  switch (ab.type) {
+    case 'orbital': case 'fts': return 'map';
+    case 'skySmoke': return e.agent === 'brim' ? 'map' : e.agent === 'omen' ? 'sphere' : null;
+    case 'shock': case 'recon': return e.agent === 'sova' ? 'bow' : null;
+    case 'step': return 'step';
+    case 'wall': return 'wall';
+    case 'heal': return 'heal';
+    case 'revive': return 'revive';
+  }
+  return null;
+}
+// returns true when the key press was used to open (or close) an aiming preview
+function tryStartPlace(e, ab, key) {
+  if (!e.isPlayer || !e.alive) return false;
+  if (aimMode && aimMode.key === key) { cancelPlace(); return true; }
+  if (brimMap && brimMap.key === key) { closeBrimMap(); return true; }
+  const kind = placeKind(e, ab); if (!kind) return false;
+  if (key === 'X' ? e.ult < ab.ult : e.charges[key] <= 0) return false; // normal "not ready" feedback
+  cancelPlace(); closeBrimMap();
+  if (kind === 'map') { openBrimMap({ key, theme: ab.type === 'fts' ? 'purple' : 'orange', radius: ab.type === 'fts' ? 1.6 : ab.type === 'skySmoke' ? (ab.r || 4.6) : 5.5, label: ab.name.toUpperCase() }); return true; }
+  const P = aimMode = { key, ab, kind, t: 0, prev0: true, prev2: true, ready: false, power: 0, bounces: 1, rot: 0, push: 0, meshes: [] };
+  const add = m => { scene.add(m); P.meshes.push(m); return m; };
+  const tm = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, side: THREE.DoubleSide });
+  if (kind === 'step') { P.ring = add(new THREE.Mesh(new THREE.RingGeometry(.55, .75, 28), tm(0xa58bff, .8))); P.ring.rotation.x = -Math.PI / 2; P.ghost = add(new THREE.Mesh(new THREE.CylinderGeometry(.35, .35, 1.8, 14, 1, true), tm(0x6b5bd6, .35))); }
+  if (kind === 'sphere') { P.ball = add(new THREE.Mesh(new THREE.SphereGeometry(ab.r || 4.4, 24, 16), tm(0x5b4fa8, .28))); P.ring = add(new THREE.Mesh(new THREE.RingGeometry((ab.r || 4.4) - .15, ab.r || 4.4, 40), tm(0xa58bff, .8))); P.ring.rotation.x = -Math.PI / 2; }
+  if (kind === 'wall') { P.box = add(new THREE.Mesh(new THREE.BoxGeometry(9, 3.8, .8), tm(0x9fe8ff, .35))); P.edge = add(new THREE.LineSegments(new THREE.EdgesGeometry(P.box.geometry), new THREE.LineBasicMaterial({ color: 0xcff6ff }))); }
+  if (kind === 'revive') { P.ring = add(new THREE.Mesh(new THREE.RingGeometry(.6, .85, 28), tm(0x5fe6c8, .9))); P.ring.rotation.x = -Math.PI / 2; P.ring.visible = false; }
+  sndTone(600, .12, .1, 'triangle', 900);
+  return true;
+}
+function cancelPlace() { if (!aimMode) return; aimMode.meshes.forEach(m => scene.remove(m)); aimMode = null; $('placeHint').classList.add('hidden'); }
+function finishPlace(target) {
+  const key = aimMode.key; cancelPlace();
+  if (net.role === 'client') clientCast(key, target); else castAbility(player, key, target);
+}
+const groundY = (x, z) => { const h = hAtPos(x, z); return h < WALL_H ? h : 0; };
+function aimedAlly(maxD, dead) {
+  const p = player, f = fwd(p), oy = eyeY(p); let best = null, bd = 1e9;
+  for (const o of entities) {
+    if (!o || o === p || o.team !== p.team) continue;
+    if (dead) { if (o.alive || !o.deathPos) continue; const dx = o.deathPos.x - p.x, dz = o.deathPos.z - p.z, d = Math.hypot(dx, dz); if (d > maxD) continue; const dot = (dx * f.x + dz * f.z) / (d * Math.hypot(f.x, f.z) || 1); const sc = (1 - dot) * 10 + d * .02; if (dot > .93 && sc < bd) { bd = sc; best = o; } }
+    else { if (!o.alive) continue; const h = rayEntity(p.x, oy, p.z, f.x, f.y, f.z, o); if (h && h.t < maxD && h.t < bd && los(p.x, oy, p.z, o.x, o.y + 1.2, o.z)) { bd = h.t; best = o; } }
+  }
+  return best;
+}
+// called every frame from updatePlayer; returns true while aiming (blocks shooting)
+function updatePlace(dt) {
+  const P = aimMode; if (!P) return false;
+  const p = player;
+  if (!p.alive || game.phase === 'end') { cancelPlace(); return true; }
+  const m0 = mouse[0], m2 = mouse[2], down0 = m0 && !P.prev0, up0 = !m0 && P.prev0, down2 = m2 && !P.prev2;
+  P.prev0 = m0; P.prev2 = m2; P.t += dt; if (!m0) P.ready = true;
+  const ab = P.ab, kb = keyName(settings.binds[P.key === 'X' ? 'ult' : 'ab' + P.key]);
+  let hint = '';
+  if (P.kind === 'bow') {
+    if (m0 && P.ready) P.power = Math.min(1, P.power + dt / 1.1);
+    if (down2) { P.bounces = (P.bounces + 1) % 3; sndTone(900 + P.bounces * 200, .06, .1, 'triangle'); }
+    if (up0 && P.ready && P.power > 0) { const pw = Math.max(.2, P.power); finishPlace({ pw, b: P.bounces }); return true; }
+    const bars = [1, 2, 3].map(i => `<i class="${P.power >= i / 3 - .01 ? 'on' : ''}"></i>`).join('');
+    hint = `<b>${ab.name}</b> <span class="pwBars">${bars}</span> bounces <b>${P.bounces}</b><br><small>HOLD left click to draw · release to fire · RIGHT click: bounces · ${kb}: cancel</small>`;
+  } else if (P.kind === 'step') {
+    const a = aimPoint(p, 12), c = cellOf(a.x), r = cellOf(a.z); let x = a.x, z = a.z;
+    if (!walkable(c, r)) { const [nc, nr] = nearestWalkable(c, r); ({ x, z } = cc(nc, nr)); }
+    const y = groundY(x, z); P.ring.position.set(x, y + .05, z); P.ghost.position.set(x, y + .9, z); P.ring.rotation.z += dt * 2;
+    if (down0) { finishPlace({ x, z }); return true; }
+    if (down2) { cancelPlace(); return true; }
+    hint = `<b>${ab.name}</b><br><small>LEFT click: teleport there · RIGHT click / ${kb}: cancel</small>`;
+  } else if (P.kind === 'sphere') {
+    const f = fwd(p), oy = eyeY(p), range = ab.range || 50;
+    if (m2) P.push = Math.min(range, P.push + dt * 22); // hold right click to push it further, even through walls
+    const base = Math.hypot(aimPoint(p, range).x - p.x, aimPoint(p, range).z - p.z);
+    const d = clamp(base + P.push, 3, range), x = clamp(p.x + f.x * d, 2, MAPW - 2), z = clamp(p.z + f.z * d, 2, MAPH - 2), y = groundY(x, z);
+    P.ball.position.set(x, y + (ab.r || 4.4) * .55, z); P.ring.position.set(x, y + .06, z);
+    if (down0) { finishPlace({ x, z }); return true; }
+    hint = `<b>${ab.name}</b> · ${Math.round(d)} m<br><small>LEFT click: place · HOLD right click: push further (through walls) · ${kb}: cancel</small>`;
+  } else if (P.kind === 'wall') {
+    const a = aimPoint(p, 9), f = fwd(p), y = groundY(a.x, a.z);
+    if (down2) P.rot = 1 - P.rot;
+    const along = (Math.abs(f.x) > Math.abs(f.z) ? 1 : 0) ^ P.rot; // 0: wall runs along x, 1: along z
+    P.box.position.set(a.x, y + 1.9, a.z); P.box.rotation.y = along ? Math.PI / 2 : 0; P.edge.position.copy(P.box.position); P.edge.rotation.y = P.box.rotation.y;
+    if (down0) { finishPlace({ x: a.x, z: a.z, rot: along }); return true; }
+    hint = `<b>${ab.name}</b><br><small>LEFT click: build the wall · RIGHT click: rotate · ${kb}: cancel</small>`;
+  } else if (P.kind === 'heal') {
+    const ally = aimedAlly(18, false);
+    if (down0) { if (ally) { finishPlace({ id: ally.id }); return true; } toast('Aim at an ally to heal them — right click heals yourself'); }
+    if (down2) { if (p.hp < 100) { finishPlace({ id: -1 }); return true; } toast('Your health is already full'); }
+    hint = `<b>${ab.name}</b> ${ally ? '→ <b style="color:#5fe6c8">' + esc(ally.name) + '</b>' : ''}<br><small>LEFT click: heal the ally you aim at · RIGHT click: heal yourself · ${kb}: cancel</small>`;
+  } else if (P.kind === 'revive') {
+    const ally = aimedAlly(15, true);
+    P.ring.visible = !!ally; if (ally) { P.ring.position.set(ally.deathPos.x, groundY(ally.deathPos.x, ally.deathPos.z) + .05, ally.deathPos.z); P.ring.rotation.z += dt * 3; }
+    if (down0) { if (ally) { finishPlace({ id: ally.id }); return true; } toast('Aim at a fallen ally within 15 m'); }
+    if (down2) { cancelPlace(); return true; }
+    hint = `<b>${ab.name}</b> ${ally ? '→ <b style="color:#5fe6c8">' + esc(ally.name) + '</b>' : '· look at a fallen ally'}<br><small>LEFT click: revive · RIGHT click / ${kb}: cancel</small>`;
+  }
+  const el = $('placeHint'); el.classList.remove('hidden'); setText('placeHint', hint);
+  return true;
+}
+/* --- Sova's bow (first person) --- */
+function makeBow(glow) {
+  const tipZ0 = .03, g = new THREE.Group(), wood = new THREE.MeshLambertMaterial({ color: glow ? 0x9fd8ff : 0x3a4560, emissive: glow ? 0x2a6aa8 : 0x0 });
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(.05, .16, .06), new THREE.MeshLambertMaterial({ color: 0x2b2b30 })); g.add(grip);
+  // recurve limbs: each limb bends away from the archer, the tips curl back
+  for (const s of [-1, 1]) {
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(.035, .26, .045), wood); inner.position.set(0, s * .19, -.045); inner.rotation.x = s * -.35; g.add(inner);
+    const outer = new THREE.Mesh(new THREE.BoxGeometry(.03, .2, .04), wood); outer.position.set(0, s * .37, -.02); outer.rotation.x = s * .45; g.add(outer);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(.018, 6, 4), new THREE.MeshBasicMaterial({ color: glow ? 0xcff0ff : 0x8fd0ff })); tip.position.set(0, s * .46, .03); g.add(tip);
+  }
+  const tipY = .46, tipZ = .03;
+  const strMat = new THREE.LineBasicMaterial({ color: glow ? 0xcff0ff : 0xdfe6ee });
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute([0, tipY, tipZ, 0, 0, tipZ, 0, -tipY, tipZ], 3));
+  const string = new THREE.Line(sg, strMat); g.add(string);
+  const arrow = new THREE.Group(); g.add(arrow);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .62, 6), new THREE.MeshLambertMaterial({ color: 0x5a4030 })); shaft.rotation.x = Math.PI / 2; shaft.position.set(0, 0, tipZ0 - .31); arrow.add(shaft);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(.022, .07, 6), new THREE.MeshBasicMaterial({ color: 0x8fd0ff })); head.rotation.x = -Math.PI / 2; head.position.z = tipZ0 - .64; arrow.add(head);
+  const hg = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x4fa3ff, transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending })); hg.scale.set(.18, .18, 1); hg.position.z = tipZ0 - .64; arrow.add(hg);
+  g.userData = { string, arrow, tipY, tipZ, hg };
+  g.scale.setScalar(.46); g.position.set(-.04, -.12, -.42); g.rotation.set(.05, .75, -.35);
+  return g;
+}
+function setBowDraw(bow, k) {
+  const u = bow.userData, pull = u.tipZ + .22 * k, a = u.string.geometry.attributes.position;
+  a.setZ(1, pull); a.needsUpdate = true; u.arrow.position.z = pull - u.tipZ; u.hg.scale.setScalar(.18 + .25 * k);
+}
+/* --- glowing hand with an orb (Omen, Sage, Viper aiming) --- */
+function makeOrbHand(color) {
+  const g = new THREE.Group();
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(.1, .1, .45), new THREE.MeshLambertMaterial({ color: 0x2a2a2e })); arm.position.z = .2; g.add(arm);
+  const hand = new THREE.Mesh(new THREE.BoxGeometry(.11, .05, .12), new THREE.MeshLambertMaterial({ color: 0x2a2a2e })); hand.position.z = -.06; g.add(hand);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(.07, 16, 12), new THREE.MeshBasicMaterial({ color })); orb.position.set(0, .1, -.08); g.add(orb);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending })); glow.scale.set(.35, .35, 1); glow.position.copy(orb.position); g.add(glow);
+  g.userData.orb = orb; g.scale.setScalar(.5); g.position.set(.2, -.2, -.45); g.rotation.set(.35, -.25, .15);
+  return g;
+}
+const ORB_COLOR = { omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a };
+/* --- Viper: fuel, toggling the screen and the cloud --- */
+function setSmokeOff(s, off) { s.off = off; if (s.mesh) s.mesh.visible = !off; if (!off) s.grow = .2; }
+function toggleViper(e, which) {
+  const list = which === 'wall' ? e.viperWall : [e.viperCloud];
+  if (!list || !list[0]) return;
+  const turnOn = list[0].off;
+  if (turnOn && (e.fuel ?? 100) < 10) { toastTo(e, 'Not enough fuel'); if (e.isPlayer) SND.deny(); return; }
+  for (const s of list) setSmokeOff(s, !turnOn);
+  fx('parts', list[0].x, 1.5, list[0].z, 14, 0x5fd35a, 2, .5);
+  if (e.isPlayer) sndTone(turnOn ? 500 : 300, .15, .12, 'triangle', turnOn ? 900 : 150);
+}
+function viperTick(e, dt) {
+  if (e.agent !== 'viper') return;
+  const act = (e.viperCloud && !e.viperCloud.off ? 1 : 0) + (e.viperWall && e.viperWall[0] && !e.viperWall[0].off ? 1 : 0);
+  e.fuel = clamp((e.fuel ?? 100) + (act ? -7 * act : 6) * dt, 0, 100);
+  if (e.fuel <= 0 && act) { if (e.viperCloud) setSmokeOff(e.viperCloud, true); if (e.viperWall) e.viperWall.forEach(s => setSmokeOff(s, true)); toastTo(e, 'Out of fuel — your toxins dropped'); }
+  // Viper's Pit lasts while she stays inside, and she sees enemies close to her in it
+  const pz = e.pitZone;
+  if (pz && zones.includes(pz)) {
+    const inside = e.alive && Math.hypot(e.x - pz.x, e.z - pz.z) < pz.r;
+    if (inside && (e.pitLeft = (e.pitLeft ?? 45) - dt) > 0) { pz.t = Math.max(pz.t, 5); if (e.pitSmoke) e.pitSmoke.t = Math.max(e.pitSmoke.t, 5); }
+    if (inside) for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 7 && Math.hypot(o.x - pz.x, o.z - pz.z) < pz.r) o.revealedT = Math.max(o.revealedT, .3);
+  }
+}
+function viperState(e) { // [fuel, cloud: 0 none / 1 off / 2 on, wall: same]
+  return e.agent === 'viper' ? [Math.round(e.fuel ?? 100), e.viperCloud ? (e.viperCloud.off ? 1 : 2) : 0, e.viperWall && e.viperWall[0] ? (e.viperWall[0].off ? 1 : 2) : 0] : null;
+}
+/* --- Sova: Hunter's Fury fired by hand --- */
+function furyInput(p, dt) {
+  if (!(p.furyN > 0 && p.furyManual > 0)) return false;
+  p.furyCD = (p.furyCD || 0) - dt;
+  if (mouse[0] && !p.furyPrev && p.furyCD <= 0) {
+    if (net.role === 'client') netSend({ t: 'fury' }); else fireFury(p);
+    p.furyN--; p.furyCD = .8; vmKick = 1.2; sndTone(300, .3, .2, 'sawtooth', 1200);
+  }
+  p.furyPrev = mouse[0];
+  setText('placeHint', `<b>HUNTER'S FURY</b> · ${p.furyN} shot${p.furyN === 1 ? '' : 's'} left · ${Math.ceil(p.furyManual)}s<br><small>LEFT click: fire an energy blast through walls</small>`); $('placeHint').classList.remove('hidden');
+  if (p.furyN <= 0) $('placeHint').classList.add('hidden');
+  return true;
+}
+let shadeT = 0, shadeMax = 1;
+function shadeScreen(t, label) { shadeT = shadeMax = t; $('shadeOv').classList.remove('hidden'); setText('shadeTxt', label || ''); }
+
+/* =====================================================================
    BRIMSTONE ORBITAL STRIKE MAP · REYNA EMPRESS HANDS (first-person)
    ===================================================================== */
 let brimMap = null; // { x, z } cursor in world units while the tactical map is open
 const brimCv = document.createElement('canvas');
-function openBrimMap() {
-  const p = player; brimMap = { x: p.x, z: p.z, open: 0 };
+function openBrimMap(o = {}) {
+  const p = player; brimMap = { x: p.x, z: p.z, open: 0, key: o.key || 'X', theme: o.theme || 'orange', radius: o.radius || 5.5, label: o.label || 'ORBITAL STRIKE' };
+  $('brimOv').style.filter = brimMap.theme === 'purple' ? 'hue-rotate(230deg) saturate(1.25)' : '';
   // orange holographic copy of the map
   const K = 6; brimCv.width = GW * K; brimCv.height = GH * K; const x = brimCv.getContext('2d');
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
@@ -4870,9 +5109,9 @@ function openBrimMap() {
 }
 function closeBrimMap() { if (!brimMap) return; brimMap = null; $('brimOv').classList.add('hidden'); if (player) equipView(); }
 function confirmBrimMap() {
-  const t = { x: brimMap.x, y: 0, z: brimMap.z }; closeBrimMap();
-  if (net.role === 'client') { clientCast('X', t); return; }
-  castAbility(player, 'X', t);
+  const t = { x: brimMap.x, y: 0, z: brimMap.z }, key = brimMap.key; closeBrimMap();
+  if (net.role === 'client') { clientCast(key, t); return; }
+  castAbility(player, key, t);
 }
 function drawBrimMap(dt) {
   if (!brimMap) return;
@@ -4894,7 +5133,7 @@ function drawBrimMap(dt) {
   for (const e of entities) { if (!e || !e.alive || e.team !== player.team) continue; x.fillStyle = e === player ? '#fff6d8' : '#ffd27a'; x.beginPath(); x.arc(ox + e.x * K, oy + e.z * K, e === player ? 6 : 4.5, 0, 7); x.fill(); }
   const px = ox + player.x * K, py = oy + player.z * K; x.strokeStyle = '#fff6d8'; x.lineWidth = 2; x.beginPath(); x.moveTo(px, py); x.lineTo(px - Math.sin(player.yaw) * 16, py - Math.cos(player.yaw) * 16); x.stroke();
   // strike reticle (orbital radius 5.5 m)
-  const tx = ox + brimMap.x * K, ty = oy + brimMap.z * K, rr = 5.5 * K, pulse = 1 + Math.sin(game.time * 8) * .05;
+  const tx = ox + brimMap.x * K, ty = oy + brimMap.z * K, rr = brimMap.radius * K, pulse = 1 + Math.sin(game.time * 8) * .05;
   x.strokeStyle = '#ffe14a'; x.lineWidth = 3; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.stroke();
   x.fillStyle = 'rgba(255,60,40,.25)'; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.fill();
   x.lineWidth = 1.5; x.beginPath(); x.moveTo(tx - rr - 8, ty); x.lineTo(tx - rr + 6, ty); x.moveTo(tx + rr - 6, ty); x.lineTo(tx + rr + 8, ty); x.moveTo(tx, ty - rr - 8); x.lineTo(tx, ty - rr + 6); x.moveTo(tx, ty + rr - 6); x.lineTo(tx, ty + rr + 8); x.stroke();
@@ -4904,7 +5143,7 @@ function drawBrimMap(dt) {
   x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy, R + 12, 0, 7); x.stroke();
   for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2 + game.time * .2, l = i % 6 ? 6 : 14; x.beginPath(); x.moveTo(cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14)); x.lineTo(cx + Math.cos(a) * (R + 14 + l), cy + Math.sin(a) * (R + 14 + l)); x.stroke(); }
   x.font = '600 15px Oswald, sans-serif'; x.fillStyle = '#ffd9a0'; x.textAlign = 'center';
-  x.fillText('ORBITAL STRIKE · move the mouse to aim · LEFT CLICK to fire · RIGHT CLICK to cancel', cx, cy + R + 44);
+  x.fillText(`${brimMap.label} · move the mouse to aim · LEFT CLICK to confirm · RIGHT CLICK to cancel`, cx, cy + R + 44);
   x.restore();
 }
 // first-person props: Brimstone's wrist projector, Reyna's ethereal hands
@@ -4940,9 +5179,21 @@ let reynaCast = 0;
 function updateVmProps(dt) {
   const p = player, ud = vmRoot.userData; if (!p) return;
   // Brimstone wrist projector while the map is open
-  if (brimMap && !ud.brimArm) { ud.brimArm = makeBrimArm(); vmRoot.add(ud.brimArm); }
-  if (ud.brimArm) { ud.brimArm.visible = !!brimMap; ud.brimArm.userData.rings[0].rotation.z += dt * 2; ud.brimArm.userData.rings[1].rotation.z -= dt; if (!brimMap) { vmRoot.remove(ud.brimArm); ud.brimArm = null; } }
-  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0;
+  if (brimMap && brimMap.theme === 'orange' && !ud.brimArm) { ud.brimArm = makeBrimArm(); vmRoot.add(ud.brimArm); }
+  if (ud.brimArm) { ud.brimArm.visible = !!brimMap && brimMap.theme === 'orange'; ud.brimArm.userData.rings[0].rotation.z += dt * 2; ud.brimArm.userData.rings[1].rotation.z -= dt; if (!brimMap || brimMap.theme !== 'orange') { vmRoot.remove(ud.brimArm); ud.brimArm = null; } }
+  const wantBow = (aimMode && aimMode.kind === 'bow') || (p.furyN > 0 && p.furyManual > 0);
+  const wantOrb = !wantBow && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple'));
+  if (wantBow && !ud.bow) { ud.bow = makeBow(p.furyN > 0 && p.furyManual > 0); vmRoot.add(ud.bow); }
+  if (!wantBow && ud.bow) { vmRoot.remove(ud.bow); ud.bow = null; }
+  if (ud.bow) { const fury = p.furyN > 0 && p.furyManual > 0; setBowDraw(ud.bow, fury ? .6 + Math.sin(game.time * 6) * .1 : aimMode ? aimMode.power : 0); ud.bow.userData.arrow.visible = !fury || p.furyCD <= 0; }
+  if (wantOrb && !ud.orbHand) { ud.orbHand = makeOrbHand(ORB_COLOR[p.agent] || 0xffffff); vmRoot.add(ud.orbHand); }
+  if (!wantOrb && ud.orbHand) { vmRoot.remove(ud.orbHand); ud.orbHand = null; }
+  if (ud.orbHand) { ud.orbHand.userData.orb.scale.setScalar(1 + Math.sin(game.time * 8) * .12); }
+  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb;
+  // Omen's shadow fade, Viper's fuel bar
+  if (shadeT > 0) { shadeT -= dt; $('shadeOv').style.opacity = Math.min(1, shadeT / shadeMax * 3, (shadeMax - shadeT) * 6); if (shadeT <= 0) $('shadeOv').classList.add('hidden'); }
+  const vf = p.agent === 'viper' ? (viperState(p) && net.role !== 'client' ? viperState(p)[0] : p.fuel ?? 100) : -1;
+  $('fuelBar').classList.toggle('hidden', vf < 0); if (vf >= 0) { $('fuelFill').style.width = vf + '%'; setText('fuelTxt', 'FUEL ' + Math.round(vf) + '%'); }
   // Reyna: both ethereal hands rise and clench when Empress starts
   if (reynaCast > 0) {
     reynaCast -= dt;
@@ -5411,7 +5662,7 @@ $('btnLock').onclick = () => {
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
   game.mapId = null;
-  game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); reynaCast = 0;
+  game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); cancelPlace(); reynaCast = 0; shadeT = 0; $('shadeOv').classList.add('hidden');
   $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
   document.exitPointerLock && document.exitPointerLock();
