@@ -612,7 +612,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 25</div>
+<div id="buildTag">VALOR STRIKE · build 26</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -5159,29 +5159,55 @@ function updatePlace(dt) {
 }
 /* --- Sova's bow (first person) --- */
 function makeBow(glow) {
-  const tipZ0 = .03, g = new THREE.Group(), wood = new THREE.MeshLambertMaterial({ color: glow ? 0x9fd8ff : 0x3a4560, emissive: glow ? 0x2a6aa8 : 0x0 });
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(.05, .16, .06), new THREE.MeshLambertMaterial({ color: 0x2b2b30 })); g.add(grip);
-  // recurve limbs: each limb bends away from the archer, the tips curl back
-  for (const s of [-1, 1]) {
-    const inner = new THREE.Mesh(new THREE.BoxGeometry(.035, .26, .045), wood); inner.position.set(0, s * .19, -.045); inner.rotation.x = s * -.35; g.add(inner);
-    const outer = new THREE.Mesh(new THREE.BoxGeometry(.03, .2, .04), wood); outer.position.set(0, s * .37, -.02); outer.rotation.x = s * .45; g.add(outer);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(.018, 6, 4), new THREE.MeshBasicMaterial({ color: glow ? 0xcff0ff : 0x8fd0ff })); tip.position.set(0, s * .46, .03); g.add(tip);
+  // root: canted to the left like Sova's first-person bow; the bow body is turned so its curve shows
+  const g = new THREE.Group();
+  const body = new THREE.Group(); body.rotation.y = -.62; g.add(body);
+  const limbMat = new THREE.MeshLambertMaterial({ color: glow ? 0xa8dcff : 0x2f3a52, emissive: glow ? 0x2a6aa8 : 0x0b1220 });
+  const accMat = new THREE.MeshBasicMaterial({ color: glow ? 0xe6f6ff : 0x6fb6ff });
+  // smooth recurve limbs (tube along a curve): belly bends forward, tips curl back toward the archer
+  const pts = [[.52, .07], [.46, -.01], [.34, -.07], [.18, -.1], [.06, -.1]];
+  for (const s of [1, -1]) {
+    const curve = new THREE.CatmullRomCurve3(pts.map(([y, z]) => new THREE.Vector3(0, s * y, z)));
+    body.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, .016, 6, false), limbMat));
+    const strip = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.slice(1, 4).map(([y, z]) => new THREE.Vector3(.012, s * y, z - .004))), 12, .006, 4, false), accMat); body.add(strip);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(.016, 8, 6), accMat); tip.position.set(0, s * .52, .07); body.add(tip);
   }
-  const tipY = .46, tipZ = .03;
-  const strMat = new THREE.LineBasicMaterial({ color: glow ? 0xcff0ff : 0xdfe6ee });
-  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute([0, tipY, tipZ, 0, 0, tipZ, 0, -tipY, tipZ], 3));
-  const string = new THREE.Line(sg, strMat); g.add(string);
-  const arrow = new THREE.Group(); g.add(arrow);
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .62, 6), new THREE.MeshLambertMaterial({ color: 0x5a4030 })); shaft.rotation.x = Math.PI / 2; shaft.position.set(0, 0, tipZ0 - .31); arrow.add(shaft);
-  const head = new THREE.Mesh(new THREE.ConeGeometry(.022, .07, 6), new THREE.MeshBasicMaterial({ color: 0x8fd0ff })); head.rotation.x = -Math.PI / 2; head.position.z = tipZ0 - .64; arrow.add(head);
-  const hg = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x4fa3ff, transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending })); hg.scale.set(.18, .18, 1); hg.position.z = tipZ0 - .64; arrow.add(hg);
-  g.userData = { string, arrow, tipY, tipZ, hg };
-  g.scale.setScalar(.46); g.position.set(-.04, -.12, -.42); g.rotation.set(.05, .75, -.35);
+  const riser = new THREE.Mesh(new THREE.BoxGeometry(.04, .16, .06), new THREE.MeshLambertMaterial({ color: 0x1e2430 })); riser.position.z = -.1; body.add(riser);
+  const gem = new THREE.Mesh(new THREE.SphereGeometry(.018, 8, 6), accMat); gem.position.set(.02, .05, -.12); body.add(gem);
+  body.updateMatrix();
+  const toRoot = v => v.applyMatrix4(body.matrix);
+  const tipTop = toRoot(new THREE.Vector3(0, .52, .07)), tipBot = toRoot(new THREE.Vector3(0, -.52, .07));
+  const nock0 = tipTop.clone().add(tipBot).multiplyScalar(.5);
+  // left hand around the grip
+  const glove = new THREE.MeshLambertMaterial({ color: 0x23262c });
+  const lh = new THREE.Mesh(new THREE.BoxGeometry(.09, .1, .09), glove); lh.position.copy(toRoot(new THREE.Vector3(0, -.02, -.1))); g.add(lh);
+  const sleeve = new THREE.MeshLambertMaterial({ color: 0x3a5f9e });
+  const limb = (a, b, r) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.15, a.distanceTo(b), 8), sleeve); m.position.copy(a).add(b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); return m; };
+  g.add(limb(lh.position, lh.position.clone().add(new THREE.Vector3(-.12, -.45, .55)), .032));
+  // string: top tip -> nock -> bottom tip
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute([...tipTop.toArray(), ...nock0.toArray(), ...tipBot.toArray()], 3));
+  const string = new THREE.Line(sg, new THREE.LineBasicMaterial({ color: glow ? 0xcff0ff : 0xe8eef6 })); g.add(string);
+  // arrow: tail on the nock, pointing straight ahead (toward the crosshair)
+  const arrow = new THREE.Group(); arrow.position.copy(nock0); g.add(arrow);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.007, .007, .7, 6), new THREE.MeshLambertMaterial({ color: 0x4a3a2c })); shaft.rotation.x = Math.PI / 2; shaft.position.z = -.35; arrow.add(shaft);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(.02, .08, 6), new THREE.MeshBasicMaterial({ color: 0x8fd0ff })); head.rotation.x = -Math.PI / 2; head.position.z = -.74; arrow.add(head);
+  for (let i = 0; i < 3; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.04, .07), new THREE.MeshBasicMaterial({ color: 0xe8eef6, side: THREE.DoubleSide })); f.position.z = -.04; f.rotation.set(Math.PI / 2, 0, i * Math.PI * 2 / 3); f.translateX(.02); arrow.add(f); }
+  const hg = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x4fa3ff, transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending })); hg.scale.set(.14, .14, 1); hg.position.z = -.74; arrow.add(hg);
+  // right hand pinching the string at the nock
+  const rh = new THREE.Mesh(new THREE.BoxGeometry(.055, .07, .065), glove); rh.position.copy(nock0).add(new THREE.Vector3(.02, -.02, .03)); g.add(rh);
+  const ra = new THREE.Group(); ra.add(limb(new THREE.Vector3(), new THREE.Vector3(.35, -.4, .35), .032)); ra.position.copy(rh.position); g.add(ra);
+  g.scale.setScalar(.48); g.position.set(-.2, -.12, -.42); g.rotation.set(.02, .1, -.16);
+  // aim the arrow at the crosshair (a point straight ahead of the camera)
+  g.updateMatrixWorld(true); arrow.lookAt(0, 0, -14); arrow.rotateY(Math.PI);
+  const back = new THREE.Vector3(0, 0, 1).applyQuaternion(arrow.quaternion);
+  g.userData = { string, arrow, nock0, hg, rh, ra, back, rh0: rh.position.clone() };
   return g;
 }
 function setBowDraw(bow, k) {
-  const u = bow.userData, pull = u.tipZ + .22 * k, a = u.string.geometry.attributes.position;
-  a.setZ(1, pull); a.needsUpdate = true; u.arrow.position.z = pull - u.tipZ; u.hg.scale.setScalar(.18 + .25 * k);
+  const u = bow.userData, d = u.back.clone().multiplyScalar(.24 * k), n = u.nock0.clone().add(d), a = u.string.geometry.attributes.position;
+  a.setXYZ(1, n.x, n.y, n.z); a.needsUpdate = true;
+  u.arrow.position.copy(n); u.hg.scale.setScalar(.14 + .22 * k);
+  u.rh.position.copy(u.rh0).add(d); u.ra.position.copy(u.rh.position);
 }
 /* --- glowing hand with an orb (Omen, Sage, Viper aiming) --- */
 function makeOrbHand(color) {
@@ -5861,7 +5887,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard();
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 25;
+const BUILD = 26;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
