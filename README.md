@@ -23,7 +23,7 @@ Click the screen to lock the mouse.
   - Cypher: Trapwire, Cyber Cage, Spycam (reveal pulses), Neural Theft (reveals every enemy)
   - Skye: Regrowth (team heal), Trailblazer (concussing tiger), Guiding Light (long flash), Seekers (hunt and nearsight)
   - Viper: Snake Bite (acid), Poison Cloud, Toxic Screen (smoke wall through walls), Viper's Pit
-- **17 weapons**, each with its own 3D model and colors (Sheriff revolver, Vandal with wood furniture, Operator with big scope and bipod, Odin with a drum…) shown in your hands, on other players, as drops, and as pictures in the shop and Collection. From the Classic to the Operator and Odin, Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
+- **17 weapons**, each with its own 3D model and colors (Sheriff revolver, Vandal with wood furniture, Operator with big scope and bipod, Odin with a drum…) shown in your hands, on other players, as drops, and as pictures in the shop and Collection. Head, body and leg damage differ, damage drops off with range, shotguns fire pellets, snipers have scopes, sprays have recoil, and moving hurts accuracy.
 - **Shop and credit economy**: 200 per kill, 3000 per round win, loss bonus of 1900 / 2400 / 2900, 300 plant bonus, 9000 credit cap. Items bought this round can be sold back.
 - **Spike**: 4s plant, 45s fuse with beeps that speed up, 7s defuse with a halfway checkpoint. The spike can be dropped and picked up.
 - **Round flow**: buy-phase barriers, 100s rounds, pistol rounds, side swap at half, overtime (win by 2), Competitive (first to 13), Swiftplay (first to 5) and **1v1 Duel** (first to 7, vs a bot or a friend)
