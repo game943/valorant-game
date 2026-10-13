@@ -138,11 +138,11 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .plate .pn{display:inline-block;font-weight:900;font-size:13px;background:rgba(15,25,35,.82);padding:5px 14px;border-bottom:2px solid var(--teal)}
 .plate .pa{font:500 11px Oswald,sans-serif;letter-spacing:3px;opacity:.75;margin-top:4px}
 .plate.me .pn{font-size:15px;border-color:var(--gold);padding:6px 18px}
-.modeStrip{display:flex;justify-content:center;gap:10px;margin-top:22px}
-.mode{width:250px;padding:14px 18px;background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.12s;clip-path:polygon(0 0,100% 0,100% 100%,14px 100%,0 calc(100% - 14px))}
+.modeStrip{display:flex;justify-content:center;gap:8px;margin-top:22px;flex-wrap:wrap;max-width:1180px;margin-left:auto;margin-right:auto}
+.mode{width:186px;padding:12px 14px;background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.12s;clip-path:polygon(0 0,100% 0,100% 100%,14px 100%,0 calc(100% - 14px))}
 .mode:hover{border-color:rgba(255,255,255,.5)}
 .mode.on{background:var(--light);color:var(--dark)}
-.mode .t{font:700 20px Oswald,sans-serif;letter-spacing:3px}
+.mode .t{font:700 17px Oswald,sans-serif;letter-spacing:2px}
 .mode .d{font-size:12px;opacity:.7;margin-top:2px}
 .playOpts{display:flex;justify-content:center;gap:10px;margin-top:10px}
 .optCard{background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.1);padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:6px}
@@ -283,6 +283,22 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .drDay.now{background:rgba(245,215,110,.2);border-color:var(--gold);transform:scale(1.06)}
 .drAmount{font:700 42px Oswald,sans-serif;color:var(--gold);margin-bottom:6px}
 .drPanel .btn{margin-top:14px}
+.rankTop{width:34px;height:34px;cursor:pointer;filter:drop-shadow(0 0 4px rgba(0,0,0,.6))}
+.rankTop:hover{transform:scale(1.1)}
+.rankCard{display:flex;align-items:center;gap:18px;padding:16px 20px;margin-bottom:14px;background:linear-gradient(110deg,rgba(255,255,255,.06),rgba(0,0,0,.2));border:1px solid rgba(255,255,255,.1)}
+.rankCard img,.rankRes img{width:84px;height:84px}
+.rankCard b,.rankRes b{font:700 28px Oswald,sans-serif;letter-spacing:2px;display:block;margin:2px 0 6px}
+.rrBar{height:8px;background:rgba(255,255,255,.12);margin:4px 0;max-width:320px}
+.rrBar div{height:100%;background:linear-gradient(90deg,#2fe0b6,#f5d76e)}
+.rankRes{display:flex;align-items:center;gap:14px;padding:10px 14px;margin-bottom:10px;background:rgba(255,255,255,.05);border-left:3px solid #8a96a3;text-align:left}
+.rankRes.up{border-left-color:var(--teal)}.rankRes.down{border-left-color:var(--red)}
+.rankRes img{width:64px;height:64px}.rankRes b{font-size:22px}
+.rrDelta{font:700 26px Oswald,sans-serif}
+.rankRes.up .rrDelta{color:var(--teal)}.rankRes.down .rrDelta{color:var(--red)}
+.dmTag{font:600 12px Oswald,sans-serif;letter-spacing:2px;padding:4px 8px;background:rgba(15,25,35,.7)}
+.dmList{margin-bottom:10px}
+.dmList div{display:flex;gap:10px;padding:4px 8px;font-size:14px}.dmList div b{flex:1;text-align:left}
+.dmList div.me{background:rgba(47,224,182,.15);color:var(--teal)}
 .collCat{font:500 12px Oswald,sans-serif;letter-spacing:4px;opacity:.6;margin:16px 0 8px}
 .collGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .wcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
@@ -509,6 +525,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <button data-tab="store">STORE</button>
     </nav>
     <div class="navRight">
+      <img id="rankIcon" class="rankTop" alt="rank">
       <div class="vpBox" id="vpBox" title="Valor Points — open the Store"><b class="vpI"></b><span id="vpNum">0</span></div>
       <button class="partyBtn" id="partyBtn" title="Party">PARTY <b id="partyCount"></b></button>
       <div class="acct" id="acctBtn" title="Change your name"><div class="lvlBadge"><span id="lvlNum">1</span></div><div><div class="nm"><span id="nameTag">Player</span> <span class="pen">✎</span></div><div class="xpbar"><div id="xpFill"></div></div></div></div>
@@ -553,6 +570,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="mode on" data-mode="comp"><div class="t">COMPETITIVE</div><div class="d">First to 13 · Overtime win by 2</div></div>
       <div class="mode" data-mode="swift"><div class="t">SWIFTPLAY</div><div class="d">First to 5 · Quick matches</div></div>
       <div class="mode" data-mode="duel"><div class="t">1V1 DUEL</div><div class="d">First to 7 · Full buy · vs a bot or a friend</div></div>
+      <div class="mode" data-mode="rush"><div class="t">SPIKE RUSH</div><div class="d">First to 4 · random gun for all · full utility</div></div>
+      <div class="mode" data-mode="dm"><div class="t">DEATHMATCH</div><div class="d">Solo · free for all · first to 30 kills</div></div>
       <div class="mode range" data-mode="range"><div class="t">PRACTICE RANGE</div><div class="d">Solo · targets, aim test &amp; free gear</div></div>
     </div>
     <div class="playOpts">
@@ -615,7 +634,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 29</div>
+<div id="buildTag">VALOR STRIKE · build 30</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -2637,6 +2656,7 @@ function readyGate(e, ab, key) { // true = this press only readied the ability
 }
 function clearReady(e) { if (e && e.ready) { e.ready = null; if (gauge && gauge.readyG) gauge = null; } }
 function castAbility(e, key, target) {
+  if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
   if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
@@ -3173,9 +3193,9 @@ function botShoot(b, t) {
 }
 function botObjective(b, dt) {
   const side = sideOf(b), sp = game.spike, spd = 6.2 * (b.slowT > 0 ? .5 : 1) * (b.stimT > 0 ? 1.1 : 1);
-  if (DUEL()) { // 1v1: no spike, go find the opponent
+  if (DUEL() || DM()) { // 1v1 / deathmatch: no spike, go find the nearest opponent
     if (game.phase !== 'live') return;
-    const t = entities.find(o => o.alive && isEnemy(o, b));
+    let t = null, bd = 1e9; for (const o of entities) if (o.alive && isEnemy(o, b)) { const d = Math.hypot(o.x - b.x, o.z - b.z); if (d < bd) { bd = d; t = o; } }
     if (t) { setGoal(b, t.x, t.z); followPath(b, dt, spd); }
     return;
   }
@@ -3347,6 +3367,7 @@ function setupMatch(agentId, humans = []) {
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
   player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {}; matchStats = { hs: 0, abil: 0 };
   if (RANGE()) return setupRange();
+  if (DM()) return setupDM();
   if (DUEL()) {
     // 1v1: a friend from the party is the opponent, otherwise a bot
     const h = humans[0];
@@ -3441,7 +3462,8 @@ function nextRound() {
     b.stage = 0; b.waitT = rand(0, 10); b.role = 'atk';
   });
   for (const b of bots) { b.target = null; b.targetVisible = false; b.path = []; b.goal = null; b.investigate = null; b.lastSeen = null; b.guard = null; b.mesh.rotation.set(0, b.yaw, 0); b.mesh.userData.gunKey = null; }
-  game.phase = 'buy'; game.phaseT = DUEL() ? 10 : game.mode === 'swift' ? 15 : BUY_TIME;
+  if (RUSH()) rushRound();
+  game.phase = 'buy'; game.phaseT = DUEL() || RUSH() ? 10 : game.mode === 'swift' ? 15 : BUY_TIME;
   barrierGroup.visible = !DUEL();
   // UI
   $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden'); $('revealWarn').classList.add('hidden');
@@ -3503,19 +3525,22 @@ function matchOver() {
 function finishMatch() {
   if (net.role === 'host') { netBroadcast(buildSnap()); netBroadcast({ t: 'over' }); net.phase = 'lobby'; }
   game.state = 'over'; document.exitPointerLock && document.exitPointerLock();
-  const MY = myTeam(), won = game.score[MY] > game.score[1 - MY];
-  $('overTitle').textContent = won ? 'VICTORY' : 'DEFEAT'; $('overTitle').style.color = won ? 'var(--teal)' : 'var(--red)';
-  $('overScore').textContent = `${game.score[MY]} : ${game.score[1 - MY]}`;
+  const MY = myTeam(), dmOrder = DM() ? entities.slice().sort((x, y) => y.kills - x.kills || x.deaths - y.deaths) : null, place = dmOrder ? dmOrder.indexOf(player) + 1 : 0;
+  const won = DM() ? place === 1 : game.score[MY] > game.score[1 - MY];
+  $('overTitle').textContent = DM() ? (won ? 'VICTORY' : `#${place} PLACE`) : won ? 'VICTORY' : 'DEFEAT'; $('overTitle').style.color = won ? 'var(--teal)' : DM() && place <= 3 ? 'var(--gold)' : 'var(--red)';
+  $('overScore').textContent = DM() ? `${player.kills} kills · ${place} of ${entities.length}` : `${game.score[MY]} : ${game.score[1 - MY]}`;
+  if (DM()) game.score = [player.kills, (dmOrder.find(e => e !== player) || { kills: 0 }).kills];
   const all = entities.slice().sort((x, y) => (y.kills * 2 + y.assists) - (x.kills * 2 + x.assists));
   const mvp = all[0], p = player;
+  const rankRes = game.mode === 'comp' ? applyRank(won, p, mvp === p, game.score[MY] - game.score[1 - MY]) : null;
   const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
   profile.xp += gain;
   const vpGain = (won ? 250 : 100) + p.kills * 10; profile.vp += vpGain;
   const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
-  profile.matches.unshift({ map: game.mapId, won, score: [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p });
+  profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined });
   profile.matches = profile.matches.slice(0, 30); saveProfile(); refreshVP();
-  $('overStats').innerHTML = `
+  $('overStats').innerHTML = rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
     <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
@@ -3561,7 +3586,7 @@ const SHOP_COLS = [
   ['Rifles', ['bulldog', 'guardian', 'phantom', 'vandal']],
   ['Snipers · Heavies', ['marshal', 'outlaw', 'operator', 'ares', 'odin']],
 ];
-function canShop() { return game.state === 'playing' && (game.phase === 'buy' || RANGE()) && player.alive; }
+function canShop() { return game.state === 'playing' && (game.phase === 'buy' || RANGE() || DM()) && !RUSH() && player.alive; }
 function openShop() { if (!canShop()) return; shopOpen = true; renderShop(); $('shop').classList.remove('hidden'); document.exitPointerLock && document.exitPointerLock(); }
 function closeShop() { shopOpen = false; $('shop').classList.add('hidden'); if (game.state === 'playing' && !game.paused) lockPointer(); }
 function renderShop() {
@@ -3700,7 +3725,9 @@ function updateHUD(dt) {
   const MY = myTeam();
   setText('aliveL', aliveHTML(MY)); setText('aliveR', aliveHTML(1 - MY));
   setText('scoreL', String(game.score[MY])); setText('scoreR', String(game.score[1 - MY]));
-  if (RANGE()) { $('timer').className = ''; setText('timer', '∞'); setText('phase', rs.test ? 'SHOOTING TEST' : 'PRACTICE'); }
+  if (DM()) { const top = entities.filter(e => e !== p).sort((a, b) => b.kills - a.kills)[0]; setText('scoreL', String(p.kills)); setText('scoreR', String(top ? top.kills : 0)); setText('aliveL', '<span class="dmTag">YOU</span>'); setText('aliveR', `<span class="dmTag">LEADER · ${esc(top ? top.name : '')}</span>`); }
+  if (DM()) { $('timer').className = ''; setText('timer', fmtTime(Math.max(0, game.phaseT))); setText('phase', `FIRST TO ${DM_TARGET}`); }
+  else if (RANGE()) { $('timer').className = ''; setText('timer', '∞'); setText('phase', rs.test ? 'SHOOTING TEST' : 'PRACTICE'); }
   else if (game.phase === 'planted') { setText('timer', '◆ ' + Math.ceil(game.spike.timer)); $('timer').className = 'spike'; setText('phase', 'SPIKE PLANTED'); }
   else {
     $('timer').className = ''; setText('timer', fmtTime(game.phaseT));
@@ -3795,6 +3822,11 @@ function updateSpotting() {
 
 /* --- Scoreboard --- */
 function renderBoard() {
+  if (DM()) {
+    $('board').innerHTML = `<div class="hdr"><span style="color:var(--gold)">DEATHMATCH</span><span style="font-size:14px;opacity:.6">First to ${DM_TARGET} kills · ${fmtTime(Math.max(0, game.phaseT))} left</span><span></span></div>
+      <table><tr><th>#</th><th>Player</th><th>K</th><th>D</th><th>Weapon</th></tr>${entities.slice().sort((a, b) => b.kills - a.kills || a.deaths - b.deaths).map((e, i) => `<tr class="${e.isPlayer ? 'ally me' : 'enemy'} ${e.alive ? '' : 'dead'}"><td class="os">${i + 1}</td><td><b style="color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</b> ${esc(e.name)}</td><td class="os">${e.kills}</td><td class="os">${e.deaths}</td><td>${e.primary ? WEAPONS[e.primary.key].name : '-'}</td></tr>`).join('')}</table>`;
+    return;
+  }
   const rows = team => entities.filter(e => e.team === team).sort((a, b) => b.kills - a.kills).map(e => {
     const w = e.primary ? WEAPONS[e.primary.key].name : e.secondary ? WEAPONS[e.secondary.key].name : '-';
     const mine = team === myTeam();
@@ -3870,6 +3902,7 @@ function simStep(dt) {
     game.time += dt;
     if (net.role === 'client') clientTick(dt);
     else if (RANGE()) { updatePlayer(dt); rangeTick(dt); updateEffects(dt); updateParticles(dt); }
+    else if (DM()) { updatePlayer(dt); for (const b of bots) updateBot(b, dt); separate(); updateEffects(dt); updateParticles(dt); dmTick(dt); }
     else {
       updatePlayer(dt);
       for (const b of bots) updateBot(b, dt);
@@ -5079,6 +5112,135 @@ let menuToastT = 0;
 function toastMenu(m) { const t = $('menuToast'); t.textContent = m; t.classList.add('on'); clearTimeout(menuToastT); menuToastT = setTimeout(() => t.classList.remove('on'), 3200); }
 $('vpBox').onclick = () => showTab('store');
 /* =====================================================================
+   RANKS (Competitive) · SPIKE RUSH · DEATHMATCH
+   ===================================================================== */
+const RANK_TIERS = [['Iron', '#8a8f96'], ['Bronze', '#c08a52'], ['Silver', '#d6dde4'], ['Gold', '#f2cc4e'], ['Platinum', '#45c9c3'], ['Diamond', '#c98cff'], ['Ascendant', '#3ed882'], ['Immortal', '#ff5274']];
+const RADIANT_RR = 2400, PLACEMENTS = 3;
+function rankOf(rr) {
+  if (rr >= RADIANT_RR) return { name: 'Radiant', color: '#fff1a1', tier: 8, div: 0, inDiv: rr - RADIANT_RR };
+  const idx = Math.max(0, Math.floor(rr / 100)), t = Math.floor(idx / 3), d = idx % 3 + 1;
+  return { name: `${RANK_TIERS[t][0]} ${d}`, color: RANK_TIERS[t][1], tier: t, div: d, inDiv: rr - idx * 100 };
+}
+const rankIconCache = {};
+function rankIcon(rr, unranked) {
+  const key = unranked ? 'u' : rr >= RADIANT_RR ? 'r' : Math.floor(rr / 100);
+  if (rankIconCache[key]) return rankIconCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d');
+  if (unranked) {
+    x.strokeStyle = '#8a96a3'; x.lineWidth = 6; x.beginPath(); x.moveTo(48, 10); x.lineTo(84, 48); x.lineTo(48, 86); x.lineTo(12, 48); x.closePath(); x.stroke();
+    x.fillStyle = '#8a96a3'; x.font = '700 34px Oswald, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('?', 48, 50);
+  } else {
+    const R = rankOf(rr), col = R.color, g = x.createLinearGradient(0, 8, 0, 90); g.addColorStop(0, '#ffffff'); g.addColorStop(.25, col); g.addColorStop(1, 'rgba(0,0,0,.55)');
+    x.shadowColor = col; x.shadowBlur = R.tier >= 6 ? 14 : 6;
+    x.fillStyle = g; x.beginPath();
+    if (R.tier === 8) { for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 - Math.PI / 2, r = i % 2 ? 22 : 42; x.lineTo(48 + Math.cos(a) * r, 50 + Math.sin(a) * r); } }
+    else { const w = 22 + R.tier * 2.5; x.moveTo(48, 8); x.lineTo(48 + w + 10, 40); x.lineTo(48, 88); x.lineTo(48 - w - 10, 40); }
+    x.closePath(); x.fill(); x.shadowBlur = 0;
+    x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = 2.5; x.stroke();
+    x.fillStyle = 'rgba(15,25,35,.85)'; x.beginPath(); x.moveTo(48, 26); x.lineTo(62, 44); x.lineTo(48, 64); x.lineTo(34, 44); x.closePath(); x.fill();
+    if (R.tier < 8) { x.fillStyle = col; for (let i = 0; i < R.div; i++) { const yy = 72 - i * 9; x.beginPath(); x.moveTo(36, yy); x.lineTo(48, yy - 6); x.lineTo(60, yy); x.lineTo(60, yy + 3); x.lineTo(48, yy - 3); x.lineTo(36, yy + 3); x.closePath(); x.fill(); } }
+    else { x.fillStyle = '#fff6c8'; x.beginPath(); x.arc(48, 45, 7, 0, 7); x.fill(); }
+  }
+  return rankIconCache[key] = c.toDataURL();
+}
+function rankState() { const r = profile.rank || (profile.rank = { rr: 0, placed: 0, pw: 0, pk: 0, peak: 0 }); return r; }
+function refreshRankUI() {
+  const r = rankState(), un = r.placed < PLACEMENTS;
+  $('rankIcon').src = rankIcon(r.rr, un);
+  $('rankIcon').title = un ? `Unranked · ${PLACEMENTS - r.placed} placement match${PLACEMENTS - r.placed === 1 ? '' : 'es'} left` : `${rankOf(r.rr).name} · ${rankOf(r.rr).inDiv} RR`;
+}
+// apply a finished Competitive match to the rank; returns a summary for the end screen
+function applyRank(won, p, mvp, scoreDiff) {
+  const r = rankState(), before = r.rr, wasUn = r.placed < PLACEMENTS;
+  if (wasUn) {
+    r.placed++; if (won) r.pw++; r.pk += p.kills - p.deaths;
+    if (r.placed >= PLACEMENTS) r.rr = clamp(200 + r.pw * 200 + Math.round(clamp(r.pk, -20, 30) * 6) + (settings.diff === 'hard' ? 150 : settings.diff === 'easy' ? -150 : 0), 0, 1600);
+    r.peak = Math.max(r.peak, r.rr); saveProfile(); refreshRankUI();
+    return { placement: true, left: PLACEMENTS - r.placed, rr: r.rr, done: r.placed >= PLACEMENTS };
+  }
+  let d = won ? 18 : -16;
+  d += clamp(Math.round((p.kills - p.deaths) * 1.2), -8, 8) + (mvp ? 4 : 0) + (Math.abs(scoreDiff) >= 7 ? (won ? 3 : -3) : 0);
+  if (won) d += settings.diff === 'hard' ? 4 : settings.diff === 'easy' ? -5 : 0; else d += settings.diff === 'hard' ? 4 : settings.diff === 'easy' ? -4 : 0;
+  d = won ? clamp(d, 8, 32) : clamp(d, -30, -5);
+  r.rr = Math.max(0, r.rr + d); r.peak = Math.max(r.peak, r.rr); saveProfile(); refreshRankUI();
+  return { delta: d, before, rr: r.rr, up: rankOf(r.rr).name !== rankOf(before).name && r.rr > before, down: rankOf(r.rr).name !== rankOf(before).name && r.rr < before };
+}
+function rankResultHTML(res) {
+  if (!res) return '';
+  if (res.placement) return `<div class="rankRes"><img src="${rankIcon(res.rr, !res.done)}"><div><div class="ol">${res.done ? 'PLACEMENTS COMPLETE' : 'PLACEMENT MATCH'}</div><b>${res.done ? rankOf(res.rr).name : `${PLACEMENTS - res.left} / ${PLACEMENTS}`}</b>${res.done ? `<div class="ol">${rankOf(res.rr).inDiv} RR</div>` : `<div class="ol">${res.left} more to get your rank</div>`}</div></div>`;
+  const R = rankOf(res.rr);
+  return `<div class="rankRes ${res.delta > 0 ? 'up' : 'down'}"><img src="${rankIcon(res.rr)}"><div style="flex:1"><div class="ol">${res.up ? 'RANK UP!' : res.down ? 'DERANKED' : 'COMPETITIVE RANK'}</div><b style="color:${R.color}">${R.name}</b>
+    <div class="rrBar"><div style="width:${Math.min(100, R.inDiv)}%"></div></div><div class="ol">${R.inDiv} / 100 RR</div></div><div class="rrDelta">${res.delta > 0 ? '+' : ''}${res.delta} RR</div></div>`;
+}
+function rankCardHTML() {
+  const r = rankState(), un = r.placed < PLACEMENTS, R = rankOf(r.rr);
+  return `<div class="rankCard"><img src="${rankIcon(r.rr, un)}"><div style="flex:1"><div class="ol">COMPETITIVE RANK</div><b style="color:${un ? '#8a96a3' : R.color}">${un ? 'Unranked' : R.name}</b>
+    ${un ? `<div class="ol">Play ${PLACEMENTS - r.placed} more Competitive match${PLACEMENTS - r.placed === 1 ? '' : 'es'} to get your rank</div>` : `<div class="rrBar"><div style="width:${Math.min(100, R.inDiv)}%"></div></div><div class="ol">${R.inDiv} / 100 RR · Peak ${rankOf(r.peak).name}</div>`}</div>
+    <div class="ol" style="max-width:260px;line-height:1.5">Win Competitive matches to gain RR (+8 to +32), lose to drop RR. 100 RR moves you up a division. Iron → Bronze → Silver → Gold → Platinum → Diamond → Ascendant → Immortal → Radiant.</div></div>`;
+}
+
+/* --- Spike Rush: same random weapon for everyone, full utility, first to 4 --- */
+const RUSH = () => game.mode === 'rush';
+const RUSH_GUNS = ['vandal', 'phantom', 'spectre', 'judge', 'operator', 'odin', 'bulldog', 'marshal', 'ares', 'guardian', 'stinger', 'bucky', 'outlaw', 'sheriff'];
+function rushRound() {
+  const k = pick(RUSH_GUNS.filter(g => g !== game.rushGun)); game.rushGun = k;
+  for (const e of entities) {
+    const w = mkWeapon(k); if (WEAPONS[k].slot === 1) { e.primary = w; e.slot = 1; } else { e.primary = null; e.secondary = w; e.slot = 2; }
+    e.armor = 50; e.credits = 0; const ag = AGENT[e.agent]; for (const kk of ['C', 'Q', 'E']) e.charges[kk] = ag.ab[kk].max;
+    e.ult = Math.min(ag.ab.X.ult, e.ult + 1); e.invSeq = (e.invSeq || 0) + 1; if (e.mesh) e.mesh.userData.gunKey = null;
+  }
+  if (player) equipView();
+  setTimeout(() => { if (game.state === 'playing') banner('SPIKE RUSH', `Everyone has the ${WEAPONS[k].name} this round`, '', 2.2); }, 1700);
+}
+
+/* --- Deathmatch: everyone for themselves, respawn, first to 30 kills --- */
+const DM = () => game.mode === 'dm';
+const DM_TIME = 360, DM_TARGET = 30;
+let DM_CELLS = [];
+function setupDM() {
+  const names = ['Nova', 'Echo', 'Blaze', 'Vex', 'Rook', 'Kite', 'Ash', 'Shade', 'Bolt'];
+  const pool = shuffle(AGENTS.map(a => a.id).filter(id => id !== player.agent));
+  for (let i = 0; i < 9; i++) {
+    const b = makeEntity({ id: entities.length, name: names[i], team: i + 1, agent: pool[i % pool.length] });
+    b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); Object.assign(b, { path: [], think: 0, reactT: 0 }); entities.push(b); bots.push(b);
+  }
+  DM_CELLS = cellsWhere((c, r) => walkable(c, r) && hAt(c, r) === 0);
+  Object.assign(game, { round: 1, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: 'atk', side: ['atk', 'def'], time: 0, phase: 'live', phaseT: DM_TIME, target: DM_TARGET });
+  game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
+  barrierGroup.visible = false; clearEffects(); clearDrops();
+  game.state = 'playing'; game.paused = false;
+  player.dmGun = player.dmGun || 'vandal';
+  for (const e of entities) { e.credits = 9000; dmRespawn(e); }
+  $('sideTag').textContent = '◆ DEATHMATCH'; $('sideTag').style.color = '#f5d76e';
+  buildAbilHud(); equipView();
+  banner('DEATHMATCH', `Everyone for themselves · first to ${DM_TARGET} kills · press ${keyName(settings.binds.shop)} to change weapon`, '', 3.2);
+}
+function dmRespawn(e) {
+  let best = null, bs = -1;
+  for (let i = 0; i < 24; i++) {
+    const c = pick(DM_CELLS), p = cc(...c); let md = 1e9;
+    for (const o of entities) if (o !== e && o.alive) md = Math.min(md, Math.hypot(o.x - p.x, o.z - p.z));
+    if (md > bs) { bs = md; best = p; }
+  }
+  Object.assign(e, { alive: true, hp: 100, armor: 50, x: best.x, y: 0, z: best.z, vx: 0, vz: 0, vy: 0, flashT: 0, nearT: 0, slowT: 0, detainT: 0, vulnT: 0, revealedT: 0, deathPos: null, reloadT: 0, fireCD: 0, damagedBy: {}, dashT: 0, kbT: 0, deadT: 0, dmT: 0, yaw: rand(0, Math.PI * 2), pitch: 0 });
+  if (!e.primary) e.primary = mkWeapon(e.isPlayer ? e.dmGun : pick(['vandal', 'phantom', 'vandal', 'phantom', 'spectre', 'bulldog', 'guardian', 'operator', 'judge', 'marshal']));
+  if (!e.secondary) e.secondary = mkWeapon('classic');
+  for (const w of [e.primary, e.secondary]) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
+  e.slot = 1; teleported(e); e.invSeq = (e.invSeq || 0) + 1;
+  if (e.mesh) { e.mesh.rotation.set(0, e.yaw, 0); e.mesh.userData.gunKey = null; }
+  if (!e.isPlayer) Object.assign(e, { path: [], goal: null, target: null, targetVisible: false, lastSeen: null, investigate: null });
+  else { $('deathInfo').classList.add('hidden'); deathCam = 0; equipView(); }
+}
+function dmTick(dt) {
+  game.phaseT -= dt; player.credits = 9000;
+  if (player.primary) player.dmGun = player.primary.key;
+  if (drops.length) clearDrops();
+  for (const e of entities) if (!e.alive) { e.dmT = (e.dmT || 0) + dt; if (e.dmT > 2.2) dmRespawn(e); }
+  const lead = entities.reduce((a, e) => e.kills > a.kills ? e : a, entities[0]);
+  if (lead.kills >= DM_TARGET || game.phaseT <= 0) finishMatch();
+}
+
+/* =====================================================================
    AIMED ABILITIES (player): preview first, click to use
    Sova bow · Omen step / dark cover · Sage wall / heal / revive
    ===================================================================== */
@@ -5760,8 +5922,8 @@ $('mapPrev').onclick = e => { e.stopPropagation(); stepMap(-1); };
 $('mapNext').onclick = e => { e.stopPropagation(); stepMap(1); };
 $('mapCard').onclick = () => stepMap(1);
 let queueTimer = null, queueStart = 0;
-const modeName = () => playMode === 'swift' ? 'SWIFTPLAY' : playMode === 'duel' ? '1V1 DUEL' : playMode === 'range' ? 'PRACTICE RANGE' : 'COMPETITIVE';
-const MODES = ['comp', 'swift', 'duel'];
+const modeName = () => ({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', range: 'PRACTICE RANGE', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[playMode] || 'COMPETITIVE';
+const MODES = ['comp', 'swift', 'duel', 'rush'];
 const partyCap = () => playMode === 'duel' ? 2 : 5;
 function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').classList.remove('queue'); updatePlayLock(); }
 function startRange() {
@@ -5771,6 +5933,7 @@ function startRange() {
 $('btnStart').onclick = () => {
   initAudio(); if (net.role === 'client') return;
   if (playMode === 'range' && !queueTimer) { startRange(); return; }
+  if (playMode === 'dm' && net.role !== 'off') { toastMenu('Deathmatch is solo for now — leave the party first.'); SND.deny(); return; }
   if (queueTimer) { cancelQueue(); sndTone(300, .12, .15, 'triangle'); return; }
   queueStart = performance.now(); $('btnStart').textContent = 'CANCEL'; $('btnStart').classList.add('queue');
   sndTone(520, .12, .2, 'triangle'); sndTone(780, .14, .2, 'triangle', 0, undefined, undefined, .08);
@@ -5826,9 +5989,9 @@ function renderCareer() {
   const m = profile.matches, wins = m.filter(x => x.won).length;
   const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
-  let html = `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
+  let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
   html += '<div class="collCat">RECENT MATCHES</div>';
-  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${x.mode === 'swift' ? 'SWIFTPLAY' : x.mode === 'duel' ? '1V1 DUEL' : 'COMPETITIVE'}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
+  html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[x.mode] || 'COMPETITIVE'}${x.place ? ' · #' + x.place : ''}${x.rr !== undefined ? ` · <b style="color:${x.rr > 0 ? 'var(--teal)' : 'var(--red)'}">${x.rr > 0 ? '+' : ''}${x.rr} RR</b>` : ''}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
   $('careerBox').innerHTML = html;
 }
@@ -5849,7 +6012,7 @@ function renderCollection() {
 /* agent select / match flow */
 function goSelect(mode) {
   initAudio(); selectedAgent = profile.fav;
-  game.mode = mode; game.target = mode === 'swift' ? 5 : mode === 'duel' ? 7 : 13; game.half = mode === 'swift' ? 4 : mode === 'duel' ? 6 : 12;
+  game.mode = mode; game.target = mode === 'swift' ? 5 : mode === 'duel' ? 7 : mode === 'rush' ? 4 : mode === 'dm' ? DM_TARGET : 13; game.half = mode === 'swift' ? 4 : mode === 'duel' ? 6 : mode === 'rush' ? 3 : 12;
   $('menu').classList.add('hidden'); $('select').classList.remove('hidden');
   $('btnBack').classList.toggle('hidden', net.role !== 'off');
   if (net.role !== 'off' && takenBy(selectedAgent)) selectedAgent = AGENTS.find(a => !takenBy(a.id)).id;
@@ -5916,9 +6079,9 @@ $('btnCopyCode').onclick = () => {
   try { navigator.clipboard.writeText(code).then(ok, done); } catch (e) { done(); }
 };
 
-loadMap('dustwall'); renderMapCard();
+loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 29;
+const BUILD = 30;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {

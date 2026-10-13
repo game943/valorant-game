@@ -121,6 +121,15 @@ Ultimate changes:
 ## Blinded faces
 When an enemy (or ally) is flashed, their face turns into a dizzy **X_X** face, yellow stars spin over their head, they cover their eyes with a hand and point their gun at the floor. Nearsight (Reyna's Leer, Omen's Paranoia, Skye's Seekers) shows a purple X_X face instead. Online players see it too.
 
+## Competitive rank
+Only **Competitive** matches count. Your first 3 are placement matches; after them you get a rank from Iron 1 up to Radiant. A win gives +8 to +32 RR and a loss takes −5 to −30 RR, depending on how you played, the score and the bot difficulty. Every 100 RR is a new division. Your rank icon is in the top bar, the end screen shows your RR change, and the CAREER tab shows your rank, RR bar and peak.
+
+## Spike Rush
+First to 4 rounds. Every round everyone gets the same random weapon, heavy shields and full abilities (+1 ult point). There is no shop, and the buy phase is 10 seconds. Works in parties too.
+
+## Deathmatch
+Solo, free for all against 9 bots. You respawn 2 seconds after dying. Press **B** any time to switch weapons for free. Abilities are off. First to 30 kills wins, or whoever leads when the 6 minutes run out. The end screen shows your placement.
+
 ## Maps
 Pick the map on the PLAY tab with the ‹ › arrows (or click the map card). In a party, the host picks and everyone sees it.
 - **Dustwall**: desert outpost with a long mid corridor and a courtyard.
