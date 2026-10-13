@@ -634,7 +634,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 30</div>
+<div id="buildTag">VALOR STRIKE · build 31</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1905,6 +1905,14 @@ function traceShot(shooter, ox, oy, oz, dx, dy, dz, range) {
     if (!e.alive || e === shooter || !isEnemy(e, shooter) || e.dismissT > 0) continue;
     const h = rayEntity(ox, oy, oz, dx, dy, dz, e); if (h && h.t < res.t) { res.t = h.t; res.ent = e; res.reg = h.reg; res.wall = null; }
   }
+  // buy phase: the spawn barrier stops bullets where they leave the shooter's spawn
+  if (game.phase === 'buy' && barrierGroup.visible) {
+    const z0 = zoneG[cellOf(oz) * GW + cellOf(ox)];
+    if (z0 === 3 || z0 === 4) for (let t = .2; t < res.t; t += .2) {
+      const x = ox + dx * t, z = oz + dz * t;
+      if (zoneG[cellOf(z) * GW + cellOf(x)] !== z0) { res.t = t; res.ent = null; res.wall = null; res.nx = -dx; res.ny = 0; res.nz = -dz; res.barrier = true; break; }
+    }
+  }
   return res;
 }
 function aimPoint(e, maxD) {
@@ -1936,6 +1944,7 @@ let smokes = [], zones = [], dynWalls = [], projectiles = [], timedFx = [], drop
 /* --- Damage --- */
 function applyDamage(t, dmg, src, label, head) {
   if (!t.alive || t.dismissT > 0 || dmg <= 0) return;
+  if (game.phase === 'buy' && src && src !== t && isEnemy(src, t)) return; // nobody can be hurt before the round starts
   if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
@@ -3148,7 +3157,7 @@ function botPerceive(b) {
 }
 function botShoot(b, t) {
   const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[settings.diff];
-  if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0) return;
+  if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0 || game.phase === 'buy') return;
   if (w.model === 'knife') {
     if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, 'Knife'); SND.shot('knife', b.x, b.z); }
     return;
@@ -6081,7 +6090,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 30;
+const BUILD = 31;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
