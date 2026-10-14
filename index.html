@@ -5141,7 +5141,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
 function setupMatch(agentId, humans = []) {
   game.firstKillRound = 0;
   ffVote = null; renderFF(null); game.ffUsed = {}; game.suddenDeath = false;
-  while (sprayGroup.children.length) sprayGroup.remove(sprayGroup.children[0]); for (const k in sprayOf) delete sprayOf[k];
+  clearSprays();
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
   loadMap(game.mapId);
   // clean up previous match
@@ -5188,7 +5188,7 @@ function sidesForRound(r) {
   return (r - 2 * H) % 2 === 1 ? s0 : flip(s0); // overtime: swap every round
 }
 function nextRound() {
-  game.round++; restoreBreakables();
+  game.round++; restoreBreakables(); clearSprays();
   const r = game.round, H = game.half;
   const prevSide = game.side[0];
   game.side[0] = sidesForRound(r); game.side[1] = game.side[0] === 'atk' ? 'def' : 'atk';
@@ -6223,6 +6223,8 @@ const validSprayData = d => typeof d === 'string' && d.length < 90000 && /^data:
 const sprayTex = id => SPRAYS[id] && SPRAYS[id].data ? dataTex(SPRAYS[id].data) : SPRAY_TEX[id] || (SPRAY_TEX[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); return t; })());
 const sprayGroup = new THREE.Group(); scene.add(sprayGroup);
 const sprayOf = {}, pings = [];
+const SPRAYS_PER_PLAYER = 12; // sprays stay up until the round ends; past this many, a player's oldest one goes
+function clearSprays() { while (sprayGroup.children.length) { const m = sprayGroup.children[0]; sprayGroup.remove(m); m.geometry.dispose(); m.material.dispose(); } for (const k in sprayOf) delete sprayOf[k]; }
 let pingCD = 0;
 const PING_TEX = {};
 function pingTex(kind) {
@@ -6252,10 +6254,10 @@ function botsFollowPing(from, x, z, kind) {
 }
 function doSpray() {
   if (!player || !player.alive) return;
-  if (player.sprayRound === game.round && !RANGE()) { toast('One spray per round'); SND.deny(); return; }
+  if (game.time < (player.sprayCD || 0)) return; // short cooldown so holding the key doesn't spam
   const f = fwd(player), oy = eyeY(player), t = rayGrid(player.x, oy, player.z, f.x, f.y, f.z, 6);
   if (t >= 6) { toast('Get closer to a wall or the floor to spray'); SND.deny(); return; }
-  player.sprayRound = game.round;
+  player.sprayCD = game.time + .5;
   const sid = SPRAYS[profile.spray] ? profile.spray : 'logo';
   const a = [player.id, r2(player.x + f.x * t), r2(oy + f.y * t), r2(player.z + f.z * t), RH.nx, RH.ny, RH.nz, sid, r2(player.yaw)];
   if (SPRAYS[sid].data) a.push(SPRAYS[sid].data); // custom picture: send it so everyone sees it
@@ -6310,12 +6312,14 @@ const FX = {
   },
   spray(owner, x, y, z, nx, ny, nz, id, yaw, data) {
     if (!isFinite(x) || !isFinite(z)) return;
-    if (sprayOf[owner]) sprayGroup.remove(sprayOf[owner]);
+    const mine = sprayOf[owner] || (sprayOf[owner] = []);
+    while (mine.length >= SPRAYS_PER_PLAYER) { const o = mine.shift(); sprayGroup.remove(o); o.geometry.dispose(); o.material.dispose(); }
     const map = validSprayData(data) ? dataTex(data) : sprayTex(SPRAYS[id] ? id : 'logo');
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshLambertMaterial({ map, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
     m.position.set(x + nx * .02, y + ny * .02, z + nz * .02);
     if (ny > .5) { m.rotation.set(-Math.PI / 2, 0, 0); m.rotateZ(+yaw || 0); } else m.lookAt(x + nx, y, z + nz);
-    sprayGroup.add(m); sprayOf[owner] = m;
+    m.position.addScaledVector(new THREE.Vector3(nx, ny, nz), mine.length * .002); // stacked sprays don't flicker
+    sprayGroup.add(m); mine.push(m);
     sndNoise(.45, 3000, .6, .18, x, z);
   },
   shot(mx, my, mz, hx, hy, hz, model, color) { if (model === 'blades') { flyKunai(mx, my, mz, hx, hy, hz, false); SND.shot('blades', mx, mz); return; } spawnTracer(mx, my, mz, hx, hy, hz, color); worldFlash(mx, my, mz, .5); SND.shot(model, mx, mz); },
@@ -6898,7 +6902,7 @@ function applySnap(s) {
   const newRound = rd !== game.round;
   Object.assign(game, { phase: ph, phaseT: pt, score: [s0, s1], round: rd, ot: !!ot });
   game.side = [side0, side0 === 'atk' ? 'def' : 'atk'];
-  if (newRound) { restoreBreakables();
+  if (newRound) { restoreBreakables(); clearSprays();
     $('killIcons').innerHTML = ''; $('revealWarn').classList.add('hidden');
     setSideTag();
     player.shotIdx = 0; player.recoil = 0; player.reloadT = 0;
@@ -10292,7 +10296,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 78;
+const BUILD = 79;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
