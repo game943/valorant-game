@@ -220,6 +220,21 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .featGuns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:center}
 .featGuns img{width:100%;height:70px;object-fit:contain;cursor:pointer;background:rgba(255,255,255,.03);transition:.12s}
 .featGuns img:hover{background:rgba(255,255,255,.1);transform:scale(1.04)}
+.wsPanel{width:min(980px,96vw);max-height:94vh;overflow:auto}
+.wsBody{display:flex;gap:22px;flex-wrap:wrap}.wsLeft{flex:1.4;min-width:300px}.wsRight{flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px}
+.wsStage{height:250px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#2b3846 0%,#121a22 70%);border:1px solid rgba(255,255,255,.08)}
+.wsStage img{max-width:96%;max-height:96%;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+.wsTitle{font:700 16px Oswald,sans-serif;letter-spacing:3px;margin-top:8px;color:#ece8e1}
+.wsPat{display:flex;flex-wrap:wrap;gap:6px}.wsPat button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#c9d0d6;font:500 12px Oswald;padding:6px 10px;cursor:pointer}
+.wsPat button.on{background:#ff8ad8;border-color:#ff8ad8;color:#1a0f18}
+.wsRight label{display:flex;flex-direction:column;gap:4px;font:600 11px Oswald,sans-serif;letter-spacing:2px;color:#9aa6b2;text-transform:uppercase}
+.wsRight select,.wsRight input[type=text]{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:8px 10px;font:500 14px 'Noto Sans KR',sans-serif}
+.wsRight input[type=color]{width:100%;height:34px;border:1px solid rgba(255,255,255,.18);background:none;padding:0;cursor:pointer}
+.wsCols{display:flex;gap:8px}.wsCols label{flex:1}
+.wsBtns{display:flex;gap:8px;margin-top:6px}.wsBtns .btn{margin:0;flex:1;width:auto;padding:10px 8px}
+.skNew .skPlus{height:72px;display:flex;align-items:center;justify-content:center;font:300 54px Oswald;color:#ff8ad8;margin:4px 0}
+.skEdit{position:absolute;right:8px;top:8px;width:26px;height:26px;border:0;background:rgba(255,138,216,.2);color:#ff8ad8;cursor:pointer;font-size:14px}
+.skEdit:hover{background:#ff8ad8;color:#1a0f18}
 .skGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .skCard{position:relative;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(0,0,0,.25));border:1px solid rgba(255,255,255,.08);border-bottom:3px solid var(--tc);padding:10px 12px;cursor:pointer;transition:.12s}
 .skCard:hover{transform:translateY(-2px);border-color:var(--tc)}
@@ -735,7 +750,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </section>
 
   <section class="tab hidden" id="tab-collection">
-    <div class="tabPanel"><div class="pHead"><h2>COLLECTION</h2><span class="ol">Click a weapon to equip a skin · damage per bullet (head / body / legs)</span></div><div id="collBox"></div></div>
+    <div class="tabPanel"><div class="pHead"><h2>COLLECTION</h2><span class="ol">Click a weapon to equip a skin · damage per bullet (head / body / legs)</span><button class="btn" id="btnWorkshop" style="width:auto;margin:0 0 0 auto;padding:8px 16px;border-color:#ff8ad8;color:#ff8ad8">🎨 SKIN WORKSHOP</button></div><div id="collBox"></div></div>
   </section>
 
   <section class="tab hidden" id="tab-pass">
@@ -772,6 +787,24 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="panel skpPanel">
     <div class="pHead"><h2 id="skpTitle">SKINS</h2><button class="iconBtn" id="skpClose">✕</button></div>
     <div class="skGrid" id="skpGrid"></div>
+  </div>
+</div>
+<div id="workshop" class="screen hidden">
+  <div class="panel wsPanel">
+    <div class="pHead"><h2>SKIN WORKSHOP</h2><button class="iconBtn" id="wsClose">✕</button></div>
+    <div class="wsBody">
+      <div class="wsLeft"><div class="wsStage"><img id="wsImg" alt=""></div><div id="wsTitle" class="wsTitle"></div>
+        <div class="ol" style="margin:8px 0 4px">PATTERN</div><div class="wsPat" id="wsPat"></div></div>
+      <div class="wsRight">
+        <label>Weapon<select id="wsGun"></select></label>
+        <label>Skin name<input type="text" id="wsName" maxlength="24" spellcheck="false" autocomplete="off"></label>
+        <div class="wsCols"><label>Base<input type="color" id="wsC1"></label><label>Pattern<input type="color" id="wsC2"></label><label>Pattern 2<input type="color" id="wsC3"></label></div>
+        <div class="wsCols"><label>Grip / stock<input type="color" id="wsFurn"></label><label>Metal<input type="color" id="wsMetal"></label><label>Accent<input type="color" id="wsAcc"></label></div>
+        <label>Glow <input type="range" id="wsGlow" min="0" max="100" step="1"></label>
+        <div class="wsBtns"><button class="btn" id="wsRand">🎲 Random</button><button class="btn hidden" id="wsDel" style="border-color:var(--red);color:var(--red)">Delete</button><button class="btn primary" id="wsSave">Save &amp; equip</button></div>
+        <div class="note" style="margin:6px 0 0">Custom skins are free and saved in this browser. Other players in an online party see the standard skin.</div>
+      </div>
+    </div>
   </div>
 </div>
 <div id="menuToast"></div>
@@ -2105,6 +2138,7 @@ const TIERS = {
   premium: { name: 'Premium', price: 1775, color: '#d1548d' },
   exclusive: { name: 'Exclusive', price: 2175, color: '#f5955b' },
   ultra: { name: 'Ultra', price: 2475, color: '#fad663' },
+  custom: { name: 'Custom', price: 0, color: '#ff8ad8' },
 };
 // Skin lines: colors per part role (body / furniture / metal / accent), optional glow and a procedural pattern.
 const SKIN_LINES = [
@@ -2145,6 +2179,10 @@ function skinTex(L) {
   else if (kind === 'flame') { const g = x.createLinearGradient(0, 128, 0, 0); g.addColorStop(0, b); g.addColorStop(.55, a); g.addColorStop(1, a); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.fillStyle = b; for (let i = 0; i < 9; i++) { const px = rnd() * 128; x.beginPath(); x.moveTo(px - 10, 128); x.quadraticCurveTo(px + (rnd() - .5) * 20, 70, px + (rnd() - .5) * 10, 40 + rnd() * 30); x.quadraticCurveTo(px + 6, 90, px + 10, 128); x.fill(); } }
   else if (kind === 'grad') { const g = x.createLinearGradient(0, 0, 128, 128); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.strokeStyle = 'rgba(63,182,255,.5)'; x.lineWidth = 1; for (let i = 0; i < 128; i += 16) { x.beginPath(); x.moveTo(0, i); x.lineTo(128, i); x.stroke(); } }
   else if (kind === 'stars') { for (let i = 0; i < 70; i++) { x.fillStyle = rnd() < .3 ? b : '#ffffff'; const s = rnd() * 2 + .5; x.fillRect(rnd() * 128, rnd() * 128, s, s); } x.strokeStyle = b; x.globalAlpha = .4; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.stroke(); x.globalAlpha = 1; }
+  else if (kind === 'dots') { x.fillStyle = b; for (let r = 0; r < 8; r++) for (let q = 0; q < 8; q++) { x.beginPath(); x.arc(q * 16 + (r % 2) * 8 + 4, r * 16 + 8, 4, 0, 7); x.fill(); } }
+  else if (kind === 'carbon') { for (let r = 0; r < 16; r++) for (let q = 0; q < 16; q++) { x.fillStyle = (r + q) % 2 ? b : a; x.fillRect(q * 8, r * 8, 8, 4); x.fillStyle = (r + q) % 2 ? a : b; x.fillRect(q * 8, r * 8 + 4, 8, 4); } }
+  else if (kind === 'zigzag') { x.strokeStyle = b; x.lineWidth = 5; for (let r = 0; r < 128; r += 20) { x.beginPath(); for (let q = 0; q <= 128; q += 16) x.lineTo(q, r + (q / 16 % 2 ? 8 : 0)); x.stroke(); } }
+  else if (kind === 'splat') { for (let i = 0; i < 18; i++) { x.fillStyle = i % 2 ? b : (c || b); x.globalAlpha = .85; x.beginPath(); const cx = rnd() * 128, cy = rnd() * 128, R = 4 + rnd() * 12; for (let k = 0; k < 12; k++) { const an = k / 12 * 6.283, rr = R * (.6 + rnd() * .7); x.lineTo(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr); } x.fill(); } x.globalAlpha = 1; }
   else if (kind === 'tiger') { x.fillStyle = b; for (let i = 0; i < 9; i++) { const py = i * 15 + rnd() * 6; x.beginPath(); x.moveTo(0, py); x.quadraticCurveTo(40 + rnd() * 30, py - 6, 70 + rnd() * 30, py + 4); x.quadraticCurveTo(50, py + 7, 0, py + 5); x.fill(); } }
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
   return skinTexCache[L.id] = t;
@@ -2170,6 +2208,15 @@ function applySkin(g, skinId) {
     o.material = skinMat(S.line, ROLE_OF[hex] || 'acc');
   });
   g.userData.skin = skinId;
+}
+// player-made skins (Skin Workshop): a one-gun skin line kept in the profile
+function registerCustomSkin(c) {
+  const L = { id: c.id, name: c.name, tier: 'custom', body: c.body, furn: c.furn, metal: c.metal, acc: c.acc, glow: c.glow || 0, mglow: c.mglow || 0, pat: c.pat, guns: [c.key] };
+  const sid = c.id + ':' + c.key; delete skinTexCache[c.id];
+  for (const k in skinMatCache) if (k.startsWith(c.id + ':')) delete skinMatCache[k];
+  for (const k in gunIconCache) if (k.includes(':' + sid + ':')) delete gunIconCache[k];
+  SKINS[sid] = { id: sid, line: L, key: c.key, name: c.name, tier: 'custom', price: 0, custom: true };
+  return sid;
 }
 const skinOf = (e, inst) => inst ? (inst.sk !== undefined ? inst.sk : (e && e.skins && e.skins[inst.key]) || 0) : 0;
 const cleanSkins = o => { const r = {}; if (o && typeof o === 'object') for (const k in o) if (SKINS[o[k]] && SKINS[o[k]].key === k) r[k] = o[k]; return r; };
@@ -6536,6 +6583,8 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
 };
 const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9), sprays: ['logo', 'gg', 'heart'], spray: 'logo', bp: { xp: 0, claimed: 0 }, contracts: {}, contract: '', titles: [], title: '' }, store.get('vs_profile', {}));
+profile.customSkins = Array.isArray(profile.customSkins) ? profile.customSkins.filter(c => c && c.id && WEAPONS[c.key] || (c && c.key === 'knife')) : [];
+profile.customSkins.forEach(registerCustomSkin);
 profile.owned = (profile.owned || []).filter(id => SKINS[id]); profile.equip = cleanSkins(profile.equip); for (const k in profile.equip) if (!profile.owned.includes(profile.equip[k])) delete profile.equip[k];
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 const saveProfile = () => store.set('vs_profile', profile);
@@ -7433,15 +7482,17 @@ $('skmClose').onclick = closeSkinModal;
 $('skinModal').onclick = e => { if (e.target.id === 'skinModal') closeSkinModal(); };
 // skin picker for one weapon (Collection tab)
 function openSkinPicker(key) {
-  const list = [0, ...SKIN_IDS.filter(id => SKINS[id].key === key)], cur = profile.equip[key] || 0;
+  const list = [0, ...SKIN_IDS.filter(id => SKINS[id].key === key), ...profile.customSkins.filter(c => c.key === key).map(c => c.id + ':' + c.key)], cur = profile.equip[key] || 0;
   $('skpTitle').textContent = (key === 'knife' ? 'Knife' : WEAPONS[key].name).toUpperCase() + ' SKINS';
   $('skpGrid').innerHTML = list.map(id => {
     const S = SKINS[id], own = !id || owns(id), T = S && TIERS[S.tier];
     return `<div class="skCard${cur === id ? ' eq' : ''}${own ? '' : ' locked'}" data-sk="${id}" style="--tc:${T ? T.color : '#8a96a3'}">
       <div class="skTier">${T ? T.name : 'Standard'}</div><img src="${gunIcon(key, id || 0)}" alt=""><div class="skName">${S ? S.name : 'Standard'}</div>
-      <div class="skPrice">${cur === id ? 'EQUIPPED' : own ? 'EQUIP' : '🔒 ' + S.price.toLocaleString() + ' VP'}</div></div>`;
-  }).join('');
-  $('skpGrid').querySelectorAll('.skCard').forEach(c => c.onclick = () => {
+      <div class="skPrice">${cur === id ? 'EQUIPPED' : own ? 'EQUIP' : '🔒 ' + S.price.toLocaleString() + ' VP'}</div>${S && S.custom ? `<button class="skEdit" data-edit="${id}" title="Edit">✎</button>` : ''}</div>`;
+  }).join('') + `<div class="skCard skNew" data-new="1" style="--tc:#ff8ad8"><div class="skTier">Workshop</div><div class="skPlus">+</div><div class="skName">Create a custom skin</div><div class="skPrice">FREE</div></div>`;
+  $('skpGrid').querySelector('.skNew').onclick = e => { e.stopPropagation(); closeSkinPicker(); openWorkshop(key); };
+  $('skpGrid').querySelectorAll('.skEdit').forEach(b => b.onclick = e => { e.stopPropagation(); closeSkinPicker(); openWorkshop(key, b.dataset.edit.split(':')[0]); });
+  $('skpGrid').querySelectorAll('.skCard[data-sk]').forEach(c => c.onclick = () => {
     const id = c.dataset.sk === '0' ? 0 : c.dataset.sk;
     if (id && !owns(id)) { closeSkinPicker(); openSkinModal(id, SKINS[id].price); return; }
     if (id) profile.equip[key] = id; else delete profile.equip[key];
@@ -7449,6 +7500,75 @@ function openSkinPicker(key) {
   });
   $('skinPicker').classList.remove('hidden');
 }
+/* --- Skin Workshop: paint your own skin for any weapon --- */
+const WS_PATTERNS = [['solid', 'Solid'], ['stripes', 'Stripes'], ['camo', 'Camo'], ['marble', 'Marble'], ['hex', 'Hex'], ['circuit', 'Circuit'], ['flame', 'Flame'], ['grad', 'Gradient'], ['stars', 'Galaxy'], ['tiger', 'Tiger'], ['dots', 'Dots'], ['carbon', 'Carbon'], ['zigzag', 'Zigzag'], ['splat', 'Paint splat']];
+const WS_GUNS = ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff', 'stinger', 'spectre', 'bucky', 'judge', 'bulldog', 'guardian', 'phantom', 'vandal', 'marshal', 'outlaw', 'operator', 'ares', 'odin', 'knife'];
+let ws = null;
+const hexStr = n => '#' + (n >>> 0).toString(16).padStart(6, '0').slice(-6), hexNum = s => parseInt(String(s).slice(1), 16) || 0;
+function openWorkshop(key = 'vandal', editId) {
+  const ex = editId && profile.customSkins.find(c => c.id === editId);
+  const d = ex ? JSON.parse(JSON.stringify(ex)) : { id: '', name: 'My ' + (key === 'knife' ? 'Knife' : WEAPONS[key].name), key, body: 0x2a1f3d, furn: 0x15151a, metal: 0x8a8f99, acc: 0xff4fd8, glow: 0x7a0060, mglow: 0, pat: ['stripes', '#2a1f3d', '#ff4fd8', '#5fd0ff'] };
+  ws = { d, editId: ex ? ex.id : null };
+  $('wsGun').innerHTML = WS_GUNS.map(k => `<option value="${k}"${k === d.key ? ' selected' : ''}>${k === 'knife' ? 'Knife' : WEAPONS[k].name}</option>`).join('');
+  $('wsPat').innerHTML = WS_PATTERNS.map(([k, n]) => `<button data-p="${k}" class="${(d.pat[0] === k) ? 'on' : ''}">${n}</button>`).join('');
+  $('wsPat').querySelectorAll('button').forEach(b => b.onclick = () => { ws.d.pat[0] = b.dataset.p; $('wsPat').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); wsPreview(); tick(); });
+  $('wsName').value = d.name; $('wsC1').value = d.pat[1]; $('wsC2').value = d.pat[2]; $('wsC3').value = d.pat[3] || d.pat[2];
+  $('wsFurn').value = hexStr(d.furn); $('wsMetal').value = hexStr(d.metal); $('wsAcc').value = hexStr(d.acc); $('wsGlow').value = Math.round(glowAmt(d) * 100);
+  $('wsDel').classList.toggle('hidden', !ex);
+  $('workshop').classList.remove('hidden'); wsPreview();
+}
+const glowAmt = d => { const a = d.acc, g = d.glow; if (!a) return 0; return clamp((((g >> 16) & 255) + ((g >> 8) & 255) + (g & 255)) / Math.max(1, ((a >> 16) & 255) + ((a >> 8) & 255) + (a & 255)), 0, 1); };
+const scaleHex = (h, k) => (Math.round(((h >> 16) & 255) * k) << 16) | (Math.round(((h >> 8) & 255) * k) << 8) | Math.round((h & 255) * k);
+function wsRead() {
+  const d = ws.d; d.name = ($('wsName').value.trim() || 'Custom skin').slice(0, 24); d.key = $('wsGun').value;
+  d.pat[1] = $('wsC1').value; d.pat[2] = $('wsC2').value; d.pat[3] = $('wsC3').value;
+  d.body = hexNum(d.pat[1]); d.furn = hexNum($('wsFurn').value); d.metal = hexNum($('wsMetal').value); d.acc = hexNum($('wsAcc').value);
+  const g = +$('wsGlow').value / 100; d.glow = scaleHex(d.acc, g * .85); d.mglow = scaleHex(d.metal, g * .35);
+  if (d.pat[0] === 'solid') d.pat[2] = d.pat[1];
+}
+function wsPreview() {
+  wsRead(); const d = ws.d, pv = Object.assign({}, d, { id: 'wsprev' + (ws.n = (ws.n || 0) + 1), pat: d.pat[0] === 'solid' ? ['grad', d.pat[1], d.pat[1]] : d.pat.slice() });
+  const sid = registerCustomSkin(pv);
+  $('wsImg').src = gunIcon(d.key, sid, 640, 240);
+  if (ws.prevId) dropSkinCaches(ws.prevId); ws.prevId = sid;
+  $('wsTitle').textContent = (d.key === 'knife' ? 'KNIFE' : WEAPONS[d.key].name.toUpperCase()) + ' · ' + d.name.toUpperCase();
+}
+function wsSave() {
+  wsRead(); const d = ws.d;
+  const old = ws.editId && profile.customSkins.find(c => c.id === ws.editId);
+  if (!old && profile.customSkins.length >= 40) { toastMenu('You can keep up to 40 custom skins'); return; }
+  const id = 'cs' + Date.now().toString(36), rec = { id, name: d.name, key: d.key, body: d.body, furn: d.furn, metal: d.metal, acc: d.acc, glow: d.glow, mglow: d.mglow, pat: d.pat[0] === 'solid' ? ['grad', d.pat[1], d.pat[1]] : d.pat.slice(0, 4) };
+  if (old) { // replace the old version everywhere
+    const oldSid = old.id + ':' + old.key; profile.customSkins.splice(profile.customSkins.indexOf(old), 1); delete SKINS[oldSid];
+    profile.owned = profile.owned.filter(x => x !== oldSid); for (const k in profile.equip) if (profile.equip[k] === oldSid) delete profile.equip[k];
+  }
+  profile.customSkins.push(rec); const sid = registerCustomSkin(rec);
+  profile.owned.push(sid); profile.equip[rec.key] = sid;
+  saveProfile(); netProfileChanged(); refreshLobbyGuns(); closeWorkshop(); renderCollection();
+  toastMenu(`"${rec.name}" saved and equipped on your ${rec.key === 'knife' ? 'knife' : WEAPONS[rec.key].name}`); SND.buy();
+}
+function wsDelete() {
+  const old = ws.editId && profile.customSkins.find(c => c.id === ws.editId); if (!old) return;
+  const sid = old.id + ':' + old.key; profile.customSkins.splice(profile.customSkins.indexOf(old), 1); delete SKINS[sid];
+  profile.owned = profile.owned.filter(x => x !== sid); for (const k in profile.equip) if (profile.equip[k] === sid) delete profile.equip[k];
+  saveProfile(); netProfileChanged(); refreshLobbyGuns(); closeWorkshop(); renderCollection(); toastMenu(`Deleted "${old.name}"`);
+}
+function wsRandom() {
+  const rc = () => '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+  $('wsC1').value = rc(); $('wsC2').value = rc(); $('wsC3').value = rc(); $('wsFurn').value = rc(); $('wsMetal').value = rc(); $('wsAcc').value = rc(); $('wsGlow').value = randi(0, 100);
+  const p = pick(WS_PATTERNS)[0]; ws.d.pat[0] = p; $('wsPat').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.p === p)); wsPreview(); tick();
+}
+function dropSkinCaches(sid) {
+  const lid = sid.split(':')[0]; delete SKINS[sid]; delete skinTexCache[lid];
+  for (const k in skinMatCache) if (k.startsWith(lid + ':')) { skinMatCache[k].dispose && skinMatCache[k].dispose(); delete skinMatCache[k]; }
+  for (const k in gunIconCache) if (k.includes(':' + sid + ':')) delete gunIconCache[k];
+}
+$('btnWorkshop').onclick = () => { tick(); openWorkshop('vandal'); };
+function closeWorkshop() { if (ws && ws.prevId) dropSkinCaches(ws.prevId); ws = null; $('workshop').classList.add('hidden'); }
+['wsName', 'wsC1', 'wsC2', 'wsC3', 'wsFurn', 'wsMetal', 'wsAcc', 'wsGlow', 'wsGun'].forEach(id => $(id).addEventListener('input', () => ws && wsPreview()));
+$('wsName').addEventListener('keydown', e => e.stopPropagation());
+$('wsSave').onclick = wsSave; $('wsDel').onclick = wsDelete; $('wsRand').onclick = wsRandom; $('wsClose').onclick = closeWorkshop;
+$('workshop').onclick = e => { if (e.target.id === 'workshop') closeWorkshop(); };
 function closeSkinPicker() { $('skinPicker').classList.add('hidden'); }
 $('skpClose').onclick = closeSkinPicker;
 $('skinPicker').onclick = e => { if (e.target.id === 'skinPicker') closeSkinPicker(); };
