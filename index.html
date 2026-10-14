@@ -438,6 +438,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #progress .bar .half{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--light)}
 #hint{position:absolute;top:70%;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(15,25,35,.75);padding:5px 12px}
 #hint b{font-family:Oswald;padding:0 6px;background:var(--light);color:var(--dark);margin-right:4px}
+#voiceLines{position:absolute;left:24px;bottom:150px;display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:46vw}
+#voiceLines div{font:600 14px Inter,sans-serif;color:#fff;background:rgba(10,14,20,.6);padding:5px 10px;border-left:3px solid var(--vc,#2fe0b6);animation:fadeIn .2s;text-shadow:0 1px 2px #000}
+#voiceLines b{color:var(--vc,#2fe0b6);margin-right:6px;letter-spacing:1px}
 #killBanner{position:absolute;bottom:160px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;--kc:#ff4655}
 #killBanner .kbIcon{width:58px;height:58px;margin:0 auto 6px;transform:rotate(45deg);border:3px solid var(--kc);background:radial-gradient(circle,var(--kc) 0,transparent 70%);box-shadow:0 0 24px var(--kc)}
 #killBanner .kbTxt{font:700 30px Oswald,sans-serif;letter-spacing:6px;color:#fff;text-shadow:0 0 14px var(--kc),0 2px 4px #000}
@@ -672,7 +675,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 59</div>
+<div id="buildTag">VALOR STRIKE · build 60</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -767,6 +770,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div id="pilotOv" class="hidden"><div id="pilotHint"></div><div id="pilotTime"><div id="pilotBar"></div></div></div>
   <div id="centerMsg"><div id="bannerBig"></div><div id="bannerSub"></div></div>
   <div id="toast"></div>
+  <div id="voiceLines"></div>
   <div id="progress" class="hidden"><div class="lbl" id="progLbl">PLANTING SPIKE</div><div class="bar"><div id="progFill"></div><span class="half hidden" id="progHalf"></span></div></div>
   <div id="hint" class="hidden"></div>
   <div id="killIcons"></div>
@@ -3566,6 +3570,7 @@ function castAbility(e, key, target) {
   if (ABIL[ab.type](e, ab, target) === false) return false;
   if (key === 'X') e.ult = 0; else e.charges[key]--;
   fx('ab', e.x, e.z, e.id);
+  if (key === 'X') fx('voice', e.id);
   if (e.isPlayer) { refreshAbilHud(); startGauge(ab, key); if (!RANGE()) matchStats.abil++; }
   return true;
 }
@@ -5162,7 +5167,25 @@ function doSpray() {
   const a = [player.id, r2(player.x + f.x * t), r2(oy + f.y * t), r2(player.z + f.z * t), RH.nx, RH.ny, RH.nz, SPRAYS[profile.spray] ? profile.spray : 'logo', r2(player.yaw)];
   if (net.role === 'client') netSend({ t: 'spray', a }); else fx('spray', ...a);
 }
+const VOICE = { // [what your own side hears, what the other team hears] when the ultimate goes off
+  jett: ["Clear the way — I'm going in!", "Wind's picking up... watch your heads."], phoenix: ['Time to light it up!', "Feel that heat? Something's burning."],
+  sage: ["Your fight isn't over yet.", "They're bringing someone back!"], sova: ['Nowhere left to hide.', 'The hunter has us in his sights!'],
+  brim: ['Danger close — calling it in!', 'Orbital strike incoming, move!'], reyna: ['They will all fall.', 'The empress is hungry — careful.'],
+  omen: ['I am everywhere.', 'Something in the shadows is moving.'], raze: ['Here comes the party!', 'Rocket! Get behind cover!'],
+  killjoy: ['Initiating lockdown — stay put.', 'Their lockdown is charging — leave the zone!'], cypher: ['I know exactly where you are.', 'They have our positions!'],
+  skye: ['Find them, my friends.', 'Something wild is hunting us.'], viper: ['Welcome to my world.', 'Toxic pit spreading — careful in there.'],
+  neon: ["Full throttle, let's go!", 'Lightning incoming!'], yoru: ['Now you see me...', 'Someone is drifting between worlds.'],
+  kayo: ['Shutting it all down.', 'Suppression pulse — expect no abilities.'], fade: ['Your nightmares know you.', 'The fears are hunting us.'],
+};
 const FX = {
+  voice(id) {
+    const e = entities[id]; if (!e || !player || !VOICE[e.agent]) return;
+    const ally = !isEnemy(e, player), box = $('voiceLines'), d = document.createElement('div');
+    d.style.setProperty('--vc', ally ? '#2fe0b6' : '#ff4655');
+    d.innerHTML = `<b>${esc(AGENT[e.agent].name.toUpperCase())}</b>${esc(VOICE[e.agent][ally ? 0 : 1])}`;
+    box.appendChild(d); while (box.children.length > 3) box.removeChild(box.firstChild);
+    setTimeout(() => d.remove(), 3500); sndTone(ally ? 520 : 300, .25, .1, 'sine', ally ? 780 : 200);
+  },
   ping(team, x, y, z, kind, who) {
     if (!player || team !== player.team || !isFinite(x) || !isFinite(z)) return;
     kind = kind === 'enemy' ? 'enemy' : 'loc';
@@ -7244,7 +7267,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 59;
+const BUILD = 60;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
