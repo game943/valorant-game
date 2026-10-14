@@ -666,7 +666,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 54</div>
+<div id="buildTag">VALOR STRIKE · build 55</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -959,7 +959,7 @@ AGENTS.push(
     ab: { C: { name: 'Fakeout', cost: 100, max: 1, free: 0, type: 'fakeout', desc: 'Send a decoy of yourself running forward. When an enemy gets close it bursts into a blinding flash.' },
           Q: { name: 'Blindside', cost: 250, max: 2, free: 0, type: 'blindside', desc: 'Throw a rift shard that bounces off one wall and then bursts into a flash.' },
           E: { name: 'Gatecrash', cost: 0, max: 1, free: 1, type: 'gatecrash', desc: 'Send a rift tether racing forward along the ground. Press E again to teleport to it.' },
-          X: { name: 'Dimensional Drift', ult: 7, type: 'drift', desc: 'Step into another dimension for 10s: enemies cannot see or hurt you and you move faster, but you cannot shoot. Press X again to come back early.' } } },
+          X: { name: 'Dimensional Drift', ult: 7, type: 'drift', desc: 'Step into another dimension for 10s: enemies cannot see or hurt you and you move 60% faster, but you cannot shoot. Press X again to come back early.' } } },
   { id: 'kayo', name: 'KAY/O', role: 'Initiator', color: '#8fb2cf', glyph: 'KO', desc: 'A war machine built to suppress enemy abilities.',
     ab: { C: { name: 'FRAG/ment', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'frag', zr: 3.6, zt: 3, dps: 40, color: 0xb8d6f0, desc: 'A grenade that sticks to the floor and pulses heavy damage.' },
           Q: { name: 'FLASH/drive', cost: 250, max: 2, free: 0, type: 'flash', life: .8, desc: 'A flash grenade that pops after a short time.' },
@@ -3769,7 +3769,8 @@ function updatePlayer(dt) {
   let ix = 0, iz = 0; if (kd('fwd')) iz -= 1; if (kd('back')) iz += 1; if (kd('left')) ix -= 1; if (kd('right')) ix += 1;
   const w = WEAPONS[curWeapon(p).key];
   if (p.sprint && !p.crouch) { /* High Gear */ }
-  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (p.driftT > 0 ? 1.3 : 1) * (adsT > .5 && w.scope ? .75 : 1);
+  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1);
+  if (p.driftT > 0) sp = (p.crouch ? 4.2 : walk ? 6 : 6.75) * 1.6; // Dimensional Drift: much faster, no gun weight, no slows
   if (shopOpen) ix = iz = 0;
   const s = Math.sin(p.yaw), c = Math.cos(p.yaw);
   let wx = -s * (-iz) + c * ix, wz = -c * (-iz) - s * ix; const l = Math.hypot(wx, wz);
@@ -3871,6 +3872,7 @@ function followPath(b, dt, speed) {
   if (!b.path.length) { b.vx = b.vz = 0; return false; }
   const wp = b.path[0], dx = wp.x - b.x, dz = wp.z - b.z, d = Math.hypot(dx, dz);
   if (d < .55) { b.path.shift(); return followPath(b, 0, speed); }
+  if (b.driftT > 0) speed *= 1.6;
   b.vx = dx / d * speed; b.vz = dz / d * speed;
   const ty = Math.atan2(-dx, -dz); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 8); b.pitch *= .9;
   return true;
@@ -4647,7 +4649,7 @@ function updateCamera(dt) {
     camera.rotation.set(p.pitch + kick, p.yaw, 0);
     camRig.yaw = p.yaw;
     const w = WEAPONS[curWeapon(p).key];
-    const targetFov = (w.scope && adsT > .5 ? BASE_FOV / w.scope : BASE_FOV / (1 + (w.ads - 1) * adsT)) * (p.dashT > 0 ? 1.14 : 1);
+    const targetFov = (w.scope && adsT > .5 ? BASE_FOV / w.scope : BASE_FOV / (1 + (w.ads - 1) * adsT)) * (p.dashT > 0 ? 1.14 : 1) * (p.driftT > 0 ? 1.1 : 1);
     if (Math.abs(camera.fov - targetFov) > .05) { camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 18); camera.updateProjectionMatrix(); }
     vmRoot.visible = !(w.scope && adsT > .6);
     if (pilot) {
@@ -7090,7 +7092,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 54;
+const BUILD = 55;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
