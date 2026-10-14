@@ -438,6 +438,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #progress .bar .half{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--light)}
 #hint{position:absolute;top:70%;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(15,25,35,.75);padding:5px 12px}
 #hint b{font-family:Oswald;padding:0 6px;background:var(--light);color:var(--dark);margin-right:4px}
+#ffVote{position:absolute;top:84px;left:50%;transform:translateX(-50%);background:rgba(12,16,22,.86);border:1px solid rgba(255,70,85,.6);padding:8px 16px;font:600 13px Inter,sans-serif;color:#fff;text-align:center;pointer-events:none}
+#ffVote b{color:var(--red);letter-spacing:2px}#ffVote .y{color:var(--teal)}#ffVote .n{color:var(--red)}
 #voiceLines{position:absolute;left:24px;bottom:150px;display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:46vw}
 #voiceLines div{font:600 14px Inter,sans-serif;color:#fff;background:rgba(10,14,20,.6);padding:5px 10px;border-left:3px solid var(--vc,#2fe0b6);animation:fadeIn .2s;text-shadow:0 1px 2px #000}
 #voiceLines b{color:var(--vc,#2fe0b6);margin-right:6px;letter-spacing:1px}
@@ -675,7 +677,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 61</div>
+<div id="buildTag">VALOR STRIKE · build 62</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -771,6 +773,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div id="centerMsg"><div id="bannerBig"></div><div id="bannerSub"></div></div>
   <div id="toast"></div>
   <div id="voiceLines"></div>
+  <div id="ffVote" class="hidden"></div>
   <div id="progress" class="hidden"><div class="lbl" id="progLbl">PLANTING SPIKE</div><div class="bar"><div id="progFill"></div><span class="half hidden" id="progHalf"></span></div></div>
   <div id="hint" class="hidden"></div>
   <div id="killIcons"></div>
@@ -806,6 +809,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <button class="btn primary" id="btnResume">Resume</button>
     <div class="row"><label>Sensitivity <span id="sensVal2" class="os">1.00</span></label><input type="range" id="sens2" min="0.2" max="3" step="0.05" value="1"></div>
     <div class="row"><label>Volume</label><input type="range" id="vol2" min="0" max="1" step="0.05" value="0.6"></div>
+    <button class="btn" id="btnFF">Start surrender vote</button>
     <button class="btn" id="btnPauseSet">Settings</button>
     <button class="btn" id="btnQuit">Main Menu</button>
   </div>
@@ -4301,6 +4305,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
   if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: fn(e.team) });
 }
 function setupMatch(agentId, humans = []) {
+  ffVote = null; renderFF(null); game.ffUsed = {}; game.suddenDeath = false;
   while (sprayGroup.children.length) sprayGroup.remove(sprayGroup.children[0]); for (const k in sprayOf) delete sprayOf[k];
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
   loadMap(game.mapId);
@@ -4353,6 +4358,9 @@ function nextRound() {
   game.ot = r > 2 * H;
   if (pistol) game.lossStreak = [0, 0];
   if (r === H + 1 && !DUEL()) banner('SWITCHING SIDES', 'Teams swap attack and defense', '', 2.5);
+  if (game.mode === 'comp' && r === 2 * H + 1) banner('OVERTIME', 'Win by two · 5000 credits every round · sides swap each round', '', 3.2);
+  game.suddenDeath = game.mode === 'comp' && r > 2 * H + 4 && game.score[0] === game.score[1];
+  if (game.suddenDeath) banner('SUDDEN DEATH', 'This round decides the match', '', 3);
   for (const e of entities) {
     if (pistol) { e.credits = 800; e.primary = null; e.secondary = mkWeapon('classic'); e.armor = 0; e.charges = { C: 0, Q: 0, E: 0 }; }
     if (game.ot || DUEL()) { e.credits = 5000; }
@@ -4464,7 +4472,56 @@ function matchOver() {
   const [a, b] = game.score;
   if (game.mode !== 'comp') return a >= game.target || b >= game.target; // Swiftplay and 1v1: first to the target, no overtime
   if (a + b < 2 * game.half) return a >= game.target || b >= game.target;
+  if (game.suddenDeath && a !== b) return true;
   return Math.abs(a - b) >= 2;
+}
+/* --- Surrender vote (host-authoritative; bots vote by the score) --- */
+let ffVote = null;
+const FF_MIN_ROUND = 5;
+function startFF(team, by) {
+  if (game.state !== 'playing' || DM() || RANGE() || DUEL()) return 'Surrender is not available in this mode';
+  if (ffVote) return 'A vote is already running';
+  if (game.round < FF_MIN_ROUND) return `You can surrender from round ${FF_MIN_ROUND}`;
+  const half = game.round > game.half ? 2 : 1; game.ffUsed = game.ffUsed || {};
+  if (game.ffUsed[team + ':' + half]) return 'Your team already voted this half';
+  game.ffUsed[team + ':' + half] = true;
+  const mates = entities.filter(e => e.team === team);
+  ffVote = { team, by, t: 15, need: Math.ceil(mates.length * .8), votes: new Map() };
+  ffVote.votes.set(by, true);
+  const behind = game.score[1 - team] - game.score[team];
+  for (const b of mates) if (b !== by && !b.isPlayer && !b.remote) { const yes = behind >= 4 || (behind >= 2 && Math.random() < .5) || Math.random() < .1; setTimeout(() => castFF(b, yes), 800 + Math.random() * 2500); }
+  ffBroadcast(); return null;
+}
+function castFF(e, yes) {
+  if (!ffVote || e.team !== ffVote.team || ffVote.votes.has(e)) return;
+  ffVote.votes.set(e, !!yes); ffBroadcast(); ffCheck();
+}
+function ffCheck() {
+  const V = ffVote; if (!V) return;
+  const yes = [...V.votes.values()].filter(Boolean).length, no = V.votes.size - yes, total = entities.filter(e => e.team === V.team).length;
+  if (yes >= V.need) { ffVote = null; ffBroadcast(); surrenderTeam(V.team); }
+  else if (total - no < V.need || V.t <= 0) { ffVote = null; ffBroadcast(); const msg = 'Surrender vote failed'; toast(msg); if (net.role === 'host') netBroadcast({ t: 'toast', m: msg }); }
+}
+function ffTick(dt) { if (ffVote) { ffVote.t -= dt; if (ffVote.t <= 0) ffCheck(); else if (Math.floor(ffVote.t + dt) !== Math.floor(ffVote.t)) ffBroadcast(); } }
+function ffState() { if (!ffVote) return null; const yes = [...ffVote.votes.values()].filter(Boolean).length; return { team: ffVote.team, yes, no: ffVote.votes.size - yes, need: ffVote.need, t: Math.ceil(ffVote.t), by: ffVote.by.name }; }
+function ffBroadcast() { const st = ffState(); renderFF(st); if (net.role === 'host') netBroadcast({ t: 'ffv', s: st }); }
+function renderFF(st) {
+  const el = $('ffVote'); if (!st || !player || st.team !== player.team) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = `<b>SURRENDER VOTE</b> · started by ${esc(st.by)}<br><span class="y">YES ${st.yes}</span> / <span class="n">NO ${st.no}</span> · ${st.need} needed · ${st.t}s<br><small>F1 = yes · F2 = no</small>`;
+}
+function surrenderTeam(team) {
+  banner('SURRENDER', team === myTeam() ? 'Your team surrendered' : 'The enemy team surrendered', team === myTeam() ? 'lose' : 'win', 3);
+  game.score[1 - team] = Math.max(game.score[1 - team], game.target, game.score[team] + 2);
+  setTimeout(() => { if (game.state === 'playing') finishMatch(); }, 1500);
+}
+function playerStartFF() {
+  if (net.role === 'client') { netSend({ t: 'ffs' }); return; }
+  const err = startFF(player.team, player); if (err) { toast(err); SND.deny(); }
+}
+function playerVoteFF(yes) {
+  if (net.role === 'client') { netSend({ t: 'ffa', y: yes ? 1 : 0 }); return; }
+  castFF(player, yes);
 }
 function finishMatch() {
   if (net.role === 'host') { netBroadcast(buildSnap()); netBroadcast({ t: 'over' }); net.phase = 'lobby'; }
@@ -4882,6 +4939,7 @@ function simStep(dt) {
   // in an online match the world keeps running while someone has the pause menu open
   if (game.state === 'playing') { // the match never pauses: leaving the window only gives up mouse control
     game.time += dt;
+    if (net.role !== 'client') ffTick(dt);
     if (net.role === 'client') clientTick(dt);
     else if (RANGE()) { updatePlayer(dt); rangeTick(dt); updateEffects(dt); updateParticles(dt); }
     else if (DM()) { updatePlayer(dt); for (const b of bots) updateBot(b, dt); separate(); updateEffects(dt); updateParticles(dt); dmTick(dt); }
@@ -4956,6 +5014,7 @@ document.addEventListener('keydown', e => {
   if (act === 'board') { boardOpen = true; $('board').classList.remove('hidden'); renderBoard(); return; }
   if (e.code === 'Escape' && shopOpen) { closeShop(); return; }
   if (act === 'shop') { shopOpen ? closeShop() : openShop(); return; }
+  if ((e.code === 'F1' || e.code === 'F2') && !e.repeat) { e.preventDefault(); playerVoteFF(e.code === 'F1'); return; }
   if (game.paused) return;
   if (act || e.code === 'Space' || e.code.startsWith('Control')) e.preventDefault();
   keys[e.code] = true;
@@ -5546,6 +5605,8 @@ function hostGameMsg(e, d) {
       if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
       break;
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
+    case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
+    case 'ffa': castFF(e, !!d.y); break;
     case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); break;
     case 'spray': if (e.alive && Array.isArray(d.a) && d.a.length === 9) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]), +d.a[8] || 0); break;
     case 'cast':
@@ -5677,6 +5738,7 @@ function clientRecv(d) {
     case 'kb': if (player && player.alive) { player.vx = +d.vx || 0; player.vz = +d.vz || 0; player.vy = Math.max(player.vy, +d.vy || 0); player.onGround = false; player.kbT = .9; player.kbVx = player.vx; player.kbVz = player.vz; } break;
     case 'hurt': { const s = entities[d.s]; if (s && player && game.state === 'playing') showDamageDir(s); break; }
     case 'kc': if (game.state === 'playing') { playerKillFx(d.n | 0 || 1, !!d.h, skinOf(player, curWeapon(player)), null); if (player.bladeMag > 0) player.bladeMag = 5; } break;
+    case 'ffv': renderFF(d.s); break;
     case 'over': if (game.state === 'playing') finishMatch(); break;
   }
 }
@@ -7240,6 +7302,7 @@ $('btnLock').onclick = () => {
   $('select').classList.add('hidden'); $('hud').classList.remove('hidden');
   setupMatch(selectedAgent); lockPointer();
 };
+$('btnFF').onclick = () => { playerStartFF(); };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
   game.mapId = null;
@@ -7272,7 +7335,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 61;
+const BUILD = 62;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
