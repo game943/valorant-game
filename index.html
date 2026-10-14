@@ -53,6 +53,8 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #navTabs button.play{font-size:24px;letter-spacing:5px;padding:0 40px;color:var(--light);background:linear-gradient(180deg,rgba(255,70,85,0) 0,rgba(255,70,85,.28) 100%)}
 .navRight{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:12px}
 @media (max-width:1380px){#navTabs button{padding:0 12px;letter-spacing:2px;font-size:14px}#navTabs button.play{padding:0 22px;font-size:21px}.brand{font-size:19px}}
+@media (max-width:1600px){#navTabs button{padding:0 10px;letter-spacing:1.5px;font-size:13px}#navTabs button.play{padding:0 18px;font-size:20px;letter-spacing:3px}#navTabs button.on:after{left:8px;right:8px}}
+@media (max-width:1180px){#navTabs button{padding:0 7px;letter-spacing:1px;font-size:12px}#navTabs button.play{padding:0 12px;font-size:18px}}
 .partyBtn{height:38px;padding:0 14px;border:1px solid rgba(255,255,255,.25);background:rgba(15,25,35,.5);color:var(--light);font:700 13px Oswald,sans-serif;letter-spacing:3px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.12s}
 .partyBtn:hover,.partyBtn.open{background:var(--light);color:var(--dark)}
 .partyBtn.on b{color:var(--teal)}
@@ -166,6 +168,22 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .mfT{font:700 64px Oswald,sans-serif;letter-spacing:12px;color:#fff}
 .mfS{font:500 14px Oswald,sans-serif;letter-spacing:5px;opacity:.9}
 @keyframes mfIn{from{transform:scaleY(0);opacity:0}to{transform:none;opacity:1}}
+.bpHead{display:flex;align-items:center;gap:18px;margin-bottom:12px}
+.bpTier{font:700 46px Oswald,sans-serif;color:var(--gold);line-height:1}
+.bpBar{flex:1;height:8px;background:rgba(255,255,255,.08)}.bpBar>div{height:100%;background:linear-gradient(90deg,var(--teal),var(--gold))}
+.bpTrack{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 14px;margin-bottom:22px}
+.bpCard{flex:0 0 132px;height:168px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:8px 6px;text-align:center;position:relative}
+.bpCard img{max-width:116px;max-height:70px}.bpCard .vp{font:700 26px Oswald,sans-serif;color:var(--teal)}.bpCard .ttl{font:700 14px Oswald,sans-serif;color:var(--gold);letter-spacing:1px}
+.bpCard.got{border-color:rgba(47,224,182,.6);background:rgba(47,224,182,.07)}.bpCard.got::after{content:'✓';position:absolute;top:4px;right:8px;color:var(--teal);font-weight:900}
+.bpCard.cur{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}.bpCard.lock{opacity:.55}
+.bpCard .tn{font:600 11px Oswald,sans-serif;letter-spacing:2px;opacity:.7}.bpCard .rn{font-size:11px;opacity:.85;line-height:1.2}
+.ctGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ctCard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.ctCard.act{border-color:var(--gold)}.ctCard .nm{font:700 18px Oswald,sans-serif;letter-spacing:1px}.ctCard .bpBar{flex:none}
+.ctCard button{align-self:flex-start}.ctCard .nx{font-size:12px;opacity:.75}
+.sprayGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:18px}
+.sprayCard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:6px;text-align:center;cursor:pointer;font-size:11px}
+.sprayCard img{width:64px;height:64px;display:block;margin:0 auto 4px}.sprayCard.on{border-color:var(--teal);background:rgba(47,224,182,.08)}.sprayCard.lock{opacity:.4;cursor:default}
 .tabPanel{position:absolute;inset:22px 4vw 24px;background:rgba(15,25,35,.93);border:1px solid rgba(255,255,255,.08);padding:22px 28px;overflow:auto;animation:fadeIn .25s}
 .tabPanel.leftPanel{right:auto;width:min(680px,56vw)}
 .pHead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px}
@@ -531,6 +549,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <button data-tab="play" class="play">PLAY</button>
       <button data-tab="career">CAREER</button>
       <button data-tab="collection">COLLECTION</button>
+      <button data-tab="pass">PASS</button>
       <button data-tab="store">STORE</button>
     </nav>
     <div class="navRight">
@@ -610,6 +629,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="tabPanel"><div class="pHead"><h2>COLLECTION</h2><span class="ol">Click a weapon to equip a skin · damage per bullet (head / body / legs)</span></div><div id="collBox"></div></div>
   </section>
 
+  <section class="tab hidden" id="tab-pass">
+    <div class="tabPanel"><div class="pHead"><h2>BATTLE PASS</h2><span class="ol">Every match you play earns XP for the pass and for your active agent contract</span></div><div id="passBox"></div></div>
+  </section>
+
   <section class="tab hidden" id="tab-store">
     <div class="tabPanel"><div class="pHead"><h2>STORE</h2><div class="storeTabs" id="storeTabs"><button data-sv="offers" class="on">OFFERS</button><button data-sv="night" class="nmBtn">NIGHT MARKET</button><button data-sv="earn" class="earnBtn">EARN VP</button></div></div><div id="storeBox"></div></div>
   </section>
@@ -643,7 +666,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 51</div>
+<div id="buildTag">VALOR STRIKE · build 52</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -4228,6 +4251,7 @@ function finishMatch() {
   const gain = 200 + p.kills * 20 + (won ? 500 : 0), lvBefore = levelOf(profile.xp);
   profile.xp += gain;
   const vpGain = (won ? 250 : 100) + p.kills * 10; profile.vp += vpGain;
+  const passGot = awardPassXp(gain);
   const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
   profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined });
@@ -4240,7 +4264,9 @@ function finishMatch() {
     <div class="stat"><span>VP Earned</span><b class="os" style="color:var(--teal)">+${vpGain + lvVp + doneMs.reduce((a, m) => a + m.vp, 0)} VP · total ${profile.vp.toLocaleString()}</b></div>
     ${lvVp ? `<div class="stat"><span>Level-up reward</span><b class="os" style="color:var(--gold)">+${lvVp} VP</b></div>` : ''}
     ${doneMs.map(m => `<div class="stat"><span>Mission complete</span><b style="color:var(--teal)">${m.txt} · +${m.vp} VP</b></div>`).join('')}
-    <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>`;
+    <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>
+    <div class="stat"><span>Battle Pass</span><b class="os">Tier ${bpTier()} · ${(profile.bp.xp || 0) - bpTier() * BP_TIER_XP} / ${BP_TIER_XP} XP</b></div>
+    ${passGot.map(([src, what]) => `<div class="stat"><span>${esc(src)}</span><b style="color:var(--gold)">${esc(what)}</b></div>`).join('')}`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
   $('btnAgain').classList.toggle('hidden', net.role !== 'off'); $('btnMenu').textContent = net.role !== 'off' ? 'Back to Party Lobby' : 'Main Menu';
   won ? SND.win() : SND.lose();
@@ -4822,6 +4848,65 @@ const SPRAYS = {
   tiger: { name: 'Trailblazer', draw(x) { x.fillStyle = '#7fd36b'; x.beginPath(); x.arc(64, 68, 46, 0, 7); x.fill(); x.fillStyle = '#2e5a22'; for (const [a, b] of [[30, 40], [98, 40], [64, 26]]) { x.fillRect(a - 4, b, 8, 22); } x.fillStyle = '#ffe14a'; for (const cx of [46, 82]) { x.beginPath(); x.arc(cx, 64, 7, 0, 7); x.fill(); } x.fillStyle = '#2e5a22'; x.beginPath(); x.moveTo(56, 84); x.lineTo(72, 84); x.lineTo(64, 94); x.fill(); } },
   radiant: { name: 'Radiant', draw(x) { const g = x.createRadialGradient(64, 64, 6, 64, 64, 60); g.addColorStop(0, '#fffbe0'); g.addColorStop(.5, '#ffe27a'); g.addColorStop(1, 'rgba(255,200,80,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.fillStyle = '#fff7c2'; x.beginPath(); x.moveTo(64, 14); x.lineTo(80, 64); x.lineTo(64, 114); x.lineTo(48, 64); x.closePath(); x.fill(); } },
 };
+// one glyph spray per agent (agent contract reward)
+for (const a of AGENTS) SPRAYS['ag_' + a.id] = { name: a.name + ' Glyph', draw(x) { x.fillStyle = a.color; x.beginPath(); x.arc(64, 64, 54, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = '#0b0e12'; x.stroke(); x.fillStyle = '#0b0e12'; x.font = '900 50px Oswald, Impact, sans-serif'; x.textAlign = 'center'; x.fillText(a.glyph, 64, 82); } };
+/* --- Battle pass (30 tiers) and agent contracts (5 tiers each) --- */
+const BP_TIER_XP = 1000;
+const BP_REWARDS = [
+  { r: 'spray', id: 'skull' }, { r: 'vp', n: 100 }, { r: 'skin', id: 'rush:ghost' }, { r: 'title', t: 'Rookie' }, { r: 'vp', n: 150 },
+  { r: 'spray', id: 'crown' }, { r: 'skin', id: 'waste:stinger' }, { r: 'vp', n: 150 }, { r: 'title', t: 'Entry Fragger' }, { r: 'skin', id: 'spline:classic' },
+  { r: 'spray', id: 'fire' }, { r: 'vp', n: 200 }, { r: 'skin', id: 'tiger:frenzy' }, { r: 'title', t: 'Clutch King' }, { r: 'spray', id: 'cat' },
+  { r: 'skin', id: 'sakura:ghost' }, { r: 'vp', n: 200 }, { r: 'skin', id: 'arctic:sheriff' }, { r: 'spray', id: 'star' }, { r: 'title', t: 'Headhunter' },
+  { r: 'skin', id: 'oni:shorty' }, { r: 'vp', n: 250 }, { r: 'skin', id: 'ion:bucky' }, { r: 'spray', id: 'tiger' }, { r: 'skin', id: 'spline:phantom' },
+  { r: 'title', t: 'Unshakeable' }, { r: 'skin', id: 'reaver:sheriff' }, { r: 'vp', n: 400 }, { r: 'spray', id: 'radiant' }, { r: 'skin', id: 'prime:vandal' },
+];
+const CT_XP = [500, 1000, 1500, 2000, 2500];
+const ctRewards = id => [{ r: 'vp', n: 75 }, { r: 'spray', id: 'ag_' + id }, { r: 'vp', n: 150 }, { r: 'title', t: AGENT[id].name + ' Main' }, { r: 'vp', n: 300 }];
+const tierOfXp = (xp, steps) => { let t = 0, acc = 0; for (const n of steps) { if (xp >= acc + n) { acc += n; t++; } else break; } return t; };
+const bpTier = () => Math.min(BP_REWARDS.length, Math.floor((profile.bp.xp || 0) / BP_TIER_XP));
+const ctTier = id => tierOfXp((profile.contracts[id] || 0), CT_XP);
+function rewardLabel(w) { return w.r === 'vp' ? `${w.n} VP` : w.r === 'spray' ? `Spray · ${SPRAYS[w.id] ? SPRAYS[w.id].name : w.id}` : w.r === 'skin' ? (SKINS[w.id] ? SKINS[w.id].name : w.id) : `Title · "${w.t}"`; }
+function grantReward(w) {
+  if (w.r === 'vp') profile.vp += w.n;
+  else if (w.r === 'spray') { if (!profile.sprays.includes(w.id)) profile.sprays.push(w.id); }
+  else if (w.r === 'skin') { if (SKINS[w.id] && !profile.owned.includes(w.id)) profile.owned.push(w.id); else if (SKINS[w.id]) profile.vp += 200; }
+  else if (w.r === 'title') { if (!profile.titles.includes(w.t)) profile.titles.push(w.t); }
+  return rewardLabel(w);
+}
+// add match XP to the pass and the active contract; returns the rewards unlocked
+function awardPassXp(gain) {
+  const got = [], b0 = bpTier(); profile.bp.xp = (profile.bp.xp || 0) + gain;
+  for (let t = Math.max(b0, profile.bp.claimed || 0); t < bpTier(); t++) got.push(['Battle Pass tier ' + (t + 1), grantReward(BP_REWARDS[t])]);
+  profile.bp.claimed = bpTier();
+  const id = AGENT[profile.contract] ? profile.contract : profile.fav, c0 = ctTier(id); profile.contracts[id] = (profile.contracts[id] || 0) + gain;
+  const rw = ctRewards(id); for (let t = c0; t < ctTier(id); t++) got.push([AGENT[id].name + ' contract tier ' + (t + 1), grantReward(rw[t])]);
+  return got;
+}
+function rewardThumb(w) {
+  if (w.r === 'vp') return `<div class="vp">${w.n}<small style="font-size:12px"> VP</small></div>`;
+  if (w.r === 'spray') return `<img src="${sprayURL(w.id)}" alt="">`;
+  if (w.r === 'skin') return SKINS[w.id] ? `<img src="${gunIcon(SKINS[w.id].key, w.id, 240, 90)}" alt="">` : '';
+  return `<div class="ttl">“${esc(w.t)}”</div>`;
+}
+const SPRAY_URL = {};
+const sprayURL = id => SPRAY_URL[id] || (SPRAY_URL[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); return c.toDataURL(); })());
+function renderPass() {
+  const xp = profile.bp.xp || 0, tier = bpTier(), into = xp - tier * BP_TIER_XP, done = tier >= BP_REWARDS.length;
+  const cid = AGENT[profile.contract] ? profile.contract : profile.fav;
+  $('passBox').innerHTML = `<div class="bpHead"><div><div class="ol">TIER</div><div class="bpTier">${tier}<small style="font-size:18px;opacity:.6"> / ${BP_REWARDS.length}</small></div></div>
+      <div style="flex:1"><div class="ol" style="margin-bottom:6px">${done ? 'PASS COMPLETE' : `NEXT TIER · ${into} / ${BP_TIER_XP} XP`}</div><div class="bpBar"><div style="width:${done ? 100 : into / BP_TIER_XP * 100}%"></div></div></div>
+      <div class="ol">TITLE · <b style="color:var(--gold)">${esc(profile.title || 'none')}</b></div></div>
+    <div class="bpTrack">${BP_REWARDS.map((w, i) => `<div class="bpCard ${i < tier ? 'got' : i === tier ? 'cur' : 'lock'}"><div class="tn">TIER ${i + 1}</div>${rewardThumb(w)}<div class="rn">${esc(rewardLabel(w))}</div></div>`).join('')}</div>
+    <div class="pHead"><h2 style="font-size:22px">AGENT CONTRACTS</h2><span class="ol">One contract is active at a time · 5 tiers each</span></div>
+    <div class="ctGrid">${AGENTS.map(a => { const cx = profile.contracts[a.id] || 0, t = ctTier(a.id), acc = CT_XP.slice(0, t).reduce((p, n) => p + n, 0), need = CT_XP[t], fin = t >= CT_XP.length;
+      return `<div class="ctCard ${a.id === cid ? 'act' : ''}"><div class="nm" style="color:${a.color}">${a.name}</div><div class="ol">TIER ${t} / ${CT_XP.length}${fin ? ' · COMPLETE' : ` · ${cx - acc} / ${need} XP`}</div>
+        <div class="bpBar"><div style="width:${fin ? 100 : (cx - acc) / need * 100}%"></div></div>
+        <div class="nx">${fin ? 'All rewards earned' : 'Next: ' + esc(rewardLabel(ctRewards(a.id)[t]))}</div>
+        ${a.id === cid ? '<span class="ol" style="color:var(--gold)">ACTIVE</span>' : `<button class="btn" data-ct="${a.id}">Activate</button>`}</div>`; }).join('')}</div>
+    ${profile.titles.length ? `<div class="pHead" style="margin-top:20px"><h2 style="font-size:22px">TITLES</h2><span class="ol">Click to wear one</span></div><div class="sprayGrid">${profile.titles.map(t => `<div class="sprayCard ${profile.title === t ? 'on' : ''}" data-title="${esc(t)}"><b style="color:var(--gold)">${esc(t)}</b></div>`).join('')}</div>` : ''}`;
+  $('passBox').querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { tick(); profile.contract = b.dataset.ct; saveProfile(); renderPass(); });
+  $('passBox').querySelectorAll('[data-title]').forEach(b => b.onclick = () => { tick(); profile.title = b.dataset.title; saveProfile(); renderPass(); });
+}
 const SPRAY_TEX = {};
 const sprayTex = id => SPRAY_TEX[id] || (SPRAY_TEX[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); return t; })());
 const sprayGroup = new THREE.Group(); scene.add(sprayGroup);
@@ -5497,7 +5582,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
 };
-const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9), sprays: ['logo', 'gg', 'heart'], spray: 'logo' }, store.get('vs_profile', {}));
+const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9), sprays: ['logo', 'gg', 'heart'], spray: 'logo', bp: { xp: 0, claimed: 0 }, contracts: {}, contract: '', titles: [], title: '' }, store.get('vs_profile', {}));
 profile.owned = (profile.owned || []).filter(id => SKINS[id]); profile.equip = cleanSkins(profile.equip); for (const k in profile.equip) if (!profile.owned.includes(profile.equip[k])) delete profile.equip[k];
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 const saveProfile = () => store.set('vs_profile', profile);
@@ -6721,11 +6806,12 @@ function refreshLobbyGuns() {
 function showTab(t) {
   curTab = t; tick();
   document.querySelectorAll('#navTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  ['home', 'play', 'agents', 'career', 'collection', 'store'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
+  ['home', 'play', 'agents', 'career', 'collection', 'pass', 'store'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
   lobbyView = t === 'agents' ? 'solo' : (t === 'home' || t === 'play') ? 'party' : 'dim';
   if (t === 'agents') { previewAgent = profile.fav; renderAgentTab(); } else setLobbyAgent(0, profile.fav);
   if (t === 'career') renderCareer();
   if (t === 'collection') renderCollection();
+  if (t === 'pass') renderPass();
   if (t === 'store') renderStore();
 }
 document.querySelectorAll('#navTabs button').forEach(b => { b.onclick = () => showTab(b.dataset.tab); b.onmouseenter = tick; });
@@ -6855,11 +6941,13 @@ function renderCollection() {
   const maxD = Math.max(...all.map(w => w.dmg[1] * w.pellets)), maxR = 16, maxM = 100;
   const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
-  $('collBox').innerHTML = groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
+  const sprayHTML = `<div class="collCat">SPRAYS · press ${keyName(settings.binds.spray)} in a match</div><div class="sprayGrid">${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}</div>`; }).join('')}</div>`;
+  $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
   $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
+  $('collBox').querySelectorAll('[data-spray]').forEach(c => c.onclick = () => { if (!profile.sprays.includes(c.dataset.spray)) return; tick(); profile.spray = c.dataset.spray; saveProfile(); renderCollection(); });
 }
 
 /* agent select / match flow */
@@ -6934,7 +7022,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 51;
+const BUILD = 52;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
