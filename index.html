@@ -639,6 +639,16 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #gameChat .ch{color:#9aa6b2;font-size:11px}#gameChat b.a{color:#2fe0b6}#gameChat b.e{color:#ff6b78}
 #gcIn{pointer-events:auto;width:100%;box-sizing:border-box;margin-top:4px;background:rgba(10,16,22,.85);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 10px;font:500 13px 'Noto Sans KR',sans-serif}
 #hud.cine>*:not(#killfeed){opacity:0!important;transition:opacity .3s}#hud.emo #crosshair{opacity:0!important}
+#cmdWheel{position:fixed;left:50%;top:50%;width:360px;height:360px;margin:-180px 0 0 -180px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(47,224,182,.35)}
+#cmdWheel .cw{position:absolute;width:96px;height:64px;margin:-32px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
+#cmdWheel .cw b{font-size:22px;line-height:1.1}#cmdWheel .cw.on{color:#2fe0b6;transform:scale(1.2)}
+#cmdWheel .ewC{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 11px Oswald;letter-spacing:3px;color:#7d8790}
+#planTag{position:absolute;left:12px;top:262px;font:700 11px Oswald;letter-spacing:2px;color:#ffd36a;background:rgba(10,16,22,.7);padding:3px 9px}
+.planBar{width:min(1250px,96vw);display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 auto 12px}.planBar .ol{margin-right:6px;color:#ffd36a}
+.planBar button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#c9d0d6;font:600 13px Oswald;padding:7px 12px;cursor:pointer;letter-spacing:.5px}
+.planBar button.on{background:#ffd36a;color:#0f1923;border-color:#ffd36a}
+#shop .item{position:relative}.reqBtn{position:absolute;right:6px;bottom:6px;opacity:1;background:rgba(47,224,182,.15);border:1px solid rgba(47,224,182,.5);color:#2fe0b6;font:600 10px Oswald;padding:2px 6px;cursor:pointer}
+.reqBtn:hover{background:#2fe0b6;color:#0f1923}
 #emoteWheel{position:fixed;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 22%,rgba(10,16,22,.78) 23% 100%);border:2px solid rgba(255,255,255,.15)}
 #emoteWheel .ew{position:absolute;width:96px;height:70px;margin:-35px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
 #emoteWheel .ew b{font-size:26px;line-height:1.1}
@@ -1017,6 +1027,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="alive" id="aliveR"></div>
   </div>
   <canvas id="minimap" width="240" height="200"></canvas>
+  <div id="planTag" class="hidden"></div>
   <div id="sideTag"></div>
   <div id="killfeed"></div>
   <div id="crosshair" class="chx"></div>
@@ -1049,6 +1060,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <!-- ================= SHOP ================= -->
 <div id="shop" class="hidden">
   <div class="top"><h2>SHOP</h2><div id="shopCred">800</div></div>
+  <div id="shopPlan"></div>
   <div id="shopCols"></div>
   <div class="foot"><span>Left click: Buy · Right click: Sell items bought this round</span><span>B / Esc: Close</span></div>
 </div>
@@ -1087,6 +1099,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="reactOv" class="hidden"></div>
 <div id="gameChatWrap"><div id="gameChat"></div><input type="text" id="gcIn" class="hidden" maxlength="120" spellcheck="false" autocomplete="off" placeholder="Say something… (Enter to send, Esc to cancel)"></div>
 <div id="emoteWheel" class="hidden"></div>
+<div id="cmdWheel" class="hidden"></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
   <div id="rpTop"><div id="rpTag">REPLAY</div><div id="rpScore"></div><button class="btn" id="rpExit">✕ Exit replay</button></div>
@@ -1153,7 +1166,7 @@ const BIND_DEFS = [
   ['abC', 'Ability (C slot)', 'KeyC'], ['abQ', 'Ability (Q slot)', 'KeyQ'], ['abE', 'Signature ability (E slot)', 'KeyE'], ['ult', 'Ultimate', 'KeyX'],
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
-  ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'],
+  ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'], ['cmd', 'Team command wheel (hold)', 'KeyV'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -4844,8 +4857,12 @@ function botObjective(b, dt) {
     return;
   }
   b.plantT = (b.plantT || 0);
-  // an order from a human teammate's ping
-  if (b.order && game.time - b.order.t < 18 && !b.hasSpike && !(sp.state === 'planted' && side === 'def' && sp.defuser === b)) {
+  // following a human teammate around
+  if (b.followHuman) { const h = humanOf(b.team); if (h) { const k = bots.filter(o => o.followHuman && o.team === b.team).indexOf(b), a = h.yaw + Math.PI + (k - 1) * .6, tx = h.x + Math.sin(a) * (2.5 + k * .6), tz = h.z + Math.cos(a) * (2.5 + k * .6);
+    if (Math.hypot(tx - b.x, tz - b.z) > 2) { setGoal(b, tx, tz); followPath(b, dt, spd); } else { b.vx = b.vz = 0; b.yaw += angDiff(b.yaw, h.yaw + (k - 1) * .5) * Math.min(1, dt * 3); }
+    if (sp.state === 'planted' && side === 'def' && Math.hypot(b.x - sp.x, b.z - sp.z) < 1.4) { /* fall through to defuse */ } else return; } else b.followHuman = false; }
+  // an order from a human teammate's ping (save orders last the whole round)
+  if (b.order && (game.time - b.order.t < 18 || b.saveRound === game.round) && !b.hasSpike && !(sp.state === 'planted' && side === 'def' && sp.defuser === b)) {
     setGoal(b, b.order.x, b.order.z);
     if (!followPath(b, dt, spd) || Math.hypot(b.order.x - b.x, b.order.z - b.z) < 2.5) { b.vx = b.vz = 0; b.yaw += Math.sin(game.time * .9 + b.id) * dt * 1.2; if (b.order.kind === 'enemy' && game.time - b.order.t > 6) b.order = null; }
     return;
@@ -4871,7 +4888,8 @@ function botObjective(b, dt) {
     }
     if (game.phase !== 'live') return;
     if (b.waitT > 0) { b.waitT -= dt; return; }
-    if (allyBoost(b) && b.role === 'atk' && !b.hasSpike && b.stage === 0) { // go where the human goes
+    if (b.planMid && game.phaseT > ROUND_TIME - 38 && !b.hasSpike) { setGoal(b, b.planMid.x, b.planMid.z); if (!followPath(b, dt, spd)) { b.vx = b.vz = 0; b.yaw += Math.sin(game.time * .8 + b.id) * dt; } return; }
+    if (allyBoost(b) && b.role === 'atk' && !b.hasSpike && b.stage === 0 && !game.plan?.[b.team]) { // go where the human goes
       const h = entities.find(o => o.team === b.team && o.alive && (o.isPlayer || o.remote) && !o.spectator);
       const hs = h && nearestSite(h.x, h.z, 30);
       if (hs && hs !== b.execSite && SITE_CELLS[hs]) { b.execSite = hs; b.entry = cc(...ENTRANCES[hs][b.id % 2]); b.siteSpot = cc(...pick(SITE_CELLS[hs])); b.goal = null; if (b === bots.find(o => o.team === b.team && o.role === 'atk')) botSay(b, 'orderGo', { team: true, p: .6 }); }
@@ -4897,7 +4915,7 @@ function botObjective(b, dt) {
         const lurkGo = b.role === 'lurk' && (sp.state === 'planted' || game.phaseT < ROUND_TIME - 45 || (game.intel[b.team] && game.time - game.intel[b.team].t < 2 && game.intel[b.team].site === game.atkSite));
         if (b.role === 'lurk' && !lurkGo) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
         b.stackT = (b.stackT || 0) + dt;
-        if (b.role !== 'lurk' && !exec.go && stacked < Math.min(3, mates.length) && game.phaseT > ROUND_TIME - 38 && b.stackT < 12) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
+        if (b.role !== 'lurk' && !exec.go && !b.rush && stacked < Math.min(3, mates.length) && game.phaseT > ROUND_TIME - 38 && b.stackT < 12) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
         if (b.role !== 'lurk') exec.go = true;
         if (b.role === 'lurk') { b.siteSpot = cc(...pick(SITE_CELLS[game.atkSite])); b.execSite = game.atkSite; b.role = 'atk'; b.goal = null; }
         b.stage = 1; b.checkPt = cc(...pick(HOLDS[b.execSite] || HOLDS[game.atkSite]));
@@ -5168,6 +5186,7 @@ function nextRound() {
     b.stage = 0; b.waitT = rand(0, 3); b.role = lurk ? 'lurk' : 'atk'; b.execSite = site; b.checkPt = null; b.stackT = 0; b.order = null;
   });
   if (!pistol && !DUEL() && !RUSH() && !CUSTOM()) botDropForHumans();
+  game.plan = {}; for (const b of bots) { b.followHuman = false; b.saveRound = -1; b.rush = false; b.planMid = null; } $('planTag').classList.add('hidden');
   for (const b of bots) { b.target = null; b.targetVisible = false; b.path = []; b.goal = null; b.investigate = null; b.lastSeen = null; b.guard = null; b.mesh.rotation.set(0, b.yaw, 0); b.mesh.userData.gunKey = null; }
   if (RUSH()) rushRound();
   game.phase = 'buy'; game.phaseT = DUEL() || RUSH() ? 10 : game.mode === 'swift' ? 15 : BUY_TIME;
@@ -5398,6 +5417,8 @@ function closeShop() { shopOpen = false; $('shop').classList.add('hidden'); if (
 function renderShop() {
   const p = player, cols = $('shopCols'); cols.innerHTML = '';
   $('shopCred').textContent = p.credits;
+  $('shopPlan').innerHTML = planBarHTML();
+  $('shopPlan').querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { if (net.role === 'client') netSend({ t: 'plan', p: b.dataset.plan }); else applyPlan(player.team, b.dataset.plan, true); game.plan = game.plan || {}; game.plan[player.team] = b.dataset.plan; tick(); renderShop(); });
   for (const [title, list] of SHOP_COLS) {
     const col = document.createElement('div'); col.className = 'col'; col.innerHTML = `<h4>${title}</h4>`;
     for (const k of list) {
@@ -5405,6 +5426,7 @@ function renderShop() {
       const it = document.createElement('div'); it.className = 'item' + (own ? ' own' : '') + (!own && p.credits < w.price ? ' poor' : '');
       it.innerHTML = `<img class="gicon" src="${gunIcon(k)}" alt=""><div class="n">${w.name}</div><div class="p">${w.price}</div><div class="s">${w.cat} · Head ${w.dmg[0]} / Body ${w.dmg[1]}${w.pellets > 1 ? ' ×' + w.pellets : ''} · ${w.mag} rds</div>`;
       it.onclick = () => buyWeapon(k); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('w:' + k); };
+      if (w.price >= 1600 && allyBots(p.team).length && !DM()) { const rq = document.createElement('button'); rq.className = 'reqBtn'; rq.textContent = '🙋 Request'; rq.title = 'Ask a teammate to buy this for you'; rq.onclick = ev => { ev.stopPropagation(); requestWeapon(k); tick(); }; it.appendChild(rq); }
       col.appendChild(it);
     }
     cols.appendChild(col);
@@ -5901,6 +5923,7 @@ document.addEventListener('mousemove', e => {
   const w = WEAPONS[curWeapon(player).key];
   const zoom = w.scope && adsT > .5 ? settings.scopeSens / w.scope : (1 + (settings.adsSens - 1) * adsT) / (1 + (w.ads - 1) * adsT);
   if (emoteWheel) { moveEmoteWheel(e.movementX * .6, e.movementY * .6); return; }
+  if (cmdWheel) { moveCmdWheel(e.movementX * .6, e.movementY * .6); return; }
   if (brimMap) { const k = .09 * settings.sens; brimMap.x = clamp(brimMap.x + e.movementX * k, 0, MAPW); brimMap.z = clamp(brimMap.z + e.movementY * k, 0, MAPH); return; }
   const s = .0022 * settings.sens * zoom;
   player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s * (settings.invertY ? -1 : 1), -1.5, 1.5);
@@ -5934,6 +5957,7 @@ document.addEventListener('keydown', e => {
   if (act === 'ult' && !e.repeat && !player.alive && !shopOpen && AGENT[player.agent].ab.X.type === 'ndy') { castAbility(player, 'X'); return; }
   if (e.repeat || !player.alive || shopOpen) return;
   if (act === 'emote') { openEmoteWheel(); return; }
+  if (act === 'cmd') { openCmdWheel(); return; }
   if (act === 'crouch') crouchOn = !crouchOn;
   switch (act) {
     case 'prim': switchSlot(1); break;
@@ -5951,7 +5975,7 @@ document.addEventListener('keydown', e => {
     case 'ult': if ((player.bladeMag > 0 || player.odT > 0 || (player.tdfInst && player.tdfInst.mag > 0)) && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
   }
 });
-document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'emote') closeEmoteWheel(); if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
+document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'emote') closeEmoteWheel(); if (actionOf(e.code) === 'cmd') closeCmdWheel(); if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
 window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; });
 window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = lobbyCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); lobbyCam.updateProjectionMatrix();
@@ -6546,6 +6570,9 @@ function hostGameMsg(e, d) {
     case 'shot':
       if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
       break;
+    case 'tcmd': if (e.alive && COMMANDS.some(c => c[0] === d.c)) teamCommand(e, d.c); break;
+    case 'wreq': if (typeof d.k === 'string') requestWeapon(d.k, e); break;
+    case 'plan': if (game.phase === 'buy' && PLANS[game.side[e.team]] && PLANS[game.side[e.team]].some(p => p[0] === d.p)) applyPlan(e.team, d.p, false); break;
     case 'bw': if (Number.isInteger(d.i)) damageBreak(d.i, clamp(+d.d || 0, 0, 300)); break;
     case 'gchat': if (typeof d.m === 'string' && d.m.trim()) { const m = d.m.trim().slice(0, 120); gameChat(e.name, e.team, m, true); botsReply(e, m); } break;
     case 'hhs': { const hk = keyOfType(e, 'hh') || 'Q'; if (e.charges && e.charges[hk] > 0) e.charges[hk]--; break; }
@@ -7538,6 +7565,92 @@ function stopSpectateUIOnly() { $('specUI').classList.add('hidden'); }
     else if (ev.code === 'Escape') { stopSpectate(); toMenu(); }
   });
 })();
+/* =====================================================================
+   TEAM CONTROL: round plans (buy phase), command wheel (hold V), weapon requests
+   ===================================================================== */
+const PLANS = {
+  atk: [['default', 'Default', 'bots pick a site'], ['rushA', 'Rush A', 'everyone hits A fast'], ['rushB', 'Rush B', 'everyone hits B fast'], ['rushC', 'Rush C', 'everyone hits C fast'], ['split', 'Split', 'half A, half B'], ['mid', 'Mid control', 'take mid, hit late'], ['slow', 'Slow default', 'spread out, hit late'], ['follow', 'Follow me', 'stay with me']],
+  def: [['default', 'Default', 'spread over the sites'], ['stackA', 'Stack A', 'everyone on A'], ['stackB', 'Stack B', 'everyone on B'], ['stackC', 'Stack C', 'everyone on C'], ['aggro', 'Aggressive', 'push out for picks'], ['retake', 'Retake', 'play back, retake together'], ['follow', 'Follow me', 'stay with me']],
+};
+const humanOf = team => entities.find(o => o.team === team && o.alive && !o.spectator && (o.isPlayer || o.remote));
+const allyBots = team => bots.filter(b => b.team === team && b.alive);
+function applyPlan(team, id, by) {
+  if (DM() || DUEL() || RANGE()) return;
+  game.plan = game.plan || {}; game.plan[team] = id;
+  const side = game.side[team], mates = allyBots(team); if (!mates.length) return;
+  const siteOf = { rushA: 1, rushB: 2, rushC: 5, stackA: 1, stackB: 2, stackC: 5 };
+  mates.forEach((b, i) => { b.followHuman = id === 'follow'; b.order = null; b.planMid = null; });
+  if (side === 'atk') {
+    mates.forEach((b, i) => {
+      let site = siteOf[id] && SITE_CELLS[siteOf[id]] ? siteOf[id] : id === 'split' ? SITE_IDS[i % 2] : b.execSite || game.atkSite;
+      b.role = 'atk'; b.execSite = site; b.entry = cc(...ENTRANCES[site][i % 2]); b.siteSpot = cc(...pick(SITE_CELLS[site])); b.stage = 0; b.goal = null; b.stackT = 0;
+      b.waitT = id.startsWith('rush') ? 0 : id === 'slow' ? rand(14, 24) : rand(0, 3);
+      b.rush = id.startsWith('rush'); if (id === 'mid' && HOLDS.mid && HOLDS.mid.length) b.planMid = cc(...HOLDS.mid[i % HOLDS.mid.length]);
+    });
+    if (siteOf[id] && SITE_CELLS[siteOf[id]]) game.atkSite = siteOf[id];
+  } else {
+    mates.forEach((b, i) => {
+      let s = siteOf[id] && SITE_CELLS[siteOf[id]] ? siteOf[id] : id === 'retake' ? 'mid' : null;
+      if (s) { b.holdSite = s === 'mid' ? 0 : s; b.hold = cc(...pick(HOLDS[s])); b.anchor = false; b.rotated = true; }
+      if (id === 'aggro') { b.role = 'aggro'; const site = b.holdSite || SITE_IDS[i % SITE_IDS.length], ent = ENTRANCES[site] && ENTRANCES[site][i % 2]; if (ent) b.hold = cc(...ent); }
+      b.goal = null;
+    });
+  }
+  const P = PLANS[side].find(p => p[0] === id);
+  if (P && by) { $('planTag').textContent = 'PLAN · ' + P[1].toUpperCase(); $('planTag').classList.remove('hidden'); toast(`Team plan: ${P[1]} — ${P[2]}`); const b = mates[0]; if (b) botSay(b, 'orderGo', { force: true, team: true, delay: 300 }); }
+}
+// command wheel: orders that change what the bot teammates do right now
+const COMMANDS = [['follow', 'Follow me', '🚶'], ['hold', 'Hold here', '🛡'], ['go1', 'Go A', 'A'], ['go2', 'Go B', 'B'], ['go5', 'Go C', 'C'], ['push', 'Push now', '⚡'], ['back', 'Fall back', '↩'], ['save', 'Save', '💰']];
+let cmdWheel = null;
+function openCmdWheel() {
+  if (cmdWheel || !player || !player.alive || shopOpen || DM() || RANGE() || DUEL()) return;
+  const list = COMMANDS.filter(c => c[0] !== 'go5' || SITE_IDS.includes(5));
+  cmdWheel = { x: 0, y: 0, sel: -1, list };
+  const w = $('cmdWheel'), n = list.length;
+  w.innerHTML = list.map((c, i) => { const a = -Math.PI / 2 + i / n * Math.PI * 2; return `<div class="cw" style="left:${50 + Math.cos(a) * 36}%;top:${50 + Math.sin(a) * 36}%"><b>${c[2]}</b><span>${c[1]}</span></div>`; }).join('') + '<div class="ewC">TEAM</div>';
+  w.classList.remove('hidden');
+}
+function moveCmdWheel(dx, dy) {
+  const W = cmdWheel; if (!W) return; W.x = clamp(W.x + dx, -140, 140); W.y = clamp(W.y + dy, -140, 140);
+  if (Math.hypot(W.x, W.y) > 30) { const n = W.list.length; let a = Math.atan2(W.y, W.x) + Math.PI / 2; if (a < 0) a += Math.PI * 2; W.sel = Math.round(a / (Math.PI * 2) * n) % n; }
+  document.querySelectorAll('#cmdWheel .cw').forEach((el, i) => el.classList.toggle('on', i === W.sel));
+}
+function closeCmdWheel() { const W = cmdWheel; if (!W) return; cmdWheel = null; $('cmdWheel').classList.add('hidden'); if (W.sel >= 0) teamCommand(player, W.list[W.sel][0]); }
+function teamCommand(from, cmd) {
+  if (net.role === 'client' && from === player) { netSend({ t: 'tcmd', c: cmd }); toast('Command sent: ' + (COMMANDS.find(c => c[0] === cmd) || ['', cmd])[1]); return; }
+  const mates = allyBots(from.team); if (!mates.length) { toastTo(from, 'No bot teammates alive'); return; }
+  const label = (COMMANDS.find(c => c[0] === cmd) || ['', cmd])[1];
+  mates.forEach((b, i) => {
+    b.followHuman = false; b.saveRound = -1; b.order = null;
+    if (cmd === 'follow') b.followHuman = true;
+    else if (cmd === 'hold' || cmd === 'back') b.order = { x: from.x + rand(-2.5, 2.5), z: from.z + rand(-2.5, 2.5), t: game.time + (cmd === 'hold' ? 30 : 0), kind: 'loc' };
+    else if (cmd.startsWith('go')) {
+      const s = +cmd.slice(2); if (!SITE_CELLS[s]) return;
+      if (sideOf(b) === 'atk') { b.execSite = s; b.entry = cc(...ENTRANCES[s][i % 2]); b.siteSpot = cc(...pick(SITE_CELLS[s])); b.stage = 0; b.waitT = 0; b.goal = null; b.role = 'atk'; }
+      else { b.holdSite = s; b.hold = cc(...pick(HOLDS[s])); b.rotated = true; b.goal = null; }
+    }
+    else if (cmd === 'push') { b.rush = true; b.waitT = 0; if (sideOf(b) === 'atk') { if (b.stage === 0 && game.exec) game.exec.go = true; } else { b.role = 'aggro'; const it = game.intel[b.team]; if (it) b.investigate = { x: it.x, z: it.z, t: game.time - 1.1 }; } if (game.retake) game.retake.go = true; }
+    else if (cmd === 'save') { b.saveRound = game.round; const sp = cc(...pick(SPAWN_CELLS[sideOf(b)] || [[1, 1]])); b.order = { x: sp.x, z: sp.z, t: game.time + 120, kind: 'loc' }; }
+  });
+  const talker = mates[0]; if (talker) botSay(talker, 'orderGo', { force: true, team: true, delay: 250 });
+  if (from === player) { toast(`Team: ${label}`); sndTone(700, .08, .1, 'triangle', 1000); }
+}
+// a teammate buys the gun you ask for and drops it at your feet
+function requestWeapon(k, h = player) {
+  if (net.role === 'client' && h === player) { netSend({ t: 'wreq', k }); return; }
+  if (game.phase !== 'buy' || !WEAPONS[k] || !SHOP_KEYS.has(k)) return;
+  const price = WEAPONS[k].price, rich = allyBots(h.team).filter(b => b.credits >= price + (b.primary ? 0 : 1600)).sort((a, c) => c.credits - a.credits)[0];
+  if (!rich) { toastTo(h, `Nobody on your team can afford a ${WEAPONS[k].name} right now`); return; }
+  rich.credits -= price; const inst = mkWeapon(k); inst.sk = null; dropWeapon(inst, h.x + rand(-.5, .5), h.z + rand(-.5, .5));
+  toastTo(h, `${rich.name} dropped you a ${WEAPONS[k].name} — press ${keyName(settings.binds.use)} to pick it up`); addFeedText(`${rich.name} bought a ${WEAPONS[k].name} for ${h.name}`, h.team);
+  botSay(rich, 'orderGo', { force: true, team: true, delay: 200 });
+  if (h === player && shopOpen) renderShop();
+}
+function planBarHTML() {
+  if (DM() || DUEL() || RANGE() || !allyBots(player.team).length) return '';
+  const side = game.side[player.team], cur = (game.plan || {})[player.team] || 'default';
+  return `<div class="planBar"><span class="ol">TEAM PLAN</span>${PLANS[side].filter(p => !p[0].endsWith('C') || SITE_IDS.includes(5)).map(p => `<button data-plan="${p[0]}" class="${cur === p[0] ? 'on' : ''}" title="${p[2]}">${p[1]}</button>`).join('')}</div>`;
+}
 /* =====================================================================
    EMOTES (hold J for the wheel) + ACE CINEMATIC
    ===================================================================== */
