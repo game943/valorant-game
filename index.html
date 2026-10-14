@@ -666,7 +666,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 56</div>
+<div id="buildTag">VALOR STRIKE · build 57</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -995,6 +995,52 @@ const MAPS = {
     signs: [['A ←', 3.02, 31.5, 1, '#d97a2b'], ['B →', 44.98, 31.5, -1, '#2b8ad9'], ['MID', 23.5, 33.98, 2, '#555f6b'], ['A', 2.02, 12, 1, '#d97a2b'], ['B', 45.98, 13, -1, '#2b8ad9']],
     theme: { sky: 0xa9cbe0, floor: 0xffffff, def: 0x93a8cc, atk: 0xcf9f92, A: 0xdcc7a0, B: 0xa6c0c6, mid: 0xcabca8, crate: 0xffffff },
   },
+  haven: {
+    name: 'HAVEN', desc: 'Monastery · three sites (A / B / C)',
+    rooms: [[19, 1, 28, 5], [9, 3, 18, 5], [3, 3, 9, 7], [29, 3, 38, 5], [38, 3, 44, 7], [22, 6, 25, 11],
+      [3, 7, 12, 15], [20, 11, 27, 16], [35, 7, 44, 15], [13, 12, 19, 13], [28, 12, 34, 13],
+      [3, 16, 6, 33], [9, 16, 11, 24], [8, 24, 17, 28], [18, 20, 29, 27], [22, 17, 25, 19], [21, 28, 26, 33],
+      [30, 20, 35, 22], [33, 23, 40, 28], [36, 16, 38, 23], [41, 16, 44, 33], [3, 30, 17, 33], [30, 30, 44, 33], [18, 34, 29, 38], [17, 31, 30, 33]],
+    obst: [[6, 10, 7, 11, 3.2], [10, 13, 10, 13, 1.4], [4, 8, 4, 8, 1.4], [23, 13, 24, 13, 3.2], [21, 15, 21, 15, 1.4], [26, 12, 26, 12, 1.4],
+      [39, 10, 40, 11, 3.2], [36, 13, 36, 13, 1.4], [43, 8, 43, 8, 1.4], [23, 23, 24, 24, 3.2], [19, 21, 19, 21, 1.4], [28, 26, 28, 26, 1.4]],
+    zones: { 1: [3, 7, 12, 15], 2: [20, 11, 27, 16], 5: [35, 7, 44, 15], 3: [18, 34, 29, 38], 4: [19, 1, 28, 5] },
+    holds: { 1: [[3, 7], [12, 8], [11, 14], [5, 13]], 2: [[20, 11], [27, 11], [27, 15], [21, 14]], 5: [[44, 7], [35, 8], [36, 14], [42, 13]], mid: [[24, 7], [23, 9], [24, 10]] },
+    entrances: { 1: [[5, 17], [10, 17]], 2: [[23, 18], [17, 12]], 5: [[42, 17], [37, 17]] },
+    orbs: [[17, 26], [31, 25]],
+    duel: [[[7, 11], [23, 25]], [[40, 11], [14, 26]], [[4, 22], [42, 22]], [[24, 13], [24, 30]]],
+    signs: [],
+    theme: { sky: 0xcfe3ef, floor: 0xece3d2, def: 0x9aa79a, atk: 0xc8b496, A: 0xd7c08f, B: 0xa9bfa1, C: 0xc2a7a0, mid: 0xbfb59c, crate: 0xead9bb },
+  },
+  sunset: {
+    name: 'SUNSET', desc: 'Los Angeles streets · market mid',
+    rooms: [[19, 1, 28, 5], [9, 3, 18, 6], [4, 4, 9, 8], [29, 3, 38, 6], [38, 4, 43, 9], [4, 8, 14, 16], [33, 9, 43, 17],
+      [22, 6, 25, 13], [15, 11, 21, 13], [20, 14, 27, 24], [28, 18, 33, 21], [33, 18, 37, 21], [5, 17, 9, 26], [4, 26, 10, 33], [4, 30, 18, 33],
+      [21, 25, 26, 33], [29, 30, 43, 33], [38, 18, 42, 30], [17, 31, 30, 33], [18, 34, 29, 38]],
+    obst: [[8, 11, 9, 12, 3.2], [12, 14, 12, 14, 1.4], [5, 9, 5, 9, 1.4], [37, 12, 38, 13, 3.2], [35, 15, 35, 15, 1.4], [42, 10, 42, 10, 1.4],
+      [23, 18, 24, 19, 3.2], [21, 22, 21, 22, 1.4], [26, 16, 26, 16, 1.4], [31, 19, 31, 20, 1.4], [7, 22, 7, 22, 1.4], [40, 24, 40, 24, 1.4]],
+    zones: { 1: [4, 8, 14, 16], 2: [33, 9, 43, 17], 3: [18, 34, 29, 38], 4: [19, 1, 28, 5] },
+    holds: { 1: [[4, 8], [14, 9], [13, 15], [6, 14]], 2: [[43, 9], [33, 10], [34, 16], [41, 16]], mid: [[23, 8], [24, 12], [22, 10]] },
+    entrances: { 1: [[7, 18], [16, 12]], 2: [[40, 19], [34, 19]] },
+    orbs: [[19, 32], [27, 20]],
+    duel: [[[9, 12], [23, 22]], [[38, 13], [24, 21]], [[6, 28], [40, 28]], [[23, 9], [23, 29]]],
+    signs: [],
+    theme: { sky: 0xffb68c, floor: 0xf2dbc2, def: 0xc98f74, atk: 0xd9a87e, A: 0xe9a77a, B: 0xb3c9b7, mid: 0xd8876a, crate: 0xf6d4b0 },
+  },
+  fracture: {
+    name: 'FRACTURE', desc: 'Split facility · attackers spawn in the middle',
+    rooms: [[19, 1, 28, 4], [4, 3, 18, 6], [29, 3, 43, 6], [3, 6, 7, 10], [40, 6, 44, 10], [22, 5, 25, 9], [12, 9, 35, 11],
+      [3, 10, 12, 18], [35, 10, 44, 18], [20, 17, 27, 21], [8, 18, 19, 20], [28, 18, 39, 20], [21, 22, 26, 30],
+      [3, 30, 44, 33], [3, 19, 7, 30], [40, 19, 44, 30], [21, 21, 26, 22]],
+    obst: [[7, 13, 8, 14, 3.2], [11, 16, 11, 16, 1.4], [4, 11, 4, 11, 1.4], [39, 13, 40, 14, 3.2], [36, 16, 36, 16, 1.4], [43, 11, 43, 11, 1.4],
+      [17, 10, 17, 10, 1.4], [30, 10, 30, 10, 1.4], [14, 19, 14, 19, 1.4], [33, 19, 33, 19, 1.4], [23, 31, 24, 31, 3.2], [5, 24, 5, 24, 1.4], [42, 24, 42, 24, 1.4]],
+    zones: { 1: [3, 10, 12, 18], 2: [35, 10, 44, 18], 3: [20, 17, 27, 21], 4: [19, 1, 28, 4] },
+    holds: { 1: [[3, 10], [12, 11], [12, 17], [4, 17]], 2: [[44, 10], [35, 11], [35, 17], [43, 17]], mid: [[23, 7], [18, 10], [29, 10]] },
+    entrances: { 1: [[13, 19], [5, 20]], 2: [[34, 19], [42, 20]] },
+    orbs: [[10, 31], [37, 31]],
+    duel: [[[8, 14], [38, 14]], [[23, 10], [23, 31]], [[5, 26], [42, 26]], [[15, 19], [32, 19]]],
+    signs: [],
+    theme: { sky: 0xbfd6e6, floor: 0xe0dccf, def: 0x8a9aa8, atk: 0xb8a98e, A: 0x9fb7a3, B: 0xc4a4a4, mid: 0xa8b0b8, crate: 0xe6dccb },
+  },
   frostline: {
     name: 'FROSTLINE', desc: 'Arctic station · central plaza',
     rooms: [[20, 1, 27, 5], [9, 2, 19, 4], [28, 2, 38, 4], [4, 4, 15, 14], [32, 4, 43, 13], [21, 6, 26, 31], [16, 17, 31, 23], [15, 9, 21, 11], [26, 14, 32, 16],
@@ -1040,6 +1086,8 @@ const MAPS = {
   },
 };
 const MAP_IDS = Object.keys(MAPS).filter(k => !MAPS[k].range);
+let SITE_IDS = [1, 2];
+const SITE_LABEL = { 1: 'A', 2: 'B', 5: 'C' }, isSite = z => z === 1 || z === 2 || z === 5;
 let curMap = null, SITE_RECT = {}, SPAWN_CELLS = {}, SITE_CELLS = {}, HOLDS = {}, ENTRANCES = {}, ORB_CELLS = [], DUEL_SPAWNS = [];
 function setZone(c0, r0, c1, r1, z) { for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (grid[r * GW + c] < WALL_H) zoneG[r * GW + c] = z; }
 const hAt = (c, r) => (c < 0 || r < 0 || c >= GW || r >= GH) ? 99 : grid[r * GW + c];
@@ -1062,12 +1110,13 @@ function applyMapData(id) {
   grid.fill(WALL_H); zoneG.fill(0);
   for (const [c0, r0, c1, r1] of m.rooms) for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * GW + c] = 0;
   for (const [c0, r0, c1, r1, h] of m.obst) for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r * GW + c] = h;
-  for (const z of [1, 2, 3, 4]) setZone(...m.zones[z], z);
-  SITE_RECT = { 1: m.zones[1], 2: m.zones[2] };
+  SITE_IDS = m.zones[5] ? [1, 2, 5] : [1, 2];
+  for (const z of [1, 2, 3, 4, 5]) if (m.zones[z]) setZone(...m.zones[z], z);
+  SITE_RECT = {}; for (const z of SITE_IDS) SITE_RECT[z] = m.zones[z];
   // spawn cells away from the barrier edge, so nobody starts pressed against it
   const inner = z => cellsWhere((c, r) => zoneG[r * GW + c] === z && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dc, dr]) => hAt(c + dc, r + dr) >= WALL_H || zoneG[(r + dr) * GW + c + dc] === z));
   SPAWN_CELLS = { atk: inner(3), def: inner(4) };
-  SITE_CELLS = { 1: cellsWhere((c, r) => zoneG[r * GW + c] === 1), 2: cellsWhere((c, r) => zoneG[r * GW + c] === 2) };
+  SITE_CELLS = {}; for (const z of SITE_IDS) SITE_CELLS[z] = cellsWhere((c, r) => zoneG[r * GW + c] === z);
   HOLDS = m.holds; ENTRANCES = m.entrances; ORB_CELLS = m.orbs; DUEL_SPAWNS = m.duel;
   if (m.cover !== false) addCover(m);
 }
@@ -1290,7 +1339,7 @@ function regionColor(c, r) {
   const t = MAPS[curMap].theme, z = MAPS[curMap].zones;
   const near = ([c0, r0, c1, r1], pad) => c >= c0 - pad && c <= c1 + pad && r >= r0 - pad && r <= r1 + pad;
   if (near(z[4], 2)) return t.def; if (near(z[3], 2)) return t.atk;
-  if (near(z[1], 3)) return t.A; if (near(z[2], 3)) return t.B;
+  if (near(z[1], 3)) return t.A; if (near(z[2], 3)) return t.B; if (z[5] && near(z[5], 3)) return t.C || t.B;
   return t.mid;
 }
 function buildMapMeshes() {
@@ -1323,12 +1372,12 @@ function buildMapMeshes() {
   });
   cm.castShadow = cm.receiveShadow = true; mapGroup.add(cm);
   // site markings
-  for (const s of [1, 2]) {
+  for (const s of SITE_IDS) {
     const [c0, r0, c1, r1] = SITE_RECT[s], w = (c1 - c0 + 1) * CELL, d = (r1 - r0 + 1) * CELL;
     const tex = canvasTex(256, 256, (x) => {
-      x.fillStyle = s === 1 ? 'rgba(255,150,60,.16)' : 'rgba(60,170,255,.16)'; x.fillRect(0, 0, 256, 256);
-      x.strokeStyle = s === 1 ? 'rgba(255,150,60,.8)' : 'rgba(60,170,255,.8)'; x.lineWidth = 6; x.setLineDash([16, 10]); x.strokeRect(4, 4, 248, 248);
-      x.fillStyle = 'rgba(255,255,255,.55)'; x.font = '900 120px Oswald, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s === 1 ? 'A' : 'B', 128, 136);
+      x.fillStyle = s === 1 ? 'rgba(255,150,60,.16)' : s === 5 ? 'rgba(120,220,120,.16)' : 'rgba(60,170,255,.16)'; x.fillRect(0, 0, 256, 256);
+      x.strokeStyle = s === 1 ? 'rgba(255,150,60,.8)' : s === 5 ? 'rgba(120,220,120,.8)' : 'rgba(60,170,255,.8)'; x.lineWidth = 6; x.setLineDash([16, 10]); x.strokeRect(4, 4, 248, 248);
+      x.fillStyle = 'rgba(255,255,255,.55)'; x.font = '900 120px Oswald, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(SITE_LABEL[s], 128, 136);
     });
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     pl.rotation.x = -Math.PI / 2; pl.position.set((c0 * CELL) + w / 2, .02, (r0 * CELL) + d / 2); mapGroup.add(pl);
@@ -2479,7 +2528,7 @@ function plantSpike(e) {
   game.phase = 'planted';
   entities.forEach(m => { if (sideOf(m) === 'atk') m.credits = Math.min(9000, m.credits + 300); });
   e.ult = Math.min(AGENT[e.agent].ab.X.ult, e.ult + 1);
-  banner('SPIKE PLANTED', sp.site === 1 ? 'Site A' : 'Site B', 'lose', 2.2, true);
+  banner('SPIKE PLANTED', 'Site ' + (SITE_LABEL[sp.site] || 'A'), 'lose', 2.2, true);
   SND.beep(e.x, e.z); SND.beep(e.x, e.z);
 }
 function makeOrb(x, z) {
@@ -3871,7 +3920,7 @@ function updatePlayer(dt) {
   const near = nearestDrop(p);
   if (near) hint = `<b>${keyName(settings.binds.use)}</b> Pick up ${WEAPONS[near.inst.key].name}`;
   const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8); if (orb) hint = `<b>${keyName(settings.binds.use)}</b> Collect ult orb`;
-  if (game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to plant the spike`;
+  if (game.phase === 'live' && p.hasSpike && isSite(zoneAt(p.x, p.z)) && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to plant the spike`;
   if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to defuse the spike`;
   if (game.phase === 'buy' && !shopOpen) hint = hint || `<b>${keyName(settings.binds.shop)}</b> Open shop`;
   if (p.suppT > 0) hint = '<b style="color:#6fd6ff">SUPPRESSED</b> — you can\'t use abilities';
@@ -3882,7 +3931,7 @@ function updatePlayer(dt) {
 }
 function spikeAction(p, holding4, dt) {
   const sp2 = game.spike; let doing = null;
-  if (holding4 && game.phase === 'live' && p.hasSpike && zoneAt(p.x, p.z) && zoneAt(p.x, p.z) <= 2 && p.onGround) doing = 'plant';
+  if (holding4 && game.phase === 'live' && p.hasSpike && isSite(zoneAt(p.x, p.z)) && p.onGround) doing = 'plant';
   if (holding4 && game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && p.onGround) doing = 'defuse';
   if (doing === 'plant') {
     p.plantHold = (p.plantHold || 0) + dt; if (p.isPlayer) showProgress('PLANTING SPIKE', p.plantHold / PLANT_TIME, false);
@@ -4069,7 +4118,7 @@ function botObjective(b, dt) {
       if (!followPath(b, dt, spd) || (zoneAt(b.x, b.z) === game.atkSite && Math.hypot(b.x - b.plantSpot.x, b.z - b.plantSpot.z) < 2.5)) {
         b.vx = b.vz = 0; b.path = [];
         const z = zoneAt(b.x, b.z);
-        if (z === 1 || z === 2) { b.plantT += dt; if (b.plantT >= PLANT_TIME) { b.plantT = 0; plantSpike(b); } }
+        if (isSite(z)) { b.plantT += dt; if (b.plantT >= PLANT_TIME) { b.plantT = 0; plantSpike(b); } }
         else { b.plantSpot = cc(...pick(SITE_CELLS[game.atkSite])); b.goal = null; }
       }
       return;
@@ -4093,7 +4142,7 @@ function botObjective(b, dt) {
       return;
     }
     const intel = game.intel[b.team];
-    if (intel && (intel.site === 1 || intel.site === 2) && game.time - intel.t < 3 && !b.rotated && b.holdSite !== intel.site && Math.random() < .4) { b.rotated = true; b.holdSite = intel.site; const h = pick(HOLDS[intel.site]); b.hold = cc(...h); }
+    if (intel && isSite(intel.site) && game.time - intel.t < 3 && !b.rotated && b.holdSite !== intel.site && Math.random() < .4) { b.rotated = true; b.holdSite = intel.site; const h = pick(HOLDS[intel.site]); b.hold = cc(...h); }
     setGoal(b, b.hold.x, b.hold.z);
     if (!followPath(b, dt, spd)) {
       const ty = b.holdYaw + Math.sin(game.time * .7 + b.id * 2) * .5;
@@ -4291,7 +4340,7 @@ function nextRound() {
   const attackers = entities.filter(e => sideOf(e) === 'atk');
   if (!DUEL()) { const carrier = attackers.find(e => e.isPlayer) || pick(attackers); giveSpike(carrier); }
   // bot buys & plans
-  const atkSite = game.atkSite = Math.random() < .5 ? 1 : 2;
+  const atkSite = game.atkSite = pick(SITE_IDS);
   for (const team of [0, 1]) {
     const mates = bots.filter(b => b.team === team);
     const avg = entities.filter(e => e.team === team).reduce((s, e) => s + e.credits, 0) / 5;
@@ -4299,10 +4348,10 @@ function nextRound() {
     mates.forEach(b => botBuy(b, pistol, eco));
   }
   const defBots = bots.filter(b => sideOf(b) === 'def');
-  const holdSites = shuffle([1, 1, 2, 2, 'mid']);
+  const holdSites = shuffle(SITE_IDS.length === 3 ? [1, 2, 5, pick(SITE_IDS), 'mid'] : [1, 1, 2, 2, 'mid']);
   defBots.forEach((b, i) => { const s = holdSites[i]; b.holdSite = s === 'mid' ? 0 : s; const h = pick(HOLDS[s]); b.hold = cc(...h); const ent = s === 'mid' ? null : ENTRANCES[s][i % 2]; b.holdYaw = ent ? Math.atan2(-(cc(...ent).x - b.hold.x), -(cc(...ent).z - b.hold.z)) : Math.PI; b.rotated = false; b.role = Math.random() < .3 ? 'aggro' : 'hold'; });
   bots.filter(b => sideOf(b) === 'atk').forEach((b, i) => {
-    const site = (i === 3 && Math.random() < .3) ? 3 - atkSite : atkSite;
+    const site = (i === 3 && Math.random() < .3) ? pick(SITE_IDS.filter(q => q !== atkSite)) : atkSite;
     b.entry = cc(...ENTRANCES[site][Math.random() < .65 ? 0 : 1]); b.siteSpot = cc(...pick(SITE_CELLS[site])); b.plantSpot = cc(...pick(SITE_CELLS[atkSite]));
     b.stage = 0; b.waitT = rand(0, 10); b.role = 'atk';
   });
@@ -4629,11 +4678,11 @@ function drawMinimapBase() {
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const h = grid[r * GW + c], z = zoneG[r * GW + c];
     if (h >= WALL_H) continue;
-    x.fillStyle = h > 0 ? '#5d6670' : z === 1 ? '#6b5640' : z === 2 ? '#3f5b6b' : z === 3 ? '#5a3d3d' : z === 4 ? '#3d4b5a' : '#4a525b';
+    x.fillStyle = h > 0 ? '#5d6670' : z === 1 ? '#6b5640' : z === 2 ? '#3f5b6b' : z === 5 ? '#4f6b48' : z === 3 ? '#5a3d3d' : z === 4 ? '#3d4b5a' : '#4a525b';
     x.fillRect(c * CELL * MMS, r * CELL * MMS, CELL * MMS + .5, CELL * MMS + .5);
   }
   x.font = '900 18px Oswald, sans-serif'; x.fillStyle = 'rgba(255,255,255,.7)'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  for (const k of [1, 2]) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(k === 1 ? 'A' : 'B', (c0 + c1 + 1) / 2 * CELL * MMS, (r0 + r1 + 1) / 2 * CELL * MMS); }
+  for (const k of SITE_IDS) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(SITE_LABEL[k], (c0 + c1 + 1) / 2 * CELL * MMS, (r0 + r1 + 1) / 2 * CELL * MMS); }
 }
 // switch the whole world to another map (collision, meshes, barriers, minimap)
 function loadMap(id) {
@@ -6482,12 +6531,12 @@ function openBrimMap(o = {}) {
   const K = 6; brimCv.width = GW * K; brimCv.height = GH * K; const x = brimCv.getContext('2d');
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const h = grid[r * GW + c], z = zoneG[r * GW + c]; if (h >= WALL_H) continue;
-    x.fillStyle = h > 0 ? 'rgba(255,190,90,.55)' : z === 1 || z === 2 ? 'rgba(255,150,40,.62)' : 'rgba(255,120,30,.42)'; x.fillRect(c * K, r * K, K + .5, K + .5);
+    x.fillStyle = h > 0 ? 'rgba(255,190,90,.55)' : isSite(z) ? 'rgba(255,150,40,.62)' : 'rgba(255,120,30,.42)'; x.fillRect(c * K, r * K, K + .5, K + .5);
   }
   x.strokeStyle = 'rgba(255,215,140,.9)'; x.lineWidth = 1.2;
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) { if (grid[r * GW + c] >= WALL_H) continue; for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (hAt(c + dc, r + dr) >= WALL_H) { x.beginPath(); const x0 = (c + (dc > 0 ? 1 : 0)) * K, y0 = (r + (dr > 0 ? 1 : 0)) * K; if (dc) { x.moveTo(x0, r * K); x.lineTo(x0, r * K + K); } else { x.moveTo(c * K, y0); x.lineTo(c * K + K, y0); } x.stroke(); } }
   x.font = '700 22px Oswald, sans-serif'; x.fillStyle = '#fff3d6'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  for (const k of [1, 2]) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(k === 1 ? 'A' : 'B', (c0 + c1 + 1) / 2 * K, (r0 + r1 + 1) / 2 * K); }
+  for (const k of SITE_IDS) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(SITE_LABEL[k], (c0 + c1 + 1) / 2 * K, (r0 + r1 + 1) / 2 * K); }
   $('brimOv').classList.remove('hidden'); mouse[0] = mouse[2] = false; brimMap.click = true;
   sndTone(300, .25, .15, 'square', 900); sndTone(900, .2, .1, 'triangle', 1400, undefined, undefined, .1);
   equipView();
@@ -7152,7 +7201,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 56;
+const BUILD = 57;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
