@@ -666,7 +666,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 55</div>
+<div id="buildTag">VALOR STRIKE · build 56</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1069,6 +1069,66 @@ function applyMapData(id) {
   SPAWN_CELLS = { atk: inner(3), def: inner(4) };
   SITE_CELLS = { 1: cellsWhere((c, r) => zoneG[r * GW + c] === 1), 2: cellsWhere((c, r) => zoneG[r * GW + c] === 2) };
   HOLDS = m.holds; ENTRANCES = m.entrances; ORB_CELLS = m.orbs; DUEL_SPAWNS = m.duel;
+  if (m.cover !== false) addCover(m);
+}
+// Break up long sight lines and wide open floors with extra cover (deterministic, so every client builds the same map).
+// Pieces only go where their whole surroundings are open floor, never in spawns or on reserved cells, and a piece is
+// undone if it would cut any part of the map off.
+function addCover(m) {
+  const reserved = new Set(), mark = v => { if (Array.isArray(v)) { if (v.length === 2 && typeof v[0] === 'number') { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) reserved.add((v[1] + dr) * GW + v[0] + dc); } else v.forEach(mark); } else if (v && typeof v === 'object') Object.values(v).forEach(mark); };
+  mark([m.holds, m.entrances, m.orbs, m.duel]);
+  const H = (c, r) => (c < 0 || r < 0 || c >= GW || r >= GH) ? WALL_H : grid[r * GW + c];
+  const nearSpawn = (c, r) => { for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) { const z = zoneG[(r + dr) * GW + c + dc]; if (z === 3 || z === 4) return true; } return false; };
+  const run = (c, r, dc, dr) => { let n = 0; for (let a = c, b = r; H(a, b) < 1.5; a += dc, b += dr) n++; for (let a = c - dc, b = r - dr; H(a, b) < 1.5; a -= dc, b -= dr) n++; return n; };
+  const reach = () => { // open cells reachable from the attacker spawn
+    const st = SPAWN_CELLS.atk[0]; if (!st) return 0; const seen = new Uint8Array(GW * GH), q = [st[1] * GW + st[0]]; seen[q[0]] = 1; let n = 0;
+    while (q.length) { const i = q.pop(); n++; const c = i % GW, r = (i / GW) | 0; for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = (r + dr) * GW + c + dc; if (c + dc >= 0 && c + dc < GW && r + dr >= 0 && r + dr < GH && !seen[j] && grid[j] === 0) { seen[j] = 1; q.push(j); } } }
+    return n;
+  };
+  // 1) wall jogs: short wall stubs sticking out of long straight walls of wide lanes, creating corners to peek from
+  const jogs = []; let base0 = reach();
+  for (let r = 2; r < GH - 2; r++) for (let c = 2; c < GW - 2; c++) {
+    if (H(c, r) !== 0 || nearSpawn(c, r) || reserved.has(r * GW + c) || zoneG[r * GW + c] === 1 || zoneG[r * GW + c] === 2) continue;
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (H(c - dc, r - dr) < WALL_H) continue;                       // needs a wall behind it
+      let w = 0; for (let a = c, b = r; H(a, b) < 1.5 && w < 12; a += dc, b += dr) w++;
+      if (w < 5) continue;                                             // lane must stay at least 3 wide
+      const along = dc ? run(c, r, 0, 1) : run(c, r, 1, 0); if (along < 11) continue;
+      jogs.push({ c, r, dc, dr, score: along + ((c * 5 + r * 11) % 7) * .1 });
+    }
+  }
+  jogs.sort((a, b) => b.score - a.score);
+  const placedJ = [];
+  for (const j of jogs) {
+    if (placedJ.length >= 10) break;
+    if (placedJ.some(p => Math.abs(p.c - j.c) + Math.abs(p.r - j.r) < 9)) continue;
+    const along = j.dc ? run(j.c, j.r, 0, 1) : run(j.c, j.r, 1, 0); if (along < 11) continue;
+    const cells = [[j.c, j.r], [j.c + j.dc, j.r + j.dr]];
+    if (cells.some(([c, r]) => H(c, r) !== 0 || reserved.has(r * GW + c))) continue;
+    cells.forEach(([c, r]) => grid[r * GW + c] = WALL_H);
+    const n = reach(); if (n < base0 - cells.length) { cells.forEach(([c, r]) => grid[r * GW + c] = 0); continue; }
+    base0 = n; placedJ.push(j);
+  }
+  // 2) free-standing cover in open floor, longest sight lines first
+  const cand = [];
+  for (let r = 2; r < GH - 2; r++) for (let c = 2; c < GW - 2; c++) {
+    let ok = true; for (let dr = -1; dr <= 1 && ok; dr++) for (let dc = -1; dc <= 1; dc++) if (H(c + dc, r + dr) !== 0) { ok = false; break; }
+    if (!ok || nearSpawn(c, r) || reserved.has(r * GW + c)) continue;
+    const rx = run(c, r, 1, 0), rz = run(c, r, 0, 1); cand.push({ c, r, rx, rz, score: Math.max(rx, rz) * 2 + Math.min(rx, rz) + ((c * 7 + r * 3) % 5) * .1 });
+  }
+  cand.sort((a, b) => b.score - a.score);
+  const placed = []; let base = reach();
+  for (const k of cand) {
+    if (placed.length >= 42) break;
+    if (placed.some(p => Math.max(Math.abs(p.c - k.c), Math.abs(p.r - k.r)) < 4)) continue;
+    const rx = run(k.c, k.r, 1, 0), rz = run(k.c, k.r, 0, 1); if (Math.max(rx, rz) < 7) continue; // already broken up by earlier pieces
+    const tall = Math.max(rx, rz) >= 12, h = tall ? 3.2 : 1.4, cells = [[k.c, k.r]];
+    if (tall && (k.c + k.r) % 2 === 0) cells.push(rx >= rz ? [k.c, k.r + 1] : [k.c + 1, k.r]); // 2-wide slab across the long line
+    if (cells.some(([c, r]) => H(c, r) !== 0 || reserved.has(r * GW + c))) continue;
+    cells.forEach(([c, r]) => grid[r * GW + c] = h);
+    const n = reach(); if (n < base - cells.length) { cells.forEach(([c, r]) => grid[r * GW + c] = 0); continue; }
+    base = n; placed.push(k);
+  }
 }
 applyMapData('dustwall');
 
@@ -7092,7 +7152,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 55;
+const BUILD = 56;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
