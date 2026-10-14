@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 41</div>
+<div id="buildTag">VALOR STRIKE · build 42</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1369,6 +1369,18 @@ function vandalModel(h, M, line) {
   return -1.0;
 }
 const GUN_BUILDERS = {
+  knife(h, M) { // Tactical Knife: clip-point blade with fuller and ground edge, crossguard, textured grip, pommel ring
+    const steel = M.body(0xcfd6de);
+    h.S([[.02, .014], [.2, .018], [.255, .012], [.315, -.004], [.28, -.02], [.2, -.03], [.1, -.032], [.02, -.026]], .008, steel, 0, .0025);
+    for (const x of [-.0052, .0052]) { h.Bf(.0015, .007, .04, .2, .002, M.dk, x); h.Bf(.0015, .005, .03, .25, -.024, M.lt, x * .9); }   // fuller + ground edge
+    h.Bf(.0095, .004, .2, .255, .016, M.dk);                                                                                          // spine swedge
+    h.S([[-.005, .032], [.02, .028], [.02, -.05], [-.005, -.046]], .032, M.dk, 0, .004);                                               // crossguard
+    h.S([[-.005, .02], [-.11, .016], [-.128, .008], [-.128, -.024], [-.11, -.03], [-.07, -.026], [-.05, -.032], [-.03, -.026], [-.005, -.032]], .028, M.blk, 0, .005);
+    for (let i = 0; i < 6; i++) h.Bf(.03, .046, -.02 - i * .016, -.012 - i * .016, -.006, M.body(0x2f3640));                       // grip texture bands
+    h.Cf(.016, .016, -.145, -.008, M.mt); h.X(.01, .006, 0, -.008, .158, M.mt);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.012, .003, 6, 14), M.mt); ring.rotation.y = Math.PI / 2; ring.position.set(0, -.008, .17); h.Bf(.001, .001, 0, 0, 0, M.mt).add(ring);
+    return -.32;
+  },
   classic(h, M) {
     const fr = M.body(GC.tan);
     h.S([[-.045, .0], [.17, .0], [.177, .012], [.177, .038], [.162, .05], [-.03, .05], [-.045, .036]], .05, M.dk);       // slide with chamfered nose
@@ -3390,7 +3402,7 @@ function equipView() {
   if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = AB.rbox(.09, .09, .14, .035, MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
-  gun.scale.setScalar(gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
+  gun.scale.setScalar(model === 'knife' ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
   player.shotIdx = 0; player.recoil = 0; adsOn = false;
 }
 function switchSlot(s) {
@@ -6615,7 +6627,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 41;
+const BUILD = 42;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
