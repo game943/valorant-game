@@ -285,7 +285,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .ssHow{font-size:12px;color:#aab4be;line-height:1.5;background:rgba(66,133,244,.1);border-left:2px solid #4285f4;padding:6px 9px}
 .wsRight .wsCols .btn{margin:0;width:auto;flex:1;padding:9px 6px}
 .ssMsg{font-size:12px;min-height:16px;color:var(--teal)}.ssMsg.err{color:#ff8a8a}
-.sprayCard{position:relative}.sprayCard .scEd{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:0;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px}
+.sprayCard{position:relative}.sprayCard .scWh{position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);border:0;color:#6b7680;font-size:12px;cursor:pointer;padding:1px 5px}.sprayCard .scWh.on{color:#ffd34d}.sprayCard .scEd{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:0;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px}
 .sprayCard.add{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;color:var(--teal);font:600 12px Oswald,sans-serif;letter-spacing:1px}.sprayCard.add b{font-size:30px;line-height:64px}
 #pvHud{position:fixed;inset:0;z-index:60;pointer-events:none;font-family:Oswald,sans-serif}
 .pvTop{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:rgba(10,16,22,.7);padding:8px 16px;border-left:3px solid var(--red)}
@@ -679,6 +679,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #cmdWheel{position:fixed;left:50%;top:50%;width:360px;height:360px;margin:-180px 0 0 -180px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(47,224,182,.35)}
 #cmdWheel .cw{position:absolute;width:96px;height:64px;margin:-32px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
 #cmdWheel .cw b{font-size:22px;line-height:1.1}#cmdWheel .cw.on{color:#2fe0b6;transform:scale(1.2)}
+#sprayWheel{position:fixed;left:50%;top:50%;width:380px;height:380px;margin:-190px 0 0 -190px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(255,211,77,.35)}
+#sprayWheel .cw{position:absolute;width:92px;height:84px;margin:-42px 0 0 -46px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 11px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s;text-align:center}
+#sprayWheel .cw img{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 3px #000)}#sprayWheel .cw.on{color:#ffd34d;transform:scale(1.25)}
+#sprayWheel .ewC{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 11px Oswald;letter-spacing:2px;color:#7d8790;text-align:center;line-height:1.5}
 #cmdWheel .ewC{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:700 11px Oswald;letter-spacing:3px;color:#7d8790}
 #planTag{position:absolute;left:12px;top:262px;font:700 11px Oswald;letter-spacing:2px;color:#ffd36a;background:rgba(10,16,22,.7);padding:3px 9px}
 .planBar{width:min(1250px,96vw);display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 auto 12px}.planBar .ol{margin-right:6px;color:#ffd36a}
@@ -1171,6 +1175,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="gameChatWrap"><div id="gameChat"></div><input type="text" id="gcIn" class="hidden" maxlength="120" spellcheck="false" autocomplete="off" placeholder="Say something… (Enter to send, Esc to cancel)"></div>
 <div id="emoteWheel" class="hidden"></div>
 <div id="cmdWheel" class="hidden"></div>
+<div id="sprayWheel" class="hidden"></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
   <div id="rpTop"><div id="rpTag">REPLAY</div><div id="rpScore"></div><button class="btn" id="rpExit">✕ Exit replay</button></div>
@@ -6008,6 +6013,7 @@ function loop(now) {
 function lockPointer() { const c = renderer.domElement; if (c.requestPointerLock) { try { const r = c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { } } }
 const isLocked = () => document.pointerLockElement === renderer.domElement;
 document.addEventListener('pointerlockchange', () => {
+  if (!isLocked() && sprayWheel) { clearTimeout(sprayWheel.t); sprayWheel = null; $('sprayWheel').classList.add('hidden'); }
   if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { closeBrimMap(); cancelPlace(); game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
 });
 document.addEventListener('mousemove', e => {
@@ -6016,6 +6022,7 @@ document.addEventListener('mousemove', e => {
   const zoom = w.scope && adsT > .5 ? settings.scopeSens / w.scope : (1 + (settings.adsSens - 1) * adsT) / (1 + (w.ads - 1) * adsT);
   if (emoteWheel) { moveEmoteWheel(e.movementX * .6, e.movementY * .6); return; }
   if (cmdWheel) { moveCmdWheel(e.movementX * .6, e.movementY * .6); return; }
+  if (sprayWheel) { moveSprayWheel(e.movementX * .6, e.movementY * .6); return; }
   if (brimMap) { const k = .09 * settings.sens; brimMap.x = clamp(brimMap.x + e.movementX * k, 0, MAPW); brimMap.z = clamp(brimMap.z + e.movementY * k, 0, MAPH); return; }
   const s = .0022 * settings.sens * zoom;
   player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s * (settings.invertY ? -1 : 1), -1.5, 1.5);
@@ -6050,6 +6057,7 @@ document.addEventListener('keydown', e => {
   if (e.repeat || !player.alive || shopOpen) return;
   if (act === 'emote') { openEmoteWheel(); return; }
   if (act === 'cmd') { openCmdWheel(); return; }
+  if (act === 'spray') { openSprayWheel(); return; }
   if (act === 'crouch') crouchOn = !crouchOn;
   switch (act) {
     case 'prim': switchSlot(1); break;
@@ -6058,7 +6066,6 @@ document.addEventListener('keydown', e => {
     case 'reload': startReload(player); player.inspT = 0; break;
     case 'inspect': if (!(player.reloadT > 0) && !aimMode && !pilot) player.inspT = .001; break;
     case 'ping': doPing(); break;
-    case 'spray': doSpray(); break;
     case 'use': interact(); break;
     case 'drop': if (net.role === 'client') { netSend({ t: 'g' }); break; } if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
     case 'abC': castAbility(player, 'C'); break;
@@ -6067,7 +6074,7 @@ document.addEventListener('keydown', e => {
     case 'ult': if ((player.bladeMag > 0 || player.odT > 0 || (player.tdfInst && player.tdfInst.mag > 0)) && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
   }
 });
-document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'emote') closeEmoteWheel(); if (actionOf(e.code) === 'cmd') closeCmdWheel(); if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
+document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'emote') closeEmoteWheel(); if (actionOf(e.code) === 'cmd') closeCmdWheel(); if (actionOf(e.code) === 'spray') closeSprayWheel(); if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
 window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; });
 window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = lobbyCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); lobbyCam.updateProjectionMatrix();
@@ -6270,13 +6277,38 @@ function botsFollowPing(from, x, z, kind) {
   const mates = bots.filter(b => b.alive && b.team === from.team).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z)).slice(0, 2);
   mates.forEach((b, i) => { b.order = { x, z, t: game.time, kind }; b.goal = null; if (i === 0) botSay(b, kind === 'enemy' ? 'orderEnemy' : 'orderGo', { force: true, delay: 400, team: true }); });
 }
-function doSpray() {
+// spray wheel: tap the key to spray your equipped spray, hold it and move the mouse toward one to pick another
+let sprayWheel = null;
+function wheelSprays() {
+  const own = profile.sprays.filter(id => SPRAYS[id]);
+  let list = Array.isArray(profile.sprayWheel) ? profile.sprayWheel.filter(id => own.includes(id)) : [];
+  if (!list.length) list = [profile.spray, ...own.filter(id => SPRAYS[id].custom), ...own].filter((id, i, a) => SPRAYS[id] && a.indexOf(id) === i);
+  return list.slice(0, 8);
+}
+function openSprayWheel() {
+  if (sprayWheel || !player || !player.alive) return;
+  const list = wheelSprays(); sprayWheel = { x: 0, y: 0, sel: -1, list };
+  const w = $('sprayWheel'), n = list.length;
+  w.innerHTML = list.map((id, i) => { const a = -Math.PI / 2 + i / n * Math.PI * 2; return `<div class="cw" style="left:${50 + Math.cos(a) * 36}%;top:${50 + Math.sin(a) * 36}%"><img src="${sprayURL(id)}" alt=""><span>${esc(SPRAYS[id].name)}</span></div>`; }).join('') + `<div class="ewC">SPRAY<br><span style="font-size:9px;letter-spacing:1px">release to spray</span></div>`;
+  // only show the wheel once the key is held for a moment, so a quick tap just sprays
+  sprayWheel.t = setTimeout(() => { if (sprayWheel) w.classList.remove('hidden'); }, 140);
+}
+function moveSprayWheel(dx, dy) {
+  const W = sprayWheel; if (!W) return; W.x = clamp(W.x + dx, -140, 140); W.y = clamp(W.y + dy, -140, 140);
+  if (Math.hypot(W.x, W.y) > 30) { $('sprayWheel').classList.remove('hidden'); const n = W.list.length; let a = Math.atan2(W.y, W.x) + Math.PI / 2; if (a < 0) a += Math.PI * 2; W.sel = Math.round(a / (Math.PI * 2) * n) % n; }
+  document.querySelectorAll('#sprayWheel .cw').forEach((el, i) => el.classList.toggle('on', i === W.sel));
+}
+function closeSprayWheel() {
+  const W = sprayWheel; if (!W) return; sprayWheel = null; clearTimeout(W.t); $('sprayWheel').classList.add('hidden');
+  doSpray(W.sel >= 0 ? W.list[W.sel] : profile.spray);
+}
+function doSpray(pick) {
   if (!player || !player.alive) return;
   if (game.time < (player.sprayCD || 0)) return; // short cooldown so holding the key doesn't spam
   const f = fwd(player), oy = eyeY(player), t = rayGrid(player.x, oy, player.z, f.x, f.y, f.z, 6);
   if (t >= 6) { toast('Get closer to a wall or the floor to spray'); SND.deny(); return; }
   player.sprayCD = game.time + .5;
-  const sid = SPRAYS[profile.spray] ? profile.spray : 'logo';
+  const sid = SPRAYS[pick] ? pick : SPRAYS[profile.spray] ? profile.spray : 'logo';
   const a = [player.id, r2(player.x + f.x * t), r2(oy + f.y * t), r2(player.z + f.z * t), RH.nx, RH.ny, RH.nz, sid, r2(player.yaw)];
   if (SPRAYS[sid].data) a.push(SPRAYS[sid].data); // custom picture: send it so everyone sees it
   if (net.role === 'client') netSend({ t: 'spray', a }); else fx('spray', ...a);
@@ -10222,7 +10254,8 @@ function renderCollection() {
   const maxD = Math.max(...all.map(w => w.dmg[1] * w.pellets)), maxR = 16, maxM = 100;
   const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
-  const sprayHTML = `<div class="collCat">SPRAYS · press ${keyName(settings.binds.spray)} in a match</div><div class="sprayGrid"><div class="sprayCard add" id="collNewSpray"><b>+</b>CREATE SPRAY</div>${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).sort((a, b) => !!SPRAYS[b].custom - !!SPRAYS[a].custom).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}${SPRAYS[id].custom ? `<button class="scEd" data-sedit="${id}" title="Edit">✎</button>` : ''}</div>`; }).join('')}</div>`;
+  const wheelIds = wheelSprays();
+  const sprayHTML = `<div class="collCat">SPRAYS · tap ${keyName(settings.binds.spray)} in a match to spray · hold it for the spray wheel (◎ = on the wheel, up to 8)</div><div class="sprayGrid"><div class="sprayCard add" id="collNewSpray"><b>+</b>CREATE SPRAY</div>${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).sort((a, b) => !!SPRAYS[b].custom - !!SPRAYS[a].custom).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}${SPRAYS[id].custom ? `<button class="scEd" data-sedit="${id}" title="Edit">✎</button>` : ''}${own ? `<button class="scWh${wheelIds.includes(id) ? ' on' : ''}" data-swheel="${id}" title="Show on the spray wheel">◎</button>` : ''}</div>`; }).join('')}</div>`;
   $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     ${(() => { const lv = masteryLevel(k), n = masteryKills(k), nx = MASTERY[lv + 1]; return `<div class="mast"><span class="ml">MASTERY ${lv + 1} · ${MASTERY[lv][1]}</span><div class="b"><div style="width:${nx ? Math.min(100, (n - MASTERY[lv][0]) / (nx[0] - MASTERY[lv][0]) * 100) : 100}%"></div></div><span class="ol">${n} kills${nx ? ' · next: ' + nx[2] + ' at ' + nx[0] : ' · MAX'}</span></div>`; })()}
@@ -10230,6 +10263,12 @@ function renderCollection() {
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
   $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
   $('collNewSpray').onclick = () => openSprayStudio();
+  $('collBox').querySelectorAll('[data-swheel]').forEach(b => b.onclick = e => {
+    e.stopPropagation(); const id = b.dataset.swheel, w = wheelSprays(), i = w.indexOf(id);
+    if (i >= 0) { if (w.length <= 1) { toastMenu('Keep at least one spray on the wheel'); return; } w.splice(i, 1); }
+    else { if (w.length >= 8) { toastMenu('The spray wheel holds 8 sprays — remove one first'); return; } w.push(id); }
+    profile.sprayWheel = w; saveProfile(); tick(); renderCollection();
+  });
   $('collBox').querySelectorAll('[data-sedit]').forEach(b => b.onclick = e => { e.stopPropagation(); openSprayStudio(b.dataset.sedit); });
   $('collBox').querySelectorAll('[data-spray]').forEach(c => c.onclick = () => { if (!profile.sprays.includes(c.dataset.spray)) return; tick(); profile.spray = c.dataset.spray; saveProfile(); renderCollection(); });
 }
@@ -10314,7 +10353,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 81;
+const BUILD = 82;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
