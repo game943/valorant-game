@@ -945,7 +945,7 @@ const AGENTS = [
   { id: 'brim', name: 'Brimstone', role: 'Controller', color: '#d29a52', glyph: 'BR', desc: 'A commander who rains smokes and fire from the sky.',
     ab: { C: { name: 'Stim Beacon', cost: 200, max: 1, free: 0, type: 'stim', desc: 'A field that boosts allies\' fire rate and speed.' },
           Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', launcher: true, desc: 'Fire an incendiary grenade from your wrist launcher; it bounces once, then bursts into a zone of fire.' },
-          E: { name: 'Sky Smoke', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: 'Long-range, long-lasting smoke. (1 free)' },
+          E: { name: 'Sky Smoke', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: 'Opens the tactical map: LEFT click to mark a smoke for each charge, RIGHT click removes the last mark, press E again to deploy them all. (1 free)' },
           X: { name: 'Orbital Strike', ult: 7, type: 'orbital', desc: 'A devastating orbital laser strike where you aim.' } } },
   { id: 'reyna', name: 'Reyna', role: 'Duelist', color: '#c25bff', glyph: 'RY', desc: 'A vampiric duelist who grows stronger with every kill.',
     ab: { C: { name: 'Leer', cost: 250, max: 2, free: 0, type: 'leer', desc: 'An eye that nearsights enemies who look at it.' },
@@ -1012,7 +1012,7 @@ AGENTS.push(
   { id: 'clove', name: 'Clove', role: 'Controller', color: '#f08cc8', glyph: 'CL', desc: 'A mischievous controller who keeps fighting even after death.',
     ab: { C: { name: 'Pick-Me-Up', cost: 100, max: 1, free: 0, type: 'pmu', desc: 'Use right after a kill or an assist: absorb the life force of the fallen for a burst of speed and up to 150 health.' },
           Q: { name: 'Meddle', cost: 200, max: 1, free: 0, type: 'meddle', desc: 'Throw a fragment of essence that erupts after a short delay and decays every enemy caught inside.' },
-          E: { name: 'Ruse', cost: 150, max: 2, free: 1, type: 'skySmoke', range: 50, r: 4.2, dur: 14, color: 0xd88fc8, desc: 'Aim a cloud of pink smoke; hold right click to push it further; left click to place. (1 free per round)' },
+          E: { name: 'Ruse', cost: 150, max: 2, free: 1, type: 'skySmoke', range: 50, r: 4.2, dur: 14, color: 0xd88fc8, desc: 'Opens the tactical map: LEFT click to mark a smoke for each charge, RIGHT click removes the last mark, press E again to deploy them all. (1 free per round)' },
           X: { name: 'Not Dead Yet', ult: 8, type: 'ndy', desc: 'After you die, press X within 5s to come back to life where you fell. You must get a kill or an assist within 10s or you die again.' } } },
   { id: 'gekko', name: 'Gekko', role: 'Initiator', color: '#b6f03a', glyph: 'GK', desc: 'A friendly leader of a gang of calamitous creatures.',
     ab: { C: { name: 'Mosh Pit', cost: 250, max: 1, free: 0, type: 'molly', zkind: 'fire', zr: 4, zt: 5, dps: 55, color: 0xb6f03a, desc: 'Throw Mosh like a grenade: it duplicates across a large area and then explodes.' },
@@ -4203,7 +4203,7 @@ function updatePlayer(dt) {
   else if (p.ready) { if (mouse[0] && !p.readyPrev) { p._readyClick = true; castAbility(p, p.ready.key); p._readyClick = false; } p.readyPrev = mouse[0]; triggerHeld = true; }
   else if (p.sprint && !(p.odT > 0)) { triggerHeld = true; } // can't shoot while sprinting
   else if (updatePlace(dt) || furyInput(p, dt)) { triggerHeld = true; }
-  else if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
+  else if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; if (brimMap.multi) markBrimMap(); else confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; if (brimMap.multi && brimMap.marks.length) brimMap.marks.pop(); else closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
   else if (mouse[0] && !shopOpen) { if (w.auto || !triggerHeld) playerFire(); triggerHeld = true; } else triggerHeld = false;
   if (mouse[2] && w.model === 'knife' && !shopOpen && !aimMode && !brimMap && p.fireCD <= 0) { playerFire(); p.fireCD = 1; }
   if (w.model === 'blades' && !shopOpen) { if (mouse[2] && !p.rmbBlade) throwBlades(p, true); p.rmbBlade = mouse[2]; }
@@ -6737,7 +6737,7 @@ let aimMode = null;
 function placeKind(e, ab) {
   switch (ab.type) {
     case 'orbital': case 'fts': return 'map';
-    case 'skySmoke': return e.agent === 'brim' ? 'map' : e.agent === 'omen' ? 'sphere' : null;
+    case 'skySmoke': return e.agent === 'brim' || e.agent === 'clove' ? 'map' : e.agent === 'omen' ? 'sphere' : null;
     case 'shock': case 'recon': return e.agent === 'sova' ? 'bow' : null;
     case 'step': return 'step';
     case 'wall': return 'wall';
@@ -6751,11 +6751,11 @@ function placeKind(e, ab) {
 function tryStartPlace(e, ab, key) {
   if (!e.isPlayer || !e.alive) return false;
   if (aimMode && aimMode.key === key) { cancelPlace(); return true; }
-  if (brimMap && brimMap.key === key) { closeBrimMap(); return true; }
+  if (brimMap && brimMap.key === key) { if (brimMap.multi) deployBrimMap(); else closeBrimMap(); return true; }
   const kind = placeKind(e, ab); if (!kind) return false;
   if (key === 'X' ? e.ult < ab.ult : e.charges[key] <= 0) return false; // normal "not ready" feedback
   cancelPlace(); closeBrimMap();
-  if (kind === 'map') { openBrimMap({ key, theme: ab.type === 'fts' ? 'purple' : 'orange', radius: ab.type === 'fts' ? 1.6 : ab.type === 'skySmoke' ? (ab.r || 4.6) : 5.5, label: ab.name.toUpperCase() }); return true; }
+  if (kind === 'map') { openBrimMap({ key, theme: ab.type === 'fts' ? 'purple' : e.agent === 'clove' ? 'pink' : 'orange', radius: ab.type === 'fts' ? 1.6 : ab.type === 'skySmoke' ? (ab.r || 4.6) : 5.5, label: ab.name.toUpperCase(), multi: ab.type === 'skySmoke' ? e.charges[key] : 0 }); return true; }
   const P = aimMode = { key, ab, kind, t: 0, prev0: true, prev2: true, ready: false, power: 0, bounces: 1, rot: 0, push: 0, meshes: [] };
   const add = m => { scene.add(m); P.meshes.push(m); return m; };
   const tm = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, side: THREE.DoubleSide });
@@ -6949,8 +6949,8 @@ function shadeScreen(t, label) { shadeT = shadeMax = t; $('shadeOv').classList.r
 let brimMap = null; // { x, z } cursor in world units while the tactical map is open
 const brimCv = document.createElement('canvas');
 function openBrimMap(o = {}) {
-  const p = player; brimMap = { x: p.x, z: p.z, open: 0, key: o.key || 'X', theme: o.theme || 'orange', radius: o.radius || 5.5, label: o.label || 'ORBITAL STRIKE' };
-  $('brimOv').style.filter = brimMap.theme === 'purple' ? 'hue-rotate(230deg) saturate(1.25)' : '';
+  const p = player; brimMap = { x: p.x, z: p.z, open: 0, key: o.key || 'X', theme: o.theme || 'orange', radius: o.radius || 5.5, label: o.label || 'ORBITAL STRIKE', multi: o.multi || 0, marks: [] };
+  $('brimOv').style.filter = brimMap.theme === 'purple' ? 'hue-rotate(230deg) saturate(1.25)' : brimMap.theme === 'pink' ? 'hue-rotate(295deg) saturate(1.1)' : '';
   // orange holographic copy of the map
   const K = 6; brimCv.width = GW * K; brimCv.height = GH * K; const x = brimCv.getContext('2d');
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
@@ -6967,6 +6967,19 @@ function openBrimMap(o = {}) {
   equipView();
 }
 function closeBrimMap() { if (!brimMap) return; brimMap = null; $('brimOv').classList.add('hidden'); if (player) equipView(); }
+// smoke maps (Brimstone, Clove): left click drops a marker per charge, right click removes the last one,
+// and the map stays open until the ability key is pressed again to deploy every marked smoke
+function markBrimMap() {
+  const B = brimMap;
+  if (B.marks.length >= B.multi) { SND.deny(); toast(`All ${B.multi} smokes are marked — press ${keyName(settings.binds[B.key === 'X' ? 'ult' : 'ab' + B.key])} to deploy`); return; }
+  B.marks.push({ x: B.x, z: B.z }); sndTone(700, .08, .1, 'triangle', 1000);
+}
+function deployBrimMap() {
+  const marks = brimMap.marks.slice(), key = brimMap.key; closeBrimMap();
+  if (!marks.length) return;
+  for (const t of marks) { const tg = { x: t.x, y: 0, z: t.z }; if (net.role === 'client') clientCast(key, tg); else castAbility(player, key, tg); }
+  sndTone(260, .3, .2, 'sawtooth', 120);
+}
 function confirmBrimMap() {
   const t = { x: brimMap.x, y: 0, z: brimMap.z }, key = brimMap.key; closeBrimMap();
   if (net.role === 'client') { clientCast(key, t); return; }
@@ -6995,14 +7008,15 @@ function drawBrimMap(dt) {
   const tx = ox + brimMap.x * K, ty = oy + brimMap.z * K, rr = brimMap.radius * K, pulse = 1 + Math.sin(game.time * 8) * .05;
   x.strokeStyle = '#ffe14a'; x.lineWidth = 3; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.stroke();
   x.fillStyle = 'rgba(255,60,40,.25)'; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.fill();
-  x.lineWidth = 1.5; x.beginPath(); x.moveTo(tx - rr - 8, ty); x.lineTo(tx - rr + 6, ty); x.moveTo(tx + rr - 6, ty); x.lineTo(tx + rr + 8, ty); x.moveTo(tx, ty - rr - 8); x.lineTo(tx, ty - rr + 6); x.moveTo(tx, ty + rr - 6); x.lineTo(tx, ty + rr + 8); x.stroke();
+  if (brimMap.multi) brimMap.marks.forEach((m, i) => { const mx = ox + m.x * K, my = oy + m.z * K; x.fillStyle = 'rgba(255,170,60,.55)'; x.beginPath(); x.arc(mx, my, rr, 0, 7); x.fill(); x.strokeStyle = '#fff3d6'; x.lineWidth = 2; x.stroke(); x.fillStyle = '#fff3d6'; x.font = '700 16px Oswald, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(i + 1), mx, my); });
+  x.strokeStyle = '#ffe14a'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(tx - rr - 8, ty); x.lineTo(tx - rr + 6, ty); x.moveTo(tx + rr - 6, ty); x.lineTo(tx + rr + 8, ty); x.moveTo(tx, ty - rr - 8); x.lineTo(tx, ty - rr + 6); x.moveTo(tx, ty + rr - 6); x.lineTo(tx, ty + rr + 8); x.stroke();
   x.restore();
   // rim, ticks
   x.strokeStyle = 'rgba(255,170,60,.95)'; x.lineWidth = 4; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.stroke();
   x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy, R + 12, 0, 7); x.stroke();
   for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2 + game.time * .2, l = i % 6 ? 6 : 14; x.beginPath(); x.moveTo(cx + Math.cos(a) * (R + 14), cy + Math.sin(a) * (R + 14)); x.lineTo(cx + Math.cos(a) * (R + 14 + l), cy + Math.sin(a) * (R + 14 + l)); x.stroke(); }
   x.font = '600 15px Oswald, sans-serif'; x.fillStyle = '#ffd9a0'; x.textAlign = 'center';
-  x.fillText(`${brimMap.label} · move the mouse to aim · LEFT CLICK to confirm · RIGHT CLICK to cancel`, cx, cy + R + 44);
+  x.fillText(brimMap.multi ? `${brimMap.label} · LEFT CLICK: mark a smoke (${brimMap.marks.length}/${brimMap.multi}) · RIGHT CLICK: remove the last mark · press ${keyName(settings.binds[brimMap.key === 'X' ? 'ult' : 'ab' + brimMap.key])} to DEPLOY` : `${brimMap.label} · move the mouse to aim · LEFT CLICK to confirm · RIGHT CLICK to cancel`, cx, cy + R + 44);
   x.restore();
 }
 // first-person props: Brimstone's wrist projector, Reyna's ethereal hands
@@ -7092,7 +7106,7 @@ function updateVmProps(dt) {
   if (ud.rocketL) { const R = ud.rocketL, k = Math.max(0, p.rocketT || 0) / .8, kick = k > .7 ? (k - .7) * 3.3 : 0; R.position.set(R.userData.base.x, R.userData.base.y + kick * .04 + Math.sin(game.time * 2) * .004, R.userData.base.z + kick * .12); R.rotation.x = .05 + kick * .3; R.userData.nose.visible = !!p.rocketArmed; R.userData.flash.visible = k > .8; }
   if (!wantLauncher && ud.launcher) { vmRoot.remove(ud.launcher); ud.launcher = null; }
   if (ud.launcher) { const L = ud.launcher, k = Math.max(0, p.launchT || 0) / .7, kick = k > .75 ? (k - .75) * 4 : 0; L.position.set(L.userData.base.x, L.userData.base.y + kick * .03, L.userData.base.z + kick * .06); L.rotation.x = .12 + kick * .35; L.userData.shell.visible = !(p.launchT > 0); L.userData.flash.visible = k > .85; }
-  const wantOrb = !wantBow && !wantLauncher && !wantRocket && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)) || !!p.ready);
+  const wantOrb = !wantBow && !wantLauncher && !wantRocket && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme !== 'orange') || (p.sprint && !(p.odT > 0)) || !!p.ready);
   if (wantBow && !ud.bow) { ud.bow = makeBow(p.furyN > 0 && p.furyManual > 0); vmRoot.add(ud.bow); }
   if (!wantBow && ud.bow) { vmRoot.remove(ud.bow); ud.bow = null; }
   if (ud.bow) { const fury = p.furyN > 0 && p.furyManual > 0; setBowDraw(ud.bow, fury ? .6 + Math.sin(game.time * 6) * .1 : aimMode ? aimMode.power : 0); ud.bow.userData.arrow.visible = !fury || p.furyCD <= 0; }
@@ -7709,7 +7723,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 67;
+const BUILD = 68;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
