@@ -643,7 +643,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 50</div>
+<div id="buildTag">VALOR STRIKE · build 51</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -4049,6 +4049,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
   if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: fn(e.team) });
 }
 function setupMatch(agentId, humans = []) {
+  while (sprayGroup.children.length) sprayGroup.remove(sprayGroup.children[0]); for (const k in sprayOf) delete sprayOf[k];
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
   loadMap(game.mapId);
   // clean up previous match
@@ -4487,7 +4488,8 @@ function drawMinimap() {
   mmx.clearRect(0, 0, mm.width, mm.height); mmx.drawImage(mmBase, 0, 0);
   const P = (x, z) => [x * MMS, z * MMS];
   for (const s of smokes) if (s.mesh && !s.off) { const [x, y] = P(s.x, s.z); mmx.fillStyle = 'rgba(200,210,225,.55)'; mmx.beginPath(); mmx.arc(x, y, s.r * MMS * s.grow, 0, 7); mmx.fill(); }
-  for (const z of zones) { const [x, y] = P(z.x, z.z); mmx.strokeStyle = z.kind === 'fire' || z.kind === 'orbital' ? '#ff7a22' : z.kind === 'slow' ? '#7f9bff' : '#4dff88'; mmx.beginPath(); mmx.arc(x, y, z.r * MMS, 0, 7); mmx.stroke(); }
+  for (const pg of pings) { const [x, y] = P(pg.x, pg.z); mmx.fillStyle = pg.kind === 'enemy' ? '#ff4655' : '#ffd34d'; mmx.globalAlpha = Math.min(1, pg.t); mmx.beginPath(); mmx.moveTo(x, y - 6); mmx.lineTo(x + 5, y); mmx.lineTo(x, y + 6); mmx.lineTo(x - 5, y); mmx.fill(); mmx.globalAlpha = 1; }
+  for (const z of zones) { if (z.owner && isEnemy(z.owner, player) && ['nano', 'cage', 'trap', 'alarm', 'cam', 'turret'].includes(z.kind)) continue; const [x, y] = P(z.x, z.z); mmx.strokeStyle = z.kind === 'fire' || z.kind === 'orbital' ? '#ff7a22' : z.kind === 'slow' ? '#7f9bff' : '#4dff88'; mmx.beginPath(); mmx.arc(x, y, z.r * MMS, 0, 7); mmx.stroke(); }
   const sp = game.spike;
   if (sp && (sp.state === 'dropped' || sp.state === 'planted')) { const [x, y] = P(sp.x, sp.z); mmx.fillStyle = sp.state === 'planted' && Math.floor(game.time * 4) % 2 ? '#fff' : '#ff4655'; mmx.fillRect(x - 4, y - 4, 8, 8); }
   for (const e of entities) {
@@ -4682,6 +4684,7 @@ renderer.domElement.addEventListener('mousedown', e => {
   if (game.state !== 'playing') return;
   if (!isLocked()) { if (!shopOpen && !game.paused) lockPointer(); return; }
   if (!player.alive && e.button === 0) { spectateIdx++; return; }
+  if (e.button === 1) { e.preventDefault(); doPing(); return; }
   mouse[e.button] = true;
   if (e.button === 2) adsOn = !adsOn;
 });
@@ -4707,6 +4710,8 @@ document.addEventListener('keydown', e => {
     case 'melee': switchSlot(3); break;
     case 'reload': startReload(player); player.inspT = 0; break;
     case 'inspect': if (!(player.reloadT > 0) && !aimMode && !pilot) player.inspT = .001; break;
+    case 'ping': doPing(); break;
+    case 'spray': doSpray(); break;
     case 'use': interact(); break;
     case 'drop': if (net.role === 'client') { netSend({ t: 'g' }); break; } if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
     case 'abC': castAbility(player, 'C'); break;
@@ -4803,7 +4808,74 @@ function netShot(e, mx, my, mz, hx, hy, hz, model, color) {
 }
 
 /* --- visual effects that every player sees (host broadcasts them) --- */
+/* --- Comms: pings and sprays --- */
+// spray designs, drawn on a 128px canvas (battle pass tiers unlock more)
+const SPRAYS = {
+  logo: { name: 'Valor Mark', draw(x) { x.fillStyle = '#ff4655'; x.beginPath(); x.moveTo(14, 20); x.lineTo(48, 20); x.lineTo(64, 70); x.lineTo(80, 20); x.lineTo(114, 20); x.lineTo(76, 112); x.lineTo(52, 112); x.closePath(); x.fill(); } },
+  gg: { name: 'GG', draw(x) { const g = x.createLinearGradient(0, 20, 0, 108); g.addColorStop(0, '#5fe6c8'); g.addColorStop(1, '#2f7dff'); x.fillStyle = g; x.font = '900 70px Oswald, Impact, sans-serif'; x.textAlign = 'center'; x.fillText('GG', 64, 92); x.lineWidth = 4; x.strokeStyle = '#0b1622'; x.strokeText('GG', 64, 92); } },
+  heart: { name: 'Heart', draw(x) { x.fillStyle = '#ff5c8a'; x.beginPath(); x.moveTo(64, 112); x.bezierCurveTo(-10, 60, 20, 4, 64, 38); x.bezierCurveTo(108, 4, 138, 60, 64, 112); x.fill(); x.fillStyle = 'rgba(255,255,255,.5)'; x.beginPath(); x.ellipse(42, 42, 10, 6, -.6, 0, 7); x.fill(); } },
+  skull: { name: 'Skull', draw(x) { x.fillStyle = '#ece8e1'; x.beginPath(); x.arc(64, 56, 40, Math.PI, 0); x.lineTo(104, 76); x.lineTo(86, 86); x.lineTo(86, 108); x.lineTo(42, 108); x.lineTo(42, 86); x.lineTo(24, 76); x.closePath(); x.fill(); x.fillStyle = '#16181d'; for (const cx of [46, 82]) { x.beginPath(); x.arc(cx, 62, 12, 0, 7); x.fill(); } x.beginPath(); x.moveTo(64, 74); x.lineTo(56, 88); x.lineTo(72, 88); x.fill(); } },
+  crown: { name: 'Crown', draw(x) { x.fillStyle = '#ffd34d'; x.beginPath(); x.moveTo(16, 98); x.lineTo(20, 34); x.lineTo(44, 64); x.lineTo(64, 24); x.lineTo(84, 64); x.lineTo(108, 34); x.lineTo(112, 98); x.closePath(); x.fill(); x.fillStyle = '#ff4655'; for (const cx of [40, 64, 88]) { x.beginPath(); x.arc(cx, 84, 7, 0, 7); x.fill(); } } },
+  fire: { name: 'Hot Hands', draw(x) { const g = x.createLinearGradient(0, 120, 0, 10); g.addColorStop(0, '#ff3a1a'); g.addColorStop(.6, '#ff9a2a'); g.addColorStop(1, '#ffe27a'); x.fillStyle = g; x.beginPath(); x.moveTo(64, 116); x.bezierCurveTo(10, 110, 22, 50, 50, 18); x.bezierCurveTo(52, 50, 70, 50, 74, 34); x.bezierCurveTo(110, 60, 116, 110, 64, 116); x.fill(); } },
+  star: { name: 'Ace', draw(x) { x.fillStyle = '#ffd34d'; x.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 22 : 54, a = i / 10 * Math.PI * 2 - Math.PI / 2; x.lineTo(64 + Math.cos(a) * r, 66 + Math.sin(a) * r); } x.fill(); x.fillStyle = '#16181d'; x.font = '900 26px Oswald, Impact, sans-serif'; x.textAlign = 'center'; x.fillText('ACE', 64, 76); } },
+  cat: { name: 'Sneaky Cat', draw(x) { x.fillStyle = '#2b2b30'; x.beginPath(); x.moveTo(24, 40); x.lineTo(36, 10); x.lineTo(54, 34); x.lineTo(74, 34); x.lineTo(92, 10); x.lineTo(104, 40); x.arc(64, 70, 44, -.25, Math.PI + .25); x.fill(); x.fillStyle = '#ffe14a'; for (const cx of [46, 82]) { x.beginPath(); x.ellipse(cx, 66, 9, 6, 0, 0, 7); x.fill(); } x.fillStyle = '#ff8fb0'; x.beginPath(); x.moveTo(58, 82); x.lineTo(70, 82); x.lineTo(64, 90); x.fill(); } },
+  tiger: { name: 'Trailblazer', draw(x) { x.fillStyle = '#7fd36b'; x.beginPath(); x.arc(64, 68, 46, 0, 7); x.fill(); x.fillStyle = '#2e5a22'; for (const [a, b] of [[30, 40], [98, 40], [64, 26]]) { x.fillRect(a - 4, b, 8, 22); } x.fillStyle = '#ffe14a'; for (const cx of [46, 82]) { x.beginPath(); x.arc(cx, 64, 7, 0, 7); x.fill(); } x.fillStyle = '#2e5a22'; x.beginPath(); x.moveTo(56, 84); x.lineTo(72, 84); x.lineTo(64, 94); x.fill(); } },
+  radiant: { name: 'Radiant', draw(x) { const g = x.createRadialGradient(64, 64, 6, 64, 64, 60); g.addColorStop(0, '#fffbe0'); g.addColorStop(.5, '#ffe27a'); g.addColorStop(1, 'rgba(255,200,80,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.fillStyle = '#fff7c2'; x.beginPath(); x.moveTo(64, 14); x.lineTo(80, 64); x.lineTo(64, 114); x.lineTo(48, 64); x.closePath(); x.fill(); } },
+};
+const SPRAY_TEX = {};
+const sprayTex = id => SPRAY_TEX[id] || (SPRAY_TEX[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); return t; })());
+const sprayGroup = new THREE.Group(); scene.add(sprayGroup);
+const sprayOf = {}, pings = [];
+let pingCD = 0;
+const PING_TEX = {};
+function pingTex(kind) {
+  if (PING_TEX[kind]) return PING_TEX[kind];
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128; const x = c.getContext('2d'), col = kind === 'enemy' ? '#ff4655' : '#ffd34d';
+  x.fillStyle = col; x.strokeStyle = '#0b0e12'; x.lineWidth = 6; x.beginPath();
+  if (kind === 'enemy') { x.moveTo(64, 92); x.lineTo(30, 30); x.lineTo(98, 30); } else { x.moveTo(64, 20); x.lineTo(94, 56); x.lineTo(64, 92); x.lineTo(34, 56); }
+  x.closePath(); x.stroke(); x.fill();
+  x.font = '800 20px Inter, sans-serif'; x.textAlign = 'center'; x.lineWidth = 5; x.strokeText(kind === 'enemy' ? 'ENEMY' : 'HERE', 64, 118); x.fillText(kind === 'enemy' ? 'ENEMY' : 'HERE', 64, 118);
+  return PING_TEX[kind] = new THREE.CanvasTexture(c);
+}
+function doPing() {
+  if (!player || !player.alive || game.time < pingCD) return; pingCD = game.time + .7;
+  const f = fwd(player), oy = eyeY(player), r = traceShot(player, player.x, oy, player.z, f.x, f.y, f.z, 140);
+  let x = player.x + f.x * r.t, y = oy + f.y * r.t, z = player.z + f.z * r.t, kind = 'loc';
+  let enemy = r.ent && canSee(player, r.ent, -1) ? r.ent : null;
+  if (!enemy) for (const o of entities) if (o.alive && isEnemy(o, player) && Math.hypot(o.x - x, o.z - z) < 3 && canSee(player, o, .3)) { enemy = o; break; }
+  if (enemy) { kind = 'enemy'; x = enemy.x; y = enemy.y + 2.1; z = enemy.z; } else y += .6;
+  const a = [player.team, r2(x), r2(y), r2(z), kind, player.name];
+  if (net.role === 'client') netSend({ t: 'ping', a }); else fx('ping', ...a);
+}
+function doSpray() {
+  if (!player || !player.alive) return;
+  if (player.sprayRound === game.round && !RANGE()) { toast('One spray per round'); SND.deny(); return; }
+  const f = fwd(player), oy = eyeY(player), t = rayGrid(player.x, oy, player.z, f.x, f.y, f.z, 6);
+  if (t >= 6) { toast('Get closer to a wall or the floor to spray'); SND.deny(); return; }
+  player.sprayRound = game.round;
+  const a = [player.id, r2(player.x + f.x * t), r2(oy + f.y * t), r2(player.z + f.z * t), RH.nx, RH.ny, RH.nz, SPRAYS[profile.spray] ? profile.spray : 'logo', r2(player.yaw)];
+  if (net.role === 'client') netSend({ t: 'spray', a }); else fx('spray', ...a);
+}
 const FX = {
+  ping(team, x, y, z, kind, who) {
+    if (!player || team !== player.team || !isFinite(x) || !isFinite(z)) return;
+    kind = kind === 'enemy' ? 'enemy' : 'loc';
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: pingTex(kind), depthTest: false, transparent: true, sizeAttenuation: false }));
+    sp.scale.set(.09, .09, 1); sp.position.set(x, y, z); sp.renderOrder = 999; scene.add(sp);
+    const pg = { x, z, kind, t: 4 }; pings.push(pg);
+    timedFx.push({ t: 4, update() { pg.t = this.t; sp.material.opacity = Math.min(1, this.t * 2); }, end() { scene.remove(sp); pings.splice(pings.indexOf(pg), 1); } });
+    sndTone(kind === 'enemy' ? 990 : 760, .09, .14, 'sine', kind === 'enemy' ? 1480 : 1140);
+    toast(`${String(who || 'Ally').slice(0, 16)}: ${kind === 'enemy' ? 'Enemy spotted!' : 'Over here'}`);
+  },
+  spray(owner, x, y, z, nx, ny, nz, id, yaw) {
+    if (!isFinite(x) || !isFinite(z)) return;
+    if (sprayOf[owner]) sprayGroup.remove(sprayOf[owner]);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshLambertMaterial({ map: sprayTex(SPRAYS[id] ? id : 'logo'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+    m.position.set(x + nx * .02, y + ny * .02, z + nz * .02);
+    if (ny > .5) { m.rotation.set(-Math.PI / 2, 0, 0); m.rotateZ(+yaw || 0); } else m.lookAt(x + nx, y, z + nz);
+    sprayGroup.add(m); sprayOf[owner] = m;
+    sndNoise(.45, 3000, .6, .18, x, z);
+  },
   shot(mx, my, mz, hx, hy, hz, model, color) { if (model === 'blades') { flyKunai(mx, my, mz, hx, hy, hz, false); SND.shot('blades', mx, mz); return; } spawnTracer(mx, my, mz, hx, hy, hz, color); worldFlash(mx, my, mz, .5); SND.shot(model, mx, mz); },
   pop(x, y, z, kind) { worldFlash(x, y, z, 6, kind === 'near' ? 0xb04fff : 0xffffff, .15); SND.pop(x, z); },
   pulse(x, y, z, r) {
@@ -5140,6 +5212,8 @@ function hostGameMsg(e, d) {
       if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
       break;
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
+    case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); break;
+    case 'spray': if (e.alive && Array.isArray(d.a) && d.a.length === 9) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]), +d.a[8] || 0); break;
     case 'cast':
       if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k, cleanTarget(d.tg)); }
       break;
@@ -5423,7 +5497,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } },
 };
-const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9) }, store.get('vs_profile', {}));
+const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9), sprays: ['logo', 'gg', 'heart'], spray: 'logo' }, store.get('vs_profile', {}));
 profile.owned = (profile.owned || []).filter(id => SKINS[id]); profile.equip = cleanSkins(profile.equip); for (const k in profile.equip) if (!profile.owned.includes(profile.equip[k])) delete profile.equip[k];
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 const saveProfile = () => store.set('vs_profile', profile);
@@ -6860,7 +6934,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 50;
+const BUILD = 51;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
