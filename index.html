@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 44</div>
+<div id="buildTag">VALOR STRIKE · build 45</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -876,7 +876,7 @@ const AGENTS = [
           X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Draw your glowing bow and fire up to three wall-piercing energy blasts yourself (left click) within 6 seconds.' } } },
   { id: 'brim', name: 'Brimstone', role: 'Controller', color: '#d29a52', glyph: 'BR', desc: 'A commander who rains smokes and fire from the sky.',
     ab: { C: { name: 'Stim Beacon', cost: 200, max: 1, free: 0, type: 'stim', desc: 'A field that boosts allies\' fire rate and speed.' },
-          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'A grenade that creates a zone of fire.' },
+          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'Fire an incendiary grenade from your wrist launcher; it bursts into a zone of fire.' },
           E: { name: 'Sky Smoke', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: 'Long-range, long-lasting smoke. (1 free)' },
           X: { name: 'Orbital Strike', ult: 7, type: 'orbital', desc: 'A devastating orbital laser strike where you aim.' } } },
   { id: 'reyna', name: 'Reyna', role: 'Duelist', color: '#c25bff', glyph: 'RY', desc: 'A vampiric duelist who grows stronger with every kill.',
@@ -2605,6 +2605,14 @@ const PROJ_MODELS = {
     AB.mesh(new THREE.CylinderGeometry(.05, .06, .06, 12), dk, 0, .3, -.27, g).rotation.x = Math.PI / 2;
     return { g, ground: true, anim(t) { for (const w of wheels) w.rotation.x = t * 14; tip.visible = Math.sin(t * 12) > 0; } };
   },
+  incShell(c) { // Brimstone's incendiary grenade round: orange body, brass base, tumbling slightly
+    const g = new THREE.Group(), sp = new THREE.Group(); g.add(sp);
+    const body = AB.lathe([[0, -.07], [.04, -.07], [.042, -.05], [.042, .04], [.03, .07], [0, .08]], AB.lit(0xff7a22, 0x3a1400)); body.rotation.x = Math.PI / 2; sp.add(body);
+    AB.mesh(new THREE.CylinderGeometry(.044, .044, .025, 14), gm(0xc9a227), 0, 0, -.07, sp).rotation.x = Math.PI / 2;
+    AB.mesh(new THREE.TorusGeometry(.043, .006, 6, 16), gm(0x2b3038), 0, 0, .0, sp);
+    g.add(AB.glow(0xff8a2a, .45));
+    return { g, anim(t) { sp.rotation.z = t * 10; } };
+  },
   canister(c) { // molotovs, incendiaries, acid, nanoswarm, slow orb ...
     const g = new THREE.Group(), spin = new THREE.Group(); g.add(spin);
     const can = AB.lathe([[0, -.11], [.06, -.11], [.07, -.09], [.07, .08], [.055, .1], [.03, .11], [0, .11]], AB.lit(0x3b4048, 0, { shininess: 70 })); can.rotation.x = Math.PI / 2; spin.add(can);
@@ -2810,9 +2818,13 @@ const ABIL = {
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
   },
   molly(e, ab, target) {
-    const o = target ? lobTo(e, target.x, target.y, target.z) : throwFrom(e, 17, 2.5);
-    const isPhx = e.agent === 'phoenix';
-    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: 'canister' }));
+    const isBrim = e.agent === 'brim' && ab.type === 'molly' && !target, isPhx = e.agent === 'phoenix';
+    const o = target ? lobTo(e, target.x, target.y, target.z) : isBrim ? throwFrom(e, 24, 1.6) : throwFrom(e, 17, 2.5);
+    if (isBrim) { // launched, not thrown: thump, muzzle smoke, recoil on the viewmodel
+      e.launchT = .7; sndTone(95, .18, .55, 'square', 40, e.x, e.z); sndNoise(.2, 900, 1, .35, e.x, e.z);
+      const f = fwd(e); spawnParticles(o.x + f.x * .4, o.y + f.y * .4, o.z + f.z * .4, 8, 0x9a948a, 1.2, .5);
+    }
+    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isBrim ? 'incShell' : 'canister' }));
     p.onLand = () => makeZone({ x: p.x, z: p.z, r: ab.zr || (isPhx ? 3.2 : 4.2), kind: ab.zkind || 'fire', t: ab.zt || (isPhx ? 4 : 7), dps: ab.dps || 60, owner: e, heal: isPhx, label: ab.name }); return true;
   },
   rib(e) {
@@ -6097,6 +6109,25 @@ function makeBrimArm() {
   g.position.set(.26, -.3, -.62); g.rotation.set(.55, -.35, .25); g.scale.setScalar(.6);
   return g;
 }
+// Brimstone's Incendiary: grenade launcher strapped along the right forearm (shown while the ability is readied / just fired)
+function makeBrimLauncher() {
+  const g = new THREE.Group(), olive = cm(0x5a6a3e, 8), dk = gm(0x2b3038), mt = gm(GC.mt), orange = AB.lit(0xff7a22, 0x3a1400);
+  const fore = new THREE.Mesh(new THREE.CylinderGeometry(.055, .065, .42, 14), olive); fore.rotation.x = Math.PI / 2; fore.position.set(0, -.04, .16); g.add(fore);
+  const fist = AB.rbox(.1, .09, .12, .04, MAT.glove); fist.position.set(0, -.045, -.08); g.add(fist);
+  for (const z of [.04, .22]) { const st = new THREE.Mesh(new THREE.TorusGeometry(.068, .012, 8, 20), dk); st.position.set(0, -.04, z); g.add(st); }
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(.048, .048, .44, 18), dk); tube.rotation.x = Math.PI / 2; tube.position.set(0, .07, -.06); g.add(tube);
+  const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(.056, .052, .05, 18), mt); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, .07, -.29); g.add(muzzle);
+  const shell = new THREE.Mesh(new THREE.CylinderGeometry(.038, .038, .03, 14), orange); shell.rotation.x = Math.PI / 2; shell.position.set(0, .07, -.3); g.add(shell);
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .11, 8), dk); drum.rotation.x = Math.PI / 2; drum.position.set(0, .07, .12); g.add(drum);
+  for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + .4, c = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .112, 10), orange); c.rotation.x = Math.PI / 2; c.position.set(Math.cos(a) * .05, .07 + Math.sin(a) * .05, .12); g.add(c); }
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(.004, .018, .2), orange); stripe.position.set(.049, .07, -.08); g.add(stripe);
+  const sight = AB.rbox(.03, .035, .06, .01, dk); sight.position.set(0, .135, -.02); g.add(sight);
+  const dot = AB.glow(0xff8a2a, .08); dot.position.set(0, .14, -.055); g.add(dot);
+  const flash = AB.glow(0xffb347, .5); flash.position.set(0, .07, -.36); flash.visible = false; g.add(flash);
+  g.userData = { shell, flash, base: new THREE.Vector3(.2, -.17, -.5) };
+  g.position.copy(g.userData.base); g.rotation.set(.12, -.14, .06); g.scale.setScalar(.42);
+  return g;
+}
 function makeReynaHand(side) {
   const g = new THREE.Group();
   const palm = new THREE.Mesh(new THREE.BoxGeometry(.11, .14, .04), VM_MAT.reyna); g.add(palm);
@@ -6114,7 +6145,12 @@ function updateVmProps(dt) {
   if (brimMap && brimMap.theme === 'orange' && !ud.brimArm) { ud.brimArm = makeBrimArm(); vmRoot.add(ud.brimArm); }
   if (ud.brimArm) { ud.brimArm.visible = !!brimMap && brimMap.theme === 'orange'; ud.brimArm.userData.rings[0].rotation.z += dt * 2; ud.brimArm.userData.rings[1].rotation.z -= dt; if (!brimMap || brimMap.theme !== 'orange') { vmRoot.remove(ud.brimArm); ud.brimArm = null; } }
   const wantBow = (aimMode && aimMode.kind === 'bow') || (p.furyN > 0 && p.furyManual > 0);
-  const wantOrb = !wantBow && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)) || !!p.ready);
+  if (p.launchT > 0) p.launchT -= dt;
+  const wantLauncher = p.agent === 'brim' && ((p.ready && p.ready.key === 'Q') || p.launchT > 0);
+  if (wantLauncher && !ud.launcher) { ud.launcher = makeBrimLauncher(); vmRoot.add(ud.launcher); }
+  if (!wantLauncher && ud.launcher) { vmRoot.remove(ud.launcher); ud.launcher = null; }
+  if (ud.launcher) { const L = ud.launcher, k = Math.max(0, p.launchT || 0) / .7, kick = k > .75 ? (k - .75) * 4 : 0; L.position.set(L.userData.base.x, L.userData.base.y + kick * .03, L.userData.base.z + kick * .06); L.rotation.x = .12 + kick * .35; L.userData.shell.visible = !(p.launchT > 0); L.userData.flash.visible = k > .85; }
+  const wantOrb = !wantBow && !wantLauncher && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)) || !!p.ready);
   if (wantBow && !ud.bow) { ud.bow = makeBow(p.furyN > 0 && p.furyManual > 0); vmRoot.add(ud.bow); }
   if (!wantBow && ud.bow) { vmRoot.remove(ud.bow); ud.bow = null; }
   if (ud.bow) { const fury = p.furyN > 0 && p.furyManual > 0; setBowDraw(ud.bow, fury ? .6 + Math.sin(game.time * 6) * .1 : aimMode ? aimMode.power : 0); ud.bow.userData.arrow.visible = !fury || p.furyCD <= 0; }
@@ -6122,7 +6158,7 @@ function updateVmProps(dt) {
   if (!wantOrb && ud.orbHand) { vmRoot.remove(ud.orbHand); ud.orbHand = null; }
   if (ud.orbHand) { ud.orbHand.userData.orb.scale.setScalar(1 + Math.sin(game.time * 8) * .12); if (p.sprint) ud.orbHand.position.y = -.2 + Math.sin(game.time * 14) * .03; }
   if (ud.gun && ud.gun.userData.zap) { const s2 = 1 + Math.random() * .4; ud.gun.userData.zap[1].scale.set(.4 * s2, .4 * s2, 1); }
-  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb && !(p.driftT > 0);
+  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb && !wantLauncher && !(p.driftT > 0);
   $('driftOv').style.opacity = p.driftT > 0 ? .85 : 0;
   // Omen's shadow fade, Viper's fuel bar
   if (shadeT > 0) { shadeT -= dt; $('shadeOv').style.opacity = Math.min(1, shadeT / shadeMax * 3, (shadeMax - shadeT) * 6); if (shadeT <= 0) $('shadeOv').classList.add('hidden'); }
@@ -6645,7 +6681,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 44;
+const BUILD = 45;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
