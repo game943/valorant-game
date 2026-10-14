@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 42</div>
+<div id="buildTag">VALOR STRIKE · build 43</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -3393,16 +3393,31 @@ function equipView() {
   while (vmRoot.children.length) vmRoot.remove(vmRoot.children[0]);
   const w = curWeapon(player), model = WEAPONS[w.key].model;
   const gun = buildGun(w.key, AGENT[player.agent].color, skinOf(player, w));
-  const hand = AB.rbox(.09, .1, .16, .04, MAT.glove); hand.position.set(0, -.08, .02); gun.add(hand);
-  for (let i = 0; i < 3; i++) { const fg = AB.rbox(.1, .022, .03, .01, MAT.glove); fg.position.set(-.005, -.1 + i * .024, -.07); gun.add(fg); } // fingers wrapped round the grip
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(.055, .062, .5, 14), cm(AGENT[player.agent].color, 8)); arm.rotation.x = Math.PI / 2; arm.position.set(.03, -.12, .3); gun.add(arm);
-  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(.064, .064, .05, 14), MAT.glove); cuff.rotation.x = Math.PI / 2; cuff.position.set(.03, -.12, .07); gun.add(cuff);
+  const knife = model === 'knife';
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(.055, .062, .5, 14), cm(AGENT[player.agent].color, 8)), cuff = new THREE.Mesh(new THREE.CylinderGeometry(.064, .064, .05, 14), MAT.glove);
+  let hand;
+  if (knife) { // fist closed round the handle; the forearm leaves the fist so that, once tilted, the blade points up
+    hand = AB.rbox(.1, .085, .13, .04, MAT.glove); hand.position.set(0, -.006, .07); gun.add(hand);
+    for (let i = 0; i < 4; i++) { const fg = AB.rbox(.106, .03, .026, .012, MAT.glove); fg.position.set(0, -.042, .022 + i * .031); gun.add(fg); }
+    const th = AB.rbox(.03, .03, .07, .012, MAT.glove); th.position.set(.045, .03, .035); gun.add(th);
+    const d = new THREE.Vector3(0, .76, .65).normalize(), f0 = new THREE.Vector3(0, -.006, .09);
+    arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); arm.position.copy(f0.clone().addScaledVector(d, .3));
+    cuff.quaternion.copy(arm.quaternion); cuff.position.copy(f0.clone().addScaledVector(d, .07));
+  } else {
+    hand = AB.rbox(.09, .1, .16, .04, MAT.glove); hand.position.set(0, -.08, .02); gun.add(hand);
+    for (let i = 0; i < 3; i++) { const fg = AB.rbox(.1, .022, .03, .01, MAT.glove); fg.position.set(-.005, -.1 + i * .024, -.07); gun.add(fg); } // fingers wrapped round the grip
+    arm.rotation.x = Math.PI / 2; arm.position.set(.03, -.12, .3); cuff.rotation.x = Math.PI / 2; cuff.position.set(.03, -.12, .07);
+  }
+  gun.add(arm, cuff);
   const es = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending })); es.scale.set(.32, .32, 1); es.material.opacity = .45; es.position.set(0, -.08, .05); es.visible = false; gun.add(es);
   Object.assign(gun.userData, { armMesh: arm, armMat: arm.material, handMesh: hand, empSprite: es });
   if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = AB.rbox(.09, .09, .14, .035, MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
-  gun.scale.setScalar(model === 'knife' ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf; vmRoot.add(gun); vmRoot.userData.gun = gun; vmEquip = 1;
+  gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
+  let held = gun;
+  if (knife) { held = new THREE.Group(); held.add(gun); gun.rotation.set(1.1, .75, -.15); gun.position.set(-.01, .07, .02); held.userData = gun.userData; } // the per-frame sway rotates the wrapper, the tilt stays
+  vmRoot.add(held); vmRoot.userData.gun = held; vmEquip = 1;
   player.shotIdx = 0; player.recoil = 0; adsOn = false;
 }
 function switchSlot(s) {
@@ -6627,7 +6642,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 42;
+const BUILD = 43;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
