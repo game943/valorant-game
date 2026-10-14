@@ -694,7 +694,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 64</div>
+<div id="buildTag">VALOR STRIKE · build 65</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1164,7 +1164,7 @@ function applyMapData(id) {
   SPAWN_CELLS = { atk: inner(3), def: inner(4) };
   SITE_CELLS = {}; for (const z of SITE_IDS) SITE_CELLS[z] = cellsWhere((c, r) => zoneG[r * GW + c] === z);
   HOLDS = m.holds; ENTRANCES = m.entrances; ORB_CELLS = m.orbs; DUEL_SPAWNS = m.duel;
-  if (m.cover !== false) addCover(m);
+  if (m.cover !== false && !m.range) addCover(m);
 }
 // Break up long sight lines and wide open floors with extra cover (deterministic, so every client builds the same map).
 // Pieces only go where their whole surroundings are open floor, never in spawns or on reserved cells, and a piece is
@@ -3875,6 +3875,7 @@ function playerFire() {
     const yaw = p.yaw + yawWob + Math.cos(a) * rr, pitch = p.pitch + climb + Math.sin(a) * rr;
     const cp = Math.cos(pitch), dx = -Math.sin(yaw) * cp, dy = Math.sin(pitch), dz = -Math.cos(yaw) * cp;
     const res = traceShot(p, ox, oy, oz, dx, dy, dz, 200);
+    if (aimT && k === 0 && aimShot(ox, oy, oz, dx, dy, dz, res.t)) { res.ent = null; res.wall = null; }
     const hx = ox + dx * res.t, hy = oy + dy * res.t, hz = oz + dz * res.t;
     if (k < 3) spawnTracer(muz.x, muz.y, muz.z, hx, hy, hz, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : 0xfff2b0);
     if (!tr0) tr0 = [hx, hy, hz];
@@ -7021,6 +7022,7 @@ function rangeTick(dt) {
   if (rangeOpts.abil) { const ag = AGENT[p.agent]; for (const k of ['C', 'Q', 'E']) p.charges[k] = ag.ab[k].max; }
   if (rangeOpts.ammo) for (const w of [p.primary, p.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
   if (!p.alive) { rs.respawnT += dt; if (rs.respawnT > 2.5) { rs.respawnT = 0; rangeRespawnPlayer(); } }
+  aimTick(dt);
   // shooting test
   const T = rs.test;
   if (T) {
@@ -7082,6 +7084,7 @@ function updateRangeHud() {
     <div class="rhRow"><span>Shots</span><b>${rs.shots}</b></div><div class="rhRow"><span>Accuracy</span><b>${acc}%</b></div>
     <div class="rhRow"><span>Headshots</span><b>${hs}%</b></div><div class="rhRow"><span>Kills</span><b>${rs.kills}</b></div>
     <div class="rhRow"><span>Avg. time to kill</span><b>${ttk}</b></div><div class="rhRow"><span>Last hit</span><b>${rs.last || '—'}</b></div>
+    ${aimT ? `<div class="rhTest">${aimT.M.name.toUpperCase()} · <b>${aimT.score}</b> pts · ${Math.max(0, Math.ceil(aimT.t))}s left</div>` : ''}
     ${T ? `<div class="rhTest">SHOOTING TEST · ${T.diff.toUpperCase()}<br><b>${T.kills}</b> hit · ${T.miss} missed · ${T.total - T.n} left</div>` : ''}
     <div class="rhKey"><b>${keyName(settings.binds.rangeMenu)}</b> Range menu · <b>${keyName(settings.binds.shop)}</b> Buy</div>`);
 }
@@ -7097,8 +7100,72 @@ function switchRangeAgent(id) {
   selectedAgent = id; buildAbilHud(); refreshAbilHud(); equipView(); SND.buy();
   toastMenu(`Now playing ${ag.name} — abilities and ultimate are full`);
 }
+/* --- Aim trainer (Practice Range): Gridshot, Tracking, Reflex with a local best-score board --- */
+const AIM_MODES = {
+  grid: { name: 'Gridshot', desc: 'three targets at once, hit as many as you can', dur: 30, r: .34, n: 3 },
+  track: { name: 'Tracking', desc: 'hold the trigger on a moving target', dur: 20, r: .42, n: 1 },
+  reflex: { name: 'Reflex', desc: 'one target at a time, it vanishes fast — speed bonus', dur: 30, r: .3, n: 1, life: 1.1 },
+};
+let aimT = null;
+const AIM_MAT = new THREE.MeshPhongMaterial({ color: 0x6fe8ff, emissive: 0x1a8aa8, shininess: 90 });
+function startAim(mode) {
+  const M = AIM_MODES[mode]; if (!M || !RANGE()) return;
+  closeRangeMenu(); rs.test = null; if (aimT) endAim(true);
+  for (const d of dummies()) hideDummy(d);
+  const p = player, f = fwd(p), l = Math.hypot(f.x, f.z) || 1, fx0 = f.x / l, fz0 = f.z / l, ey = eyeY(p);
+  aimT = { mode, M, t: M.dur, score: 0, hits: 0, shots: 0, onT: 0, orbs: [], c: { x: p.x + fx0 * 11, y: ey + .2, z: p.z + fz0 * 11 }, rgt: { x: -fz0, z: fx0 }, ph: Math.random() * 6 };
+  for (let i = 0; i < M.n; i++) aimSpawn();
+  banner(M.name.toUpperCase(), M.desc, '', 1.6); sndTone(520, .15, .15, 'triangle', 780);
+}
+function aimSpawn() {
+  const A = aimT, M = A.M; let x, y, z, ok = false;
+  for (let i = 0; i < 20 && !ok; i++) { const u = rand(-4.2, 4.2), v = rand(-1.5, 1.7); x = A.c.x + A.rgt.x * u; y = A.c.y + v; z = A.c.z + A.rgt.z * u; ok = A.orbs.every(o => Math.hypot(o.x - x, o.y - y, o.z - z) > 1.2); }
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(M.r, 18, 14), AIM_MAT); mesh.position.set(x, y, z); scene.add(mesh);
+  const gl = AB.glow(0x6fe8ff, M.r * 3.2); mesh.add(gl);
+  A.orbs.push({ x, y, z, mesh, born: game.time, u0: rand(-3, 3), v0: rand(-1, 1) });
+}
+function aimRemove(o) { scene.remove(o.mesh); aimT.orbs.splice(aimT.orbs.indexOf(o), 1); }
+const rayOrb = (ox, oy, oz, dx, dy, dz, o, r) => { const lx = o.x - ox, ly = o.y - oy, lz = o.z - oz, t = lx * dx + ly * dy + lz * dz; if (t < 0) return Infinity; const d2 = lx * lx + ly * ly + lz * lz - t * t; return d2 <= r * r ? t - Math.sqrt(r * r - d2) : Infinity; };
+// called for each shot fired in the Range; returns true when an orb was hit
+function aimShot(ox, oy, oz, dx, dy, dz, maxT) {
+  const A = aimT; if (!A || A.mode === 'track') return false;
+  A.shots++; let best = null, bt = maxT;
+  for (const o of A.orbs) { const t = rayOrb(ox, oy, oz, dx, dy, dz, o, A.M.r * 1.05); if (t < bt) { bt = t; best = o; } }
+  if (!best) return false;
+  A.hits++; A.score += A.mode === 'reflex' ? 100 + Math.round(Math.max(0, A.M.life - (game.time - best.born)) * 150) : 100;
+  spawnParticles(best.x, best.y, best.z, 14, 0x6fe8ff, 3, .35); sndTone(1100 + (A.hits % 5) * 80, .06, .14, 'triangle');
+  aimRemove(best); aimSpawn(); return true;
+}
+function aimTick(dt) {
+  const A = aimT; if (!A) return;
+  if (!RANGE() || game.state !== 'playing') { endAim(true); return; }
+  A.t -= dt;
+  if (A.mode === 'track') {
+    const o = A.orbs[0]; A.ph += dt;
+    const u = Math.sin(A.ph * 1.3) * 3.4 + Math.sin(A.ph * 2.9) * .9, v = Math.sin(A.ph * 1.7 + 1) * 1.1;
+    o.x = A.c.x + A.rgt.x * u; o.z = A.c.z + A.rgt.z * u; o.y = A.c.y + v; o.mesh.position.set(o.x, o.y, o.z);
+    const p = player, f = fwd(p), on = mouse[0] && rayOrb(p.x, eyeY(p), p.z, f.x, f.y, f.z, o, A.M.r) < 60;
+    A.shots += dt; if (on) { A.onT += dt; A.score += Math.round(dt * 120); }
+    o.mesh.material = on ? AIM_ON_MAT : AIM_MAT;
+  }
+  if (A.mode === 'reflex') for (const o of A.orbs.slice()) if (game.time - o.born > A.M.life) { aimRemove(o); aimSpawn(); A.shots++; sndTone(240, .08, .08, 'sine'); }
+  if (A.t <= 0) endAim(false);
+}
+const AIM_ON_MAT = new THREE.MeshPhongMaterial({ color: 0xffe14a, emissive: 0x8a6a00, shininess: 90 });
+function endAim(silent) {
+  const A = aimT; if (!A) return; aimT = null;
+  for (const o of A.orbs) scene.remove(o.mesh);
+  if (!silent) {
+    const acc = A.mode === 'track' ? Math.round(A.onT / Math.max(.01, A.shots) * 100) : A.shots ? Math.round(A.hits / A.shots * 100) : 0;
+    profile.aimBest = profile.aimBest || {}; const lb = profile.aimBest[A.mode] = profile.aimBest[A.mode] || [];
+    const prevTop = lb.length ? lb[0].s : 0; lb.push({ s: A.score, acc, d: Date.now() }); lb.sort((a, b) => b.s - a.s); lb.length = Math.min(lb.length, 10); saveProfile();
+    banner(`${A.score} POINTS`, `${A.M.name} · accuracy ${acc}%${A.score > prevTop ? ' · NEW BEST!' : ' · best ' + prevTop}`, '', 4.5);
+    if (A.score > prevTop) SND.kill();
+  }
+  layoutDummies();
+}
 function startRangeTest(diff) {
-  closeRangeMenu();
+  closeRangeMenu(); if (aimT) endAim(true);
   for (const d of dummies()) hideDummy(d);
   rs.test = { diff, total: 30, n: 0, kills: 0, miss: 0, times: [], cur: null, gap: 2.2, stay: RANGE_TEST_STAY[diff] };
   banner('SHOOTING TEST', `${diff.toUpperCase()} · hit as many of the 30 targets as you can`, '', 2);
@@ -7142,7 +7209,9 @@ function renderRangeMenu() {
     <div class="row"><label>Test healing</label><button class="btn small" id="rmHurt">Lose 50 HP</button></div>
     <div class="row"><label>Stats</label><button class="btn small" id="rmReset">Reset stats</button></div>
     <div class="setSub">SHOOTING TEST · 30 targets pop up one by one</div>
-    <div class="row"><label>Start a test</label><div class="seg">${['easy', 'medium', 'hard'].map(d => `<button data-test="${d}">${d[0].toUpperCase() + d.slice(1)}${best[d] ? ' · best ' + best[d] : ''}</button>`).join('')}</div></div>`;
+    <div class="row"><label>Start a test</label><div class="seg">${['easy', 'medium', 'hard'].map(d => `<button data-test="${d}">${d[0].toUpperCase() + d.slice(1)}${best[d] ? ' · best ' + best[d] : ''}</button>`).join('')}</div></div>
+    <div class="setSub">AIM TRAINER · floating targets, timed score</div>
+    ${Object.entries(AIM_MODES).map(([k, M]) => { const lb = (profile.aimBest || {})[k] || []; return `<div class="row"><label><b>${M.name}</b> · ${M.desc}<br><small style="opacity:.7">${lb.length ? 'Best: ' + lb.slice(0, 5).map((r, i) => `${i + 1}. ${r.s} (${r.acc}%)`).join(' · ') : 'No scores yet'}</small></label><div class="seg"><button data-aim="${k}">Start ${M.dur}s</button></div></div>`; }).join('')}`;
   $('rmBody').querySelectorAll('[data-ro]').forEach(b => b.onclick = () => {
     const k = b.dataset.ro, raw = b.dataset.v; rangeOpts[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(+raw) ? raw : +raw;
     if (k === 'mode' && raw === 'peek' && rangeOpts.count > 4) rangeOpts.count = 4;
@@ -7150,7 +7219,8 @@ function renderRangeMenu() {
     if (['mode', 'dist', 'count', 'armor'].includes(k)) { rs.test = null; layoutDummies(); }
     renderRangeMenu();
   });
-  $('rmBody').querySelectorAll('[data-test]').forEach(b => b.onclick = () => { tick(); startRangeTest(b.dataset.test); });
+  $('rmBody').querySelectorAll('[data-test]').forEach(b => b.onclick = () => { tick(); aimT && endAim(true); startRangeTest(b.dataset.test); });
+  $('rmBody').querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { tick(); startAim(b.dataset.aim); });
   $('rmBody').querySelectorAll('[data-agent]').forEach(b => b.onclick = () => { switchRangeAgent(b.dataset.agent); renderRangeMenu(); });
   $('rmHurt').onclick = () => { player.hp = Math.max(1, player.hp - 50); player.armor = 0; tick(); toastMenu('You lost 50 HP — try a heal now'); };
   $('rmUlt').onclick = () => { player.ult = AGENT[player.agent].ab.X.ult; tick(); toastMenu('Ultimate ready'); };
@@ -7396,7 +7466,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 64;
+const BUILD = 65;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
