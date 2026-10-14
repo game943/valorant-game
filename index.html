@@ -350,6 +350,17 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 #chPreview .chx{position:absolute;left:50%;top:50%}
 .chCode{margin:8px 0 6px}.chRow{display:flex;gap:8px}.chRow input{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:8px 10px;font:500 13px Consolas,monospace}
 .chRow .btn{width:auto;padding:8px 14px;margin:0;white-space:nowrap}
+#chSavedList{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+#chSavedList:empty::after{content:'No saved crosshairs yet';font:400 12px Inter,sans-serif;color:#7d8790}
+.chItem{position:relative;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);cursor:pointer;padding:0 0 6px;transition:border-color .15s}
+.chItem:hover{border-color:rgba(255,255,255,.4)}.chItem.on{border-color:#2fe0b6;box-shadow:inset 0 0 0 1px #2fe0b6}
+.chItem .chMini{position:relative;height:64px;background:linear-gradient(180deg,#8db3c9 0%,#c9d6dc 48%,#b59a72 52%,#7f6a4d 100%)}
+.chItem .chMini .chx{position:absolute;left:50%;top:50%}
+#chSavedList .chItem input{box-sizing:border-box;height:auto;min-width:0;border-radius:0;display:block;width:calc(100% - 12px);margin:6px 6px 0;background:transparent;border:0;border-bottom:1px solid transparent;color:#ece8e1;font:600 13px 'Noto Sans KR',sans-serif;padding:2px 0;cursor:text}
+#chSavedList .chItem input:focus{outline:0;border-bottom-color:#ff4655}
+.chItem .del{position:absolute;top:3px;right:3px;width:22px;height:22px;border:0;background:rgba(10,16,22,.75);color:#ff8a8a;cursor:pointer;font-size:12px;line-height:22px;padding:0}
+.chItem .del:hover{background:#ff4655;color:#fff}
+.chItem .use{position:absolute;top:3px;left:3px;font:700 10px Oswald,sans-serif;letter-spacing:1px;color:#0f1923;background:#2fe0b6;padding:2px 6px;display:none}.chItem.on .use{display:block}
 .chx div{position:absolute}
 #fps{position:fixed;top:8px;right:10px;z-index:60;font:500 13px Oswald,sans-serif;color:#9ef7c9;background:rgba(0,0,0,.45);padding:2px 8px;pointer-events:none}
 input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);padding:6px 10px;font:inherit;width:170px}
@@ -785,6 +796,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
           <div class="chRow"><input type="text" id="chCodeIn" placeholder="Paste a crosshair code here" spellcheck="false" autocomplete="off"><button class="btn" id="chImport">Import</button></div>
           <div id="chCodeMsg" class="note" style="margin:4px 0 8px;min-height:16px"></div>
           <div class="chRow"><input type="text" id="chCodeOut" readonly><button class="btn" id="chCopy">Copy my code</button></div>
+          <div class="setSub" style="margin-top:14px">MY CROSSHAIRS</div>
+          <div class="note" style="margin:0 0 6px">Imported crosshairs are saved here automatically. Click one to use it; click its name to rename it.</div>
+          <div class="chRow"><input type="text" id="chSaveName" maxlength="24" placeholder="Name for the current crosshair" spellcheck="false" autocomplete="off"><button class="btn" id="chSave">Save current</button></div>
+          <div id="chSavedList"></div>
         </div>
         <div id="setRows_crosshair"></div>
       </div>
@@ -5223,10 +5238,43 @@ function importCrosshair(code) {
   const v = parseCrosshairCode(code), msg = $('chCodeMsg');
   if (!v) { if (msg) { msg.textContent = 'That does not look like a crosshair code (it should start like 0;P;…)'; msg.style.color = 'var(--red)'; } return false; }
   for (const k in v) setSetting(k, v[k]);
-  if (msg) { msg.textContent = 'Crosshair imported!'; msg.style.color = 'var(--teal)'; }
+  const item = saveCrosshair($('chSaveName') ? $('chSaveName').value.trim() : '', crosshairCode(settings), true);
+  if (msg) { msg.textContent = item ? `Crosshair imported and saved as "${item.name}"` : 'Crosshair imported!'; msg.style.color = 'var(--teal)'; }
+  if ($('chSaveName')) $('chSaveName').value = '';
   showCrosshairCode(); return true;
 }
-function showCrosshairCode() { if ($('chCodeOut')) $('chCodeOut').value = crosshairCode(settings); }
+function showCrosshairCode() { if ($('chCodeOut')) $('chCodeOut').value = crosshairCode(settings); markSavedCrosshair(); }
+/* --- saved crosshair profiles (stored with the settings) --- */
+const savedCh = () => Array.isArray(settings.chSaved) ? settings.chSaved : (settings.chSaved = []);
+function saveCrosshair(name, code = crosshairCode(settings), quiet) {
+  const list = savedCh(), same = list.find(c => c.code === code);
+  if (same) { if (name) same.name = name; if (!quiet) chMsg(`Already saved as "${same.name}"`, 'var(--gold)'); saveSettings(); renderSavedCrosshairs(); return same; }
+  if (list.length >= 30) { chMsg('You can keep up to 30 crosshairs — delete one first', 'var(--red)'); return null; }
+  let n = list.length + 1; while (list.some(c => c.name === 'Crosshair ' + n)) n++;
+  const item = { name: String(name || 'Crosshair ' + n).slice(0, 24), code };
+  list.push(item); saveSettings(); renderSavedCrosshairs();
+  if (!quiet) chMsg(`Saved as "${item.name}"`, 'var(--teal)');
+  return item;
+}
+function chMsg(t, c) { const m = $('chCodeMsg'); if (m) { m.textContent = t; m.style.color = c; } }
+function useSavedCrosshair(i) { const c = savedCh()[i]; if (!c) return; const v = parseCrosshairCode(c.code); if (!v) return; for (const k in v) setSetting(k, v[k]); chMsg(`Using "${c.name}"`, 'var(--teal)'); tick(); }
+function markSavedCrosshair() { const cur = crosshairCode(settings); document.querySelectorAll('#chSavedList .chItem').forEach(el => el.classList.toggle('on', el._code === cur)); }
+function renderSavedCrosshairs() {
+  const box = $('chSavedList'); if (!box) return; box.innerHTML = '';
+  savedCh().forEach((c, i) => {
+    const v = parseCrosshairCode(c.code); if (!v) return;
+    const el = document.createElement('div'); el.className = 'chItem'; el._code = c.code; el.title = c.code;
+    el.innerHTML = `<div class="chMini"><div class="chx"></div></div><span class="use">IN USE</span><button class="del" title="Delete">✕</button><input type="text" maxlength="24" spellcheck="false">`;
+    drawCrosshair(el.querySelector('.chx'), Object.assign({}, settings, v));
+    const nm = el.querySelector('input'); nm.value = c.name;
+    nm.onclick = e => e.stopPropagation(); nm.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') nm.blur(); };
+    nm.onchange = () => { c.name = nm.value.trim().slice(0, 24) || c.name; nm.value = c.name; saveSettings(); };
+    el.querySelector('.del').onclick = e => { e.stopPropagation(); savedCh().splice(i, 1); saveSettings(); renderSavedCrosshairs(); chMsg(`Deleted "${c.name}"`, 'var(--red)'); tick(); };
+    el.onclick = () => useSavedCrosshair(i);
+    box.appendChild(el);
+  });
+  markSavedCrosshair();
+}
 function buildCrosshair() { drawCrosshair($('crosshair'), settings); if ($('chPrevX')) drawCrosshair($('chPrevX'), settings); }
 function buildAbilHud() {
   const ag = AGENT[player.agent], el = $('abil'); el.innerHTML = '';
@@ -7030,8 +7078,10 @@ function renderSettings() {
   }
   $('chPresets').innerHTML = '';
   for (const name in CH_PRESETS) { const b = document.createElement('button'); b.textContent = name; b.onclick = () => { for (const k in CH_PRESETS[name]) setSetting(k, CH_PRESETS[name][k]); tick(); }; $('chPresets').appendChild(b); }
-  renderBinds(); buildCrosshair(); showCrosshairCode();
+  renderBinds(); buildCrosshair(); renderSavedCrosshairs(); showCrosshairCode();
 }
+$('chSave').onclick = () => { saveCrosshair($('chSaveName').value.trim()); $('chSaveName').value = ''; tick(); };
+$('chSaveName').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('chSave').onclick(); });
 $('chImport').onclick = () => { importCrosshair($('chCodeIn').value); tick(); };
 $('chCodeIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') importCrosshair($('chCodeIn').value); });
 $('chCodeIn').addEventListener('paste', () => setTimeout(() => importCrosshair($('chCodeIn').value), 0));
@@ -8347,7 +8397,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 69;
+const BUILD = 70;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
