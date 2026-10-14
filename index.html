@@ -2375,6 +2375,16 @@ const SKIN_LINES = [
   { id: 'rush', name: 'Rush', tier: 'select', body: 0x1c1f22, furn: 0x2a2f33, metal: 0x3a4045, acc: 0x7dff3a, glow: 0x2a7a00, pat: ['stripes', '#1c1f22', '#7dff3a'], guns: ['shorty', 'ghost', 'marshal', 'ares', 'outlaw'] },
   { id: 'sovereign', name: 'Sovereign', tier: 'ultra', body: 0xf1eee8, furn: 0xf1eee8, metal: 0xd4af37, acc: 0xd4af37, pat: ['marble', '#f4f1ea', '#d9c58a'], guns: ['guardian'] },
   { id: 'glyph', name: 'Glyph', tier: 'exclusive', body: 0xe8ecef, furn: 0x18191c, metal: 0x2a2a2e, acc: 0x3fffe0, glow: 0x10a090, pat: ['stripes', '#e8ecef', '#18191c'], guns: ['guardian'] },
+  { id: 'rgx', name: 'RGX 11z', tier: 'exclusive', body: 0x15171c, furn: 0x22252c, metal: 0x2f3440, mglow: 0x004a5a, acc: 0x26f7ff, glow: 0x00a0b0, pat: ['grid', '#121419', '#26f7ff', '#ff3dd4'], tracer: 0x26f7ff, flash: 0x7af9ff, kfx: 'pixels', sfx: 'chip', guns: ['frenzy', 'stinger', 'vandal', 'operator', 'knife'] },
+  { id: 'kuro', name: 'Kuronami', tier: 'exclusive', body: 0x101014, furn: 0x1c1c22, metal: 0x2a2a33, mglow: 0x5a0010, acc: 0xff2b4a, glow: 0x8a0018, pat: ['waves', '#101014', '#ff2b4a'], tracer: 0xff2b4a, flash: 0xff6a7c, kfx: 'ghost', sfx: 'whoosh', guns: ['sheriff', 'marshal', 'vandal', 'knife'] },
+  { id: 'champ', name: 'Champions', tier: 'ultra', body: 0x1a1612, furn: 0x2a2219, metal: 0xd4af37, mglow: 0x6a4e00, acc: 0xffd75e, glow: 0xb08000, pat: ['scales', '#1a1612', '#d4af37'], tracer: 0xffd75e, flash: 0xffe9a0, kfx: 'confetti', sfx: 'coin', guns: ['phantom', 'vandal', 'operator', 'knife'] },
+  { id: 'mage', name: 'Magepunk', tier: 'premium', body: 0xb0602c, furn: 0x3a2a20, metal: 0x2fd6c0, mglow: 0x0a5a50, acc: 0x4ff0ff, glow: 0x0a8a90, pat: ['circuit', '#a85a28', '#2fd6c0'], tracer: 0x4ff0ff, kfx: 'lightning', sfx: 'laser', guns: ['ghost', 'shorty', 'spectre', 'bulldog', 'knife'] },
+  { id: 'reef', name: 'Reef', tier: 'deluxe', body: 0x1f7fb8, furn: 0xe9f4f8, metal: 0x0f4a6a, acc: 0x5ff2d2, pat: ['waves', '#1f7fb8', '#7fd8f0'], guns: ['bucky', 'guardian', 'phantom', 'marshal'] },
+  { id: 'magma', name: 'Magma', tier: 'premium', body: 0x1c1310, furn: 0x2a1c16, metal: 0x3a2a22, mglow: 0x7a2000, acc: 0xff6a1a, glow: 0xc03a00, pat: ['lava', '#1c1310', '#ff5a10', '#ffcc33'], tracer: 0xff7a22, flash: 0xffa040, kfx: 'burst', sfx: 'bass', guns: ['sheriff', 'judge', 'ares', 'odin', 'knife'] },
+  { id: 'aurora', name: 'Aurora', tier: 'exclusive', body: 0x0d1a2c, furn: 0xdde8f2, metal: 0x2a3e58, mglow: 0x0a3a40, acc: 0x7dffc8, glow: 0x20a080, pat: ['aurora', '#183a66', '#3dffb0', '#c08aff'], tracer: 0x7dffc8, kfx: 'burst', sfx: 'glass', guns: ['ghost', 'spectre', 'phantom', 'outlaw', 'knife'] },
+  { id: 'arcade', name: 'Arcade', tier: 'select', body: 0x2b2bd8, furn: 0xffd23a, metal: 0x1a1a40, acc: 0xff4fa3, pat: ['pixel', '#2b2bd8', '#ff4fa3', '#ffd23a'], guns: ['classic', 'frenzy', 'bulldog', 'marshal', 'ares'] },
+  { id: 'jade', name: 'Jade Dragon', tier: 'ultra', body: 0x0f5a3e, furn: 0xe8dcc0, metal: 0xc9a14a, mglow: 0x4a3a00, acc: 0x7dffb0, glow: 0x0a8a50, pat: ['scales', '#0f5a3e', '#3fcf8a'], tracer: 0x7dffb0, flash: 0xb0ffd0, kfx: 'burst', sfx: 'chime', guns: ['classic', 'vandal', 'odin', 'operator', 'knife'] },
+  { id: 'kingdom', name: 'Kingdom', tier: 'select', body: 0xd9cfb8, furn: 0x4a3a2a, metal: 0xb8963e, acc: 0xb8963e, pat: ['checker', '#d9cfb8', '#c2b493'], guns: ['stinger', 'judge', 'guardian', 'outlaw'] },
   { id: 'arctic', name: 'Arctic', tier: 'select', body: 0xe6eef4, furn: 0x9fb8cc, metal: 0x5d7488, acc: 0x7fd0ff, pat: ['camo', '#e6eef4', '#9fb8cc', '#c3d4e2'], guns: ['classic', 'sheriff', 'judge', 'guardian', 'odin'] },
 ];
 const SKINS = {};
@@ -2400,6 +2410,13 @@ function skinTex(L) {
   else if (kind === 'stars') { for (let i = 0; i < 70; i++) { x.fillStyle = rnd() < .3 ? b : '#ffffff'; const s = rnd() * 2 + .5; x.fillRect(rnd() * 128, rnd() * 128, s, s); } x.strokeStyle = b; x.globalAlpha = .4; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.stroke(); x.globalAlpha = 1; }
   else if (kind === 'dots') { x.fillStyle = b; for (let r = 0; r < 8; r++) for (let q = 0; q < 8; q++) { x.beginPath(); x.arc(q * 16 + (r % 2) * 8 + 4, r * 16 + 8, 4, 0, 7); x.fill(); } }
   else if (kind === 'carbon') { for (let r = 0; r < 16; r++) for (let q = 0; q < 16; q++) { x.fillStyle = (r + q) % 2 ? b : a; x.fillRect(q * 8, r * 8, 8, 4); x.fillStyle = (r + q) % 2 ? a : b; x.fillRect(q * 8, r * 8 + 4, 8, 4); } }
+  else if (kind === 'grid') { x.strokeStyle = b; x.lineWidth = 1.5; x.globalAlpha = .75; for (let i = 0; i <= 128; i += 16) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.moveTo(0, i); x.lineTo(128, i); x.stroke(); } x.globalAlpha = 1; x.fillStyle = c || b; for (let i = 0; i < 10; i++) x.fillRect(Math.floor(rnd() * 8) * 16 + 2, Math.floor(rnd() * 8) * 16 + 2, 12, 12); }
+  else if (kind === 'waves') { x.strokeStyle = b; x.lineCap = 'round'; for (let r = -8; r < 140; r += 14) { x.lineWidth = 2 + (r / 14 % 3); x.beginPath(); for (let q = 0; q <= 128; q += 4) x.lineTo(q, r + Math.sin(q / 128 * Math.PI * 4 + r) * 5); x.stroke(); } }
+  else if (kind === 'scales') { x.strokeStyle = b; x.lineWidth = 2; for (let r = 0; r < 10; r++) for (let q = -1; q < 9; q++) { x.beginPath(); x.arc(q * 16 + (r % 2) * 8, r * 14, 9, 0, Math.PI); x.stroke(); } }
+  else if (kind === 'lava') { x.strokeStyle = c || b; x.shadowColor = b; x.shadowBlur = 6; for (let i = 0; i < 14; i++) { x.lineWidth = 1 + rnd() * 2.5; x.beginPath(); let px = rnd() * 128, py = rnd() * 128; x.moveTo(px, py); for (let k = 0; k < 5; k++) { px += (rnd() - .5) * 40; py += (rnd() - .5) * 40; x.lineTo(px, py); } x.stroke(); } x.shadowBlur = 0; }
+  else if (kind === 'aurora') { for (let i = 0; i < 5; i++) { const g = x.createLinearGradient(0, 0, 128, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, i % 2 ? c : b); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.globalAlpha = .6; x.beginPath(); const y0 = 10 + i * 24; x.moveTo(0, y0); for (let q = 0; q <= 128; q += 8) x.lineTo(q, y0 + Math.sin(q / 20 + i) * 8); x.lineTo(128, y0 + 20); x.lineTo(0, y0 + 20); x.fill(); } x.globalAlpha = 1; for (let i = 0; i < 30; i++) { x.fillStyle = '#ffffff'; x.fillRect(rnd() * 128, rnd() * 128, 1, 1); } }
+  else if (kind === 'pixel') { for (let r = 0; r < 16; r++) for (let q = 0; q < 16; q++) { const v = rnd(); if (v < .22) { x.fillStyle = v < .11 ? b : c; x.fillRect(q * 8, r * 8, 8, 8); } } }
+  else if (kind === 'checker') { x.fillStyle = b; for (let r = 0; r < 8; r++) for (let q = 0; q < 8; q++) if ((r + q) % 2) x.fillRect(q * 16, r * 16, 16, 16); x.strokeStyle = 'rgba(184,150,62,.6)'; x.lineWidth = 1; for (let i = 0; i <= 128; i += 32) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.moveTo(0, i); x.lineTo(128, i); x.stroke(); } }
   else if (kind === 'zigzag') { x.strokeStyle = b; x.lineWidth = 5; for (let r = 0; r < 128; r += 20) { x.beginPath(); for (let q = 0; q <= 128; q += 16) x.lineTo(q, r + (q / 16 % 2 ? 8 : 0)); x.stroke(); } }
   else if (kind === 'splat') { for (let i = 0; i < 18; i++) { x.fillStyle = i % 2 ? b : (c || b); x.globalAlpha = .85; x.beginPath(); const cx = rnd() * 128, cy = rnd() * 128, R = 4 + rnd() * 12; for (let k = 0; k < 12; k++) { const an = k / 12 * 6.283, rr = R * (.6 + rnd() * .7); x.lineTo(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr); } x.fill(); } x.globalAlpha = 1; }
   else if (kind === 'tiger') { x.fillStyle = b; for (let i = 0; i < 9; i++) { const py = i * 15 + rnd() * 6; x.beginPath(); x.moveTo(0, py); x.quadraticCurveTo(40 + rnd() * 30, py - 6, 70 + rnd() * 30, py + 4); x.quadraticCurveTo(50, py + 7, 0, py + 5); x.fill(); } }
@@ -2974,9 +2991,9 @@ function applyDamage(t, dmg, src, label, head) {
 const KILL_NAMES = ['', '', 'DOUBLE KILL', 'TRIPLE KILL', 'QUADRA KILL', 'ACE'];
 function playerKillFx(n, head, skinId, victim) {
   n = Math.max(1, Math.min(6, n | 0));
-  const S = skinId && SKINS[skinId], tierHi = S && (['premium', 'exclusive', 'ultra'].includes(S.tier) || (S.custom && (KILL_FX[S.line.kfx] || KILL_SFX[S.line.sfx]))), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
+  const S = skinId && SKINS[skinId], tierHi = S && (['premium', 'exclusive', 'ultra'].includes(S.tier) || !!(KILL_FX[S.line.kfx] || KILL_SFX[S.line.sfx])), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
   const base = [0, 660, 740, 830, 990, 1180, 1320][n];
-  if (S && S.custom && KILL_SFX[S.line.sfx]) KILL_SFX[S.line.sfx](n); else
+  if (S && KILL_SFX[S.line.sfx]) KILL_SFX[S.line.sfx](n); else
   sndTone(base, .14, .22, 'triangle'); sndTone(base * 1.5, .2, .2, 'triangle', 0, undefined, undefined, .08);
   if (n >= 3) sndTone(base * 2, .3, .16, 'sine', 0, undefined, undefined, .16);
   if (tierHi) sndNoise(.25, 2600, 1, .12);
@@ -2990,7 +3007,7 @@ function playerKillFx(n, head, skinId, victim) {
   kb.querySelector('.kbSub').textContent = (head ? 'HEADSHOT · ' : '') + (tierHi ? S.line.name.toUpperCase() + ' KILL' : n + (n === 1 ? ' KILL' : ' KILLS'));
   kb.classList.remove('hidden', 'show'); void kb.offsetWidth; kb.classList.add('show');
   clearTimeout(kb._t); kb._t = setTimeout(() => kb.classList.add('hidden'), 950);
-  if (victim && S && S.custom) { if (KILL_FX[S.line.kfx]) KILL_FX[S.line.kfx](victim, S.line.acc); }
+  if (victim && S && (S.custom || KILL_FX[S.line.kfx])) { if (KILL_FX[S.line.kfx]) KILL_FX[S.line.kfx](victim, S.line.acc); }
   else if (victim && tierHi) { spawnParticles(victim.x, victim.y + 1.2, victim.z, 26, col, 4, .7); fx('pulse', victim.x, victim.y + 1, victim.z, 1.6); }
 }
 function killEntity(t, src, label, head) {
@@ -10296,7 +10313,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 79;
+const BUILD = 80;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
