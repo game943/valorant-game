@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 45</div>
+<div id="buildTag">VALOR STRIKE · build 46</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -876,7 +876,7 @@ const AGENTS = [
           X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Draw your glowing bow and fire up to three wall-piercing energy blasts yourself (left click) within 6 seconds.' } } },
   { id: 'brim', name: 'Brimstone', role: 'Controller', color: '#d29a52', glyph: 'BR', desc: 'A commander who rains smokes and fire from the sky.',
     ab: { C: { name: 'Stim Beacon', cost: 200, max: 1, free: 0, type: 'stim', desc: 'A field that boosts allies\' fire rate and speed.' },
-          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'Fire an incendiary grenade from your wrist launcher; it bursts into a zone of fire.' },
+          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'Fire an incendiary grenade from your wrist launcher; it bounces once, then bursts into a zone of fire.' },
           E: { name: 'Sky Smoke', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: 'Long-range, long-lasting smoke. (1 free)' },
           X: { name: 'Orbital Strike', ult: 7, type: 'orbital', desc: 'A devastating orbital laser strike where you aim.' } } },
   { id: 'reyna', name: 'Reyna', role: 'Duelist', color: '#c25bff', glyph: 'RY', desc: 'A vampiric duelist who grows stronger with every kill.',
@@ -2824,7 +2824,7 @@ const ABIL = {
       e.launchT = .7; sndTone(95, .18, .55, 'square', 40, e.x, e.z); sndNoise(.2, 900, 1, .35, e.x, e.z);
       const f = fwd(e); spawnParticles(o.x + f.x * .4, o.y + f.y * .4, o.z + f.z * .4, 8, 0x9a948a, 1.2, .5);
     }
-    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isBrim ? 'incShell' : 'canister' }));
+    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isBrim ? 'incShell' : 'canister' }, isBrim ? { stick: true, bounces: 1, bounceH: .55, life: 4 } : {})); // Brim's shell skips once, then bursts
     p.onLand = () => makeZone({ x: p.x, z: p.z, r: ab.zr || (isPhx ? 3.2 : 4.2), kind: ab.zkind || 'fire', t: ab.zt || (isPhx ? 4 : 7), dps: ab.dps || 60, owner: e, heal: isPhx, label: ab.name }); return true;
   },
   rib(e) {
@@ -6681,7 +6681,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 45;
+const BUILD = 46;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
