@@ -666,7 +666,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 52</div>
+<div id="buildTag">VALOR STRIKE · build 53</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1286,6 +1286,73 @@ function buildMapMeshes() {
     const [c0, r0, c1, r1] = wtr, w = (c1 - c0 + 1) * CELL, d = (r1 - r0 + 1) * CELL - .6;
     const water = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshLambertMaterial({ color: 0x3a8ea8, emissive: 0x0c3442, transparent: true, opacity: .82 }));
     water.rotation.x = -Math.PI / 2; water.position.set(c0 * CELL + w / 2, .04, (r0 + .5 + (r1 - r0) / 2) * CELL); mapGroup.add(water);
+  }
+  decorateMap(theme);
+}
+// purely decorative detail: wall trims, windows, doors, lamps, pipes, vents, floor grime and a distant skyline
+const DECO = {};
+function decoMats() {
+  if (DECO.ready) return DECO;
+  const tex = (w, h, f) => canvasTex(w, h, f);
+  Object.assign(DECO, {
+    ready: true,
+    trim: new THREE.MeshLambertMaterial({ color: 0x3a3631 }), cap: new THREE.MeshLambertMaterial({ color: 0xd9d2c4 }),
+    frame: new THREE.MeshLambertMaterial({ color: 0x2b2f36 }),
+    glass: new THREE.MeshPhongMaterial({ color: 0x22384c, emissive: 0x0a1622, shininess: 90, specular: 0x8899aa, envMap: GUN_ENV, reflectivity: .35 }),
+    glassLit: new THREE.MeshBasicMaterial({ color: 0xffd9a0 }),
+    door: new THREE.MeshLambertMaterial({ map: tex(64, 128, x => { x.fillStyle = '#6b4a32'; x.fillRect(0, 0, 64, 128); x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 3; x.strokeRect(8, 8, 48, 50); x.strokeRect(8, 66, 48, 54); x.fillStyle = '#d8c48a'; x.fillRect(50, 66, 6, 4); }) }),
+    vent: new THREE.MeshLambertMaterial({ map: tex(64, 40, x => { x.fillStyle = '#4a4f57'; x.fillRect(0, 0, 64, 40); x.fillStyle = '#1b1d22'; for (let i = 5; i < 38; i += 6) x.fillRect(4, i, 56, 3); }) }),
+    pipe: new THREE.MeshPhongMaterial({ color: 0x6a7380, shininess: 50 }), bulb: new THREE.MeshBasicMaterial({ color: 0xffe2a8 }),
+    grime: new THREE.MeshBasicMaterial({ map: tex(128, 128, x => { const g = x.createRadialGradient(64, 64, 4, 64, 64, 62); g.addColorStop(0, 'rgba(40,30,20,.32)'); g.addColorStop(1, 'rgba(40,30,20,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.strokeStyle = 'rgba(30,24,18,.16)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(30, 40); x.lineTo(58, 66); x.lineTo(54, 92); x.moveTo(58, 66); x.lineTo(92, 74); x.stroke(); }), transparent: true, depthWrite: false }),
+  });
+  return DECO;
+}
+function decorateMap(theme) {
+  const D = decoMats(), hsh = (a, b, c) => (((a * 73856093) ^ (b * 19349663) ^ (c * 83492791)) >>> 0) % 1000 / 1000;
+  const faces = [];
+  for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
+    const h = grid[r * GW + c]; if (h < WALL_H) continue;
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dc, dr], d) => { if (c + dc < 0 || r + dr < 0 || c + dc >= GW || r + dr >= GH) return; if (hAt(c + dc, r + dr) < 1) faces.push({ c, r, dc, dr, d, h }); });
+  }
+  // baseboard + top cap trims (instanced)
+  const box = new THREE.BoxGeometry(1, 1, 1), m4 = new THREE.Matrix4();
+  const base = new THREE.InstancedMesh(box, D.trim, faces.length), cap = new THREE.InstancedMesh(box, D.cap, faces.length);
+  faces.forEach((f, i) => {
+    const cx = (f.c + .5 + f.dc * .5) * CELL, cz = (f.r + .5 + f.dr * .5) * CELL, along = f.dc ? [.07, CELL] : [CELL, .07];
+    m4.makeScale(along[0], .32, along[1]); m4.setPosition(cx + f.dc * .035, .16, cz + f.dr * .035); base.setMatrixAt(i, m4);
+    m4.makeScale(f.dc ? .16 : CELL, .14, f.dc ? CELL : .16); m4.setPosition(cx + f.dc * .06, f.h - .07, cz + f.dr * .06); cap.setMatrixAt(i, m4);
+  });
+  base.receiveShadow = cap.receiveShadow = true; mapGroup.add(base, cap);
+  // per-face props, chosen by a stable hash so every client sees the same map
+  const plane = (w, h, mat, f, y, off, side = 0) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); const cx = (f.c + .5 + f.dc * .5) * CELL, cz = (f.r + .5 + f.dr * .5) * CELL;
+    p.position.set(cx + f.dc * off + (f.dr ? side : 0), y, cz + f.dr * off + (f.dc ? side : 0)); p.rotation.y = Math.atan2(f.dc, f.dr); mapGroup.add(p); return p; };
+  for (const f of faces) {
+    const k = hsh(f.c, f.r, f.d);
+    if (k < .16) { // window(s) with frame, cross bars and the odd lit one
+      for (const y of [3.2, 5.8]) { if (y > f.h - 1) continue; plane(1.5, 1.2, D.frame, f, y, .03); plane(1.26, .96, hsh(f.r, f.c, y | 0) < .25 ? D.glassLit : D.glass, f, y, .045);
+        plane(.06, .96, D.frame, f, y, .05); plane(1.26, .06, D.frame, f, y, .05); }
+    } else if (k < .22) { plane(1.5, 2.55, D.frame, f, 1.27, .03); plane(1.3, 2.4, D.door, f, 1.2, .045); }
+    else if (k < .32) { // wall lamp
+      const cx = (f.c + .5 + f.dc * .5) * CELL, cz = (f.r + .5 + f.dr * .5) * CELL;
+      const br = new THREE.Mesh(new THREE.BoxGeometry(.18, .12, .3), D.frame); br.position.set(cx + f.dc * .15, 3.4, cz + f.dr * .15); br.rotation.y = Math.atan2(f.dc, f.dr); mapGroup.add(br);
+      const bl = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), D.bulb); bl.position.set(cx + f.dc * .3, 3.32, cz + f.dr * .3); mapGroup.add(bl);
+      const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffc070, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); gl.scale.set(1.6, 1.6, 1); gl.position.copy(bl.position); mapGroup.add(gl);
+    } else if (k < .40) { // vertical pipe with brackets
+      const cx = (f.c + .5 + f.dc * .5) * CELL, cz = (f.r + .5 + f.dr * .5) * CELL, sd = (k - .36) * 6;
+      const pp = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, f.h - .3, 10), D.pipe); pp.position.set(cx + f.dc * .14 + (f.dr ? sd : 0), (f.h - .3) / 2, cz + f.dr * .14 + (f.dc ? sd : 0)); mapGroup.add(pp);
+      for (const y of [1.2, 4, 6.6]) if (y < f.h - .5) { const bk = new THREE.Mesh(new THREE.BoxGeometry(.2, .06, .2), D.frame); bk.position.set(pp.position.x, y, pp.position.z); mapGroup.add(bk); }
+    } else if (k < .47) plane(.9, .56, D.vent, f, .75, .03);
+  }
+  // floor grime and cracks on a few open cells
+  for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
+    if (grid[r * GW + c] !== 0 || hsh(c, r, 7) > .1) continue;
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(CELL * .9, CELL * .9), D.grime); g.rotation.set(-Math.PI / 2, 0, hsh(r, c, 3) * 6.28); g.position.set((c + .5) * CELL, .015, (r + .5) * CELL); mapGroup.add(g);
+  }
+  // distant skyline beyond the outer walls, fading into the fog
+  const sky = new THREE.Color(theme.sky), far = new THREE.MeshLambertMaterial({ color: sky.clone().multiplyScalar(.55) }), far2 = new THREE.MeshLambertMaterial({ color: sky.clone().multiplyScalar(.7) });
+  for (let i = 0; i < 46; i++) {
+    const a = i / 46 * Math.PI * 2, rr = Math.max(MAPW, MAPH) * (.78 + hsh(i, 1, 2) * .35), hh = 10 + hsh(i, 5, 9) * 28, ww = 10 + hsh(i, 3, 4) * 22;
+    const b = new THREE.Mesh(new THREE.BoxGeometry(ww, hh, ww * .7), i % 3 ? far : far2); b.position.set(MAPW / 2 + Math.cos(a) * rr, hh / 2 - 1, MAPH / 2 + Math.sin(a) * rr); b.rotation.y = a; mapGroup.add(b);
   }
 }
 
@@ -7022,7 +7089,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 52;
+const BUILD = 53;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
