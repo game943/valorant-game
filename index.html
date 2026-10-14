@@ -140,8 +140,8 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .plate .pn{display:inline-block;font-weight:900;font-size:13px;background:rgba(15,25,35,.82);padding:5px 14px;border-bottom:2px solid var(--teal)}
 .plate .pa{font:500 11px Oswald,sans-serif;letter-spacing:3px;opacity:.75;margin-top:4px}
 .plate.me .pn{font-size:15px;border-color:var(--gold);padding:6px 18px}
-.modeStrip{display:flex;justify-content:center;gap:8px;margin-top:22px;flex-wrap:wrap;max-width:1180px;margin-left:auto;margin-right:auto}
-.mode{width:186px;padding:12px 14px;background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.12s;clip-path:polygon(0 0,100% 0,100% 100%,14px 100%,0 calc(100% - 14px))}
+.modeStrip{display:flex;justify-content:center;gap:8px;margin-top:22px;flex-wrap:wrap;max-width:1320px;margin-left:auto;margin-right:auto}
+.mode{width:172px;padding:12px 12px;background:rgba(15,25,35,.82);border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:.12s;clip-path:polygon(0 0,100% 0,100% 100%,14px 100%,0 calc(100% - 14px))}
 .mode:hover{border-color:rgba(255,255,255,.5)}
 .mode.on{background:var(--light);color:var(--dark)}
 .mode .t{font:700 17px Oswald,sans-serif;letter-spacing:2px}
@@ -439,6 +439,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #hint{position:absolute;top:70%;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(15,25,35,.75);padding:5px 12px}
 #hint b{font-family:Oswald;padding:0 6px;background:var(--light);color:var(--dark);margin-right:4px}
 #over .msBox{margin-bottom:14px;text-align:left}
+#customPanel{flex-wrap:wrap;gap:6px;max-width:1100px;margin-left:auto;margin-right:auto}#customPanel .optCard{padding:6px 10px;flex:0 0 auto}body.customMode #diffSeg{display:none}body.customMode .optCard:has(#diffSeg){display:none}#customPanel select{background:#1c2631;color:#ece8e1;border:1px solid rgba(255,255,255,.15);padding:4px 6px;font:600 13px Inter,sans-serif;margin-top:4px}
 .msTiles{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px}.msTiles div{background:rgba(255,255,255,.05);padding:6px 8px}
 .msTiles span{display:block;font:600 10px Oswald,sans-serif;letter-spacing:2px;opacity:.65}.msTiles b{font:700 22px Oswald,sans-serif}
 .msChart{background:rgba(255,255,255,.03);padding:6px 10px;margin-bottom:10px}.msChart svg g:hover rect{opacity:1}
@@ -617,11 +618,21 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="mode" data-mode="duel"><div class="t">1V1 DUEL</div><div class="d">First to 7 · Full buy · vs a bot or a friend</div></div>
       <div class="mode" data-mode="rush"><div class="t">SPIKE RUSH</div><div class="d">First to 4 · random gun for all · full utility</div></div>
       <div class="mode" data-mode="dm"><div class="t">DEATHMATCH</div><div class="d">Solo · free for all · first to 30 kills</div></div>
+      <div class="mode" data-mode="custom"><div class="t">CUSTOM</div><div class="d">Your rules · bots, credits, weapons</div></div>
       <div class="mode range" data-mode="range"><div class="t">PRACTICE RANGE</div><div class="d">Solo · targets, aim test &amp; free gear</div></div>
     </div>
     <div class="playOpts">
       <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
       <div class="optCard mapCard" id="mapCard" title="Change map"><button class="mapArrow" id="mapPrev" aria-label="Previous map">‹</button><canvas id="mapThumb" width="96" height="80"></canvas><div class="mapTxt"><div class="ol">MAP</div><div class="mapName" id="mapName">DUSTWALL</div><div class="ol" id="mapDesc" style="opacity:.6">2 SITES · MID</div></div><button class="mapArrow" id="mapNext" aria-label="Next map">›</button></div>
+    </div>
+    <div class="playOpts hidden" id="customPanel">
+      <div class="optCard"><div class="ol">ALLY BOTS</div><select id="cuAllies"><option>0</option><option>1</option><option>2</option><option>3</option><option selected>4</option></select></div>
+      <div class="optCard"><div class="ol">ENEMY BOTS</div><select id="cuEnemies"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></div>
+      <div class="optCard"><div class="ol">BOT DIFFICULTY</div><select id="cuDiff"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div>
+      <div class="optCard"><div class="ol">CREDITS</div><select id="cuCredits"><option value="normal">Normal economy</option><option value="max">9000 every round</option></select></div>
+      <div class="optCard"><div class="ol">WEAPONS</div><select id="cuWeapons"><option value="all">All weapons</option><option value="Sidearm">Pistols only</option><option value="SMG">SMGs only</option><option value="Shotgun">Shotguns only</option><option value="Rifle">Rifles only</option><option value="Sniper">Snipers only</option><option value="Heavy">Heavies only</option></select></div>
+      <div class="optCard"><div class="ol">ROUNDS TO WIN</div><select id="cuTarget"><option>3</option><option selected>5</option><option>7</option><option>13</option></select></div>
+      <div class="optCard"><div class="ol">ABILITIES</div><select id="cuAbil"><option value="1">On</option><option value="0">Off</option></select></div>
     </div>
     <div class="startWrap">
       <div id="queueInfo"></div>
@@ -683,7 +694,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 63</div>
+<div id="buildTag">VALOR STRIKE · build 64</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -3552,6 +3563,7 @@ function suppressAround(x, y, z, r, owner, dur, needLos) {
 }
 function castAbility(e, key, target) {
   if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
+  if (CUSTOM() && !customRules().abil) { if (e.isPlayer) { toast('Abilities are off in this custom game'); SND.deny(); } return false; }
   if (pilot && e === player) { endPilot(pilot.kind === 'tiger' ? 'leap' : 'exit'); return false; }
   const ab0 = AGENT[e.agent] && AGENT[e.agent].ab[key];
   if (e === player && ab0 && ab0.type === 'rocket' && !target && !e._fireRocket) return armRocket(e, ab0);
@@ -4054,7 +4066,8 @@ function randomCellNear(x, z, rad) {
 }
 function botBuy(b, pistol, eco) {
   const can = k => b.credits >= WEAPONS[k].price;
-  const buyW = k => { b.credits -= WEAPONS[k].price; const inst = mkWeapon(k); if (WEAPONS[k].slot === 1) b.primary = inst; else b.secondary = inst; };
+  const buyW = k => { if (!allowedWeapon(k)) { const alt = Object.keys(WEAPONS).filter(q => WEAPONS[q].slot === WEAPONS[k].slot && WEAPONS[q].price !== undefined && WEAPONS[q].cat !== 'Ultimate' && allowedWeapon(q) && WEAPONS[q].price <= b.credits).sort((a, c) => WEAPONS[c].price - WEAPONS[a].price)[0]; if (!alt) return; k = alt; }
+    b.credits -= WEAPONS[k].price; const inst = mkWeapon(k); if (WEAPONS[k].slot === 1) b.primary = inst; else b.secondary = inst; };
   const buyS = k => { if (b.armor < SHIELDS[k].val && b.credits >= SHIELDS[k].price) { b.credits -= SHIELDS[k].price; b.armor = SHIELDS[k].val; } };
   const ag = AGENT[b.agent];
   if (pistol) {
@@ -4073,7 +4086,7 @@ function botBuy(b, pistol, eco) {
   for (const k of ['C', 'Q']) { const a = ag.ab[k]; while (b.charges[k] < a.max && b.credits >= a.cost + 400 && Math.random() < .7) { b.credits -= a.cost; b.charges[k]++; } }
 }
 function botPerceive(b) {
-  const D = DIFF[settings.diff];
+  const D = DIFF[botDiff()];
   if (b.flashT > .25 || b.nearT > .1) { b.target = null; b.targetVisible = false; return; }
   let best = null, bd = 1e9;
   for (const e of entities) {
@@ -4102,7 +4115,7 @@ function botPerceive(b) {
   } else { b.targetVisible = false; if (b.target && (!b.target.alive || game.time - (b.lastSeen ? b.lastSeen.t : 0) > 2.5)) b.target = null; }
 }
 function botShoot(b, t) {
-  const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[settings.diff];
+  const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[botDiff()];
   if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0 || b.driftT > 0 || game.phase === 'buy') return;
   if (w.model === 'knife') {
     if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, 'Knife'); SND.shot('knife', b.x, b.z); }
@@ -4242,7 +4255,7 @@ function updateBot(b, dt) {
     m.rotation.x = -Math.PI / 2 * k; m.position.y = b.y + .25 * k; m.userData.marker.visible = false;
     m.userData.outlines.forEach(o => o.visible = false); return;
   }
-  const D = DIFF[settings.diff];
+  const D = DIFF[botDiff()];
   b.think -= dt; if (b.think <= 0) { b.think = .12 + Math.random() * .06; botPerceive(b); botSupport(b); }
   const t = b.target;
   if (!(t && t.alive && b.targetVisible)) b.engageT = 0;
@@ -4338,13 +4351,13 @@ function setupMatch(agentId, humans = []) {
     e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
   }
   // allies are the lobby party; swap out anyone who shares the player's agent
-  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = DUEL() ? 0 : 4 - humans.length;
+  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = DUEL() ? 0 : CUSTOM() ? Math.max(0, customRules().allies - humans.length) : 4 - humans.length;
   const allyPool = party.filter(p => p.bot).map(p => p.agent).filter(a => !used.includes(a));
   const spare = shuffle(AGENTS.map(a => a.id).filter(id => !used.includes(id) && !allyPool.includes(id)));
   while (allyPool.length < nAllyBots) allyPool.push(spare.pop() || pick(AGENTS).id);
   const enemyPool = shuffle(AGENTS.map(a => a.id));
   for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
-  for (let i = 0; i < (DUEL() ? 0 : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
+  for (let i = 0; i < (DUEL() ? 0 : CUSTOM() ? customRules().enemies : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
   for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; }
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0 });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
@@ -4373,6 +4386,7 @@ function nextRound() {
   for (const e of entities) {
     if (pistol) { e.credits = 800; e.primary = null; e.secondary = mkWeapon('classic'); e.armor = 0; e.charges = { C: 0, Q: 0, E: 0 }; }
     if (game.ot || DUEL()) { e.credits = 5000; }
+    if (CUSTOM() && customRules().credits === 'max') e.credits = 9000;
     if (!e.alive) { e.primary = null; e.secondary = e.secondary || mkWeapon('classic'); e.armor = 0; }
     if (!e.secondary) e.secondary = mkWeapon('classic');
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
@@ -4656,6 +4670,7 @@ function renderShop() {
 }
 function buyWeapon(k, p = player) {
   if (net.role === 'client' && p === player) { netSend({ t: 'buy', f: 'w', k }); return; }
+  if (!allowedWeapon(k)) { toastTo(p, 'That weapon is not allowed in this custom game'); if (p.isPlayer) SND.deny(); return; }
   const w = WEAPONS[k];
   if ((w.slot === 1 ? p.primary : p.secondary)?.key === k) return;
   if (p.credits < w.price) { if (p.isPlayer) SND.deny(); return; }
@@ -7184,8 +7199,20 @@ setInterval(() => { if (game.state === 'menu' && curTab === 'home') showNews(new
 document.querySelectorAll('#modeStrip .mode').forEach(m => m.onclick = () => {
   if (queueTimer || net.role === 'client') return; playMode = m.dataset.mode; tick();
   document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x === m));
-  if (net.role === 'host') partyChanged(); updatePlayLock();
+  if (net.role === 'host') partyChanged(); updatePlayLock(); syncCustomPanel();
 });
+// custom game rules (saved with the settings)
+const CUSTOM_DEF = { allies: 4, enemies: 5, diff: 'normal', credits: 'normal', weapons: 'all', target: 5, abil: true };
+const customRules = () => Object.assign({}, CUSTOM_DEF, settings.custom || {});
+const CU_FIELDS = { cuAllies: ['allies', Number], cuEnemies: ['enemies', Number], cuDiff: ['diff', String], cuCredits: ['credits', String], cuWeapons: ['weapons', String], cuTarget: ['target', Number], cuAbil: ['abil', v => v === '1'] };
+function syncCustomPanel() {
+  $('customPanel').classList.toggle('hidden', playMode !== 'custom'); document.body.classList.toggle('customMode', playMode === 'custom'); const C = customRules();
+  for (const id in CU_FIELDS) { const [k] = CU_FIELDS[id]; $(id).value = k === 'abil' ? (C.abil ? '1' : '0') : String(C[k]); }
+}
+for (const id in CU_FIELDS) $(id).onchange = () => { const [k, f] = CU_FIELDS[id]; settings.custom = Object.assign(customRules(), { [k]: f($(id).value) }); saveSettings(); tick(); };
+const CUSTOM = () => game.mode === 'custom';
+const botDiff = () => CUSTOM() ? customRules().diff : settings.diff;
+function allowedWeapon(k) { const w = WEAPONS[k]; if (!CUSTOM() || !w) return true; const W = customRules().weapons; return W === 'all' || w.cat === W || w.cat === 'Sidearm' || w.cat === 'Melee'; }
 const MAP_CHOICES = [...MAP_IDS, 'random'];
 const resolveMap = id => MAPS[id] ? id : pick(MAP_IDS);
 const mapLabel = id => MAPS[id] ? MAPS[id].name : 'RANDOM';
@@ -7207,8 +7234,8 @@ $('mapPrev').onclick = e => { e.stopPropagation(); stepMap(-1); };
 $('mapNext').onclick = e => { e.stopPropagation(); stepMap(1); };
 $('mapCard').onclick = () => stepMap(1);
 let queueTimer = null, queueStart = 0;
-const modeName = () => ({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', range: 'PRACTICE RANGE', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[playMode] || 'COMPETITIVE';
-const MODES = ['comp', 'swift', 'duel', 'rush'];
+const modeName = () => ({ custom: 'CUSTOM GAME', swift: 'SWIFTPLAY', duel: '1V1 DUEL', range: 'PRACTICE RANGE', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[playMode] || 'COMPETITIVE';
+const MODES = ['comp', 'swift', 'duel', 'rush', 'custom'];
 const partyCap = () => playMode === 'duel' ? 2 : 5;
 function cancelQueue() { clearTimeout(queueTimer); queueTimer = null; $('btnStart').classList.remove('queue'); updatePlayLock(); }
 function startRange() {
@@ -7299,7 +7326,7 @@ function renderCollection() {
 /* agent select / match flow */
 function goSelect(mode) {
   initAudio(); selectedAgent = profile.fav;
-  game.mode = mode; game.target = mode === 'swift' ? 5 : mode === 'duel' ? 7 : mode === 'rush' ? 4 : mode === 'dm' ? DM_TARGET : 13; game.half = mode === 'swift' ? 4 : mode === 'duel' ? 6 : mode === 'rush' ? 3 : 12;
+  game.mode = mode; game.target = mode === 'custom' ? customRules().target : mode === 'swift' ? 5 : mode === 'duel' ? 7 : mode === 'rush' ? 4 : mode === 'dm' ? DM_TARGET : 13; game.half = mode === 'custom' ? Math.max(2, customRules().target - 1) : mode === 'swift' ? 4 : mode === 'duel' ? 6 : mode === 'rush' ? 3 : 12;
   $('menu').classList.add('hidden'); $('select').classList.remove('hidden');
   $('btnBack').classList.toggle('hidden', net.role !== 'off');
   if (net.role !== 'off' && takenBy(selectedAgent)) selectedAgent = AGENTS.find(a => !takenBy(a.id)).id;
@@ -7369,7 +7396,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 63;
+const BUILD = 64;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
