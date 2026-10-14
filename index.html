@@ -666,7 +666,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 53</div>
+<div id="buildTag">VALOR STRIKE · build 54</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -2363,6 +2363,7 @@ function killEntity(t, src, label, head) {
     return;
   }
   t.alive = false; t.hp = 0; t.deaths++; t.deadT = 0; t.deathPos = { x: t.x, y: t.y, z: t.z };
+  if (t.agent === 'killjoy') for (const z of zones) if (z.owner === t && ['turret', 'alarm', 'nano'].includes(z.kind) && z.t > 0) { z.t = 0; fx('parts', z.x, .8, z.z, 16, 0xd8e04a, 2.5, .5); } // her bots shut down with her
   if (t.dummy && RANGE()) rangeKill(t);
   t.killedBy = src ? src.id : -1; t.killLabel = label || ''; t.invSeq = (t.invSeq || 0) + 1;
   t.ult = Math.min(AGENT[t.agent].ab.X.ult, t.ult + 1);
@@ -7089,7 +7090,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 53;
+const BUILD = 54;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
