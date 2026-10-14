@@ -5045,6 +5045,7 @@ function finishMatch() {
   $('btnAgain').classList.toggle('hidden', net.role !== 'off'); $('btnMenu').textContent = net.role !== 'off' ? 'Back to Party Lobby' : 'Main Menu';
   won ? SND.win() : SND.lose();
   if (REC) { REC.on = false; REC.winTeam = winTeam; }
+  setTimeout(showUpdateBar, 2500);
   $('btnReplay').classList.toggle('hidden', !(REC && REC.entsRef === entities && REC.frames.length >= 10));
   if (!RANGE()) setTimeout(() => { if (game.state === 'over') startMvp(winTeam); }, 600);
 }
@@ -8367,7 +8368,7 @@ $('btnLock').onclick = () => {
 $('btnFF').onclick = () => { playerStartFF(); };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
-  game.mapId = null; stopMvp(); exitReplay(false);
+  game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
   game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); cancelPlace(); reynaCast = 0; shadeT = 0; $('shadeOv').classList.add('hidden');
   $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
@@ -8397,16 +8398,25 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 70;
+const BUILD = 71;
+// Checks often (every 15s, and whenever the tab comes back into focus), but cheaply: a HEAD request
+// compares the page's ETag and the whole page is only downloaded when it changed.
+let updEtag = null, updBusy = false, updPending = 0;
+function showUpdateBar() { if (updPending > BUILD && game.state !== 'playing') { $('updNum').textContent = 'build ' + updPending; $('updateBar').classList.remove('hidden'); } }
 function checkForUpdate() {
-  if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
-  fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
-    const m = /const BUILD = (\d+);/.exec(t); const n = m ? +m[1] : 0;
-    if (n > BUILD) { $('updNum').textContent = 'build ' + n; $('updateBar').classList.remove('hidden'); }
-  }).catch(() => { });
+  if (!/^https?:/.test(location.protocol) || updBusy || updPending > BUILD) { showUpdateBar(); return; }
+  updBusy = true; const url = location.pathname + '?v=' + Date.now();
+  const full = () => fetch(url, { cache: 'no-store' }).then(r => { updEtag = r.headers.get('etag') || r.headers.get('last-modified') || updEtag; return r.ok ? r.text() : ''; }).then(t => {
+    const m = /const BUILD = (\d+);/.exec(t), n = m ? +m[1] : 0;
+    if (n > BUILD) { updPending = n; showUpdateBar(); }
+  });
+  const go = updEtag ? fetch(url, { method: 'HEAD', cache: 'no-store' }).then(r => { const tag = r.headers.get('etag') || r.headers.get('last-modified'); if (!tag || tag !== updEtag) return full(); }) : full();
+  go.catch(() => { }).then(() => { updBusy = false; });
 }
 $('btnUpdate').onclick = () => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); location.href = location.pathname + '?' + q.toString(); };
-setTimeout(checkForUpdate, 3000); setInterval(checkForUpdate, 120000);
+setTimeout(checkForUpdate, 1000); setInterval(() => { if (!document.hidden) checkForUpdate(); }, 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+window.addEventListener('focus', checkForUpdate);
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
 if (!profile.nameSet && profile.name === 'Player') openNameModal(true); else maybeDailyReward();
 ensureMissions();
