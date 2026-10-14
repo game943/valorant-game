@@ -524,7 +524,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #lowOv{background:radial-gradient(circle,transparent 55%,rgba(255,30,40,.35) 100%)}
 #updateBar{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:80;background:#1c2631;border:1px solid var(--teal);padding:8px 10px 8px 16px;font-size:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
 #updateBar button{background:var(--teal);color:#0f1923;border:0;font:700 13px Oswald,sans-serif;letter-spacing:2px;padding:7px 14px;cursor:pointer}
-#buildTag{position:fixed;right:10px;bottom:6px;font:500 11px Oswald,sans-serif;letter-spacing:1px;opacity:.45;z-index:5;pointer-events:none}
+#buildTag{position:fixed;right:10px;bottom:6px;font:500 11px Oswald,sans-serif;letter-spacing:1px;opacity:.45;z-index:65;cursor:pointer;user-select:none}
+#buildTag:hover{opacity:.9;text-decoration:underline}
 #shadeOv{position:fixed;inset:0;z-index:11;pointer-events:none;background:radial-gradient(circle,rgba(20,10,40,.75) 20%,rgba(10,4,24,.97) 75%);display:flex;align-items:center;justify-content:center}
 #shadeTxt{font:700 34px Oswald,sans-serif;letter-spacing:8px;color:#a58bff;text-shadow:0 0 20px #4b3fa0}
 #placeHint{position:absolute;left:50%;bottom:190px;transform:translateX(-50%);text-align:center;background:rgba(15,25,35,.7);border:1px solid rgba(255,255,255,.15);padding:8px 16px;font-size:14px;line-height:1.5;white-space:nowrap}
@@ -888,7 +889,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 66</div>
+<div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -9095,25 +9096,47 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 72;
-// Checks often (every 15s, and whenever the tab comes back into focus), but cheaply: a HEAD request
-// compares the page's ETag and the whole page is only downloaded when it changed.
-let updEtag = null, updBusy = false, updPending = 0;
+const BUILD = 73;
+// Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
+// On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
+// Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
+const UPD_REPO = 'game943/valorant-game', UPD_BRANCH = 'claude/valorant-style-game-html-5gr8zp', ON_PAGES = /\.github\.io$/.test(location.hostname);
+let updEtag = null, updBusy = false, updPending = 0, updRemoteT = 0;
+$('buildTag').textContent = 'VALOR STRIKE · build ' + BUILD;
 function showUpdateBar() { if (updPending > BUILD && game.state !== 'playing') { $('updNum').textContent = 'build ' + updPending; $('updateBar').classList.remove('hidden'); } }
-function checkForUpdate() {
-  if (!/^https?:/.test(location.protocol) || updBusy || updPending > BUILD) { showUpdateBar(); return; }
-  updBusy = true; const url = location.pathname + '?v=' + Date.now();
-  const full = () => fetch(url, { cache: 'no-store' }).then(r => { updEtag = r.headers.get('etag') || r.headers.get('last-modified') || updEtag; return r.ok ? r.text() : ''; }).then(t => {
-    const m = /const BUILD = (\d+);/.exec(t), n = m ? +m[1] : 0;
-    if (n > BUILD) { updPending = n; showUpdateBar(); }
-  });
-  const go = updEtag ? fetch(url, { method: 'HEAD', cache: 'no-store' }).then(r => { const tag = r.headers.get('etag') || r.headers.get('last-modified'); if (!tag || tag !== updEtag) return full(); }) : full();
-  go.catch(() => { }).then(() => { updBusy = false; });
+function remoteBuild() { // small JSON, fresh within about a minute; raw.githubusercontent.com as a fallback (5 min cache)
+  const api = `https://api.github.com/repos/${UPD_REPO}/contents/version.json?ref=${encodeURIComponent(UPD_BRANCH)}&t=${Date.now()}`;
+  return fetch(api, { headers: { Accept: 'application/vnd.github.raw' }, cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject())
+    .catch(() => fetch(`https://raw.githubusercontent.com/${UPD_REPO}/${UPD_BRANCH}/version.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null))
+    .then(j => j && +j.build || 0).catch(() => 0);
 }
-$('btnUpdate').onclick = () => { const q = new URLSearchParams(location.search); q.set('v', Date.now()); location.href = location.pathname + '?' + q.toString(); };
+function checkForUpdate(manual) {
+  if (updBusy) return Promise.resolve(updPending);
+  if (updPending > BUILD) { showUpdateBar(); return Promise.resolve(updPending); }
+  const useSelf = ON_PAGES || (/^https?:/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+  let job;
+  if (useSelf) {
+    const url = location.pathname + '?v=' + Date.now();
+    const full = () => fetch(url, { cache: 'no-store' }).then(r => { updEtag = r.headers.get('etag') || r.headers.get('last-modified') || updEtag; return r.ok ? r.text() : ''; }).then(t => { const m = /const BUILD = (\d+);/.exec(t); return m ? +m[1] : 0; });
+    job = (updEtag && !manual ? fetch(url, { method: 'HEAD', cache: 'no-store' }).then(r => { const tag = r.headers.get('etag') || r.headers.get('last-modified'); return !tag || tag !== updEtag ? full() : 0; }) : full());
+  } else {
+    if (!manual && Date.now() - updRemoteT < 60000) return Promise.resolve(0); // GitHub API: keep well inside its hourly limit
+    updRemoteT = Date.now(); job = remoteBuild();
+  }
+  updBusy = true;
+  return job.catch(() => 0).then(n => { updBusy = false; if (n > BUILD) { updPending = n; showUpdateBar(); } return n; });
+}
+$('btnUpdate').onclick = () => {
+  if (ON_PAGES || /^https?:/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) { const q = new URLSearchParams(location.search); q.set('v', Date.now()); location.href = location.pathname + '?' + q.toString(); }
+  else { try { location.reload(); } catch (e) { } }
+};
+$('buildTag').onclick = () => {
+  toastMenu('Checking for updates…');
+  checkForUpdate(true).then(n => { if (n > BUILD) toastMenu(`Build ${n} is out — press UPDATE NOW`); else if (n === BUILD) toastMenu(`You have the newest version (build ${BUILD})`); else if (n) toastMenu(`You have build ${BUILD} — the server still shows build ${n}, it updates within a minute or two`); else toastMenu(`Could not reach the update server — reload the page to get the newest version (you have build ${BUILD})`); });
+};
 setTimeout(checkForUpdate, 1000); setInterval(() => { if (!document.hidden) checkForUpdate(); }, 15000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
-window.addEventListener('focus', checkForUpdate);
+window.addEventListener('focus', () => checkForUpdate());
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
 if (!profile.nameSet && profile.name === 'Player') openNameModal(true); else maybeDailyReward();
 ensureMissions();
