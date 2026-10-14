@@ -1546,9 +1546,9 @@ function astar(sc, sr, ec, er) {
     const cx = cur % GW, cy = (cur / GW) | 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       if (!dx && !dy) continue;
-      const nx = cx + dx, ny = cy + dy; if (!walkable(nx, ny)) continue;
+      const nx = cx + dx, ny = cy + dy, brk = !walkable(nx, ny) && !(dx && dy) && isBreakCell(nx, ny); if (!walkable(nx, ny) && !brk) continue;
       const diag = dx && dy; if (diag && (!walkable(cx + dx, cy) || !walkable(cx, cy + dy))) continue;
-      const ni = ny * GW + nx, ng = g[cur] + (diag ? 1.414 : 1);
+      const ni = ny * GW + nx, ng = g[cur] + (diag ? 1.414 : 1) + (brk ? 10 : 0);
       if (ng < g[ni]) { g[ni] = ng; came[ni] = cur; push(ng + heur(ni), ni); }
     }
   }
@@ -1556,6 +1556,7 @@ function astar(sc, sr, ec, er) {
   const out = []; for (let i = e; i !== s && i !== -1; i = came[i]) out.push(cc(i % GW, (i / GW) | 0));
   return out.reverse();
 }
+const isBreakCell = (c, r) => !!(mapGadgets && mapGadgets.breaks.size && mapGadgets.breaks.has(r * GW + c) && Math.abs(hAt(c, r) - BREAK_H) < .001);
 function walkLine(ax, az, bx, bz) {
   const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / .5);
   for (let i = 0; i <= n; i++) {
@@ -4654,6 +4655,11 @@ function setGoal(b, x, z) {
 function followPath(b, dt, speed) {
   if (!b.path.length) { b.vx = b.vz = 0; return false; }
   const wp = b.path[0], dx = wp.x - b.x, dz = wp.z - b.z, d = Math.hypot(dx, dz);
+  if (d < 3.4 && isBreakCell(cellOf(wp.x), cellOf(wp.z))) { // a breakable wall is in the way: stop and shoot it down
+    b.vx = b.vz = 0; b.yaw += angDiff(b.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 8); b.pitch *= .9;
+    if (b.fireCD <= 0 && b.reloadT <= 0) { const w = WEAPONS[curWeapon(b).key]; b.fireCD = Math.max(.12, 1 / (w.rate || 2)); damageBreak(cellOf(wp.z) * GW + cellOf(wp.x), w.dmg[1] * (w.pellets || 1)); const ey = eyeY(b); spawnTracer(b.x, ey - .3, b.z, wp.x, 1.4, wp.z, 0xffb090); SND.shot(w.model, b.x, b.z); }
+    return true;
+  }
   if (d < .55) { b.path.shift(); return followPath(b, 0, speed); }
   if (b.driftT > 0) speed *= 1.6;
   b.vx = dx / d * speed; b.vz = dz / d * speed;
@@ -7055,7 +7061,8 @@ function decodeCells(str) {
 }
 // work out everything the bots and the round logic need from the painted cells
 function deriveMap(T, Z, S) {
-  const walk = i => T[i] === 1 && !(S && S[i] === 4), N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const walk = i => T[i] === 1, open1 = i => T[i] === 1 && !(S && S[i] === 4), // breakable walls can be shot through, so they don't cut the map
+ N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   const cellsOf = z => { const a = []; for (let i = 0; i < GW * GH; i++) if (Z[i] === z) a.push(i); return a; };
   const bfs = starts => { const d = new Int32Array(GW * GH).fill(-1), q = []; for (const s of starts) { d[s] = 0; q.push(s); } for (let h = 0; h < q.length; h++) { const i = q[h], c = i % GW, r = (i / GW) | 0; for (const [dc, dr] of N4) { const cc2 = c + dc, rr = r + dr; if (cc2 < 0 || rr < 0 || cc2 >= GW || rr >= GH) continue; const j = rr * GW + cc2; if (d[j] < 0 && walk(j)) { d[j] = d[i] + 1; q.push(j); } } } return d; };
   const errors = [], atk = cellsOf(3), def = cellsOf(4), sites = [1, 2, 5].filter(z => cellsOf(z).length);
@@ -7077,18 +7084,18 @@ function deriveMap(T, Z, S) {
     const cs = cellsOf(z).sort((a, b) => (dA[b] + (nearCover(b) ? 6 : 0)) - (dA[a] + (nearCover(a) ? 6 : 0)));
     holds[z] = spaced(cs, 6, 2.5);
     // border cells just outside the site, then walk two steps toward the attackers: that's where they stack up
-    const border = []; for (const i of cellsOf(z)) { const [c, r] = xy(i); for (const [dc, dr] of N4) { const j = (r + dr) * GW + c + dc; if (walk(j) && Z[j] !== z && dA[j] >= 0) border.push(j); } }
+    const border = []; for (const i of cellsOf(z)) { const [c, r] = xy(i); for (const [dc, dr] of N4) { const j = (r + dr) * GW + c + dc; if (open1(j) && Z[j] !== z && dA[j] >= 0) border.push(j); } }
     border.sort((a, b) => dA[a] - dA[b]);
-    const step = j => { for (let k = 0; k < 2; k++) { const [c, r] = xy(j); let best = j; for (const [dc, dr] of N4) { const n = (r + dr) * GW + c + dc; if (walk(n) && dA[n] >= 0 && dA[n] < dA[best]) best = n; } j = best; } return xy(j); };
+    const step = j => { for (let k = 0; k < 2; k++) { const [c, r] = xy(j); let best = j; for (const [dc, dr] of N4) { const n = (r + dr) * GW + c + dc; if (open1(n) && dA[n] >= 0 && dA[n] < dA[best]) best = n; } j = best; } return xy(j); };
     const e1 = border[0], e2 = border.filter(j => far(xy(j), xy(e1)) > 5).sort((a, b) => dA[a] - dA[b])[0];
     entrances[z] = [step(e1), step(e2 !== undefined ? e2 : e1)];
   }
-  const midC = []; for (let i = 0; i < GW * GH; i++) if (walk(i) && !Z[i] && dA[i] > 0 && dD[i] > 0) midC.push(i);
+  const midC = []; for (let i = 0; i < GW * GH; i++) if (open1(i) && !Z[i] && dA[i] > 0 && dD[i] > 0) midC.push(i);
   midC.sort((a, b) => Math.abs(dA[a] - dD[a]) - Math.abs(dA[b] - dD[b]));
   holds.mid = spaced(midC, 4, 4); if (!holds.mid.length) holds.mid = [holds[1][0]];
   const orbs = spaced(midC, 2, 8);
   // 1v1 spawn pairs 13-20 cells apart (deterministic)
-  const open = []; for (let i = 0; i < GW * GH; i++) if (walk(i) && !Z[i] && dA[i] >= 0) open.push(i);
+  const open = []; for (let i = 0; i < GW * GH; i++) if (open1(i) && !Z[i] && dA[i] >= 0) open.push(i);
   const duel = []; let seed = 1;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let t = 0; t < 400 && duel.length < 4 && open.length; t++) { const a = xy(open[Math.floor(rnd() * open.length)]), b = xy(open[Math.floor(rnd() * open.length)]), d = far(a, b); if (d >= 13 && d <= 20) duel.push([a, b]); }
@@ -9610,7 +9617,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 75;
+const BUILD = 76;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
