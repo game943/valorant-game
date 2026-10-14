@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 43</div>
+<div id="buildTag">VALOR STRIKE · build 44</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -3398,8 +3398,11 @@ function equipView() {
   let hand;
   if (knife) { // fist closed round the handle; the forearm leaves the fist so that, once tilted, the blade points up
     hand = AB.rbox(.1, .085, .13, .04, MAT.glove); hand.position.set(0, -.006, .07); gun.add(hand);
-    for (let i = 0; i < 4; i++) { const fg = AB.rbox(.106, .03, .026, .012, MAT.glove); fg.position.set(0, -.042, .022 + i * .031); gun.add(fg); }
-    const th = AB.rbox(.03, .03, .07, .012, MAT.glove); th.position.set(.045, .03, .035); gun.add(th);
+    for (let i = 0; i < 4; i++) {                                                                    // right hand: fingertips curl round to the inner (-x) side,
+      const fg = AB.rbox(.03, .07, .026, .012, MAT.glove); fg.position.set(-.05, -.012, .025 + i * .031); gun.add(fg); // knuckles stay on the outer (+x) side
+      const kn = AB.rbox(.022, .026, .024, .01, MAT.glove); kn.position.set(.05, .018, .025 + i * .031); gun.add(kn);
+    }
+    const th = AB.rbox(.026, .028, .075, .012, MAT.glove); th.position.set(-.04, .036, .03); th.rotation.y = -.25; gun.add(th);   // thumb wraps over the index finger
     const d = new THREE.Vector3(0, .76, .65).normalize(), f0 = new THREE.Vector3(0, -.006, .09);
     arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); arm.position.copy(f0.clone().addScaledVector(d, .3));
     cuff.quaternion.copy(arm.quaternion); cuff.position.copy(f0.clone().addScaledVector(d, .07));
@@ -6642,7 +6645,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 43;
+const BUILD = 44;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
