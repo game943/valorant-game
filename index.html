@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 40</div>
+<div id="buildTag">VALOR STRIKE · build 41</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -902,7 +902,7 @@ AGENTS.push(
           E: { name: 'Turret', cost: 0, max: 1, free: 1, type: 'turret', desc: 'Automatically shoots enemies it can see for 45 seconds.' },
           X: { name: 'Lockdown', ult: 9, type: 'lockdown', desc: 'Place a device that charges for 6 seconds, then detains every enemy in a huge radius for 8 seconds: slowed, unable to shoot or use abilities.' } } },
   { id: 'cypher', name: 'Cypher', role: 'Sentinel', color: '#c9c3ae', glyph: 'CY', desc: 'An information broker who watches every flank.',
-    ab: { C: { name: 'Trapwire', cost: 200, max: 2, free: 0, type: 'trap', desc: 'A hidden trap that reveals and slows the first enemy who steps in.' },
+    ab: { C: { name: 'Trapwire', cost: 200, max: 2, free: 0, type: 'trap', desc: 'Aim at a wall: a tripwire stretches across to the opposite wall and reveals + slows the first enemy who crosses it.' },
           Q: { name: 'Cyber Cage', cost: 100, max: 2, free: 0, type: 'smokeSmall', range: 25, r: 3.2, dur: 8, color: 0x8e8a7a, desc: 'A quick smoke cage where you aim.' },
           E: { name: 'Spycam', cost: 0, max: 1, free: 1, type: 'cam', desc: 'A camera that pulses to reveal nearby enemies for 15 seconds.' },
           X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
@@ -2399,14 +2399,15 @@ function makeZone(o) {
     const dome = new THREE.Mesh(new THREE.SphereGeometry(z.r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: .15, wireframe: true, depthWrite: false })); dome.scale.setScalar(.15); g.add(dome); z.dome = dome;
   }
   if (z.kind === 'trap') {
-    // Cypher's Trapwire: two anchors with blue emitters and a thin glowing wire
-    const ivory = AB.lit(0xe2dccb), wireM = new THREE.MeshBasicMaterial({ color: 0x9be8ff, transparent: true, opacity: .7 });
+    // Cypher's Trapwire: two wall anchors with blue emitters and a thin glowing wire (along x, or z when wa = 1)
+    const ivory = AB.lit(0xe2dccb), wireM = new THREE.MeshBasicMaterial({ color: 0x9be8ff, transparent: true, opacity: .7 }), tw = new THREE.Group(), L = z.r;
+    tw.rotation.y = z.wa ? Math.PI / 2 : 0; g.add(tw);
     for (const sgn of [-1, 1]) {
-      const a = AB.rbox(.12, .2, .08, .03, ivory); a.position.set(sgn * z.r * .8, .3, 0); a.rotation.y = Math.PI / 2; g.add(a);
-      AB.mesh(new THREE.SphereGeometry(.03, 10, 8), new THREE.MeshBasicMaterial({ color: 0x4fa3ff }), sgn * (z.r * .8 - .045), .35, 0, g);
-      const lg = AB.glow(0x4fa3ff, .25); lg.position.set(sgn * (z.r * .8 - .06), .35, 0); g.add(lg);
+      const a = AB.rbox(.12, .2, .06, .03, ivory); a.position.set(sgn * (L - .03), .4, 0); a.rotation.y = Math.PI / 2; tw.add(a);
+      AB.mesh(new THREE.SphereGeometry(.03, 10, 8), new THREE.MeshBasicMaterial({ color: 0x4fa3ff }), sgn * (L - .07), .4, 0, tw);
+      const lg = AB.glow(0x4fa3ff, .25); lg.position.set(sgn * (L - .09), .4, 0); tw.add(lg);
     }
-    const wire = AB.mesh(new THREE.CylinderGeometry(.006, .006, z.r * 1.5, 6), wireM, 0, .35, 0, g); wire.rotation.z = Math.PI / 2;
+    const wire = AB.mesh(new THREE.CylinderGeometry(.006, .006, Math.max(.1, L * 2 - .14), 6), wireM, 0, .4, 0, tw); wire.rotation.z = Math.PI / 2;
   }
   if (z.kind === 'fire' || z.kind === 'orbital' || z.kind === 'blaze') {
     const cyl = new THREE.Mesh(new THREE.CylinderGeometry(z.r, z.r, z.kind === 'orbital' ? 30 : (z.kind === 'blaze' ? 3.2 : 1.1), 20, 1, true),
@@ -2416,6 +2417,13 @@ function makeZone(o) {
   if (z.kind === 'slow' || z.kind === 'stim' || z.kind === 'alarm' || z.kind === 'lockdown') { const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - .15, z.r, 32), new THREE.MeshBasicMaterial({ color: colors[z.kind], side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .07; g.add(ring); }
   const gy = hAtPos(z.x, z.z); g.position.set(z.x, gy < WALL_H ? gy : 0, z.z); scene.add(g); z.mesh = g; z.disc = disc;
   zones.push(z); return z;
+}
+// Trapwire trips when an enemy is on the wire line or has switched sides of it since the last tick (fast movers can't skip it)
+function trapCrossed(z, e) {
+  const off = z.wa ? e.x - z.x : e.z - z.z, along = Math.abs(z.wa ? e.z - z.z : e.x - z.x);
+  if (!z.sides) z.sides = new Map(); const prev = z.sides.get(e); z.sides.set(e, off);
+  if (along > z.r + .2) return false;
+  return Math.abs(off) < .4 || (prev !== undefined && Math.sign(prev) !== Math.sign(off) && Math.abs(prev - off) < 3);
 }
 function revealPulse(x, y, z, r, team, dur) {
   fx('pulse', x, y, z, r);
@@ -2886,7 +2894,19 @@ const ABIL = {
   },
   lockdown(e) { const p = groundPoint(e, 3); makeZone({ x: p.x, z: p.z, r: 14, kind: 'lockdown', t: 1, delay: 6, owner: e }); if (e.isPlayer) toast('Lockdown is charging… enemies inside will be detained in 6s'); return true; },
   /* ---- Cypher ---- */
-  trap(e) { const p = groundPoint(e, 12); makeZone({ x: p.x, z: p.z, r: 2.2, kind: 'trap', t: 60, owner: e }); return true; },
+  trap(e) { // anchor on the wall you aim at, stretch across to the opposite wall
+    const ey = eyeY(e), f = fwd(e); let t = rayGrid(e.x, ey, e.z, f.x, f.y, f.z, 10), nx = RH.nx, nz = RH.nz, ox = e.x, oz = e.z, dx = f.x, dz = f.z;
+    if (t < 10 && !nx && !nz) { // aimed at the floor: look for the wall just beyond that spot
+      const hl = Math.hypot(f.x, f.z) || 1; ox = e.x + f.x * t; oz = e.z + f.z * t; dx = f.x / hl; dz = f.z / hl;
+      t = rayGrid(ox, .4, oz, dx, 0, dz, 3); nx = RH.nx; nz = RH.nz; if (t >= 3) t = 10;
+    }
+    const fail = msg => { if (e.isPlayer) { toast(msg); SND.deny(); return false; } const p = groundPoint(e, 8); makeZone({ x: p.x, z: p.z, r: 1.6, kind: 'trap', t: 60, owner: e, wa: Math.random() < .5 ? 1 : 0 }); return true; };
+    if (t >= 10 || (!nx && !nz)) return fail('Aim at a wall to anchor the Trapwire');
+    const ax = ox + dx * t + nx * .05, az = oz + dz * t + nz * .05, t2 = rayGrid(ax, .4, az, nx, 0, nz, 12);
+    if (t2 >= 12 || t2 < .6) return fail(t2 < .6 ? 'Not enough room for a Trapwire' : 'Too wide — no wall across to anchor to');
+    const len = t2 - .05; makeZone({ x: ax + nx * len / 2, z: az + nz * len / 2, r: len / 2, kind: 'trap', t: 60, owner: e, wa: nz ? 1 : 0 });
+    return true;
+  },
   cam(e) { const p = groundPoint(e, 30); makeZone({ x: p.x, z: p.z, r: .4, kind: 'cam', t: 15, owner: e, pulseT: .4 }); return true; },
   neural(e) {
     const reveal = () => { for (const o of entities) if (o.alive && isEnemy(o, e)) { o.revealedT = Math.max(o.revealedT, 3); fx('pulse', o.x, o.y + 1, o.z, 3); } };
@@ -3258,7 +3278,7 @@ function updateEffects(dt) {
         if (e === z.owner && z.heal) { if (e.hp < 100) e.hp = Math.min(100, e.hp + 12.5 * dt); }
         else if (isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.kind === 'orbital' ? 'Orbital Strike' : 'Fire');
       } else if ((z.kind === 'acid' || z.kind === 'frag') && isEnemy(e, z.owner)) applyDamage(e, z.dps * dt, z.owner, z.label || (z.kind === 'frag' ? 'FRAG/ment' : 'Acid'));
-      else if (z.kind === 'trap' && isEnemy(e, z.owner)) { e.revealedT = Math.max(e.revealedT, 3.5); e.slowT = Math.max(e.slowT, 2.5); toastTo(e, 'You tripped a Trapwire!'); fx('pop', z.x, 1, z.z, 'near'); z.t = 0; }
+      else if (z.kind === 'trap' && isEnemy(e, z.owner) && trapCrossed(z, e)) { e.revealedT = Math.max(e.revealedT, 3.5); e.slowT = Math.max(e.slowT, 2.5); toastTo(e, 'You tripped a Trapwire!'); fx('pop', z.x, 1, z.z, 'near'); z.t = 0; }
       else if (z.kind === 'slow' && isEnemy(e, z.owner)) e.slowT = .15;
       else if (z.kind === 'stim' && !isEnemy(e, z.owner)) e.stimT = .3;
     }
@@ -5004,7 +5024,7 @@ function buildSnap() {
     sp: sp ? [sp.state, r2(sp.x || 0), r2(sp.y || 0), r2(sp.z || 0), r2(sp.timer || 0), r2(sp.defuseProg || 0), sp.half ? 1 : 0, sp.carrier ? sp.carrier.id : -1, sp.defuser ? sp.defuser.id : -1, sp.site || 0] : null,
     e: entities.map(entSnap),
     sm: smokes.filter(s => s.mesh && !s.off).map(s => [nidOf(s), r2(s.x), r2(s.y), r2(s.z), s.r, r2(s.t), s.max, s.color]),
-    zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay)]),
+    zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay), z.wa || 0]),
     wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(w.t)]),
     pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g, p.model || 0]),
     dr: drops.map(d => [nidOf(d), d.inst.key, r2(d.x), r2(d.z), d.inst.sk || 0]),
@@ -5189,7 +5209,7 @@ function applySnap(s) {
     if (st !== 'planted') sp.mesh.userData.light.intensity = 0;
   }
   syncList(s.sm, smokes, r => makeSmoke(r[1], r[3], r[4], r[6], r[7], null), (o, r) => { o.t = r[5]; }, o => o.mesh && scene.remove(o.mesh));
-  syncList(s.zn, zones, r => ZONE_KINDS.has(r[4]) ? makeZone({ x: r[1], z: r[2], r: r[3], kind: r[4], t: r[5], delay: r[6] }) : null,
+  syncList(s.zn, zones, r => ZONE_KINDS.has(r[4]) ? makeZone({ x: r[1], z: r[2], r: r[3], kind: r[4], t: r[5], delay: r[6], wa: r[7] || 0 }) : null,
     (o, r) => { o.t = r[5]; if (r[6] < o.delay) o.delay = Math.max(r[6], .0001); if (o.kind === 'alarm' && (o.x !== r[1] || o.z !== r[2])) { o.x = r[1]; o.z = r[2]; o.mesh.position.x = o.x; o.mesh.position.z = o.z; } }, o => scene.remove(o.mesh));
   syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1 }); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
   syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9], model: PROJ_MODELS[r[10]] ? r[10] : undefined }),
@@ -6595,7 +6615,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 40;
+const BUILD = 41;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
