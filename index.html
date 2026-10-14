@@ -260,6 +260,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .wsRight select,.wsRight input[type=text]{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:8px 10px;font:500 14px 'Noto Sans KR',sans-serif}
 .wsRight input[type=color]{width:100%;height:34px;border:1px solid rgba(255,255,255,.18);background:none;padding:0;cursor:pointer}
 .wsCols{display:flex;gap:8px}.wsCols label{flex:1}
+.wsPair{display:flex;gap:4px}.wsPair select{flex:1;min-width:0}.wsPair .btn{width:auto;margin:0;padding:4px 10px}
 .wsBtns{display:flex;gap:8px;margin-top:6px}.wsBtns .btn{margin:0;flex:1;width:auto;padding:10px 8px}
 .skNew .skPlus{height:72px;display:flex;align-items:center;justify-content:center;font:300 54px Oswald;color:#ff8ad8;margin:4px 0}
 .skEdit{position:absolute;right:8px;top:8px;width:26px;height:26px;border:0;background:rgba(255,138,216,.2);color:#ff8ad8;cursor:pointer;font-size:14px}
@@ -887,6 +888,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
         <div class="wsCols"><label>Base<input type="color" id="wsC1"></label><label>Pattern<input type="color" id="wsC2"></label><label>Pattern 2<input type="color" id="wsC3"></label></div>
         <div class="wsCols"><label>Grip / stock<input type="color" id="wsFurn"></label><label>Metal<input type="color" id="wsMetal"></label><label>Accent<input type="color" id="wsAcc"></label></div>
         <label>Glow <input type="range" id="wsGlow" min="0" max="100" step="1"></label>
+        <div class="wsCols"><label>Kill sound<span class="wsPair"><select id="wsSfx"></select><button class="btn" id="wsSfxTest" title="Play">▶</button></span></label><label>Kill effect<select id="wsKfx"></select></label></div>
+        <div class="wsCols"><label>Muzzle flash<input type="color" id="wsFlash"></label><label>Tracer<input type="color" id="wsTracer"></label></div>
         <div class="wsBtns"><button class="btn" id="wsRand">🎲 Random</button><button class="btn hidden" id="wsDel" style="border-color:var(--red);color:var(--red)">Delete</button><button class="btn primary" id="wsSave">Save &amp; equip</button></div>
         <div class="note" style="margin:6px 0 0">Custom skins are free and saved in this browser. Other players in an online party see the standard skin.</div>
       </div>
@@ -2303,15 +2306,51 @@ function applySkin(g, skinId) {
   });
   g.userData.skin = skinId;
 }
+const caHexSafe = v => Math.max(0, Math.min(0xffffff, Math.round(+v) || 0));
+// custom skin extras: kill sounds and kill effects (played only on your own screen)
+const KILL_SFX = {
+  default: null,
+  chime: n => { sndTone(1320, .3, .16, 'sine', 1760); sndTone(1760 + n * 120, .35, .12, 'sine', 2200, undefined, undefined, .09); },
+  laser: n => { sndTone(1900 + n * 100, .28, .16, 'sawtooth', 180); sndTone(900, .2, .1, 'square', 2400, undefined, undefined, .05); },
+  bass: n => { sndTone(70, .55, .55, 'sine', 35); sndNoise(.25, 260, 1, .3); sndTone(140, .2, .2, 'square', 60, undefined, undefined, .05); },
+  coin: n => { sndTone(988, .08, .18, 'square'); sndTone(1319, .25, .18, 'square', 0, undefined, undefined, .08); },
+  glass: n => { sndNoise(.35, 7000, 1, .22, undefined, undefined, 'highpass'); sndTone(2400, .3, .1, 'triangle', 3600); },
+  chip: n => { const base = [523, 659, 784, 1047, 1319, 1568]; for (let i = 0; i < Math.min(6, n + 1); i++) sndTone(base[i], .09, .13, 'square', 0, undefined, undefined, i * .06); },
+  whoosh: n => { sndNoise(.45, 1200, 4, .3, undefined, undefined, 'bandpass'); sndTone(300, .4, .12, 'sine', 1200); },
+};
+const heartTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#ff5fa8'; x.beginPath(); x.moveTo(32, 56); x.bezierCurveTo(4, 36, 4, 10, 20, 10); x.bezierCurveTo(28, 10, 32, 16, 32, 20); x.bezierCurveTo(32, 16, 36, 10, 44, 10); x.bezierCurveTo(60, 10, 60, 36, 32, 56); x.fill(); return new THREE.CanvasTexture(c); })();
+function floatSprites(v, tex, color, n, rise, life) {
+  for (let i = 0; i < n; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color, transparent: true, depthWrite: false })); const s0 = rand(.25, .45); sp.scale.set(s0, s0, 1);
+    sp.position.set(v.x + rand(-.5, .5), v.y + 1 + rand(0, .6), v.z + rand(-.5, .5)); scene.add(sp); const vx = rand(-.4, .4), vz = rand(-.4, .4);
+    timedFx.push({ t: life, update(dt) { sp.position.y += rise * dt; sp.position.x += vx * dt; sp.position.z += vz * dt; sp.material.opacity = Math.min(1, this.t / life * 2); }, end() { scene.remove(sp); } });
+  }
+}
+const KILL_FX = {
+  none: null,
+  burst: (v, c) => { spawnParticles(v.x, v.y + 1.2, v.z, 40, c, 5, .6); FX.pulse(v.x, v.y + 1, v.z, 2); },
+  confetti: (v, c) => { for (const col of [c, 0xff4fd8, 0xffd36a, 0x36e0ff, 0x7dff3a]) spawnParticles(v.x, v.y + 1.6, v.z, 14, col, 4, 1.1); },
+  hearts: (v, c) => floatSprites(v, heartTex, 0xffffff, 7, 1.4, 1.6),
+  lightning: (v, c) => {
+    const pts = []; let x = v.x + rand(-2, 2), z = v.z + rand(-2, 2); for (let y = 14; y > v.y + .8; y -= 1.4) { pts.push(new THREE.Vector3(x, y, z)); x += (v.x - x) * .3 + rand(-.5, .5); z += (v.z - z) * .3 + rand(-.5, .5); } pts.push(new THREE.Vector3(v.x, v.y + .8, v.z));
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: c, transparent: true })); scene.add(l);
+    worldFlash(v.x, v.y + 1, v.z, 8, c, .25); sndNoise(.4, 2000, 1, .25, v.x, v.z); spawnParticles(v.x, v.y + .5, v.z, 26, c, 4, .4);
+    timedFx.push({ t: .45, update() { l.material.opacity = this.t / .45; l.visible = Math.random() > .25; }, end() { scene.remove(l); } });
+  },
+  ghost: (v, c) => { floatSprites(v, glowTex, 0xe8f6ff, 3, 1.1, 1.8); spawnParticles(v.x, v.y + 1, v.z, 20, 0xe8f6ff, 1.5, 1); },
+  pixels: (v, c) => { for (let i = 0; i < 4; i++) spawnParticles(v.x, v.y + 1.2, v.z, 12, [c, 0xffffff, 0x222222, c][i], 3 + i, .8); },
+};
 // player-made skins (Skin Workshop): a one-gun skin line kept in the profile
 function registerCustomSkin(c) {
-  const L = { id: c.id, name: c.name, tier: 'custom', body: c.body, furn: c.furn, metal: c.metal, acc: c.acc, glow: c.glow || 0, mglow: c.mglow || 0, pat: c.pat, guns: [c.key] };
+  const L = { id: c.id, name: c.name, tier: 'custom', body: c.body, furn: c.furn, metal: c.metal, acc: c.acc, glow: c.glow || 0, mglow: c.mglow || 0, pat: c.pat, guns: [c.key],
+    sfx: KILL_SFX[c.sfx] ? c.sfx : 'default', kfx: KILL_FX[c.kfx] ? c.kfx : 'none', flash: c.flash != null ? caHexSafe(c.flash) : null, tracer: c.tracer != null ? caHexSafe(c.tracer) : null };
   const sid = c.id + ':' + c.key; delete skinTexCache[c.id];
   for (const k in skinMatCache) if (k.startsWith(c.id + ':')) delete skinMatCache[k];
   for (const k in gunIconCache) if (k.includes(':' + sid + ':')) delete gunIconCache[k];
   SKINS[sid] = { id: sid, line: L, key: c.key, name: c.name, tier: 'custom', price: 0, custom: true };
   return sid;
 }
+const skinTracer = (e, inst) => { const S = SKINS[skinOf(e, inst)]; return S && S.line.tracer != null ? S.line.tracer : 0xfff2b0; };
 const skinOf = (e, inst) => inst ? (inst.sk !== undefined ? inst.sk : (e && e.skins && e.skins[inst.key]) || 0) : 0;
 const cleanSkins = o => { const r = {}; if (o && typeof o === 'object') for (const k in o) if (SKINS[o[k]] && SKINS[o[k]].key === k) r[k] = o[k]; return r; };
 function randomBotSkins() {
@@ -2811,8 +2850,9 @@ function applyDamage(t, dmg, src, label, head) {
 const KILL_NAMES = ['', '', 'DOUBLE KILL', 'TRIPLE KILL', 'QUADRA KILL', 'ACE'];
 function playerKillFx(n, head, skinId, victim) {
   n = Math.max(1, Math.min(6, n | 0));
-  const S = skinId && SKINS[skinId], tierHi = S && ['premium', 'exclusive', 'ultra'].includes(S.tier), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
+  const S = skinId && SKINS[skinId], tierHi = S && (['premium', 'exclusive', 'ultra'].includes(S.tier) || (S.custom && (KILL_FX[S.line.kfx] || KILL_SFX[S.line.sfx]))), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
   const base = [0, 660, 740, 830, 990, 1180, 1320][n];
+  if (S && S.custom && KILL_SFX[S.line.sfx]) KILL_SFX[S.line.sfx](n); else
   sndTone(base, .14, .22, 'triangle'); sndTone(base * 1.5, .2, .2, 'triangle', 0, undefined, undefined, .08);
   if (n >= 3) sndTone(base * 2, .3, .16, 'sine', 0, undefined, undefined, .16);
   if (tierHi) sndNoise(.25, 2600, 1, .12);
@@ -2826,7 +2866,8 @@ function playerKillFx(n, head, skinId, victim) {
   kb.querySelector('.kbSub').textContent = (head ? 'HEADSHOT · ' : '') + (tierHi ? S.line.name.toUpperCase() + ' KILL' : n + (n === 1 ? ' KILL' : ' KILLS'));
   kb.classList.remove('hidden', 'show'); void kb.offsetWidth; kb.classList.add('show');
   clearTimeout(kb._t); kb._t = setTimeout(() => kb.classList.add('hidden'), 950);
-  if (victim && tierHi) { spawnParticles(victim.x, victim.y + 1.2, victim.z, 26, col, 4, .7); fx('pulse', victim.x, victim.y + 1, victim.z, 1.6); }
+  if (victim && S && S.custom) { if (KILL_FX[S.line.kfx]) KILL_FX[S.line.kfx](victim, S.line.acc); }
+  else if (victim && tierHi) { spawnParticles(victim.x, victim.y + 1.2, victim.z, 26, col, 4, .7); fx('pulse', victim.x, victim.y + 1, victim.z, 1.6); }
 }
 function killEntity(t, src, label, head) {
   if (t.ribT > 0 && t.ribPos) { // Phoenix Run It Back
@@ -4319,7 +4360,7 @@ function equipView() {
     const well = new THREE.Vector3(0, long ? -.13 : -.12, long ? gun.userData.muzzleZ * .33 : -.01); mg.position.copy(well); mg.visible = false; gun.add(mg);
     Object.assign(gun.userData, { magProp: mg, magWell: well });
   }
-  const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: (SKINS[skinOf(player, w)] && SKINS[skinOf(player, w)].line.flash != null) ? SKINS[skinOf(player, w)].line.flash : 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
   let held = gun;
@@ -4385,7 +4426,7 @@ function playerFire() {
     const res = traceShot(p, ox, oy, oz, dx, dy, dz, 200);
     if (aimT && k === 0 && aimShot(ox, oy, oz, dx, dy, dz, res.t)) { res.ent = null; res.wall = null; }
     const hx = ox + dx * res.t, hy = oy + dy * res.t, hz = oz + dz * res.t;
-    if (k < 3) spawnTracer(muz.x, muz.y, muz.z, hx, hy, hz, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : 0xfff2b0);
+    if (k < 3) spawnTracer(muz.x, muz.y, muz.z, hx, hy, hz, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : skinTracer(p, inst));
     if (!tr0) tr0 = [hx, hy, hz];
     if (res.ent) {
       const dmg = w.dmg[res.reg] * falloffMul(w, res.t); const wasAlive = res.ent.alive;
@@ -4402,7 +4443,7 @@ function playerFire() {
   vmKick = Math.min(1.5, vmKick + (w.model === 'sniper' ? 1.5 : w.model === 'shotgun' ? 1.2 : .55));
   const g = vmRoot.userData.gun; if (g && g.userData.muzzle && inst.key !== 'blades') { g.userData.muzzle.visible = true; g.userData.muzzle.material.rotation = Math.random() * 6; setTimeout(() => { if (g.userData.muzzle) g.userData.muzzle.visible = false; }, 40); }
   SND.shot(w.model);
-  netShot(p, muz.x, muz.y, muz.z, tr0[0], tr0[1], tr0[2], w.model, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : 0xfff2b0);
+  netShot(p, muz.x, muz.y, muz.z, tr0[0], tr0[1], tr0[2], w.model, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : skinTracer(p, inst));
   if (net.role !== 'client') alertEnemies(p, 38);
   if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; adsOn = false; } // unscope after sniper shot
   if (inst.key === 'blades' && p.bladeMag <= 0 && !killed) { p.slot = p.primary ? 1 : 2; equipView(); }
@@ -8017,6 +8058,10 @@ function openWorkshop(key = 'vandal', editId) {
   $('wsPat').querySelectorAll('button').forEach(b => b.onclick = () => { ws.d.pat[0] = b.dataset.p; $('wsPat').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); wsPreview(); tick(); });
   $('wsName').value = d.name; $('wsC1').value = d.pat[1]; $('wsC2').value = d.pat[2]; $('wsC3').value = d.pat[3] || d.pat[2];
   $('wsFurn').value = hexStr(d.furn); $('wsMetal').value = hexStr(d.metal); $('wsAcc').value = hexStr(d.acc); $('wsGlow').value = Math.round(glowAmt(d) * 100);
+  const SFX_N = { default: 'Standard', chime: 'Chime', laser: 'Laser', bass: 'Bass drop', coin: 'Coin', glass: 'Glass', chip: '8-bit', whoosh: 'Whoosh' }, KFX_N = { none: 'None', burst: 'Burst', confetti: 'Confetti', hearts: 'Hearts', lightning: 'Lightning', ghost: 'Ghost', pixels: 'Pixels' };
+  $('wsSfx').innerHTML = Object.keys(KILL_SFX).map(k => `<option value="${k}">${SFX_N[k] || k}</option>`).join(''); $('wsSfx').value = d.sfx || 'default';
+  $('wsKfx').innerHTML = Object.keys(KILL_FX).map(k => `<option value="${k}">${KFX_N[k] || k}</option>`).join(''); $('wsKfx').value = d.kfx || 'none';
+  $('wsFlash').value = hexStr(d.flash ?? 0xffcf6a); $('wsTracer').value = hexStr(d.tracer ?? 0xfff2b0);
   $('wsDel').classList.toggle('hidden', !ex);
   $('workshop').classList.remove('hidden'); wsPreview();
 }
@@ -8028,6 +8073,7 @@ function wsRead() {
   d.body = hexNum(d.pat[1]); d.furn = hexNum($('wsFurn').value); d.metal = hexNum($('wsMetal').value); d.acc = hexNum($('wsAcc').value);
   const g = +$('wsGlow').value / 100; d.glow = scaleHex(d.acc, g * .85); d.mglow = scaleHex(d.metal, g * .35);
   if (d.pat[0] === 'solid') d.pat[2] = d.pat[1];
+  d.sfx = $('wsSfx').value; d.kfx = $('wsKfx').value; d.flash = hexNum($('wsFlash').value); d.tracer = hexNum($('wsTracer').value);
 }
 function wsPreview() {
   wsRead(); const d = ws.d, pv = Object.assign({}, d, { id: 'wsprev' + (ws.n = (ws.n || 0) + 1), pat: d.pat[0] === 'solid' ? ['grad', d.pat[1], d.pat[1]] : d.pat.slice() });
@@ -8040,7 +8086,7 @@ function wsSave() {
   wsRead(); const d = ws.d;
   const old = ws.editId && profile.customSkins.find(c => c.id === ws.editId);
   if (!old && profile.customSkins.length >= 40) { toastMenu('You can keep up to 40 custom skins'); return; }
-  const id = 'cs' + Date.now().toString(36), rec = { id, name: d.name, key: d.key, body: d.body, furn: d.furn, metal: d.metal, acc: d.acc, glow: d.glow, mglow: d.mglow, pat: d.pat[0] === 'solid' ? ['grad', d.pat[1], d.pat[1]] : d.pat.slice(0, 4) };
+  const id = 'cs' + Date.now().toString(36), rec = { id, name: d.name, key: d.key, body: d.body, furn: d.furn, metal: d.metal, acc: d.acc, glow: d.glow, mglow: d.mglow, pat: d.pat[0] === 'solid' ? ['grad', d.pat[1], d.pat[1]] : d.pat.slice(0, 4), sfx: d.sfx, kfx: d.kfx, flash: d.flash, tracer: d.tracer };
   if (old) { // replace the old version everywhere
     const oldSid = old.id + ':' + old.key; profile.customSkins.splice(profile.customSkins.indexOf(old), 1); delete SKINS[oldSid];
     profile.owned = profile.owned.filter(x => x !== oldSid); for (const k in profile.equip) if (profile.equip[k] === oldSid) delete profile.equip[k];
@@ -8071,6 +8117,7 @@ $('btnAgentMaker').onclick = () => { tick(); openAgentMaker(); };
 function closeWorkshop() { if (ws && ws.prevId) dropSkinCaches(ws.prevId); ws = null; $('workshop').classList.add('hidden'); }
 ['wsName', 'wsC1', 'wsC2', 'wsC3', 'wsFurn', 'wsMetal', 'wsAcc', 'wsGlow', 'wsGun'].forEach(id => $(id).addEventListener('input', () => ws && wsPreview()));
 $('wsName').addEventListener('keydown', e => e.stopPropagation());
+$('wsSfxTest').onclick = () => { initAudio(); const f = KILL_SFX[$('wsSfx').value]; if (f) f(2); else { sndTone(740, .14, .22, 'triangle'); sndTone(1110, .2, .2, 'triangle', 0, undefined, undefined, .08); } };
 $('wsSave').onclick = wsSave; $('wsDel').onclick = wsDelete; $('wsRand').onclick = wsRandom; $('wsClose').onclick = closeWorkshop;
 $('workshop').onclick = e => { if (e.target.id === 'workshop') closeWorkshop(); };
 function closeSkinPicker() { $('skinPicker').classList.add('hidden'); }
