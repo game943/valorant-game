@@ -216,6 +216,12 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .storeTabs button{background:#26313d;border:0;color:var(--light);font:600 14px Oswald,sans-serif;letter-spacing:2px;padding:9px 18px;cursor:pointer}
 .storeTabs button.on{background:var(--red);color:#fff}
 .storeTabs .nmBtn{background:linear-gradient(90deg,#3a1660,#6a1b5a)}
+.stBadge{font-style:normal;font:700 10px Oswald,sans-serif;background:var(--red);color:#fff;padding:1px 5px;margin-left:6px;vertical-align:top;letter-spacing:1px}
+.stBadge.nm{background:linear-gradient(90deg,#8a2be2,#ff4fa3)}.stBadge.wish{background:#f5c542;color:#111}
+.wStar{color:#f5c542}.nmWish{position:absolute;bottom:8px;left:8px;background:#f5c542;color:#111;font:700 12px Oswald,sans-serif;padding:2px 7px}
+.wishRow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.wishRow img{width:150px;height:56px;object-fit:contain;background:#1a222c;border:1px solid #f5c54255;padding:4px;cursor:pointer}.wishRow img.own{opacity:.4}
+.nmClosed{filter:saturate(.4)}.nmCard.locked{cursor:default;opacity:.55}
+#skmWish.on{border-color:#f5c542;color:#f5c542}
 .storeTabs .nmBtn.on{background:linear-gradient(90deg,#8a2be2,#ff4fa3)}
 .feat{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:18px;padding:18px;background:linear-gradient(110deg,rgba(0,0,0,.35),rgba(255,255,255,.04));border:1px solid var(--tc);border-left:4px solid var(--tc)}
 .feat h3{font:700 30px Oswald,sans-serif;letter-spacing:3px;margin:4px 0}
@@ -856,7 +862,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="panel skmPanel" id="skmPanel">
     <div class="pHead"><div><div class="ol" id="skmTier">PREMIUM EDITION</div><h2 id="skmName">Skin</h2></div><button class="iconBtn" id="skmClose">✕</button></div>
     <div class="skmStage"><img id="skmImg" alt=""></div>
-    <div class="skmFoot"><span class="note" id="skmNote" style="margin:0"></span><button class="btn primary" id="skmBuy">BUY</button></div>
+    <div class="skmFoot"><span class="note" id="skmNote" style="margin:0"></span><button class="btn" id="skmWish" style="width:auto;margin:0 8px 0 auto">☆ WISH</button><button class="btn primary" id="skmBuy">BUY</button></div>
   </div>
 </div>
 <div id="skinPicker" class="screen hidden">
@@ -8396,9 +8402,34 @@ const seeded = s => () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >
 const seededPick = (rng, list, n) => { const a = list.slice(), out = []; while (a.length && out.length < n) out.push(a.splice(Math.floor(rng() * a.length), 1)[0]); return out; };
 const owns = id => profile.owned.includes(id);
 const fmtLeft = ms => { const h = Math.floor(ms / 36e5), m = Math.floor(ms % 36e5 / 6e4); return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${m}m`; };
+const REROLL_VP = 150;
+const rerollsToday = () => { const day = Math.floor(Date.now() / DAY); return profile.reroll && profile.reroll.day === day ? profile.reroll.n : 0; };
 function dailyOffers() {
-  const day = Math.floor(Date.now() / DAY), rng = seeded(day * 7919 + profile.seed);
+  const day = Math.floor(Date.now() / DAY), rng = seeded(day * 7919 + profile.seed + rerollsToday() * 31337);
   return { ids: seededPick(rng, SKIN_IDS.filter(id => SKINS[id].key !== 'knife'), 4), left: (day + 1) * DAY - Date.now() };
+}
+function rerollOffers() {
+  if (rerollsToday() >= 1) return;
+  if (profile.vp < REROLL_VP) { SND.deny(); toastMenu(`Rerolling costs ${REROLL_VP} VP.`); return; }
+  profile.vp -= REROLL_VP; profile.reroll = { day: Math.floor(Date.now() / DAY), n: rerollsToday() + 1 }; saveProfile(); SND.buy(); renderStore();
+}
+// the night market is only open for the last 4 days of every 7-day cycle
+const NM_OPEN_FROM = 3;
+function nightStatus() {
+  const day = Math.floor(Date.now() / DAY), d = day % 7, open = d >= NM_OPEN_FROM;
+  return { open, left: open ? (day - d + 7) * DAY - Date.now() : (day - d + NM_OPEN_FROM) * DAY - Date.now() };
+}
+const wished = id => (profile.wish || []).includes(id);
+function toggleWish(id) {
+  profile.wish = profile.wish || []; const i = profile.wish.indexOf(id);
+  if (i >= 0) profile.wish.splice(i, 1); else { if (profile.wish.length >= 20) profile.wish.shift(); profile.wish.push(id); }
+  saveProfile(); SND.click && SND.click();
+}
+function storeBadge() {
+  const b = document.querySelector('#navTabs button[data-tab="store"]'); if (!b) return;
+  const day = Math.floor(Date.now() / DAY), d = dailyOffers(), hasWish = d.ids.some(id => wished(id) && !owns(id));
+  const fresh = profile.storeSeen !== day, nm = nightStatus().open;
+  b.innerHTML = 'STORE' + (hasWish ? '<i class="stBadge wish">★</i>' : fresh ? '<i class="stBadge">NEW</i>' : '') + (nm ? '<i class="stBadge nm">NM</i>' : '');
 }
 function featuredLine() {
   const p = Math.floor(Date.now() / (3 * DAY)), rng = seeded(p * 104729 + 17);
@@ -8415,7 +8446,7 @@ function refreshVP() { $('vpNum').textContent = profile.vp.toLocaleString(); }
 function skinCard(id, price, extra = '') {
   const S = SKINS[id], T = TIERS[S.tier], own = owns(id);
   return `<div class="skCard${own ? ' own' : ''}" data-sk="${id}" data-price="${price}" style="--tc:${T.color}">
-    <div class="skTier">${T.name}</div><img src="${gunIcon(S.key, id)}" alt=""><div class="skName">${S.name}</div>
+    <div class="skTier">${T.name}${wished(id) && !own ? ' <span class="wStar">★</span>' : ''}</div><img src="${gunIcon(S.key, id)}" alt=""><div class="skName">${S.name}</div>
     <div class="skPrice">${own ? 'OWNED' : extra + '<b class="vpI"></b>' + price.toLocaleString()}</div></div>`;
 }
 let storeView = 'offers';
@@ -8424,25 +8455,33 @@ function renderStore() {
   document.querySelectorAll('#storeTabs button').forEach(b => b.classList.toggle('on', b.dataset.sv === storeView));
   const box = $('storeBox');
   if (storeView === 'earn') { renderEarn(box); return; }
+  profile.storeSeen = Math.floor(Date.now() / DAY); saveProfile(); storeBadge();
   if (storeView === 'offers') {
-    const f = featuredLine(), d = dailyOffers(), L = f.line, bp = bundlePrice(L);
+    const f = featuredLine(), d = dailyOffers(), L = f.line, bp = bundlePrice(L), rr = rerollsToday() < 1;
     box.innerHTML = `<div class="feat" style="--tc:${TIERS[L.tier].color}">
         <div class="featTxt"><div class="ol">FEATURED BUNDLE · ${fmtLeft(f.left)} left</div><h3>${L.name.toUpperCase()} COLLECTION</h3>
         <div class="featNote">${L.guns.length} skins · ${TIERS[L.tier].name} edition · 20% off as a bundle</div>
         <button class="btn primary" id="btnBundle" ${bp === 0 ? 'disabled' : ''}>${bp === 0 ? 'ALL OWNED' : `BUY BUNDLE · <b class="vpI"></b>${bp.toLocaleString()}`}</button></div>
         <div class="featGuns">${L.guns.map(g => `<img src="${gunIcon(g, L.id + ':' + g)}" title="${SKINS[L.id + ':' + g].name}" data-sk="${L.id}:${g}">`).join('')}</div></div>
-      <div class="collCat">DAILY OFFERS · refresh in ${fmtLeft(d.left)}</div>
+      <div class="collCat" style="display:flex;align-items:center;gap:12px">DAILY OFFERS · refresh in ${fmtLeft(d.left)}<button class="btn small" id="btnReroll" ${rr ? '' : 'disabled'} style="margin-left:auto">${rr ? `REROLL · <b class="vpI"></b>${REROLL_VP}` : 'REROLLED TODAY'}</button></div>
       <div class="skGrid">${d.ids.map(id => skinCard(id, SKINS[id].price)).join('')}</div>
+      ${(profile.wish || []).length ? `<div class="collCat">WISHLIST · you'll be alerted when one shows up</div><div class="wishRow">${profile.wish.filter(id => SKINS[id]).map(id => `<img src="${gunIcon(SKINS[id].key, id)}" title="${SKINS[id].name}${owns(id) ? ' (owned)' : ''}" data-sk="${id}" class="${owns(id) ? 'own' : ''}">`).join('')}</div>` : ''}
       <div class="note">Earn VP by playing matches: +250 for a win, +100 for a loss and +10 per kill. Owned skins are equipped in the Collection tab.</div>`;
     $('btnBundle').onclick = () => buySkins(L.guns.map(g => L.id + ':' + g).filter(id => !owns(id)), bp, `${L.name} Collection`);
+    $('btnReroll').onclick = rerollOffers;
+    box.querySelectorAll('.wishRow img').forEach(im => im.onclick = () => openSkinModal(im.dataset.sk, SKINS[im.dataset.sk].price));
     box.querySelectorAll('.featGuns img').forEach(im => im.onclick = () => openSkinModal(im.dataset.sk, SKINS[im.dataset.sk].price));
+  } else if (!nightStatus().open) {
+    const ns = nightStatus();
+    box.innerHTML = `<div class="nmHead nmClosed"><div><div class="ol">CLOSED · opens in ${fmtLeft(ns.left)}</div><h3>NIGHT MARKET</h3></div><div class="note" style="margin:0">The Night Market opens for 4 days every week with six hidden discounted offers (10–50% off). Come back soon.</div></div>
+      <div class="nmGrid">${Array.from({ length: 6 }, () => `<div class="nmCard hidden-card locked"><div class="nmBack"><span>🔒</span></div></div>`).join('')}</div>`;
   } else {
-    const nm = nightMarket();
-    box.innerHTML = `<div class="nmHead"><div><div class="ol">YOUR NIGHT MARKET · ends in ${fmtLeft(nm.left)}</div><h3>NIGHT MARKET</h3></div><div class="note" style="margin:0">Six hidden offers picked just for you. Click a card to reveal its skin and discount.</div></div>
+    const nm = nightMarket(), ns = nightStatus();
+    box.innerHTML = `<div class="nmHead"><div><div class="ol">YOUR NIGHT MARKET · closes in ${fmtLeft(ns.left)}</div><h3>NIGHT MARKET</h3></div><div class="note" style="margin:0">Six hidden offers picked just for you. Click a card to reveal its skin and discount.</div></div>
       <div class="nmGrid">${nm.ids.map(({ id, off }, i) => {
         const rev = profile.nm.rev.includes(i), S = SKINS[id], price = Math.round(S.price * (100 - off) / 100);
         if (!rev) return `<div class="nmCard hidden-card" data-i="${i}"><div class="nmBack"><span>?</span></div></div>`;
-        return `<div class="nmCard" data-i="${i}">${skinCard(id, price, `<s>${S.price.toLocaleString()}</s> `)}<div class="nmOff">-${off}%</div></div>`;
+        return `<div class="nmCard" data-i="${i}">${skinCard(id, price, `<s>${S.price.toLocaleString()}</s> `)}<div class="nmOff">-${off}%</div>${wished(id) && !owns(id) ? '<div class="nmWish">★ WISHLIST</div>' : ''}</div>`;
       }).join('')}</div>`;
     box.querySelectorAll('.nmCard.hidden-card').forEach(c => c.onclick = () => { profile.nm.rev.push(+c.dataset.i); saveProfile(); SND.buy(); renderStore(); const el = box.querySelector(`.nmCard[data-i="${c.dataset.i}"]`); if (el) el.classList.add('flip'); });
   }
@@ -8466,6 +8505,9 @@ function openSkinModal(id, price) {
   const eq = profile.equip[S.key] === id;
   $('skmBuy').innerHTML = own ? (eq ? 'EQUIPPED' : 'EQUIP') : `BUY · <b class="vpI"></b>${price.toLocaleString()}`;
   $('skmBuy').disabled = own && eq;
+  const wb = $('skmWish'); wb.classList.toggle('hidden', own || !!S.custom);
+  const wl = () => { wb.textContent = wished(id) ? '★ WISHLISTED' : '☆ WISHLIST'; wb.classList.toggle('on', wished(id)); }; wl();
+  wb.onclick = () => { toggleWish(id); wl(); if (curTab === 'store') renderStore(); };
   $('skmBuy').onclick = () => { if (own) { profile.equip[S.key] = id; saveProfile(); netProfileChanged(); SND.buy(); closeSkinModal(); refreshLobbyGuns(); if (curTab === 'collection') renderCollection(); else renderStore(); } else buySkins([id], price, S.name); };
   $('skmNote').textContent = own ? 'You own this skin.' : profile.vp < price ? `You have ${profile.vp.toLocaleString()} VP — ${(price - profile.vp).toLocaleString()} more needed.` : `You have ${profile.vp.toLocaleString()} VP.`;
   $('skinModal').classList.remove('hidden'); tick();
@@ -9794,7 +9836,7 @@ profile.customMaps = (Array.isArray(profile.customMaps) ? profile.customMaps : [
 if (settings.map && !MAPS[settings.map] && settings.map !== 'random') settings.map = 'dustwall';
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
-loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
+loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
 const BUILD = 77;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
