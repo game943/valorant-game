@@ -915,6 +915,8 @@ const WEAPONS = {
   knife:    W('Tactical Knife', 'Melee', 0, [50, 50, 50],    2,    0,  0,  0,    true,  0, 0, 0, 'knife', { slot: 3, speedMul: 1.07 }),
   blades:   W('Blade Storm', 'Ultimate', 0, [150, 50, 50],  3.4,  5,  0,  0,    false, .0008, .004, .01, 'blades', { slot: 'X' }),
   neonbeam: W('Overdrive', 'Ultimate', 0, [40, 18, 15], 16, 999, 0, 0, true, .0012, .0015, .002, 'beam', { slot: 'X' }),
+  headhunter: W('Headhunter', 'Ultimate', 0, [159, 55, 47], 4, 8, 0, 0, false, .0012, .03, .02, 'pistol', { slot: 'X', ads: 1.5 }),
+  tdf:      W('Tour de Force', 'Ultimate', 0, [255, 180, 180], 1.1, 5, 0, 0, false, .001, .07, .05, 'sniper', { slot: 'X', scope: 5, noscope: .04 }),
 };
 const SHIELDS = { light: { name: 'Light Shields', price: 400, val: 25 }, heavy: { name: 'Heavy Shields', price: 1000, val: 50 } };
 
@@ -1002,6 +1004,21 @@ AGENTS.push(
           Q: { name: 'Seize', cost: 200, max: 1, free: 0, type: 'seize', desc: 'An orb that drops and tethers nearby enemies: slowed and VULNERABLE for 4s.' },
           E: { name: 'Haunt', cost: 0, max: 1, free: 1, type: 'haunt', desc: 'Throw an eye that drops and reveals every enemy it can see.' },
           X: { name: 'Nightfall', ult: 8, type: 'nightfall', desc: 'A wave of nightmares that passes through walls: enemies in front are revealed, nearsighted and decayed.' } } },
+  { id: 'chamber', name: 'Chamber', role: 'Sentinel', color: '#d9b46a', glyph: 'CH', desc: 'A well-dressed weapons designer who holds angles with custom guns.',
+    ab: { C: { name: 'Trademark', cost: 200, max: 1, free: 0, type: 'tmark', desc: 'Place a trap that scans for enemies. When an enemy it can see comes close, it bursts into a large slowing field.' },
+          Q: { name: 'Headhunter', cost: 150, max: 8, free: 0, type: 'hh', desc: 'Press Q to equip a heavy pistol (Q again to put it away). Each shot uses one charge; right click to aim down sights.' },
+          E: { name: 'Rendezvous', cost: 0, max: 1, free: 1, type: 'rdv', desc: 'Place a teleport anchor. While you are within 18 m of it, press E again to teleport back to it instantly (1.5s recharge).' },
+          X: { name: 'Tour de Force', ult: 8, type: 'tdf', desc: 'Summon a powerful custom sniper rifle (5 shots) that kills with any hit to the body. Kills leave a lingering slow field.' } } },
+  { id: 'clove', name: 'Clove', role: 'Controller', color: '#f08cc8', glyph: 'CL', desc: 'A mischievous controller who keeps fighting even after death.',
+    ab: { C: { name: 'Pick-Me-Up', cost: 100, max: 1, free: 0, type: 'pmu', desc: 'Use right after a kill or an assist: absorb the life force of the fallen for a burst of speed and up to 150 health.' },
+          Q: { name: 'Meddle', cost: 200, max: 1, free: 0, type: 'meddle', desc: 'Throw a fragment of essence that erupts after a short delay and decays every enemy caught inside.' },
+          E: { name: 'Ruse', cost: 150, max: 2, free: 1, type: 'skySmoke', range: 50, r: 4.2, dur: 14, color: 0xd88fc8, desc: 'Aim a cloud of pink smoke; hold right click to push it further; left click to place. (1 free per round)' },
+          X: { name: 'Not Dead Yet', ult: 8, type: 'ndy', desc: 'After you die, press X within 5s to come back to life where you fell. You must get a kill or an assist within 10s or you die again.' } } },
+  { id: 'gekko', name: 'Gekko', role: 'Initiator', color: '#b6f03a', glyph: 'GK', desc: 'A friendly leader of a gang of calamitous creatures.',
+    ab: { C: { name: 'Mosh Pit', cost: 250, max: 1, free: 0, type: 'molly', zkind: 'fire', zr: 4, zt: 5, dps: 55, color: 0xb6f03a, desc: 'Throw Mosh like a grenade: it duplicates across a large area and then explodes.' },
+          Q: { name: 'Wingman', cost: 300, max: 1, free: 0, type: 'wingman', desc: 'Send Wingman forward: he hunts the nearest enemy and unleashes a concussive blast at them.' },
+          E: { name: 'Dizzy', cost: 0, max: 1, free: 1, type: 'flash', life: .7, model: 'dizzy', desc: 'Send Dizzy soaring forward through the air; she charges and blinds every enemy in her line of sight.' },
+          X: { name: 'Thrash', ult: 8, type: 'thrash', desc: 'Link with Thrash and steer her through enemy territory in first person. LEFT click (or X) to lunge and explode, detaining every enemy in a small radius.' } } },
 );
 const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 
@@ -1858,6 +1875,9 @@ const GUN_BUILDERS = {
     return -.93;
   },
 };
+// Chamber's guns: Headhunter is a heavy gold-trimmed revolver-style pistol, Tour de Force a long custom rifle
+GUN_BUILDERS.headhunter = (h, M) => GUN_BUILDERS.sheriff(h, Object.assign({}, M, { lt: gm(0xd9b46a), mt: gm(0x26262c), body: () => gm(0x1d1d22) }));
+GUN_BUILDERS.tdf = (h, M) => GUN_BUILDERS.operator(h, Object.assign({}, M, { body: () => gm(0x1b1b20), mt: gm(0xd9b46a), dk: gm(0x2c2a26) }));
 // Jett's kunai: glowing blade + wrapped handle + ring; the tip points to -z
 const KUNAI_MAT = { blade: new THREE.MeshLambertMaterial({ color: 0xe8f8ff, emissive: 0x3aa6d6 }), grip: new THREE.MeshLambertMaterial({ color: 0x1d2a3a }), ring: new THREE.MeshLambertMaterial({ color: 0xbfeaff, emissive: 0x2a6a8a }) };
 function makeKunai(glow = true) {
@@ -2090,6 +2110,9 @@ const LOOKS = {
   fade: { skin: 0xd8b49a, hair: 0x2a1f2e, style: 'long', top: 0x3a3042, top2: 0x9b7bd6, pants: 0x2a2530, eye: 0x9b7bd6, glow: true, gear: ['scarf'] },
   neon: { skin: 0xc49a7c, hair: 0x1b4fd8, style: 'twin', top: 0x1c2433, top2: 0x46b6ff, pants: 0x1d2333, eye: 0x8fd0ff, glow: true, gear: ['bolts'] },
   viper: { skin: 0xecd0bb, hair: 0x141414, style: 'short', top: 0x1b1d22, top2: 0x3fbf7a, pants: 0x15161a, eye: 0x2a2a2a, gear: ['respirator'] },
+  chamber: { skin: 0xd8b49a, hair: 0x1a1612, style: 'short', top: 0x23283a, top2: 0xd9b46a, pants: 0x1d2130, eye: 0x2a2a2a, gear: ['glasses', 'shoulderPads'] },
+  clove: { skin: 0xecd0bb, hair: 0x1d1a2a, style: 'spiky', tip: 0xf08cc8, top: 0x2a2438, top2: 0xf08cc8, pants: 0x211d2b, eye: 0xf08cc8, glow: true, gear: ['scarf'] },
+  gekko: { skin: 0xc49a7c, hair: 0x15130f, style: 'short', top: 0x3b2f5e, top2: 0xb6f03a, pants: 0x2a2a33, eye: 0x2a2a2a, gear: ['hood'] },
 };
 // matte cloth / skin materials for characters (cached per colour + shininess)
 const CHAR_MATS = {};
@@ -2363,6 +2386,8 @@ function makeEntity(o) {
 function curWeapon(e) {
   if (e.slot === 'X' && e.bladeMag > 0) return { key: 'blades', mag: e.bladeMag, reserve: 0 };
   if (e.slot === 'X' && e.odT > 0) return { key: 'neonbeam', mag: 999, reserve: 0 };
+  if (e.slot === 'X' && e.hhOn && e.charges && e.charges.Q > 0) { const h = e.hhInst || (e.hhInst = { key: 'headhunter', mag: 0, reserve: 0 }); h.mag = e.charges.Q; return h; } // Headhunter: its ammo is the Q charges
+  if (e.slot === 'X' && e.tdfInst && e.tdfInst.mag > 0) return e.tdfInst;              // Chamber's Tour de Force
   if (e.slot === 1 && e.primary) return e.primary;
   if (e.slot === 2 && e.secondary) return e.secondary;
   if (e.slot === 3) return { key: 'knife', mag: 1, reserve: 0 };
@@ -2538,7 +2563,9 @@ function killEntity(t, src, label, head) {
     toastTo(t, 'Run It Back! Respawned at your marker');
     return;
   }
-  t.alive = false; t.hp = 0; t.deaths++; t.deadT = 0; t.deathPos = { x: t.x, y: t.y, z: t.z };
+  t.alive = false; t.hp = 0; t.deaths++; t.deadT = 0; t.deathPos = { x: t.x, y: t.y, z: t.z }; t.ndyT = 0; t.deathTime = game.time;
+  t.tdfInst = null; t.hhOn = false;
+  if (label === 'Tour de Force' && src) makeZone({ x: t.x, z: t.z, r: 4.5, kind: 'slow', t: 4, owner: src }); // the kill leaves a slow field
   if (t.agent === 'killjoy') for (const z of zones) if (z.owner === t && ['turret', 'alarm', 'nano'].includes(z.kind) && z.t > 0) { z.t = 0; fx('parts', z.x, .8, z.z, 16, 0xd8e04a, 2.5, .5); } // her bots shut down with her
   if (t.dummy && RANGE()) rangeKill(t);
   t.killedBy = src ? src.id : -1; t.killLabel = label || ''; t.invSeq = (t.invSeq || 0) + 1;
@@ -2548,10 +2575,12 @@ function killEntity(t, src, label, head) {
     src.kills++; src.roundKills++; src.credits = Math.min(9000, src.credits + 200);
     src.ult = Math.min(AGENT[src.agent].ab.X.ult, src.ult + 1);
     if (src.agent === 'reyna') { src.soulT = 4; if (src.empressT > 0) src.empressT = 30; }
+    if (src.agent === 'clove') src.soulT = 4;
     if (src.agent === 'neon') { src.energy = Math.min(100, (src.energy ?? 100) + 50); if (src.odT > 0) src.odT = 20; }
     if (src.agent === 'jett' && !RANGE()) { src.twKills = (src.twKills || 0) + 1; if (src.twKills >= 2) { src.twKills = 0; if (src.charges.E < 1 && !(src.tailwindT > 0)) { src.charges.E = 1; toastTo(src, 'Tailwind recharged (2 kills)'); } } }
     if (src.bladeMag > 0) src.bladeMag = 5;
-    for (const id in t.damagedBy) { const a = entities[id]; if (a && a !== src && isEnemy(a, t) && game.time - t.damagedBy[id] < 10) a.assists++; }
+    for (const id in t.damagedBy) { const a = entities[id]; if (a && a !== src && isEnemy(a, t) && game.time - t.damagedBy[id] < 10) { a.assists++; if (a.agent === 'clove') a.soulT = 4; } }
+    for (const c of [src, ...Object.keys(t.damagedBy).map(id => entities[id])]) if (c && c.agent === 'clove' && c.alive && !c.isPlayer && !c.remote && c.charges && c.charges.C > 0 && c.hp < 100) { timedFx.push({ t: .3, update() { }, end() { if (c.alive && c.soulT > 0) castAbility(c, 'C'); } }); break; }
     if (src.isPlayer) playerKillFx(src.roundKills, !!head, skinOf(src, curWeapon(src)), t);
     if (src.remote) netTo(src.remote, { t: 'kc', n: src.roundKills, h: head ? 1 : 0 });
   }
@@ -2565,6 +2594,7 @@ function killEntity(t, src, label, head) {
   addKillfeed(src, t, label, head);
   fx('parts', t.x, t.y + 1.2, t.z, 25, AGENT[t.agent].color, 3, .6);
   if (t.isPlayer) onPlayerDeath(src, label);
+  if (t.agent === 'clove' && !t.isPlayer && !t.remote && t.ult >= AGENT.clove.ab.X.ult && net.role !== 'client' && !RANGE()) timedFx.push({ t: 1.5, update() { }, end() { if (!t.alive && game.phase !== 'end') castAbility(t, 'X'); } });
   if (game.spike && game.spike.defuser === t) game.spike.defuser = null;
 }
 function falloffMul(w, d) { return (w.falloff && d > w.falloff[0]) ? w.falloff[1] : 1; }
@@ -2623,11 +2653,26 @@ function makeSmoke(x, z, r, dur, color, owner) {
 }
 function makeZone(o) {
   const z = Object.assign({ t: 5, delay: 0, r: 4, kind: 'fire', dps: 0, owner: null }, o);
-  const colors = { fire: 0xff6a1a, slow: 0x7f9bff, stim: 0x4dff88, orbital: 0xff2a3a, blaze: 0xff7a22, acid: 0x5fd35a, frag: 0xb8d6f0, turret: 0xd8e04a, alarm: 0xd8e04a, lockdown: 0xd8e04a, trap: 0xc9c3ae, cam: 0xc9c3ae };
+  const colors = { fire: 0xff6a1a, slow: 0x7f9bff, stim: 0x4dff88, orbital: 0xff2a3a, blaze: 0xff7a22, acid: 0x5fd35a, frag: 0xb8d6f0, turret: 0xd8e04a, alarm: 0xd8e04a, lockdown: 0xd8e04a, trap: 0xc9c3ae, cam: 0xc9c3ae, tmark: 0xd9b46a, anchor: 0xd9b46a };
   const g = new THREE.Group();
   const disc = new THREE.Mesh(new THREE.CircleGeometry(z.r, 28), new THREE.MeshBasicMaterial({ color: colors[z.kind], transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = .05; g.add(disc);
-  if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap' || z.kind === 'nano' || z.kind === 'cage') disc.visible = false;
+  if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap' || z.kind === 'nano' || z.kind === 'cage' || z.kind === 'tmark' || z.kind === 'anchor') disc.visible = false;
+  if (z.kind === 'tmark') { // Chamber's Trademark: low gold hexagonal pod with a scanning eye
+    const gold = AB.lit(0xd9b46a, 0x2a1d00, { shininess: 90 }), dk = gm(0x23232a);
+    AB.mesh(new THREE.CylinderGeometry(.2, .24, .1, 6), dk, 0, .05, 0, g);
+    AB.mesh(new THREE.CylinderGeometry(.16, .2, .1, 6), gold, 0, .14, 0, g);
+    AB.mesh(new THREE.TorusGeometry(.12, .015, 6, 6), dk, 0, .2, 0, g).rotation.x = Math.PI / 2;
+    z.led = AB.mesh(new THREE.SphereGeometry(.045, 12, 10), new THREE.MeshBasicMaterial({ color: 0xfff1c0 }), 0, .21, 0, g);
+    const lg = AB.glow(0xffd36a, .3); lg.position.y = .24; g.add(lg);
+  }
+  if (z.kind === 'anchor') { // Chamber's Rendezvous anchor: gold diamond floating over a base plate
+    const gold = AB.lit(0xd9b46a, 0x3a2a00, { shininess: 90 }), dk = gm(0x23232a);
+    AB.mesh(new THREE.CylinderGeometry(.22, .26, .05, 16), dk, 0, .025, 0, g);
+    const gem = AB.mesh(new THREE.OctahedronGeometry(.16, 0), gold, 0, .55, 0, g); gem.scale.y = 1.5; z.spin2 = gem;
+    const lg = AB.glow(0xffd36a, .5); lg.position.y = .55; g.add(lg);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 32), new THREE.MeshBasicMaterial({ color: 0xd9b46a, side: THREE.DoubleSide, transparent: true, opacity: .6 })); ring.rotation.x = -Math.PI / 2; ring.position.y = .06; g.add(ring);
+  }
   if (z.kind === 'nano') { // dormant Nanoswarm: small capsule with a slow yellow blink
     AB.mesh(new THREE.SphereGeometry(.09, 14, 10), AB.lit(0x3b4048), 0, .07, 0, g).scale.y = .6;
     z.led = AB.mesh(new THREE.SphereGeometry(.025, 8, 6), new THREE.MeshBasicMaterial({ color: 0xd8e04a }), 0, .12, 0, g);
@@ -2892,6 +2937,49 @@ const PROJ_MODELS = {
     AB.mesh(new THREE.CylinderGeometry(.05, .06, .06, 12), dk, 0, .3, -.27, g).rotation.x = Math.PI / 2;
     return { g, ground: true, anim(t) { for (const w of wheels) w.rotation.x = t * 14; tip.visible = Math.sin(t * 12) > 0; } };
   },
+  wingman(c) { // Gekko's Wingman: round green critter with big eyes, stubby arms and a tuft on top
+    const g = new THREE.Group(), m = AB.lit(0xb6f03a, 0x2a4a00), dk = new THREE.MeshBasicMaterial({ color: 0x1d2a10 }), wh = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const body = AB.mesh(new THREE.SphereGeometry(.22, 20, 16), m, 0, .26, 0, g); body.scale.set(1, .9, 1.05);
+    for (const sx of [-1, 1]) {
+      AB.mesh(new THREE.SphereGeometry(.07, 12, 10), wh, sx * .08, .33, .17, g);
+      AB.mesh(new THREE.SphereGeometry(.035, 10, 8), dk, sx * .08, .33, .23, g);
+      const arm = AB.mesh(new THREE.SphereGeometry(.06, 10, 8), m, sx * .22, .2, .05, g); arm.scale.set(.7, 1.3, .7);
+      AB.mesh(new THREE.SphereGeometry(.06, 10, 8), m, sx * .1, .04, 0, g).scale.set(1, .5, 1.3);
+    }
+    AB.mesh(new THREE.BoxGeometry(.12, .015, .01), dk, 0, .2, .21, g);
+    const tuft = []; for (let i = 0; i < 3; i++) { const t = AB.mesh(new THREE.ConeGeometry(.03, .14, 6), m, (i - 1) * .04, .5, 0, g); t.rotation.z = (i - 1) * .4; tuft.push(t); }
+    return { g, ground: true, anim(t) { body.position.y = .26 + Math.abs(Math.sin(t * 14)) * .04; tuft.forEach((s, i) => s.rotation.z = (i - 1) * .4 + Math.sin(t * 10 + i) * .2); } };
+  },
+  dizzy(c) { // Gekko's Dizzy: blue blob with flapping fins and a glowing mouth
+    const g = new THREE.Group(), m = AB.lit(0x58b8ff, 0x0a3a70, { transparent: true, opacity: .95 }), fin = AB.lit(0x2f7fd6, 0x0a2a50, { side: THREE.DoubleSide });
+    AB.mesh(new THREE.SphereGeometry(.16, 18, 14), m, 0, 0, 0, g).scale.set(1, .85, 1.2);
+    AB.mesh(new THREE.SphereGeometry(.05, 10, 8), new THREE.MeshBasicMaterial({ color: 0xfff27a }), 0, -.02, .17, g).scale.set(1.4, .7, .5);
+    for (const sx of [-1, 1]) AB.mesh(new THREE.SphereGeometry(.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0x0a1a30 }), sx * .07, .06, .15, g);
+    const fins = []; for (const sx of [-1, 1]) { const p = new THREE.Group(); p.position.x = sx * .14; const f = new THREE.Mesh(AB.flat([[0, 0], [.2, .05], [.16, -.08]]), fin); f.scale.x = sx; f.rotation.x = -Math.PI / 2; p.add(f); g.add(p); fins.push(p); }
+    g.add(AB.glow(0x9fdcff, .7));
+    return { g, anim(t) { fins.forEach((p, i) => p.rotation.z = Math.sin(t * 18) * .6 * (i ? -1 : 1)); } };
+  },
+  thrash(c) { // Gekko's Thrash: long purple-green creature with a wide jaw and spiky back
+    const g = new THREE.Group(), m = AB.lit(0x6d4fb0, 0x1a0a3a), lime = AB.lit(0xb6f03a, 0x2a4a00), wh = new THREE.MeshBasicMaterial({ color: 0xfff27a });
+    AB.mesh(new THREE.SphereGeometry(.26, 18, 14), m, 0, .42, 0, g).scale.set(1, .85, 1.7);
+    const head = new THREE.Group(); head.position.set(0, .5, .45); g.add(head);
+    AB.mesh(new THREE.SphereGeometry(.2, 16, 12), m, 0, 0, 0, head).scale.set(1.15, .8, 1.1);
+    const jaw = AB.mesh(new THREE.SphereGeometry(.16, 14, 10), lime, 0, -.1, .06, head); jaw.scale.set(1.2, .45, 1.1);
+    for (const sx of [-1, 1]) { AB.mesh(new THREE.SphereGeometry(.045, 10, 8), wh, sx * .1, .1, .14, head); AB.mesh(new THREE.ConeGeometry(.02, .06, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), sx * .08, -.04, .2, head).rotation.x = Math.PI; }
+    for (let i = 0; i < 5; i++) AB.mesh(new THREE.ConeGeometry(.05, .14, 6), lime, 0, .66, -.3 + i * .14, g);
+    const legs = []; for (const [x, z] of [[-.17, .25], [.17, .25], [-.17, -.25], [.17, -.25]]) { const lp = new THREE.Group(); lp.position.set(x, .32, z); g.add(lp); legs.push(lp); AB.mesh(new THREE.CylinderGeometry(.06, .05, .3, 10), m, 0, -.15, 0, lp); AB.mesh(new THREE.SphereGeometry(.06, 10, 8), lime, 0, -.3, .03, lp).scale.set(1, .5, 1.3); }
+    const tail = new THREE.Group(); tail.position.set(0, .45, -.45); g.add(tail);
+    for (let i = 0; i < 5; i++) AB.mesh(new THREE.SphereGeometry(.07 - i * .011, 8, 6), i % 2 ? lime : m, 0, i * .02, -i * .08, tail);
+    g.add(AB.glow(0xb6f03a, .6));
+    return { g, ground: true, anim(t) { legs.forEach((l, i) => l.rotation.x = Math.sin(t * 15 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * .65); tail.rotation.y = Math.sin(t * 7) * .5; jaw.position.y = -.1 - Math.abs(Math.sin(t * 6)) * .03; } };
+  },
+  meddle(c) { // Clove's Meddle: pink essence shard wrapped in butterfly-wing petals
+    const g = new THREE.Group(), pk = AB.lit(0xf08cc8, 0x5a1a40, { side: THREE.DoubleSide, transparent: true, opacity: .9 });
+    AB.mesh(new THREE.OctahedronGeometry(.1, 0), AB.lit(0x2a1428, 0x6a1a50), 0, 0, 0, g).scale.y = 1.6;
+    const wings = []; for (let i = 0; i < 4; i++) { const p = new THREE.Group(); p.rotation.y = i * Math.PI / 2; const w = new THREE.Mesh(AB.flat([[0, 0], [.16, .1], [.2, -.02], [.1, -.1]]), pk); p.add(w); g.add(p); wings.push(w); }
+    g.add(AB.glow(0xf08cc8, .8));
+    return { g, anim(t) { wings.forEach((w, i) => w.rotation.x = Math.sin(t * 12 + i) * .5); } };
+  },
   incShell(c) { // Brimstone's incendiary grenade round: orange body, brass base, tumbling slightly
     const g = new THREE.Group(), sp = new THREE.Group(); g.add(sp);
     const body = AB.lathe([[0, -.07], [.04, -.07], [.042, -.05], [.042, .04], [.03, .07], [0, .08]], AB.lit(c, new THREE.Color(c).multiplyScalar(.2).getHex())); body.rotation.x = Math.PI / 2; sp.add(body);
@@ -2986,14 +3074,14 @@ function guide(p, e, o) { p.guide = Object.assign({ e, key: e._castKey, age: 0, 
 const abHeld = (e, k) => !!(e.abHold && e.abHold[k]);
 /* --- Piloting: Sova's Owl Drone and Skye's Trailblazer are flown in first person, like in Valorant --- */
 let pilot = null;
-function startPilot(pr, kind) {
+function startPilot(pr, kind, label) {
   const p = player; cancelPlace(); clearReady(p);
   pilot = { p: pr, kind, yaw0: p.yaw, pitch0: p.pitch, t: 0, max: pr.life, lmb: true, rmb: true, dart: false };
   pr.piloted = true; pr.mesh.visible = false;
   if (kind === 'tiger') p.pitch = clamp(p.pitch, -.3, .2);
   const ov = $('pilotOv'); ov.className = kind; ov.classList.remove('hidden');
   $('pilotHint').innerHTML = kind === 'drone' ? '<b>OWL DRONE</b> · WASD fly · Space / Crouch up-down · <b>LEFT</b> click: tracking dart · <b>RIGHT</b> click / ability key: exit'
-                                               : '<b>TRAILBLAZER</b> · steer with the mouse · <b>LEFT</b> click / ability key: LEAP · <b>RIGHT</b> click: let it run';
+                                               : `<b>${label || 'TRAILBLAZER'}</b> · steer with the mouse · <b>LEFT</b> click / ability key: ${label ? 'LUNGE' : 'LEAP'} · <b>RIGHT</b> click: let it run`;
   sndTone(kind === 'drone' ? 700 : 260, .2, .15, 'triangle', kind === 'drone' ? 1200 : 120);
 }
 function endPilot(how) {
@@ -3176,7 +3264,7 @@ const ABIL = {
       if (e.isPlayer) sndTone(500, .25, .15, 'sawtooth', 1100);
       return true;
     }
-    const p = spawnProj(Object.assign(throwFrom(e, ab.guided ? 20 : 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false, model: ab.guided ? 'hawk' : 'fireball' }));
+    const p = spawnProj(Object.assign(throwFrom(e, ab.guided ? 20 : 26), { g: 0, life: ab.life || .42, color: 0xffeecc, owner: e, land: false, model: ab.model || (ab.guided ? 'hawk' : 'fireball') }));
     if (ab.guided) guide(p, e, { turn: 3.2, maxLife: 2.4, release: 'pop' });
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
   },
@@ -3470,13 +3558,61 @@ const ABIL = {
     }; return true;
   },
   devour(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.healT = 3; e.healRate = 34; e.healCap = 150; spawnParticles(e.x, e.y + 1, e.z, 25, 0xc25bff, 2, .6); return true; },
+  /* ---- Chamber ---- */
+  tmark(e) {
+    for (const z of zones) if (z.kind === 'tmark' && z.owner === e) z.t = 0; // one Trademark at a time
+    const p = groundPoint(e, 8); makeZone({ x: p.x, z: p.z, r: 6.5, kind: 'tmark', t: 1e4, owner: e }); return true;
+  },
+  hh(e) { e.hhOn = true; e.slot = 'X'; return true; },
+  rdv(e) {
+    for (const z of zones) if (z.kind === 'anchor' && z.owner === e) z.t = 0;
+    const p = groundPoint(e, 2); makeZone({ x: p.x, z: p.z, r: 18, kind: 'anchor', t: 1e4, owner: e }); e.rdvRound = game.round;
+    toastTo(e, 'Anchor placed — press E again within 18 m to teleport back'); return true;
+  },
+  tdf(e) { e.tdfInst = { key: 'tdf', mag: 5, reserve: 0 }; e.hhOn = false; e.slot = 'X'; e.reloadT = 0; fx('parts', e.x, e.y + 1.2, e.z, 30, 0xd9b46a, 3, .6); if (e.isPlayer) { e.equipT = equipTime('tdf'); e.fireCD = Math.max(e.fireCD, e.equipT); equipView(); sndTone(330, .5, .2, 'triangle', 990); } return true; },
+  /* ---- Clove ---- */
+  pmu(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill or an assist'); if (e.isPlayer) SND.deny(); return false; } e.soulT = 0; e.healT = 2; e.healRate = 50; e.healCap = 150; e.stimT = 3; spawnParticles(e.x, e.y + 1, e.z, 25, 0xf08cc8, 2, .6); return true; },
+  meddle(e) {
+    const p = spawnProj(Object.assign(throwFrom(e, 16, 2.5), { color: 0xf08cc8, owner: e, model: 'meddle' }));
+    p.onLand = () => {
+      const x = p.x, z = p.z; fx('parts', x, .6, z, 20, 0xf08cc8, 1.5, .6);
+      timedFx.push({ t: .65, update() { }, end() {
+        fx('pop', x, 1, z, 'near'); fx('parts', x, 1, z, 40, 0xf08cc8, 5, .7);
+        for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - x, o.z - z) < 4.5 && o.hp > 1) { applyDamage(o, Math.min(40, o.hp - 1), e, 'Meddle'); o.decayT = 4; toastTo(o, 'DECAYED by Meddle'); }
+      } });
+    };
+    return true;
+  },
+  ndy(e) { toastTo(e, 'Not Dead Yet works after you die: press X on the death screen'); if (e.isPlayer) SND.deny(); return false; },
+  /* ---- Gekko ---- */
+  wingman(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .3, z: e.z + f.z / l, vx: f.x / l * 8, vy: 0, vz: f.z / l * 8, g: 0, life: 6, color: 0xb6f03a, owner: e, land: false, bounce: 1, size: .3, model: 'wingman' });
+    p.onUpdate = () => homeAndHit(p, e, 8, 18, 2.2);
+    p.onExpire = () => {
+      fx('pop', p.x, p.y + .5, p.z, 'flash'); fx('parts', p.x, p.y + .5, p.z, 30, 0xb6f03a, 4, .6); SND.boom(p.x, p.z);
+      for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 4 && los(p.x, p.y + .5, p.z, o.x, o.y + 1, o.z, true)) { o.slowT = Math.max(o.slowT, 3); o.nearT = Math.max(o.nearT, 1.5); toastTo(o, 'CONCUSSED by Wingman'); }
+    };
+    return true;
+  },
+  thrash(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
+    const p = spawnProj({ x: e.x + f.x / l, y: e.y + .4, z: e.z + f.z / l, vx: f.x / l * 12, vy: 0, vz: f.z / l * 12, g: 0, life: 4, color: 0xb6f03a, owner: e, land: false, bounce: 1, size: .4, model: 'thrash' });
+    p.onUpdate = () => { if (p.piloted) return; if (!p.guide || p.guide.mode === 'auto') homeAndHit(p, e, 12, 16, 2); };
+    if (e === player && net.role !== 'client') { p.life = 5; startPilot(p, 'tiger', 'THRASH'); } else guide(p, e, { turn: 3.4, maxLife: 5, ground: true, release: 'pop' });
+    p.onExpire = () => {
+      fx('pop', p.x, p.y + .5, p.z, 'near'); fx('parts', p.x, p.y + .6, p.z, 50, 0xb6f03a, 5, .8); SND.boom(p.x, p.z);
+      for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 4.5) { o.detainT = Math.max(o.detainT || 0, 5); o.slowT = Math.max(o.slowT, 5); toastTo(o, 'DETAINED by Thrash!'); }
+    };
+    return true;
+  },
   dismiss(e) { if (e.soulT <= 0) { toastTo(e, 'Only usable right after a kill'); return false; } e.soulT = 0; e.dismissT = 2; return true; },
   empress(e) { if (e.isPlayer) { reynaCast = 1.1; sndTone(220, .9, .25, 'sawtooth', 660); sndTone(880, .6, .12, 'sine', 330, undefined, undefined, .2); } e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
 };
 // abilities that would hurt, reveal or teleport during the buy phase are held until the round starts
-const BUY_BLOCKED = new Set(['molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit']);
+const BUY_BLOCKED = new Set(['molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit', 'tdf', 'meddle', 'wingman', 'thrash']);
 // HUD time gauge for steerable abilities and timed ultimates: it fills up, and the ability ends when it is full
-const GAUGE_DEF = { flash: { steer: 2.4 }, trailblazer: { steer: 4, auto: 3, release: 'pop' }, drone: { steer: 5, auto: 5, release: 'free' }, blaze: { steer: 2, auto: 1.3, release: 'free' } };
+const GAUGE_DEF = { flash: { steer: 2.4 }, trailblazer: { steer: 4, auto: 3, release: 'pop' }, thrash: { steer: 5, auto: 4, release: 'pop' }, drone: { steer: 5, auto: 5, release: 'free' }, blaze: { steer: 2, auto: 1.3, release: 'free' } };
 let gauge = null;
 function startGauge(ab, key) {
   const G = GAUGE_DEF[ab.type];
@@ -3553,7 +3689,7 @@ function neonTick(e, dt) {
   e.slideCD = Math.max(0, (e.slideCD || 0) - dt);
 }
 // Thrown / launched abilities: first press readies them (time gauge), second press or LEFT click uses them
-const READY_TYPES = new Set(['dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay']);
+const READY_TYPES = new Set(['dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay', 'tmark', 'meddle', 'wingman', 'thrash']);
 // Raze's Showstopper: X equips the launcher (no ult spent yet), X again puts it away, left click fires
 function armRocket(e, ab) {
   if (e.rocketArmed) { e.rocketArmed = false; sndTone(300, .08, .1, 'triangle', 200); return false; }
@@ -3594,12 +3730,49 @@ function suppressAround(x, y, z, r, owner, dur, needLos) {
     o.suppT = Math.max(o.suppT || 0, dur); o.revealedT = Math.max(o.revealedT, 2); toastTo(o, 'SUPPRESSED — you cannot use abilities');
   }
 }
+// Chamber's Headhunter: Q takes the pistol out / puts it away; every shot uses one Q charge
+function toggleHeadhunter(e) {
+  if (e.hhOn && e.slot === 'X') { e.hhOn = false; if (!(e.tdfInst && e.tdfInst.mag > 0)) e.slot = e.primary ? 1 : 2; equipView(); sndTone(300, .08, .1, 'triangle', 200); return false; }
+  if (DM() || !e.alive || game.phase === 'end' || game.state !== 'playing') return false;
+  if (e.charges.Q <= 0) { SND.deny(); toast('No Headhunter charges left — buy more in the buy menu'); return false; }
+  if (e.suppT > 0 || e.detainT > 0 || e.driftT > 0) { toastTo(e, 'You cannot use abilities right now'); SND.deny(); return false; }
+  cancelPlace(); clearReady(e); e.rocketArmed = false; e.hhOn = true; e.slot = 'X'; e.reloadT = 0; e.equipT = equipTime('headhunter'); e.fireCD = Math.max(e.fireCD, e.equipT); equipView();
+  sndTone(520, .12, .12, 'square', 900); return false;
+}
+// Chamber's Rendezvous: teleport back to the anchor while close enough to it
+function rendezvousJump(e, az) {
+  if ((e.rdvCD || 0) > game.time) { toastTo(e, 'Rendezvous is recharging'); if (e.isPlayer) SND.deny(); return false; }
+  if (Math.hypot(az.x - e.x, az.z - e.z) > az.r) { toastTo(e, 'Too far from your Rendezvous anchor (18 m)'); if (e.isPlayer) SND.deny(); return false; }
+  e.rdvCD = game.time + 1.5;
+  fx('parts', e.x, e.y + 1, e.z, 24, 0xd9b46a, 2.5, .5);
+  if (!teleportTo(e, { x: az.x, z: az.z })) return false;
+  fx('parts', az.x, 1, az.z, 30, 0xffe2a0, 3, .6); sndTone(880, .2, .15, 'triangle', 1500, e.x, e.z);
+  return true;
+}
+// Clove's Not Dead Yet: from the death screen, come back where you fell for 10s
+function notDeadYet(e) {
+  const ab = AGENT[e.agent].ab.X;
+  if (net.role === 'client' && e === player) { if (e.ult < ab.ult) { ultNotReady(ab, e.ult); return false; } netSend({ t: 'ndy' }); return true; }
+  if (game.phase === 'end' || game.state !== 'playing' || !e.deathPos || game.time - (e.deathTime || 0) > 5) { toastTo(e, 'Too late to come back'); return false; }
+  if (e.ult < ab.ult) { if (e.isPlayer) ultNotReady(ab, e.ult); return false; }
+  e.ult = 0;
+  Object.assign(e, { alive: true, hp: 100, armor: 0, x: e.deathPos.x, y: e.deathPos.y, z: e.deathPos.z, vy: 0, flashT: 0, target: null, path: [], slot: e.primary ? 1 : 2, ndyT: 10, ndyK: e.kills + e.assists });
+  if (!e.secondary) e.secondary = mkWeapon('classic');
+  if (e.mesh) { e.mesh.rotation.set(0, e.yaw, 0); e.mesh.position.y = e.y; }
+  teleported(e); e.invSeq = (e.invSeq || 0) + 1;
+  if (e.isPlayer) { $('deathInfo').classList.add('hidden'); equipView(); refreshAbilHud(); }
+  fx('parts', e.x, e.y + 1, e.z, 40, 0xf08cc8, 3, .9); fx('voice', e.id);
+  toastTo(e, 'NOT DEAD YET — get a kill or an assist within 10s!'); addFeedText(`${e.name} is not dead yet`, e.team);
+  return true;
+}
 function castAbility(e, key, target) {
   if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
   if (CUSTOM() && !customRules().abil) { if (e.isPlayer) { toast('Abilities are off in this custom game'); SND.deny(); } return false; }
   if (pilot && e === player) { endPilot(pilot.kind === 'tiger' ? 'leap' : 'exit'); return false; }
   const ab0 = AGENT[e.agent] && AGENT[e.agent].ab[key];
   if (e === player && ab0 && ab0.type === 'rocket' && !target && !e._fireRocket) return armRocket(e, ab0);
+  if (e === player && ab0 && ab0.type === 'hh' && !target) return toggleHeadhunter(e);
+  if (ab0 && ab0.type === 'ndy' && !e.alive) return notDeadYet(e);
   if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
@@ -3620,6 +3793,8 @@ function castAbility(e, key, target) {
   if (e.driftT > 0) { toastTo(e, 'You are drifting — press X to come back first'); return false; }
   if (ab.type === 'highgear') { toggleSprint(e); return true; }
   if (e.detainT > 0) { toastTo(e, 'Detained — you cannot use abilities'); if (e.isPlayer) SND.deny(); return false; }
+  if (ab.type === 'rdv') { const az = zones.find(z => z.kind === 'anchor' && z.owner === e && z.t > 0); if (az) return rendezvousJump(e, az); }
+  if (ab.type === 'hh') { if (e.charges.Q <= 0) return false; e.hhOn = true; e.slot = 'X'; return true; } // bots / remote players: no charge spent on equip
   if (ab.type === 'satchel' && e.satchel && projectiles.includes(e.satchel)) { e.satchel.life = 0; e.satchel = null; if (e.isPlayer && gauge && gauge.satchel) gauge = null; return true; }
   if (key === 'X') { if (e.ult < ab.ult) { if (e.isPlayer) ultNotReady(ab, e.ult); else toastTo(e, `Not enough ult points (${e.ult}/${ab.ult})`); return false; } }
   else if (e.charges[key] <= 0) { if (e.isPlayer) SND.deny(); return false; }
@@ -3658,6 +3833,14 @@ function dormantTick(z, kind, r) {
   for (const e of entities) if (e.alive && isEnemy(e, o) && Math.hypot(e.x - z.x, e.z - z.z) < r) { activateDormant(o, kind); return; }
 }
 const ZONE_TICK = {
+  tmark(z, dt) { // Chamber's Trademark: arms, then bursts into a slow field when an enemy it sees comes close
+    z.armT = (z.armT || 0) + dt; if (z.led) z.led.visible = z.armT > .8 && Math.sin(game.time * 4) > 0;
+    if (z.armT < .8) return;
+    for (const e of entities) if (e.alive && isEnemy(e, z.owner) && Math.hypot(e.x - z.x, e.z - z.z) < z.r && los(z.x, .5, z.z, e.x, e.y + 1, e.z, true)) {
+      makeZone({ x: z.x, z: z.z, r: 4.5, kind: 'slow', t: 6, owner: z.owner }); fx('pop', z.x, .6, z.z, 'near'); fx('parts', z.x, .5, z.z, 30, 0xd9b46a, 3, .6); SND.beep(z.x, z.z);
+      toastTo(e, 'You triggered a Trademark!'); toastTo(z.owner, 'Trademark triggered'); z.t = 0; return;
+    }
+  },
   nano(z, dt) { dormantTick(z, 'nano', 4.5); },
   cage(z, dt) { dormantTick(z, 'cage', 7); },
   alarm(z, dt) { // arm, wait, then hop at the first enemy that comes close and burst
@@ -3707,6 +3890,7 @@ function updateEffects(dt) {
       continue;
     }
     if (z.dome) z.dome.material.opacity *= .9;
+    if (z.spin2) { z.spin2.rotation.y += dt * 1.5; z.spin2.position.y = .55 + Math.sin(game.time * 2) * .05; }
     z.t -= dt;
     if (z.cyl) { z.cyl.material.opacity = (z.kind === 'blaze' ? .55 : .25) + Math.random() * .15; if (z.kind === 'fire' && Math.random() < .3) spawnParticles(z.x + rand(-z.r, z.r) * .7, .3, z.z + rand(-z.r, z.r) * .7, 1, 0xff8a2a, 1.5, .5); }
     if (net.role !== 'client' && ZONE_TICK[z.kind]) ZONE_TICK[z.kind](z, dt);
@@ -3776,6 +3960,11 @@ function updateStatus(e, dt) {
   if (e.driftT > 0) { e.driftT -= dt; if (e.driftT <= 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) { equipView(); toast('Back from the drift'); } } }
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
+  e.decayT = Math.max(0, (e.decayT || 0) - dt);
+  if (e.ndyT > 0 && e.alive && net.role !== 'client') { // Clove's Not Dead Yet: a kill or an assist keeps you alive
+    if (e.kills + e.assists > e.ndyK) { e.ndyT = 0; toastTo(e, 'You earned your life back!'); fx('parts', e.x, e.y + 1, e.z, 30, 0xf08cc8, 3, .6); }
+    else { e.ndyT -= dt; if (e.ndyT <= 0) { e.ndyT = 0; killEntity(e, null, 'Not Dead Yet'); } }
+  }
   if (e.tailwindT > 0) e.tailwindT -= dt;
   if (e.ribT > 0) {
     e.ribT -= dt;
@@ -3857,7 +4046,7 @@ function equipView() {
 }
 function switchSlot(s) {
   if (!player.alive) return;
-  player.rocketArmed = false; player.inspT = 0;
+  player.rocketArmed = false; player.inspT = 0; if (s !== 'X') player.hhOn = false;
   cancelPlace(); clearReady(player);
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
   if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
@@ -3867,7 +4056,7 @@ function switchSlot(s) {
 // time to draw a weapon before it can fire (Valorant-like order: knife fastest, Operator slowest)
 function equipTime(key) {
   const w = WEAPONS[key]; if (!w) return .35;
-  return ({ sheriff: .7, marshal: .8, outlaw: .85, operator: 1.05, guardian: .75 })[key] || ({ knife: .35, blades: .3, pistol: .5, smg: .5, shotgun: .7, rifle: .7, sniper: .9, heavy: .9 })[w.model] || .6;
+  return ({ headhunter: .4, tdf: .6, sheriff: .7, marshal: .8, outlaw: .85, operator: 1.05, guardian: .75 })[key] || ({ knife: .35, blades: .3, pistol: .5, smg: .5, shotgun: .7, rifle: .7, sniper: .9, heavy: .9 })[w.model] || .6;
 }
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
@@ -3885,6 +4074,7 @@ function playerFire() {
   const rate = w.rate * (p.empressT > 0 ? 1.25 : 1) * (p.stimT > 0 ? 1.1 : 1);
   p.fireCD = 1 / rate;
   if (inst.key === 'blades') { p.bladeMag--; } else inst.mag--;
+  if (inst.key === 'headhunter') { p.charges.Q = inst.mag; refreshAbilHud(); if (net.role === 'client') netSend({ t: 'hhs' }); }
   if (game.time - p.lastShot > Math.max(.32, 1.6 / rate)) p.shotIdx = 0;
   p.lastShot = game.time;
   // spread calculation
@@ -3934,6 +4124,7 @@ function playerFire() {
   if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; adsOn = false; } // unscope after sniper shot
   if (inst.key === 'blades' && p.bladeMag <= 0 && !killed) { p.slot = p.primary ? 1 : 2; equipView(); }
   else if (inst.key === 'blades' && p.bladeMag <= 0 && killed) { p.bladeMag = 5; }
+  if ((inst.key === 'tdf' || inst.key === 'headhunter') && inst.mag <= 0) { if (inst.key === 'tdf') p.tdfInst = null; else p.hhOn = false; p.slot = p.primary ? 1 : 2; equipView(); return; }
   if (inst.mag === 0 && inst.key !== 'blades') setTimeout(() => { if (player.alive && curWeapon(player) === inst) startReload(player); }, 200);
 }
 // Blade Storm: left click throws one accurate kunai, right click throws every remaining kunai in a fan
@@ -4078,6 +4269,7 @@ function onPlayerDeath(src, label) {
   player.plantHold = 0; hideProgress(); adsT = 0; deathCam = 0;
   const di = $('deathInfo'); di.classList.remove('hidden');
   di.innerHTML = src && src !== player ? `<span class="k">${src.name}</span> (${AGENT[src.agent].name}) killed you · ${label || ''}<br><small style="opacity:.6">Click: change spectate target</small>` : 'You died';
+  if (AGENT[player.agent].ab.X.type === 'ndy' && player.ult >= AGENT[player.agent].ab.X.ult && !DM()) di.innerHTML += '<br><b style="color:#f08cc8">Press X within 5s — NOT DEAD YET</b>';
   spectateIdx = 0;
 }
 
@@ -4138,10 +4330,11 @@ function botPerceive(b) {
       b.reactT = D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
-      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
+      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout', 'wingman', 'meddle'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
       if (b.ult >= ag.ab.X.ult) {
         const ut = ag.ab.X.type;
-        if (['empress', 'neural', 'seekers', 'pit', 'lockdown', 'overdrive', 'nullcmd'].includes(ut)) castAbility(b, 'X');
+        if (['empress', 'neural', 'seekers', 'pit', 'lockdown', 'overdrive', 'nullcmd', 'tdf'].includes(ut)) castAbility(b, 'X');
+        else if (ut === 'thrash') { b.yaw = ty; castAbility(b, 'X'); }
         else if (ut === 'nightfall') { b.yaw = ty; castAbility(b, 'X'); }
         else if (ut === 'rocket') { b.yaw = ty; b.pitch = Math.atan2(best.y + 1 - eyeY(b), bd); castAbility(b, 'X'); }
       }
@@ -4163,6 +4356,8 @@ function botShoot(b, t) {
     startReload(b); return;
   }
   inst.mag--;
+  if (inst.key === 'headhunter') b.charges.Q = inst.mag;
+  if (inst.key === 'tdf' && inst.mag <= 0) { b.tdfInst = null; b.slot = b.primary ? 1 : 2; }
   const rate = w.rate * (b.empressT > 0 ? 1.25 : 1) * (b.stimT > 0 ? 1.1 : 1);
   b.fireCD = 1 / rate; if (!w.auto) b.fireCD = Math.max(b.fireCD, (w.scope ? .9 : .3) + Math.random() * .2);
   b.burst++;
@@ -4264,7 +4459,7 @@ function botObjective(b, dt) {
       // sentinels set up their gadgets once per round, looking toward the entrance they hold
       if (b.placedRound !== game.round && game.phase === 'live') {
         b.placedRound = game.round; b.yaw = b.holdYaw; b.pitch = 0;
-        for (const k of ['C', 'Q', 'E']) if (['turret', 'alarm', 'trap', 'cam'].includes(ag.ab[k].type) && b.charges[k] > 0) castAbility(b, k);
+        for (const k of ['C', 'Q', 'E']) if (['turret', 'alarm', 'trap', 'cam', 'tmark'].includes(ag.ab[k].type) && b.charges[k] > 0) castAbility(b, k);
       }
     }
   }
@@ -4429,7 +4624,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
   }
@@ -5106,6 +5301,7 @@ document.addEventListener('keydown', e => {
   if (game.paused) return;
   if (act || e.code === 'Space' || e.code.startsWith('Control')) e.preventDefault();
   keys[e.code] = true;
+  if (act === 'ult' && !e.repeat && !player.alive && !shopOpen && AGENT[player.agent].ab.X.type === 'ndy') { castAbility(player, 'X'); return; }
   if (e.repeat || !player.alive || shopOpen) return;
   if (act === 'crouch') crouchOn = !crouchOn;
   switch (act) {
@@ -5121,7 +5317,7 @@ document.addEventListener('keydown', e => {
     case 'abC': castAbility(player, 'C'); break;
     case 'abQ': castAbility(player, 'Q'); break;
     case 'abE': castAbility(player, 'E'); break;
-    case 'ult': if ((player.bladeMag > 0 || player.odT > 0) && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
+    case 'ult': if ((player.bladeMag > 0 || player.odT > 0 || (player.tdfInst && player.tdfInst.mag > 0)) && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
   }
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
@@ -5329,6 +5525,8 @@ const VOICE = { // [what your own side hears, what the other team hears] when th
   skye: ['Find them, my friends.', 'Something wild is hunting us.'], viper: ['Welcome to my world.', 'Toxic pit spreading — careful in there.'],
   neon: ["Full throttle, let's go!", 'Lightning incoming!'], yoru: ['Now you see me...', 'Someone is drifting between worlds.'],
   kayo: ['Shutting it all down.', 'Suppression pulse — expect no abilities.'], fade: ['Your nightmares know you.', 'The fears are hunting us.'],
+  chamber: ['Allow me to settle this personally.', 'Their marksman has a new toy — stay out of sight!'], clove: ['Not finished with you yet!', "That one won't stay down — finish the job!"],
+  gekko: ['Thrash, sic \'em!', 'Some creature is crawling at us!'],
 };
 const FX = {
   voice(id) {
@@ -5693,6 +5891,8 @@ function hostGameMsg(e, d) {
     case 'shot':
       if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
       break;
+    case 'hhs': if (e.charges && e.charges.Q > 0) e.charges.Q--; break;
+    case 'ndy': if (!e.alive) castAbility(e, 'X'); break;
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
     case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
     case 'ffa': castFF(e, !!d.y); break;
@@ -5859,15 +6059,18 @@ function clientCast(key, target) {
   if (!target && tryStartPlace(p, ab, key)) return false;
   if (!target && readyGate(p, ab, key)) return false;
   if (ab.type === 'highgear') { toggleSprint(p); return true; } // sprinting is our own movement
+  if (ab.type === 'rdv' && p.rdvRound === game.round && p.charges.E <= 0) { netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (p.agent === 'viper' && p.vState && ((ab.type === 'screen' && p.vState.w) || (ab.type === 'skySmoke' && p.vState.c))) { netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (ab.type === 'dash' && p.tailwindT > 0) { doDash(p); if (gauge && gauge.tailwind) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if ((ab.type === 'gatecrash' && p.gateUntil > game.time) || (ab.type === 'drift' && p.driftT > 0)) { if (ab.type === 'gatecrash') p.gateUntil = 0; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (p.suppT > 0) { toast('Suppressed — you cannot use abilities'); SND.deny(); return false; }
   if (ab.type === 'satchel' && p.satchelUntil > game.time) { p.satchelUntil = 0; if (gauge && gauge.satchel) gauge = null; netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq }); return true; }
   if (key === 'X' ? p.ult < ab.ult : p.charges[key] <= 0) { if (key === 'X') ultNotReady(ab, p.ult); else SND.deny(); return false; }
-  if ((ab.type === 'devour' || ab.type === 'dismiss') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
+  if ((ab.type === 'devour' || ab.type === 'dismiss' || ab.type === 'pmu') && p.soulT <= 0) { toast('Only usable right after a kill'); return false; }
+  if (ab.type === 'ndy') { toast('Not Dead Yet works after you die: press X on the death screen'); return false; }
   if (game.phase === 'buy' && BUY_BLOCKED.has(ab.type)) { toast('Cannot be used during the buy phase'); return false; }
-  if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades' || ab.type === 'overdrive') ABIL[ab.type](p); // movement is ours to predict
+  if (ab.type === 'updraft' || ab.type === 'dash' || ab.type === 'blades' || ab.type === 'overdrive' || ab.type === 'tdf') ABIL[ab.type](p); // movement is ours to predict
+  if (ab.type === 'rdv') p.rdvRound = game.round;
   netSend({ t: 'cast', k: key, x: r2(p.x), y: r2(p.y), z: r2(p.z), yw: r2(p.yaw), pt: r2(p.pitch), vx: r2(p.vx), vz: r2(p.vz), tp: p.tpSeq, tg: target ? Object.fromEntries(Object.entries(target).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, r2(v)])) : undefined });
   if (key === 'X') p.ult = 0; else p.charges[key]--; // corrected by the next snapshot
   refreshAbilHud(); startGauge(ab, key); matchStats.abil++;
@@ -5916,7 +6119,7 @@ function syncList(list, arr, create, update, remove) {
   }
   for (let i = arr.length - 1; i >= 0; i--) if (!seen.has(arr[i].nid)) { remove(arr[i]); arr.splice(i, 1); }
 }
-const ZONE_KINDS = new Set(['nano', 'cage', 'fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'frag', 'turret', 'alarm', 'lockdown', 'trap', 'cam']);
+const ZONE_KINDS = new Set(['nano', 'cage', 'fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'frag', 'turret', 'alarm', 'lockdown', 'trap', 'cam', 'tmark', 'anchor']);
 function applySnap(s) {
   const [ph, pt, s0, s1, side0, rd, ot] = s.g;
   if (s0 + s1 > game.score[0] + game.score[1]) game.history.push(s0 > game.score[0] ? 0 : 1);
@@ -6696,7 +6899,7 @@ function makeOrbHand(color) {
   g.userData.orb = orb; g.scale.setScalar(.5); g.position.set(.2, -.2, -.45); g.rotation.set(.35, -.25, .15);
   return g;
 }
-const ORB_COLOR = { yoru: 0x5f7cff, kayo: 0x6fd6ff, fade: 0x9b7bd6, neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b };
+const ORB_COLOR = { yoru: 0x5f7cff, kayo: 0x6fd6ff, fade: 0x9b7bd6, neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b, chamber: 0xd9b46a, clove: 0xf08cc8, gekko: 0xb6f03a };
 /* --- Viper: fuel, toggling the screen and the cloud --- */
 function setSmokeOff(s, off) { s.off = off; if (s.mesh) s.mesh.visible = !off; if (!off) s.grow = .2; }
 function toggleViper(e, which) {
@@ -7506,7 +7709,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 66;
+const BUILD = 67;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
