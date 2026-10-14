@@ -611,6 +611,23 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #over.mvp .panel{animation:mvpIn .6s ease-out both .9s}
 @keyframes mvpIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 #mvpTags{position:fixed;inset:0;z-index:35;pointer-events:none}
+#hud.spec>*:not(#topbar):not(#minimap):not(#killfeed):not(#centerMsg):not(#voiceLines){display:none!important}
+#specUI{position:fixed;inset:0;z-index:37;pointer-events:none;font-family:Oswald,sans-serif}
+#specUI button{pointer-events:auto}
+#specTag{position:absolute;left:14px;top:230px;font:700 13px Oswald;letter-spacing:3px;color:#ffd36a;background:rgba(10,16,22,.75);padding:4px 10px}
+#specTeams{position:absolute;left:14px;top:262px;display:flex;flex-direction:column;gap:10px;width:190px}
+.sTeam .sHd{font:700 12px Oswald;letter-spacing:2px;padding:2px 0}.sTeam.t0 .sHd{color:#2fe0b6}.sTeam.t1 .sHd{color:#ff6b78}
+.sTeam button{position:relative;display:flex;align-items:center;gap:6px;width:100%;background:rgba(10,16,22,.75);border:0;border-left:3px solid;color:#ece8e1;padding:4px 8px 6px;margin-bottom:2px;cursor:pointer;font:600 12px 'Noto Sans KR',sans-serif;text-align:left}
+.sTeam.t0 button{border-color:#2fe0b6}.sTeam.t1 button{border-color:#ff4655}
+.sTeam button span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.sTeam button small{font:500 11px Oswald;color:#9aa6b2}
+.sTeam button i{position:absolute;left:0;bottom:0;height:2px;background:#2fe0b6}.sTeam.t1 button i{background:#ff4655}
+.sTeam button.on{background:rgba(255,255,255,.18);outline:1px solid rgba(255,255,255,.6)}.sTeam button.dead{opacity:.4}
+#specBar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:rgba(8,12,16,.8);padding:8px 12px;max-width:96vw}
+#specBar .seg{display:flex}#specBar .seg button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#c9d0d6;font:500 12px Oswald;padding:7px 10px;cursor:pointer}
+#specBar .seg button.on{background:#ece8e1;color:#0f1923}
+#specBar .rb{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#ece8e1;font:600 13px Oswald;padding:7px 12px;cursor:pointer}#specBar .rb.on{border-color:#ffd36a;color:#ffd36a}
+#casterSub{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:38;max-width:min(760px,90vw);text-align:center;font:600 19px 'Noto Sans KR',sans-serif;color:#fff;background:rgba(8,12,16,.82);padding:8px 18px;border-left:4px solid #ffd36a;opacity:0;transition:opacity .3s;pointer-events:none}
+#casterSub.on{opacity:1}#casterSub b{color:#ffd36a;font:700 12px Oswald;letter-spacing:2px;margin-right:8px}
 #reactOv{position:fixed;inset:0;z-index:34;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Oswald,sans-serif;color:#fff}
 #reactOv b{font:900 90px Oswald;letter-spacing:6px}#reactOv span{font:500 18px Oswald;letter-spacing:3px;opacity:.85}
 #reactOv.wait{background:rgba(200,40,50,.55)}#reactOv.go{background:rgba(40,220,120,.75)}#reactOv.early{background:rgba(255,170,40,.6)}#reactOv.result{background:rgba(30,60,110,.55)}
@@ -762,6 +779,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="playOpts">
       <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
       <div class="optCard mapCard" id="mapCard" title="Change map"><button class="mapArrow" id="mapPrev" aria-label="Previous map">‹</button><canvas id="mapThumb" width="96" height="80"></canvas><div class="mapTxt"><div class="ol">MAP</div><div class="mapName" id="mapName">DUSTWALL</div><div class="ol" id="mapDesc" style="opacity:.6">2 SITES · MID</div></div><button class="mapArrow" id="mapNext" aria-label="Next map">›</button></div>
+      <div class="optCard"><div class="ol">SPECTATE</div><button class="btn" id="btnSpectate" style="margin:4px 0 0;width:auto;padding:7px 14px">👁 Watch bots play</button></div>
       <div class="optCard"><div class="ol">MAP EDITOR</div><button class="btn" id="btnMapEditor" style="margin:4px 0 0;width:auto;padding:7px 14px">✏ Make your own map</button></div>
     </div>
     <div class="playOpts hidden" id="customPanel">
@@ -1054,6 +1072,18 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 
 <!-- ================= MATCH OVER ================= -->
 <div id="mvpTags" class="hidden"></div>
+<div id="specUI" class="hidden">
+  <div id="specTag">👁 SPECTATING · BOTS</div>
+  <div id="specTeams"></div>
+  <div id="specBar">
+    <div class="seg" id="specCam"><button data-v="auto">1 Director</button><button data-v="follow">2 Follow</button><button data-v="pov">3 First person</button><button data-v="free">4 Free cam</button><button data-v="top">5 Overview</button></div>
+    <div class="seg" id="specSpeed"><button data-v="1">1×</button><button data-v="2">2×</button><button data-v="4">4×</button></div>
+    <button class="rb" id="specCC" title="Spoken commentary">🔊 Voice</button>
+    <button class="rb" id="specExit">✕ Exit</button>
+    <div class="ol" style="width:100%;margin-top:4px;font-size:10px">Click a player to follow · [ ] switch · free cam: WASD + drag · Esc exit</div>
+  </div>
+</div>
+<div id="casterSub"></div>
 <div id="reactOv" class="hidden"></div>
 <div id="gameChatWrap"><div id="gameChat"></div><input type="text" id="gcIn" class="hidden" maxlength="120" spellcheck="false" autocomplete="off" placeholder="Say something… (Enter to send, Esc to cancel)"></div>
 <div id="emoteWheel" class="hidden"></div>
@@ -2679,7 +2709,7 @@ const SND = {
 /* =====================================================================
    ENTITIES (player + bots)
    ===================================================================== */
-const ALLY_NAMES = ['Sky', 'Bolt', 'Wave', 'Frost'];
+const ALLY_NAMES = ['Sky', 'Bolt', 'Wave', 'Frost', 'Nova'];
 const ENEMY_NAMES = ['Shadow', 'Wolf', 'Eagle', 'Scorpion', 'Raven'];
 let entities = [], bots = [], player = null;
 function makeEntity(o) {
@@ -2916,7 +2946,8 @@ function killEntity(t, src, label, head) {
   if (t.ribMesh) { scene.remove(t.ribMesh); t.ribMesh = null; }
   addKillfeed(src, t, label, head);
   fx('parts', t.x, t.y + 1.2, t.z, 25, AGENT[t.agent].color, 3, .6);
-  if (t.isPlayer) onPlayerDeath(src, label);
+  if (t.isPlayer && !t.spectator) onPlayerDeath(src, label);
+  if (spec) specOnKill(src, t, label, head);
   if (src && src !== t && isEnemy(src, t) && !RANGE()) {
     if (!src.isPlayer && !src.remote) botSay(src, 'kill', { p: .3 });
     if (!t.isPlayer && !t.remote) botSay(t, 'death', { p: .35, delay: rand(900, 2200) });
@@ -2959,6 +2990,7 @@ function plantSpike(e) {
   e.ult = Math.min(AGENT[e.agent].ab.X.ult, e.ult + 1);
   banner('SPIKE PLANTED', 'Site ' + (SITE_LABEL[sp.site] || 'A'), 'lose', 2.2, true);
   if (!e.isPlayer && !e.remote) botSay(e, 'plant', { team: true, p: 1.4 });
+  if (spec) { const n = specEnts().filter(o => o.alive && o.team === e.team).length; caster(`The spike is down on ${SITE_LABEL[sp.site] || 'A'}! ${n} attacker${n === 1 ? '' : 's'} left to hold it.`, 2); spec.focus = e; spec.focusT = 3; }
   SND.beep(e.x, e.z); SND.beep(e.x, e.z);
 }
 function makeOrb(x, z) {
@@ -4137,6 +4169,7 @@ function castAbility(e, key, target) {
   if (key === 'X') e.ult = 0; else e.charges[key]--;
   fx('ab', e.x, e.z, e.id);
   if (key === 'X') fx('voice', e.id);
+  if (key === 'X' && spec) { caster(`${e.name} pops ${ab.name}!`, 1); spec.focus = e; spec.focusT = 3; }
   if (e.isPlayer) { refreshAbilHud(); startGauge(ab, key); if (!RANGE()) matchStats.abil++; }
   return true;
 }
@@ -4970,7 +5003,7 @@ function updateBot(b, dt) {
   setCharGun(b); updateFace(b, dt);
   if (b.emote) { b.emoteT += dt; if (b.emoteT > 4 || game.phase !== 'end' || !b.alive) { b.emote = 0; emotePose(m, 0, 0); } else emotePose(m, b.emote, b.emoteT); }
   const enemy = isEnemy(b, player);
-  m.userData.marker.visible = !enemy || b.revealedT > 0;
+  m.userData.marker.visible = !enemy || b.revealedT > 0 || !!game.spectate;
   m.userData.marker.material.color.setHex(enemy ? 0xff3344 : 0x2fe0b6);
   m.userData.outlines.forEach(o => o.visible = enemy);
 }
@@ -5013,7 +5046,7 @@ function setupMatch(agentId, humans = []) {
     e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
   }
   // allies are the lobby party; swap out anyone who shares the player's agent
-  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = DUEL() ? 0 : CUSTOM() ? Math.max(0, customRules().allies - humans.length) : 4 - humans.length;
+  const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = DUEL() ? 0 : CUSTOM() ? Math.max(0, customRules().allies - humans.length) : game.spectate ? 5 : 4 - humans.length;
   const allyPool = party.filter(p => p.bot).map(p => p.agent).filter(a => !used.includes(a));
   const spare = shuffle(realAgents().map(a => a.id).filter(id => !used.includes(id) && !allyPool.includes(id)));
   while (allyPool.length < nAllyBots) allyPool.push(spare.pop() || pick(realAgents()).id);
@@ -5023,6 +5056,7 @@ function setupMatch(agentId, humans = []) {
   $('gameChat').innerHTML = '';
   for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
   if (!RANGE()) shuffle(bots.slice()).slice(0, 2).forEach((b, i) => botSay(b, 'greet', { force: i === 0, delay: 2500 + i * 1800 }));
+  if (game.spectate) { player.spectator = true; player.alive = false; player.hp = 0; if (game.spike && game.spike.carrier === player) { player.hasSpike = false; giveSpike(pick(entities.filter(e => !e.spectator && sideOf(e) === 'atk'))); } }
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0 });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
@@ -5059,6 +5093,7 @@ function nextRound() {
     Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
+    if (e.spectator) { e.alive = false; e.hp = 0; }
   }
   // spawn positions
   for (const team of [0, 1]) {
@@ -5083,7 +5118,7 @@ function nextRound() {
   // spike
   const sp = game.spike; Object.assign(sp, { state: 'none', carrier: null, timer: SPIKE_TIME, defuseProg: 0, half: false, defuser: null }); sp.mesh.visible = false; sp.mesh.userData.light.intensity = 0;
   const attackers = entities.filter(e => sideOf(e) === 'atk');
-  if (!DUEL()) { const carrier = attackers.find(e => e.isPlayer) || pick(attackers); giveSpike(carrier); }
+  if (!DUEL()) { const att = attackers.filter(e => !e.spectator), carrier = att.find(e => e.isPlayer) || pick(att); if (carrier) giveSpike(carrier); }
   // bot buys & plans
   const atkSite = game.atkSite = pick(SITE_IDS);
   for (const team of [0, 1]) {
@@ -5111,6 +5146,7 @@ function nextRound() {
   // UI
   $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden'); $('revealWarn').classList.add('hidden');
   camRig.yaw = player.yaw; camRig.pitch = 0; equipView(); refreshAbilHud();
+  if (spec) { const att = specEnts().filter(e => sideOf(e) === 'atk'), rifles = att.filter(e => e.primary && ['Rifle', 'Sniper', 'Heavy'].includes(WEAPONS[e.primary.key].cat)).length; caster(`Round ${r}! Team ${SPEC_TEAM[att[0] ? att[0].team : 0]} attacking${r === 1 || r === game.half + 1 ? ' — pistol round' : rifles <= 1 ? ' on an eco' : rifles >= 4 ? ' with a full buy' : ''}.`, 2); }
   bannerTeams(t => [`ROUND ${r}`, DUEL() ? '1v1 Duel · Full buy' : (game.side[t] === 'atk' ? 'Attack' : 'Defense') + (game.ot ? ' · Overtime' : '') + (pistol ? ' · Pistol Round' : ''), '', 2.5]);
   setSideTag();
 }
@@ -5141,6 +5177,7 @@ function defuseSpike(e) {
   const sp = game.spike; sp.state = 'defused'; sp.mesh.userData.light.intensity = 0;
   e.ult = Math.min(AGENT[e.agent].ab.X.ult, e.ult + 1);
   addFeedText(`${e.name} defused the spike`, e.team);
+  if (spec) caster(`Defused! ${e.name} snatches it for Team ${SPEC_TEAM[e.team]}!`, 3);
   endRound(e.team, 'Spike defused');
 }
 function explodeSpike() {
@@ -5159,6 +5196,7 @@ function endRound(winner, reason) {
   const lossBonus = [1900, 1900, 2400, 2900][game.lossStreak[loser]];
   for (const e of entities) e.credits = Math.min(9000, e.credits + (e.team === winner ? 3000 : lossBonus));
   bannerTeams(t => [t === winner ? 'ROUND WON' : 'ROUND LOST', reason, t === winner ? 'win' : 'lose', 3.5]);
+  if (spec) { setTimeout(() => { if (spec) caster(`Team ${SPEC_TEAM[winner]} take round ${game.round}. ${game.score[0]}–${game.score[1]}${Math.max(...game.score) === game.target - 1 ? ', and that is match point!' : '.'}`, 2); }, 1800); $('bannerBig').textContent = `TEAM ${SPEC_TEAM[winner]}`; }
   if (net.role !== 'client') setTimeout(() => { if (game.phase === 'end') botsCelebrate(winner); }, 900);
   if (!DUEL()) { const w = bots.filter(b => b.team === winner), l = bots.filter(b => b.team !== winner); if (w.length && Math.random() < .5) botSay(pick(w), 'roundWin', { team: true }); else if (l.length) botSay(pick(l), 'roundLose', { team: true, p: .7 }); }
   myTeam() === winner ? SND.win() : SND.lose();
@@ -5252,6 +5290,7 @@ function matchStatsHTML() {
     <table class="msTable"><tr><th>Player</th><th>Agent</th><th>ACS</th><th>K / D / A</th></tr>${all.map(e => `<tr class="${e === p ? 'me' : ''} ${e.team === p.team ? 'al' : 'en'}"><td>${esc(e.name)}</td><td>${AGENT[e.agent].name}</td><td class="os">${acsOf(e)}</td><td class="os">${e.kills} / ${e.deaths} / ${e.assists}</td></tr>`).join('')}</table></div>`;
 }
 function finishMatch() {
+  if (game.spectate) { const wt = game.score[0] > game.score[1] ? 0 : 1; if (REC) { REC.on = false; REC.winTeam = wt; } specFinish(wt); $('btnReplay').classList.toggle('hidden', !(REC && REC.frames.length >= 10)); { REC && (REC.hl = null); const nn = REC ? findHighlights().length : 0; $('btnHighlights').classList.toggle('hidden', !nn); $('btnHighlights').textContent = `★ Highlights (${nn})`; } setTimeout(() => { if (game.state === 'over') startMvp(wt); }, 600); return; }
   if (net.role === 'host') { netBroadcast(buildSnap()); netBroadcast({ t: 'over' }); net.phase = 'lobby'; }
   game.state = 'over'; document.exitPointerLock && document.exitPointerLock();
   const MY = myTeam(), dmOrder = DM() ? entities.slice().sort((x, y) => y.kills - x.kills || x.deaths - y.deaths) : null, place = dmOrder ? dmOrder.indexOf(player) + 1 : 0;
@@ -5629,7 +5668,7 @@ function drawMinimap() {
   for (const e of entities) {
     if (e.isPlayer) continue;
     const ally = e.team === player.team;
-    if (!ally && !(e.alive && (e.revealedT > 0 || e.spottedT > game.time))) continue;
+    if (!ally && !game.spectate && !(e.alive && (e.revealedT > 0 || e.spottedT > game.time))) continue;
     const [x, y] = P(e.x, e.z);
     if (!e.alive) { mmx.strokeStyle = ally ? '#2fe0b6' : '#ff4655'; mmx.beginPath(); mmx.moveTo(x - 3, y - 3); mmx.lineTo(x + 3, y + 3); mmx.moveTo(x + 3, y - 3); mmx.lineTo(x - 3, y + 3); mmx.stroke(); continue; }
     mmx.fillStyle = ally ? '#2fe0b6' : '#ff4655'; mmx.beginPath(); mmx.arc(x, y, 4, 0, 7); mmx.fill();
@@ -5673,6 +5712,7 @@ function renderBoard() {
    ===================================================================== */
 function updateCamera(dt) {
   const p = player;
+  if (game.spectate && spec) { specCamera(dt); return; }
   if (p && (aceCine || (p.emote && p.alive))) { tpCamera(dt); return; }
   if (tpMeshG && tpMeshG.visible) hidePlayerBody();
   let viewEnt = p;
@@ -5785,6 +5825,7 @@ function simStep(dt) {
     spotT -= dt; if (spotT <= 0) { spotT = .2; updateSpotting(); }
     if (game.spike && game.spike.state === 'dropped') { game.spike.mesh.rotation.y += dt; }
     if (mapGadgets) gadgetAnim(dt);
+    if (spec) specTick(dt);
     if (boardOpen) renderBoard();
     recTick(dt);
   }
@@ -5838,6 +5879,7 @@ document.addEventListener('mousemove', e => {
 renderer.domElement.addEventListener('mousedown', e => {
   initAudio();
   if (game.state !== 'playing') return;
+  if (game.spectate) return;
   if (!isLocked()) { if (!shopOpen && !game.paused) lockPointer(); return; }
   if (!player.alive && e.button === 0) { spectateIdx++; return; }
   if (e.button === 1) { e.preventDefault(); doPing(); return; }
@@ -7348,6 +7390,118 @@ function gadgetAnim(dt) {
   for (const a of mapGadgets.anim) { if (a.kind === 'pad') { const t = (game.time * .8 + a.k / 3) % 1; a.m.position.y = a.y0 + t * 1.6; a.m.material.opacity = (1 - t) * .8; } else { a.m.rotation.z += dt * 2; a.ring.rotation.z -= dt; a.m.material.opacity = .25 + Math.sin(game.time * 4) * .1; } }
 }
 /* =====================================================================
+   SPECTATE: watch a 5v5 bot match live with a camera director and a caster
+   ===================================================================== */
+const SPEC_TEAM = ['TEAL', 'RED'];
+let spec = null;
+function startSpectate() {
+  initAudio(); game.spectate = true; game.mode = 'swift'; game.target = 5; game.half = 4; game.mapId = resolveMap(settings.map);
+  ['menu', 'select', 'over'].forEach(id => $(id).classList.add('hidden')); $('hud').classList.remove('hidden'); $('hud').classList.add('spec');
+  setupMatch('jett');
+  spec = { cam: 'auto', follow: 1, speed: 1, focus: null, focusT: 0, autoT: 0, free: { x: MAPW / 2, y: 30, z: MAPH / 2 + 40, yaw: 0, pitch: -.7 }, cx: null, q: [], subT: 0, lastLine: 0, clutchRound: -1, fb: -1, kills: {}, look: false };
+  $('specUI').classList.remove('hidden'); renderSpecUI(); caster(`Welcome to ${MAPS[game.mapId].name}! Team Teal versus Team Red — first to ${game.target}.`, 3);
+}
+function stopSpectate() { if (!game.spectate) return; game.spectate = false; spec = null; $('specUI').classList.add('hidden'); $('hud').classList.remove('spec'); $('casterSub').classList.remove('on'); try { speechSynthesis.cancel(); } catch (e) { } }
+const specEnts = () => entities.filter(e => !e.spectator);
+function renderSpecUI() {
+  const box = $('specTeams'); if (!spec) return;
+  box.innerHTML = [0, 1].map(t => `<div class="sTeam t${t}"><div class="sHd">${SPEC_TEAM[t]} · ${game.score[t]}</div>${specEnts().filter(e => e.team === t).map(e => `<button data-id="${e.id}" class="${spec.follow === e.id ? 'on' : ''}${e.alive ? '' : ' dead'}"><b style="color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</b><span>${esc(e.name)}</span><small>${e.kills}/${e.deaths}</small><i style="width:${e.alive ? Math.max(0, e.hp) : 0}%"></i></button>`).join('')}</div>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => { spec.follow = +b.dataset.id; if (spec.cam === 'auto' || spec.cam === 'free' || spec.cam === 'top') spec.cam = 'follow'; specButtons(); renderSpecUI(); });
+}
+function specButtons() {
+  document.querySelectorAll('#specCam button').forEach(b => b.classList.toggle('on', b.dataset.v === spec.cam));
+  document.querySelectorAll('#specSpeed button').forEach(b => b.classList.toggle('on', +b.dataset.v === spec.speed));
+  $('specCC').classList.toggle('on', !!settings.tts);
+}
+// the caster: one subtitle line at a time, spoken when voice lines are on
+function caster(text, prio = 1) {
+  if (!spec) return; const now = performance.now();
+  if (prio < 2 && now - spec.lastLine < 2600) return; // don't talk over the last line
+  spec.lastLine = now; const el = $('casterSub'); el.innerHTML = `<b>🎙 CASTER</b> ${esc(text)}`; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(spec.subT); spec.subT = setTimeout(() => el.classList.remove('on'), 3600);
+  if (settings.tts && window.speechSynthesis) { try { const u = new SpeechSynthesisUtterance(text); u.rate = 1.12; u.pitch = 1; u.volume = clamp((settings.ttsVol ?? .9), 0, 1); u.lang = 'en-US'; if (ttsVoices.length) u.voice = ttsVoices[0]; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { } }
+}
+const tName = e => `${e.name}${AGENT[e.agent] ? ' (' + AGENT[e.agent].name + ')' : ''}`;
+function specOnKill(src, t, label, head) {
+  if (!spec || !src || src === t || !src.name || !src.agent) { if (spec) caster(`${t.name} goes down.`, 1); return; }
+  spec.focus = src; spec.focusT = 4;
+  if (spec.fb !== game.round) { spec.fb = game.round; caster(`First blood! ${tName(src)} opens it up${label ? ' with the ' + label : ''}.`, 2); return; }
+  const n = src.roundKills, ace = n >= 5 || !entities.some(e => e.alive && isEnemy(e, src) && !e.spectator);
+  if (n >= 5 || (ace && n >= 4)) caster(`ACE!! ${src.name} wipes out the entire team!`, 3);
+  else if (n === 4) caster(`QUADRA KILL for ${src.name} — one more for the ace!`, 3);
+  else if (n === 3) caster(`Triple kill! ${src.name} is on fire!`, 2);
+  else if (n === 2) caster(`${src.name} with the double!`, 2);
+  else caster(head ? pick([`Headshot from ${src.name}!`, `Clean tap on ${t.name} by ${src.name}.`]) : pick([`${src.name} takes down ${t.name}.`, `${t.name} is down — ${src.name} with the pick.`, `${src.name} finds ${t.name}.`]), 1);
+}
+function specTick(dt) {
+  if (!spec) return;
+  // clutch situations
+  if (game.phase === 'live' || game.phase === 'planted') for (const t of [0, 1]) {
+    const mine = specEnts().filter(e => e.team === t && e.alive), theirs = specEnts().filter(e => e.team !== t && e.alive);
+    if (mine.length === 1 && theirs.length >= 2 && spec.clutchRound !== game.round) { spec.clutchRound = game.round; spec.focus = mine[0]; spec.focusT = 8; caster(`It's a 1 v ${theirs.length} for ${mine[0].name}… can they clutch this?`, 2); }
+  }
+  spec.focusT -= dt; spec.autoT -= dt;
+  if (spec.cam === 'auto' && spec.autoT <= 0) { // director: action first, then the spike, then whoever is closest to a fight
+    spec.autoT = 1.2; const alive = specEnts().filter(e => e.alive); let pickE = spec.focus && spec.focus.alive && spec.focusT > 0 ? spec.focus : null;
+    const sp = game.spike;
+    if (!pickE && sp && sp.defuser && sp.defuser.alive) pickE = sp.defuser;
+    if (!pickE) { let bd = 1e9; for (const e of alive) for (const o of alive) if (isEnemyTeam(e, o)) { const d = Math.hypot(e.x - o.x, e.z - o.z); if (d < bd) { bd = d; pickE = e; } } }
+    if (!pickE && sp && sp.carrier) pickE = sp.carrier;
+    if (pickE && pickE.id !== spec.follow) { spec.follow = pickE.id; renderSpecUI(); }
+  }
+  spec.uiT = (spec.uiT || 0) - dt; if (spec.uiT <= 0) { spec.uiT = .3; renderSpecUI(); }
+}
+const isEnemyTeam = (a, b) => a.team !== b.team;
+function specCamera(dt) {
+  const e = entities[spec.follow] && !entities[spec.follow].spectator ? entities[spec.follow] : specEnts()[0]; vmRoot.visible = false;
+  if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); }
+  for (const o of specEnts()) if (o.mesh) o.mesh.visible = !(spec.cam === 'pov' && o === e && o.alive) && !(o.driftT > 0);
+  let px, py, pz, lx, ly, lz;
+  if (spec.cam === 'free') {
+    const F = spec.free, sp = (keys.ShiftLeft || keys.ShiftRight ? 30 : 12) * dt, s = Math.sin(F.yaw), c = Math.cos(F.yaw), cp = Math.cos(F.pitch);
+    const mv = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), st = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), up = (keys.Space || keys.KeyE ? 1 : 0) - (keys.ControlLeft || keys.KeyQ ? 1 : 0);
+    F.x += (-s * cp * mv + c * st) * sp; F.z += (-c * cp * mv - s * st) * sp; F.y = clamp(F.y + (Math.sin(F.pitch) * mv + up) * sp, .5, 120);
+    camera.position.set(F.x, F.y, F.z); camera.rotation.set(F.pitch, F.yaw, 0); spec.cx = null; return;
+  }
+  if (spec.cam === 'top') { const H = Math.max(MAPW, MAPH * camera.aspect) * .62 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.max(1, camera.aspect) + 10; camera.position.set(MAPW / 2, H, MAPH / 2 + .01); camera.rotation.set(-Math.PI / 2, 0, 0); spec.cx = null; return; }
+  if (!e) return;
+  if (spec.cam === 'pov' && e.alive) { camera.position.set(e.x, eyeY(e), e.z); camera.rotation.set(e.pitch || 0, e.yaw, 0); spec.cx = null; return; }
+  // chase camera (auto director + follow), smoothed
+  const yaw = e.yaw, d = e.alive ? 3.6 : 5, ty = e.y + (e.alive ? 1.5 : .6);
+  let cx = e.x + Math.sin(yaw) * d, cz = e.z + Math.cos(yaw) * d; const cy = ty + (e.alive ? 1 : 3);
+  const ddx = cx - e.x, ddz = cz - e.z, L = Math.hypot(ddx, ddz) || 1, wt = rayGrid(e.x, cy, e.z, ddx / L, 0, ddz / L, L); if (wt < L) { cx = e.x + ddx / L * Math.max(.4, wt - .3); cz = e.z + ddz / L * Math.max(.4, wt - .3); }
+  if (!spec.cx || Math.hypot(spec.cx.x - cx, spec.cx.z - cz) > 25) spec.cx = { x: cx, y: cy, z: cz };
+  const k = Math.min(1, dt * 6); spec.cx.x += (cx - spec.cx.x) * k; spec.cx.y += (cy - spec.cx.y) * k; spec.cx.z += (cz - spec.cx.z) * k;
+  camera.position.set(spec.cx.x, spec.cx.y, spec.cx.z); camera.lookAt(e.x, ty, e.z);
+}
+function specFinish(winTeam) {
+  game.state = 'over'; stopSpectateUIOnly();
+  const [a, b] = game.score;
+  caster(`And that's the match! Team ${SPEC_TEAM[winTeam]} win it ${Math.max(a, b)} to ${Math.min(a, b)}!`, 3);
+  $('overTitle').textContent = `TEAM ${SPEC_TEAM[winTeam]} WINS`; $('overTitle').style.color = winTeam ? 'var(--red)' : 'var(--teal)';
+  $('overScore').textContent = `${a} : ${b}`;
+  const n = Math.max(1, game.round), all = specEnts().slice().sort((x, y) => acsOfEnt(y, n) - acsOfEnt(x, n));
+  $('overStats').innerHTML = `<div class="msBox"><table class="msTable"><tr><th>Player</th><th>Agent</th><th>ACS</th><th>K / D / A</th></tr>${all.map(e => `<tr><td style="color:${e.team ? '#ff6b78' : '#2fe0b6'}">${esc(e.name)}${e.persona && PERSONAS[e.persona] ? ' <small style="opacity:.6">' + PERSONAS[e.persona].name + '</small>' : ''}</td><td>${AGENT[e.agent].name}</td><td>${acsOfEnt(e, n)}</td><td>${e.kills} / ${e.deaths} / ${e.assists}</td></tr>`).join('')}</table></div>`;
+  $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden'); $('btnAgain').classList.add('hidden'); $('btnMenu').textContent = 'Main Menu';
+}
+function stopSpectateUIOnly() { $('specUI').classList.add('hidden'); }
+(function wireSpec() {
+  $('btnSpectate').onclick = () => { tick(); startSpectate(); };
+  document.querySelectorAll('#specCam button').forEach(b => b.onclick = () => { if (!spec) return; if (b.dataset.v === 'free' && spec.cam !== 'free') { spec.free.x = camera.position.x; spec.free.y = camera.position.y; spec.free.z = camera.position.z; const eu = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); spec.free.yaw = eu.y; spec.free.pitch = eu.x; } spec.cam = b.dataset.v; specButtons(); });
+  document.querySelectorAll('#specSpeed button').forEach(b => b.onclick = () => { if (!spec) return; spec.speed = +b.dataset.v; specButtons(); });
+  $('specCC').onclick = () => { setSetting('tts', !settings.tts); specButtons(); };
+  $('specExit').onclick = () => { stopSpectate(); toMenu(); };
+  renderer.domElement.addEventListener('mousedown', () => { if (spec) spec.look = true; });
+  document.addEventListener('mouseup', () => { if (spec) spec.look = false; });
+  document.addEventListener('mousemove', ev => { if (!spec || !spec.look || spec.cam !== 'free') return; spec.free.yaw -= ev.movementX * .004; spec.free.pitch = clamp(spec.free.pitch - ev.movementY * .004, -1.5, 1.5); });
+  document.addEventListener('keydown', ev => {
+    if (!spec || game.state !== 'playing' || document.activeElement === $('gcIn')) return;
+    if (['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'].includes(ev.code)) { const v = ['auto', 'follow', 'pov', 'free', 'top'][+ev.code.slice(5) - 1]; document.querySelector(`#specCam button[data-v="${v}"]`).onclick(); }
+    else if (ev.code === 'BracketLeft' || ev.code === 'BracketRight') { const L = specEnts(), i = Math.max(0, L.findIndex(e => e.id === spec.follow)); spec.follow = L[(i + (ev.code === 'BracketLeft' ? L.length - 1 : 1)) % L.length].id; if (spec.cam === 'auto' || spec.cam === 'free' || spec.cam === 'top') spec.cam = 'follow'; specButtons(); renderSpecUI(); }
+    else if (ev.code === 'Escape') { stopSpectate(); toMenu(); }
+  });
+})();
+/* =====================================================================
    EMOTES (hold J for the wheel) + ACE CINEMATIC
    ===================================================================== */
 const EMOTES = [
@@ -7413,7 +7567,7 @@ function startAceCine() {
   el.classList.remove('hidden', 'show'); void el.offsetWidth; el.classList.add('show');
   sndTone(330, .9, .25, 'sawtooth', 660); sndTone(495, .9, .18, 'triangle', 990, undefined, undefined, .15); sndTone(660, 1.4, .2, 'sine', 1320, undefined, undefined, .35); sndNoise(1.2, 1800, .6, .15);
 }
-const timeScale = () => aceCine && net.role === 'off' && aceCine.t < 2.2 ? .3 + .7 * clamp((aceCine.t - 1.6) / .6, 0, 1) : 1;
+const timeScale = () => (game.spectate && spec && game.state === 'playing' ? spec.speed : 1) * (aceCine && net.role === 'off' && aceCine.t < 2.2 ? .3 + .7 * clamp((aceCine.t - 1.6) / .6, 0, 1) : 1);
 // camera for emotes and the ace: orbit / chase the player's own body
 function tpCamera(dt) {
   const p = player, m = playerBody(); m.visible = true;
@@ -9380,7 +9534,7 @@ function renderCollection() {
 
 /* agent select / match flow */
 function goSelect(mode) {
-  initAudio(); selectedAgent = profile.fav;
+  stopSpectate(); initAudio(); selectedAgent = profile.fav;
   game.mode = mode; game.target = mode === 'custom' ? customRules().target : mode === 'swift' ? 5 : mode === 'duel' ? 7 : mode === 'rush' ? 4 : mode === 'dm' ? DM_TARGET : 13; game.half = mode === 'custom' ? Math.max(2, customRules().target - 1) : mode === 'swift' ? 4 : mode === 'duel' ? 6 : mode === 'rush' ? 3 : 12;
   $('menu').classList.add('hidden'); $('select').classList.remove('hidden');
   $('btnBack').classList.toggle('hidden', net.role !== 'off');
@@ -9421,7 +9575,7 @@ $('btnLock').onclick = () => {
 $('btnFF').onclick = () => { playerStartFF(); };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
-  $('gameChat').innerHTML = ''; game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
+  stopSpectate(); $('gameChat').innerHTML = ''; game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
   game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); cancelPlace(); reynaCast = 0; shadeT = 0; $('shadeOv').classList.add('hidden');
   $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
@@ -9456,7 +9610,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 74;
+const BUILD = 75;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
