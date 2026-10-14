@@ -287,6 +287,14 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .ssMsg{font-size:12px;min-height:16px;color:var(--teal)}.ssMsg.err{color:#ff8a8a}
 .sprayCard{position:relative}.sprayCard .scEd{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:0;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px}
 .sprayCard.add{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;color:var(--teal);font:600 12px Oswald,sans-serif;letter-spacing:1px}.sprayCard.add b{font-size:30px;line-height:64px}
+#pvHud{position:fixed;inset:0;z-index:60;pointer-events:none;font-family:Oswald,sans-serif}
+.pvTop{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:rgba(10,16,22,.7);padding:8px 16px;border-left:3px solid var(--red)}
+.pvTop b{font-size:20px;letter-spacing:3px}.pvMode{background:var(--teal);color:#0b1219;font:700 12px Oswald,sans-serif;padding:2px 8px;letter-spacing:2px}.pvMode.fly{background:#8a5cff;color:#fff}
+.pvCross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #000}
+.pvClick{position:absolute;left:50%;top:58%;transform:translateX(-50%);font:600 15px Oswald,sans-serif;letter-spacing:2px;background:rgba(0,0,0,.55);padding:6px 14px}
+.pvKeys{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font:500 13px 'Noto Sans KR',sans-serif;color:#cfd6dc;background:rgba(10,16,22,.65);padding:8px 14px;max-width:92vw}
+.pvKeys b{color:#fff;font-family:Oswald,sans-serif;letter-spacing:1px}
+#pvBack{position:absolute;top:16px;left:16px;pointer-events:auto;width:auto;margin:0}
 .wsCols{display:flex;gap:8px}.wsCols label{flex:1}
 .wsPair{display:flex;gap:4px}.wsPair select{flex:1;min-width:0}.wsPair .btn{width:auto;margin:0;padding:4px 10px}
 .wsBtns{display:flex;gap:8px;margin-top:6px}.wsBtns .btn{margin:0;flex:1;width:auto;padding:10px 8px}
@@ -905,6 +913,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
         <label>Look (theme)<select id="meTheme"></select></label>
         <label>Template<select id="meTpl"></select></label>
         <button class="btn" id="meSave">💾 Save</button>
+        <button class="btn" id="mePreview">🧊 3D preview</button>
         <button class="btn primary" id="mePlay">▶ Save &amp; play</button>
         <div class="ol" style="margin-top:12px">SHARE</div>
         <input type="text" id="meCode" spellcheck="false" autocomplete="off" placeholder="Paste a map code (VSMAP1.…)">
@@ -987,6 +996,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     </div>
   </div>
 </div>
+<div id="pvHud" class="hidden"><div class="pvTop"><span class="ol">MAP PREVIEW</span><b id="pvName"></b><span id="pvMode" class="pvMode">WALK</span></div>
+  <div class="pvCross"></div><div class="pvClick" id="pvClick">Click to look around</div>
+  <div class="pvKeys"><span><b>WASD</b> move</span><span><b>Mouse</b> look</span><span><b>Space</b> jump / up</span><span><b>Ctrl</b> down</span><span><b>F</b> walk ↔ fly</span><span><b>Shift</b> fast</span><span><b>Esc</b> back</span></div>
+  <button class="btn" id="pvBack">◀ BACK TO EDITOR</button></div>
 <div id="menuToast"></div>
 <div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
@@ -5905,7 +5918,7 @@ function updateCamera(dt) {
 }
 function render() {
   renderer.info.reset(); renderer.clear();
-  if (game.state === 'menu') { renderer.render(lobbyScene, lobbyCam); return; }
+  if (game.state === 'menu') { renderer.render(pv ? scene : lobbyScene, pv ? camera : lobbyCam); return; }
   if (game.state === 'over' && mvpShow) { renderer.render(mvpScene, mvpCam); return; }
   renderer.render(scene, camera);
   if (vmRoot.visible && game.state === 'playing') { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
@@ -5958,7 +5971,7 @@ function loop(now) {
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
-    updateLobby(now / 1000, dt); updateQueueInfo();
+    if (pv) updatePreview(dt); else { updateLobby(now / 1000, dt); updateQueueInfo(); }
   } else if (game.state === 'over' && mvpShow) {
     updateMvp(dt);
   } else if (game.state === 'replay') {
@@ -7375,9 +7388,15 @@ function deriveMap(T, Z, S) {
 const decodeSpecial = sp => { const S = new Uint8Array(GW * GH); if (typeof sp !== 'string') return S; let i = 0; const re = /([a-e])(\d*)/g; let m; while ((m = re.exec(sp)) && i < GW * GH) { const v = m[1].charCodeAt(0) - 97, n = m[2] ? Math.min(+m[2], GW * GH) : 1; for (let k = 0; k < n && i < GW * GH; k++, i++) S[i] = v; } return S; };
 const encodeSpecial = S => { let out = '', prev = '', n = 0; const flush = () => { if (n) out += prev + (n > 1 ? n : ''); }; for (let i = 0; i < GW * GH; i++) { const ch = String.fromCharCode(97 + S[i]); if (ch === prev) n++; else { flush(); prev = ch; n = 1; } } flush(); return /^a\d*$/.test(out) ? '' : out; };
 const BREAK_H = 3.15; // grid height that marks a breakable wall
-function cellsToMap(rec) {
+function cellsToMap(rec, preview) {
   const { T, Z } = decodeCells(rec.g), S = decodeSpecial(rec.sp); for (let i = 0; i < GW * GH; i++) if (T[i] !== 1) S[i] = 0;
-  const D = deriveMap(T, Z, S); if (D.errors.length) return { errors: D.errors };
+  let D = deriveMap(T, Z, S);
+  if (D.errors.length) { // a 3D preview still works on an unfinished map: just the geometry, no bot data
+    if (!preview) return { errors: D.errors };
+    const zones = {}; for (let i = 0; i < GW * GH; i++) if (Z[i]) { const c = i % GW, r = (i / GW) | 0, b = zones[Z[i]] || (zones[Z[i]] = [c, r, c, r]); b[0] = Math.min(b[0], c); b[1] = Math.min(b[1], r); b[2] = Math.max(b[2], c); b[3] = Math.max(b[3], r); }
+    for (const z of [1, 2, 3, 4]) if (!zones[z]) zones[z] = [-50, -50, -50, -50]; // the map builder expects these
+    D = { errors: [], zones, holds: {}, entrances: {}, orbs: [], duel: [], labels: [] };
+  }
   const rooms = [], obst = [], zoneList = [];
   for (let r = 0; r < GH; r++) {
     for (let c = 0; c < GW;) { const i = r * GW + c; if (T[i] === 0) { c++; continue; } let e = c; while (e + 1 < GW && T[r * GW + e + 1] !== 0) e++; rooms.push([c, r, e, r]); c = e + 1; }
@@ -7480,7 +7499,67 @@ function meList() {
   $('meList').querySelectorAll('.meItem').forEach(el => el.onclick = () => { const r = profile.customMaps.find(q => q.id === el.dataset.id); if (!r) return; me.rec = { ...r }; Object.assign(me, decodeCells(r.g), { S: decodeSpecial(r.sp) }); me.undo = []; $('meName').value = r.n; $('meTheme').value = r.th; meList(); meCheck(); tick(); });
   $('meList').querySelectorAll('[data-del]').forEach(b => b.onclick = e => { e.stopPropagation(); const id = b.dataset.del; profile.customMaps = profile.customMaps.filter(r => r.id !== id); unregisterCustomMap(id); if (me.rec && me.rec.id === id) me.rec = null; saveProfile(); meList(); renderMapCard(); tick(); });
 }
-function closeMapEditor() { me = null; $('mapEditor').classList.add('hidden'); }
+function closeMapEditor() { if (pv) stopMapPreview(); me = null; $('mapEditor').classList.add('hidden'); }
+/* --- 3D preview: walk or fly around the map you are editing, built by the real map builder --- */
+let pv = null;
+function startMapPreview() {
+  if (!me || pv) return;
+  const rec = meRecord(); rec.id = '__pv'; const m = cellsToMap(rec, true);
+  if (m.errors) return;
+  MAPS.__pv = m; const prev = curMap; loadMap('__pv');
+  // start in the attacker spawn (or any open cell), facing the middle of the map
+  let cells = []; for (let i = 0; i < GW * GH; i++) if (me.T[i] === 1 && me.Z[i] === 3) cells.push(i);
+  if (!cells.length) for (let i = 0; i < GW * GH; i++) if (me.T[i] === 1 && !me.S[i]) cells.push(i);
+  const st = cells[cells.length >> 1] || (GH >> 1) * GW + (GW >> 1), sx = (st % GW + .5) * CELL, sz = (((st / GW) | 0) + .5) * CELL;
+  const mx = GW * CELL / 2, mz = GH * CELL / 2;
+  pv = { prev, x: sx, y: 0, z: sz, vy: 0, yaw: Math.atan2(-(mx - sx), -(mz - sz)), pitch: -.05, fly: false, keys: {}, drag: null };
+  $('mapEditor').classList.add('hidden'); $('menu').classList.add('hidden'); $('pvHud').classList.remove('hidden');
+  $('pvName').textContent = rec.n.toUpperCase(); pvModeTag(); camera.fov = BASE_FOV; camera.updateProjectionMatrix();
+  lockPointer(); tick();
+}
+function stopMapPreview() {
+  if (!pv) return; const prev = pv.prev; pv = null;
+  if (document.pointerLockElement) document.exitPointerLock();
+  delete MAPS.__pv; loadMap(prev && MAPS[prev] ? prev : 'dustwall');
+  $('pvHud').classList.add('hidden'); $('menu').classList.remove('hidden'); if (me) $('mapEditor').classList.remove('hidden');
+}
+function pvModeTag() { const t = $('pvMode'); t.textContent = pv.fly ? 'FLY' : 'WALK'; t.classList.toggle('fly', pv.fly); }
+const pvSolid = (x, z, r = .35) => [[-r, -r], [r, -r], [-r, r], [r, r]].some(([a, b]) => hAt(Math.floor((x + a) / CELL), Math.floor((z + b) / CELL)) > .6);
+function updatePreview(dt) {
+  const k = pv.keys, sp = (k.ShiftLeft || k.ShiftRight ? 2.2 : 1) * (pv.fly ? 14 : 6.5);
+  const fx = -Math.sin(pv.yaw), fz = -Math.cos(pv.yaw), rx = -fz, rz = fx;
+  let mx = 0, mz = 0; if (k.KeyW) { mx += fx; mz += fz; } if (k.KeyS) { mx -= fx; mz -= fz; } if (k.KeyD) { mx += rx; mz += rz; } if (k.KeyA) { mx -= rx; mz -= rz; }
+  const l = Math.hypot(mx, mz) || 1; mx = mx / l * sp * dt; mz = mz / l * sp * dt;
+  if (pv.fly) {
+    if (k.Space) pv.y += sp * dt; if (k.ControlLeft || k.ControlRight || k.KeyC) pv.y -= sp * dt;
+    pv.y = clamp(pv.y, -1.2, 40); pv.x = clamp(pv.x + mx, 0, GW * CELL); pv.z = clamp(pv.z + mz, 0, GH * CELL);
+  } else {
+    if (!pvSolid(pv.x + mx, pv.z)) pv.x += mx; if (!pvSolid(pv.x, pv.z + mz)) pv.z += mz;
+    pv.vy -= 22 * dt; pv.y += pv.vy * dt; if (pv.y <= 0) { pv.y = 0; pv.vy = k.Space ? 7.5 : 0; }
+  }
+  camera.position.set(pv.x, pv.y + 1.6, pv.z); camera.rotation.order = 'YXZ'; camera.rotation.set(pv.pitch, pv.yaw, 0);
+  $('pvClick').style.display = document.pointerLockElement ? 'none' : '';
+}
+(function wirePreview() {
+  $('mePreview').onclick = () => { tick(); startMapPreview(); };
+  $('pvBack').onclick = () => { tick(); stopMapPreview(); };
+  const key = (e, down) => {
+    if (!pv) return; e.stopImmediatePropagation();
+    if (down && e.code === 'Escape') { e.preventDefault(); stopMapPreview(); return; }
+    if (down && e.code === 'KeyF' && !e.repeat) { pv.fly = !pv.fly; pv.vy = 0; if (!pv.fly) { /* drop back down where you stand, or to the start if inside a wall */ pv.y = 0; } pvModeTag(); }
+    if (['Space', 'ControlLeft', 'ControlRight', 'Tab'].includes(e.code)) e.preventDefault();
+    pv.keys[e.code] = down;
+  };
+  window.addEventListener('keydown', e => key(e, true), true); window.addEventListener('keyup', e => key(e, false), true);
+  window.addEventListener('blur', () => { if (pv) pv.keys = {}; });
+  renderer.domElement.addEventListener('mousedown', e => { if (!pv) return; if (!document.pointerLockElement) { lockPointer(); pv.drag = [e.clientX, e.clientY]; } });
+  document.addEventListener('mouseup', () => { if (pv) pv.drag = null; });
+  document.addEventListener('mousemove', e => {
+    if (!pv) return; let dx = 0, dy = 0;
+    if (document.pointerLockElement) { dx = e.movementX; dy = e.movementY; } else if (pv.drag) { dx = e.clientX - pv.drag[0]; dy = e.clientY - pv.drag[1]; pv.drag = [e.clientX, e.clientY]; } else return;
+    const s = .0022 * (settings.sens || 1); pv.yaw -= dx * s; pv.pitch = clamp(pv.pitch - dy * s, -1.5, 1.5);
+  });
+})();
 (function wireMapEditor() {
   const cv = $('meCanvas'); cv.width = GW * ME_PX; cv.height = GH * ME_PX;
   cv.addEventListener('contextmenu', e => e.preventDefault());
@@ -10213,7 +10292,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 77;
+const BUILD = 78;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
