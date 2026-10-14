@@ -1139,7 +1139,7 @@ const SET_DEFAULTS = {
   chOOp: .35, chOThick: 2, chDotOp: 1, chOutThick: 1, chVLen: -1, chOVLen: -1, chOMoveErr: true,
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
-  vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true,
+  vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -2873,6 +2873,7 @@ let smokes = [], zones = [], dynWalls = [], projectiles = [], timedFx = [], drop
 /* --- Damage --- */
 function applyDamage(t, dmg, src, label, head) {
   if (!t.alive || t.dismissT > 0 || dmg <= 0) return;
+  if ((t.isPlayer || t.remote) && src && src.alive && src.team !== t.team && settings.allyAI !== 'normal' && !DM()) for (const b of bots) if (b.alive && b.team === t.team && !(b.target && b.targetVisible) && Math.hypot(b.x - t.x, b.z - t.z) < 32 && !(b.helpT > game.time)) { b.helpT = game.time + 4; b.investigate = { x: src.x, z: src.z, t: game.time - 1.1 }; b.tradeT = game.time; }
   if (game.phase === 'buy' && src && src !== t && isEnemy(src, t)) return; // nobody can be hurt before the round starts
   if (t.driftT > 0) return;
   if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
@@ -4693,6 +4694,9 @@ function botBuy(b, pistol, eco) {
   } else if (b.credits >= 1100 && Math.random() < .5) { if (Math.random() < .5) buyW(pick(['ghost', 'sheriff'])); else buyS('light'); }
   for (const k of ['C', 'Q']) { const a = ag.ab[k]; while (b.charges[k] < a.max && b.credits >= a.cost + 400 && Math.random() < .7) { b.credits -= a.cost; b.charges[k]++; } }
 }
+// bots on a team with a human play with that human and get a little sharper (Settings · Your bot teammates)
+const withHuman = b => !!(b && b.team !== undefined && entities.some(o => o.team === b.team && !o.spectator && (o.isPlayer || o.remote)));
+const allyBoost = b => settings.allyAI !== 'normal' && !game.spectate && withHuman(b);
 function botPerceive(b) {
   const D = DIFF[botDiff()];
   if (b.flashT > .25 || b.nearT > .1) { b.target = null; b.targetVisible = false; return; }
@@ -4706,7 +4710,7 @@ function botPerceive(b) {
   if (best) {
     if (best !== b.target) {
       const ty = Math.atan2(-(best.x - b.x), -(best.z - b.z)), ang = Math.abs(angDiff(b.yaw, ty));
-      b.reactT = (D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0)) * ((PERSONAS[b.persona] || {}).react || 1); b.burst = 0;
+      b.reactT = (D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0)) * ((PERSONAS[b.persona] || {}).react || 1) * (allyBoost(b) ? .78 : 1); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
       if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout', 'wingman', 'meddle'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
@@ -4723,7 +4727,11 @@ function botPerceive(b) {
     game.intel[b.team] = { x: best.x, z: best.z, t: game.time, site: zoneAt(best.x, best.z) };
     noteSighting(b.team, best);
     if (b.team === 0) best.spottedT = game.time + .6;
-  } else { b.targetVisible = false; if (b.target && (!b.target.alive || game.time - (b.lastSeen ? b.lastSeen.t : 0) > 2.5)) b.target = null; }
+  } else {
+    b.targetVisible = false; if (b.target && (!b.target.alive || game.time - (b.lastSeen ? b.lastSeen.t : 0) > 2.5)) b.target = null;
+    // smart teammates pre-aim where the team last saw an enemy, so they are ready when it peeks
+    const it = game.intel[b.team]; if (!b.target && it && allyBoost(b) && game.time - it.t < 2.5 && Math.hypot(it.x - b.x, it.z - b.z) < 28) { b.preAim = { x: it.x, z: it.z, t: game.time }; }
+  }
 }
 function botShoot(b, t) {
   const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[botDiff()];
@@ -4744,7 +4752,7 @@ function botShoot(b, t) {
   b.burst++;
   if (w.auto && b.burst >= randi(3, 7)) { b.fireCD += .2 + Math.random() * .25; b.burst = 0; }
   const ex = b.x, ey = eyeY(b), ez = b.z, d = Math.hypot(t.x - ex, t.z - ez);
-  let acc = D.acc * clamp(1.25 - d / 55, .3, 1.15);
+  let acc = D.acc * clamp(1.25 - d / 55, .3, 1.15) * (allyBoost(b) ? 1.22 : 1);
   if (w.scope) acc = Math.min(.9, acc * 1.8);
   if (Math.hypot(t.vx || 0, t.vz || 0) > 4) acc *= .6;
   if (t.crouch) acc *= .7;
@@ -4822,7 +4830,8 @@ function retakePlan(b) {
   const R = game.retake;
   if (!R.go) {
     const mates = entities.filter(o => o.alive && o.team === b.team), near = mates.filter(o => Math.hypot(o.x - R.pt.x, o.z - R.pt.z) < 8).length;
-    if (near >= Math.min(2, mates.length) || sp.timer < 22 || mates.length === 1) R.go = true;
+    R.waitT = (R.waitT || 0) + 1 / 30;
+    if (near >= Math.min(2, mates.length) || sp.timer < 24 || mates.length === 1 || R.waitT > 10 * bots.filter(o => o.alive && o.team === b.team).length) R.go = true;
   }
   return R;
 }
@@ -4835,6 +4844,13 @@ function botObjective(b, dt) {
     return;
   }
   b.plantT = (b.plantT || 0);
+  // an order from a human teammate's ping
+  if (b.order && game.time - b.order.t < 18 && !b.hasSpike && !(sp.state === 'planted' && side === 'def' && sp.defuser === b)) {
+    setGoal(b, b.order.x, b.order.z);
+    if (!followPath(b, dt, spd) || Math.hypot(b.order.x - b.x, b.order.z - b.z) < 2.5) { b.vx = b.vz = 0; b.yaw += Math.sin(game.time * .9 + b.id) * dt * 1.2; if (b.order.kind === 'enemy' && game.time - b.order.t > 6) b.order = null; }
+    return;
+  }
+  b.order = null;
   // investigate (sound/damage)
   if (b.investigate && game.time - b.investigate.t < 5 && !b.hasSpike && !(sp.state === 'planted' && side === 'def' && sp.defuser === b)) {
     if (!b.invLooked) { b.invLooked = true; }
@@ -4855,6 +4871,11 @@ function botObjective(b, dt) {
     }
     if (game.phase !== 'live') return;
     if (b.waitT > 0) { b.waitT -= dt; return; }
+    if (allyBoost(b) && b.role === 'atk' && !b.hasSpike && b.stage === 0) { // go where the human goes
+      const h = entities.find(o => o.team === b.team && o.alive && (o.isPlayer || o.remote) && !o.spectator);
+      const hs = h && nearestSite(h.x, h.z, 30);
+      if (hs && hs !== b.execSite && SITE_CELLS[hs]) { b.execSite = hs; b.entry = cc(...ENTRANCES[hs][b.id % 2]); b.siteSpot = cc(...pick(SITE_CELLS[hs])); b.goal = null; if (b === bots.find(o => o.team === b.team && o.role === 'atk')) botSay(b, 'orderGo', { team: true, p: .6 }); }
+    }
     if (b.hasSpike) {
       setGoal(b, b.plantSpot.x, b.plantSpot.z);
       if (!followPath(b, dt, spd) || (zoneAt(b.x, b.z) === game.atkSite && Math.hypot(b.x - b.plantSpot.x, b.z - b.plantSpot.z) < 2.5)) {
@@ -4873,9 +4894,10 @@ function botObjective(b, dt) {
         const exec = game.exec && game.exec.key === game.round + ':' + b.team ? game.exec : (game.exec = { key: game.round + ':' + b.team, go: false });
         const mates = bots.filter(o => o.alive && o.team === b.team && o.role === 'atk' && o.execSite === b.execSite);
         const stacked = mates.filter(o => o.stage === 1 || (o.stage === 0 && Math.hypot(o.x - o.entry.x, o.z - o.entry.z) < 3)).length;
-        const lurkGo = b.role === 'lurk' && (sp.state === 'planted' || game.phaseT < ROUND_TIME - 55 || (game.intel[b.team] && game.time - game.intel[b.team].t < 2 && game.intel[b.team].site === game.atkSite));
+        const lurkGo = b.role === 'lurk' && (sp.state === 'planted' || game.phaseT < ROUND_TIME - 45 || (game.intel[b.team] && game.time - game.intel[b.team].t < 2 && game.intel[b.team].site === game.atkSite));
         if (b.role === 'lurk' && !lurkGo) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
-        if (b.role !== 'lurk' && !exec.go && stacked < Math.min(3, mates.length) && game.phaseT > ROUND_TIME - 50) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
+        b.stackT = (b.stackT || 0) + dt;
+        if (b.role !== 'lurk' && !exec.go && stacked < Math.min(3, mates.length) && game.phaseT > ROUND_TIME - 38 && b.stackT < 12) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
         if (b.role !== 'lurk') exec.go = true;
         if (b.role === 'lurk') { b.siteSpot = cc(...pick(SITE_CELLS[game.atkSite])); b.execSite = game.atkSite; b.role = 'atk'; b.goal = null; }
         b.stage = 1; b.checkPt = cc(...pick(HOLDS[b.execSite] || HOLDS[game.atkSite]));
@@ -4954,13 +4976,14 @@ function updateBot(b, dt) {
   b.think -= dt; if (b.think <= 0) { b.think = .12 + Math.random() * .06; botPerceive(b); botSupport(b); }
   const t = b.target;
   if (!(t && t.alive && b.targetVisible)) { b.engageT = 0; b.crouch = false; }
+  if (b.preAim && game.time - b.preAim.t < 1.5 && !(t && b.targetVisible)) { const ty = Math.atan2(-(b.preAim.x - b.x), -(b.preAim.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 6); }
   if (game.phase === 'buy') { b.vx = b.vz = 0; }
   else if (b.flashT > .25 || b.nearT > .1) { // blinded: back off
     const f = fwd(b); b.vx = -f.x * 2.5; b.vz = -f.z * 2.5;
   } else if (t && t.alive && b.targetVisible) {
     const dx = t.x - b.x, dz = t.z - b.z, dist = Math.hypot(dx, dz);
     const ty = Math.atan2(-dx, -dz), tp = Math.atan2(t.y + 1.2 - eyeY(b), dist);
-    b.yaw += clamp(angDiff(b.yaw, ty), -D.turn * dt, D.turn * dt); b.pitch += (tp - b.pitch) * Math.min(1, dt * 8);
+    const turn = D.turn * (allyBoost(b) ? 1.3 : 1); b.yaw += clamp(angDiff(b.yaw, ty), -turn * dt, turn * dt); b.pitch += (tp - b.pitch) * Math.min(1, dt * 8);
     b.reactT -= dt;
     const w = WEAPONS[curWeapon(b).key];
     b.engageT = (b.engageT || 0) + dt;
@@ -5142,7 +5165,7 @@ function nextRound() {
   atkBots.forEach((b, i) => {
     const lurk = i === lurkIdx, site = lurk ? pick(SITE_IDS.filter(q => q !== atkSite)) : atkSite;
     b.entry = cc(...ENTRANCES[site][Math.random() < .65 ? 0 : 1]); b.siteSpot = cc(...pick(SITE_CELLS[site])); b.plantSpot = cc(...pick(SITE_CELLS[atkSite]));
-    b.stage = 0; b.waitT = rand(0, 3); b.role = lurk ? 'lurk' : 'atk'; b.execSite = site; b.checkPt = null;
+    b.stage = 0; b.waitT = rand(0, 3); b.role = lurk ? 'lurk' : 'atk'; b.execSite = site; b.checkPt = null; b.stackT = 0; b.order = null;
   });
   if (!pistol && !DUEL() && !RUSH() && !CUSTOM()) botDropForHumans();
   for (const b of bots) { b.target = null; b.targetVisible = false; b.path = []; b.goal = null; b.investigate = null; b.lastSeen = null; b.guard = null; b.mesh.rotation.set(0, b.yaw, 0); b.mesh.userData.gunKey = null; }
@@ -6113,7 +6136,13 @@ function doPing() {
   if (!enemy) for (const o of entities) if (o.alive && isEnemy(o, player) && Math.hypot(o.x - x, o.z - z) < 3 && canSee(player, o, .3)) { enemy = o; break; }
   if (enemy) { kind = 'enemy'; x = enemy.x; y = enemy.y + 2.1; z = enemy.z; } else y += .6;
   const a = [player.team, r2(x), r2(y), r2(z), kind, player.name];
-  if (net.role === 'client') netSend({ t: 'ping', a }); else fx('ping', ...a);
+  if (net.role === 'client') netSend({ t: 'ping', a }); else { fx('ping', ...a); botsFollowPing(player, x, z, kind); }
+}
+// a ping is an order for the bot teammates: the two closest go there (or hunt the pinged enemy)
+function botsFollowPing(from, x, z, kind) {
+  if (DM() || RANGE() || settings.allyAI === 'normal' || game.phase === 'buy' && kind !== 'loc') return;
+  const mates = bots.filter(b => b.alive && b.team === from.team).sort((p, q) => Math.hypot(p.x - x, p.z - z) - Math.hypot(q.x - x, q.z - z)).slice(0, 2);
+  mates.forEach((b, i) => { b.order = { x, z, t: game.time, kind }; b.goal = null; if (i === 0) botSay(b, kind === 'enemy' ? 'orderEnemy' : 'orderGo', { force: true, delay: 400, team: true }); });
 }
 function doSpray() {
   if (!player || !player.alive) return;
@@ -6524,7 +6553,7 @@ function hostGameMsg(e, d) {
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
     case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
     case 'ffa': castFF(e, !!d.y); break;
-    case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); break;
+    case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) { fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); botsFollowPing(e, +d.a[1], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc'); } break;
     case 'spray': if (e.alive && Array.isArray(d.a) && d.a.length === 9) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]), +d.a[8] || 0); break;
     case 'cast':
       if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k, cleanTarget(d.tg)); }
@@ -7250,6 +7279,7 @@ const BOT_LINES = {
   roundLose: { any: ['next', 'we got this', 'eco?', 'np'], hothead: ['wake up team', 'what was that'], chill: ['all good, next one'], tryhard: ['save if you cant buy rifles'], rookie: ['sorry 😅'] },
   plant: { any: ['planted, play safe', 'spike down, hold angles', 'planted'] },
   gg: { any: ['gg', 'gg wp', 'ggs'], hothead: ['gg i guess', 'gg we would win with a better team'], joker: ['gg see you in the replay'], rookie: ['gg that was fun!!'] },
+  orderGo: { any: ['on my way', 'going there', 'copy, moving', 'got it'] }, orderEnemy: { any: ['on him', 'I see the ping, swinging', 'coming to help'] },
   replyGG: { any: ['gg', 'gg wp', 'ggs!'] }, replyHi: { any: ['hey!', 'hi :)', 'yo'] }, replyNice: { any: ['ty', 'thanks!', 'ty ty'] }, replyQ: { any: ['?', 'huh', 'what'] },
 };
 function botLine(b, key) { const L = BOT_LINES[key]; if (!L) return null; const pool = (L[b.persona] && Math.random() < .6 ? L[b.persona] : L.any) || L.any; return pick(pool); }
@@ -8020,6 +8050,7 @@ const SET_PAGES = {
     ['crouchToggle', 'Crouch', 'seg', [[false, 'Hold'], [true, 'Toggle']]],
     ['showMinimap', 'Show minimap', 'toggle'],
     ['botChat', 'Bot chat messages', 'toggle'],
+    ['allyAI', 'Your bot teammates', 'seg', [['smart', 'Smart (play with you)'], ['normal', 'Same as enemies']]],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']]],
   ],
   crosshair: [
@@ -9617,7 +9648,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 76;
+const BUILD = 77;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
