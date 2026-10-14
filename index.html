@@ -196,6 +196,11 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .favBtn{margin-top:14px;padding:10px 18px;border:1px solid var(--gold);background:transparent;color:var(--gold);font:700 13px Oswald,sans-serif;letter-spacing:3px;cursor:pointer}
 .favBtn:hover,.favBtn.on{background:var(--gold);color:var(--dark)}
 .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+.sdGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}.sdCard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);padding:10px 12px}.sdWide{grid-column:span 3}
+@media (min-width:1100px){.sdWide{grid-column:span 3}}
+.sdT{font:600 12px Oswald,sans-serif;letter-spacing:2px;color:#ece8e1;margin-bottom:6px;display:flex;gap:8px;align-items:center}.sdT .ol{letter-spacing:1px}
+.sdForm{margin-left:auto;display:flex;gap:3px}.sdForm i{font:700 10px Oswald;font-style:normal;width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:#0f1923}.sdForm i.w{background:#2fe0b6}.sdForm i.l{background:#ff4655}
+.sdRow{display:grid;grid-template-columns:76px 1fr 70px;gap:8px;align-items:center;margin:4px 0;font-size:12px}.sdN{color:#c9d0d6;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.sdB{height:8px;background:rgba(255,255,255,.07)}.sdB div{height:100%;border-radius:0 4px 4px 0}.sdV{font:500 11px Oswald;color:#9aa6b2;text-align:right}
 .tile{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:12px 14px}
 .tile .v{font:700 30px Oswald,sans-serif}
 .mrow{display:grid;grid-template-columns:110px 80px 1fr 110px 110px 120px;align-items:center;gap:10px;padding:10px 12px;border-left:4px solid;background:rgba(255,255,255,.03);margin-bottom:5px;font-size:14px}
@@ -5355,8 +5360,11 @@ function finishMatch() {
   const passGot = awardPassXp(gain);
   const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
-  profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined });
-  profile.matches = profile.matches.slice(0, 30); saveProfile(); refreshVP();
+  profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined,
+    hs: matchStats.hs, hits: matchStats.hits, dmg: Math.round(matchStats.dmg), rounds: game.round, fk: matchStats.fk });
+  { const L = profile.life = profile.life || { agents: {}, maps: {} }; const ag = L.agents[p.agent] = L.agents[p.agent] || { m: 0, w: 0, k: 0, d: 0 }, mp = L.maps[game.mapId] = L.maps[game.mapId] || { m: 0, w: 0 };
+    ag.m++; ag.w += won ? 1 : 0; ag.k += p.kills; ag.d += p.deaths; mp.m++; mp.w += won ? 1 : 0; }
+  profile.matches = profile.matches.slice(0, 50); saveProfile(); refreshVP();
   $('overStats').innerHTML = matchStatsHTML() + rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
@@ -9661,12 +9669,39 @@ function renderCareer() {
   const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
+  html += statsDashHTML();
   html += '<div class="collCat">RECENT MATCHES</div>';
   html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[x.mode] || 'COMPETITIVE'}${x.place ? ' · #' + x.place : ''}${x.rr !== undefined ? ` · <b style="color:${x.rr > 0 ? 'var(--teal)' : 'var(--red)'}">${x.rr > 0 ? '+' : ''}${x.rr} RR</b>` : ''}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
   $('careerBox').innerHTML = html;
 }
 
+/* stats dashboard (career tab): form, K/D and headshot trends, agents, maps, weapons */
+function statsDashHTML() {
+  const M = profile.matches.slice(0, 20).reverse(); if (!M.length) return '';
+  const W = 560, H = 120, pad = 22, n = M.length, X = i => pad + (n === 1 ? (W - 2 * pad) / 2 : i * (W - 2 * pad) / (n - 1));
+  const kd = M.map(m => m.k / Math.max(1, m.d)), maxKd = Math.max(2, ...kd), Y = v => H - 18 - v / maxKd * (H - 34);
+  const kdPath = kd.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+  const kdSvg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="K/D per match">
+    <line x1="${pad}" x2="${W - pad}" y1="${Y(1)}" y2="${Y(1)}" stroke="rgba(255,255,255,.18)" stroke-dasharray="4 4"/><text x="${W - pad + 2}" y="${Y(1) + 4}" fill="#9aa6b2" font-size="10">1.0</text>
+    <path d="${kdPath}" fill="none" stroke="#2fe0b6" stroke-width="2"/>
+    ${M.map((m, i) => `<g><title>${new Date(m.date).toLocaleDateString()} · ${m.won ? 'Win' : 'Loss'} ${m.score[0]}:${m.score[1]} · ${m.k}/${m.d}/${m.a} · K/D ${kd[i].toFixed(2)}</title><circle cx="${X(i)}" cy="${Y(kd[i])}" r="7" fill="transparent"/><circle cx="${X(i)}" cy="${Y(kd[i])}" r="4" fill="${m.won ? '#2fe0b6' : '#ff4655'}" stroke="#0f1923" stroke-width="2"/></g>`).join('')}</svg>`;
+  const hsM = M.filter(m => m.hits), hsSvg = hsM.length ? (() => { const hv = hsM.map(m => Math.round(m.hs / m.hits * 100)), mx = Math.max(30, ...hv), Yh = v => H - 18 - v / mx * (H - 34), Xh = i => pad + (hsM.length === 1 ? (W - 2 * pad) / 2 : i * (W - 2 * pad) / (hsM.length - 1));
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Headshot percent per match"><path d="${hv.map((v, i) => `${i ? 'L' : 'M'}${Xh(i).toFixed(1)},${Yh(v).toFixed(1)}`).join('')}" fill="none" stroke="#ffd36a" stroke-width="2"/>${hv.map((v, i) => `<g><title>${v}% headshots</title><circle cx="${Xh(i)}" cy="${Yh(v)}" r="7" fill="transparent"/><circle cx="${Xh(i)}" cy="${Yh(v)}" r="3.5" fill="#ffd36a"/></g>`).join('')}<text x="${pad}" y="12" fill="#9aa6b2" font-size="10">max ${mx}%</text></svg>`; })() : '<div class="empty" style="padding:20px">Play a match to see your headshot rate</div>';
+  const form = M.slice(-10).map(m => `<i class="${m.won ? 'w' : 'l'}" title="${m.won ? 'Win' : 'Loss'} ${m.score[0]}:${m.score[1]}">${m.won ? 'W' : 'L'}</i>`).join('');
+  const bars = (rows, fmt) => rows.length ? rows.map(r => `<div class="sdRow" title="${esc(r.tip)}"><span class="sdN">${esc(r.name)}</span><div class="sdB"><div style="width:${Math.max(2, r.v)}%;background:${r.c}"></div></div><span class="sdV">${fmt(r)}</span></div>`).join('') : '<div class="empty" style="padding:10px">No data yet</div>';
+  const L = profile.life || { agents: {}, maps: {} };
+  const agents = Object.entries(L.agents).filter(([id]) => AGENT[id]).sort((a, b) => b[1].m - a[1].m).slice(0, 6).map(([id, a]) => ({ name: AGENT[id].name, v: a.w / a.m * 100, c: AGENT[id].color, tip: `${a.m} matches · ${a.w} wins · K/D ${(a.k / Math.max(1, a.d)).toFixed(2)}`, m: a.m, kd: a.k / Math.max(1, a.d) }));
+  const maps = Object.entries(L.maps).filter(([id]) => MAPS[id]).sort((a, b) => b[1].m - a[1].m).slice(0, 6).map(([id, a]) => ({ name: MAPS[id].name, v: a.w / a.m * 100, c: '#5a9fe2', tip: `${a.m} matches · ${a.w} wins`, m: a.m }));
+  const wk = Object.entries(profile.mastery || {}).filter(([k]) => WEAPONS[k]).sort((a, b) => b[1] - a[1]).slice(0, 6), wmax = Math.max(1, ...wk.map(x => x[1]));
+  const weps = wk.map(([k, n]) => ({ name: WEAPONS[k].name, v: n / wmax * 100, c: '#ffd36a', tip: `${n} kills`, n }));
+  return `<div class="collCat">STATS · last ${M.length} matches</div><div class="sdGrid">
+    <div class="sdCard sdWide"><div class="sdT">K/D PER MATCH <span class="ol">· dot = win <b style="color:#2fe0b6">●</b> / loss <b style="color:#ff4655">●</b></span><span class="sdForm">${form}</span></div>${kdSvg}</div>
+    <div class="sdCard sdWide"><div class="sdT">HEADSHOT %</div>${hsSvg}</div>
+    <div class="sdCard"><div class="sdT">AGENTS · win rate</div>${bars(agents, r => Math.round(r.v) + '% · ' + r.m)}</div>
+    <div class="sdCard"><div class="sdT">MAPS · win rate</div>${bars(maps, r => Math.round(r.v) + '% · ' + r.m)}</div>
+    <div class="sdCard"><div class="sdT">WEAPONS · kills</div>${bars(weps, r => r.n)}</div></div>`;
+}
 /* collection tab */
 function renderCollection() {
   const all = Object.values(WEAPONS).filter(w => w.price !== undefined && w.cat !== 'Ultimate');
