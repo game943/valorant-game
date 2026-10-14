@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 37</div>
+<div id="buildTag">VALOR STRIKE · build 38</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -1283,6 +1283,53 @@ const GC = { blk: 0x1b1d22, dk: 0x2b3038, mt: 0x5a616c, lt: 0x8e959f, wood: 0x7a
 // Gun builders. Coordinates: f = distance forward from the grip (the barrel points to -z), y = up.
 // Helpers (h): S = extruded side profile with bevelled edges, Cf/Bf = cylinder/box placed by forward range,
 // Rail = picatinny rail, TG = trigger guard + trigger, Sight = front post / rear notch. Each builder returns the muzzle z.
+// Guardian: long full-length handguard, angular receiver sweeping into a short box mag, open skeleton stock.
+// Skin lines with their own paint jobs and ornaments: prime, reaver, sovereign, glyph.
+function guardianModel(h, M, line) {
+  const A = M.acc, PAL = {
+    prime: { hg: A(0xeeeae2), rc: A(0xeeeae2), lo: A(0x4b3a8c), mag: A(0xeeeae2), grip: A(0x4b3a8c), stk: A(0xd4af37), metal: A(0xd4af37), trim: A(0xd4af37) },
+    sovereign: { hg: A(0xf1eee8), rc: A(0xf1eee8), lo: A(0xd4af37), mag: A(0xf1eee8), grip: A(0xf1eee8), stk: A(0xf1eee8), metal: A(0xd4af37), trim: A(0xd4af37), gem: A(0x3fa0ff, 0x1a60c0) },
+    reaver: { hg: A(0x26202f), rc: A(0x26202f), lo: A(0x3a2a5a), mag: A(0x9a9aa8), grip: A(0x9a9aa8), stk: A(0x26202f), metal: A(0xb8b8c8), trim: A(0xb8b8c8), glow: A(0x6a3cff, 0x3a10b0) },
+    glyph: { hg: A(0xe8ecef), rc: A(0x18191c), lo: A(0xe8ecef), mag: A(0x18191c), grip: A(0x18191c), stk: A(0xe8ecef), metal: A(0x2a2a2e), trim: A(0x18191c), glow: A(0x3fffe0, 0x10a090) },
+  };
+  const P = PAL[line] || { hg: M.dk, rc: M.dk, lo: M.body(0x2f3640), mag: M.blk, grip: M.blk, stk: M.blk, metal: M.mt };
+  const both = fn => { for (const x of [-1, 1]) fn(x); };
+  // full-length handguard with stepped underside, angular receiver, lower sweep panel
+  h.S([[.98, .07], [.98, -.02], [.75, -.025], [.72, -.035], [.4, -.035], [.4, .075]], .064, P.hg);
+  h.S([[.42, .078], [.15, .08], [.1, .09], [-.02, .09], [-.1, .07], [-.1, -.03], [.05, -.07], [.24, -.07], [.42, -.04]], .066, P.rc);
+  h.S([[.42, -.0], [.42, -.04], [.24, -.07], [.12, -.07], [.2, -.03]], .07, P.lo);
+  both(x => { h.Bf(.004, .014, .19, .33, .05, M.blk, x * .034); h.Bf(.004, .006, .45, .95, .02, line ? P.trim || M.blk : M.blk, x * .033); });
+  h.Bf(.02, .022, .46, .54, .09, P.metal); h.Bf(.026, .02, .1, .14, .1, P.metal);                                     // sights
+  // short box mag, pistol grip, trigger guard
+  h.S([[.37, -.06], [.25, -.06], [.25, -.24], [.37, -.24]], .046, P.mag); for (let i = 0; i < 2; i++) h.Bf(.05, .006, .27, .35, -.12 - i * .05, M.blk);
+  h.S([[.09, -.06], [.03, -.06], [-.02, -.25], [.04, -.26], [.07, -.2], [.08, -.12], [.11, -.08]], .048, P.grip);
+  h.TG(.15, -.065, .05);
+  // open skeleton stock with butt pad
+  h.S([[-.1, .07], [-.46, .06], [-.48, .0], [-.47, -.16], [-.43, -.17], [-.2, -.1], [-.1, -.07]], .05, P.stk, 0, .005,
+    [[[-.14, .03], [-.42, .025], [-.42, -.12], [-.22, -.065], [-.14, -.04]]]);
+  h.Bf(.056, .2, -.495, -.48, -.05, line === 'prime' ? A(0xeeeae2) : M.blk);
+  h.Cf(.012, .06, .98, .025, P.metal);
+  if (line === 'prime') {                                                                                            // forked gold stabiliser, ridged white butt
+    for (const y of [.085, -.04]) { h.Cf(.007, .2, .9, y, P.metal); h.S([[1.08, y], [1.0, y + .025], [1.0, y - .01]], .01, P.metal); }
+    h.S([[.98, .07], [.92, .1], [.9, .075]], .03, P.metal); h.S([[.1, .09], [.14, .12], [.24, .12], [.28, .08]], .03, P.metal);
+    for (let i = 0; i < 5; i++) h.Bf(.06, .012, -.5, -.49, -.13 + i * .035, A(0xd8d4cc));
+    both(x => h.Bf(.004, .03, .45, .95, -.012, P.lo, x * .033));
+  }
+  if (line === 'sovereign') {                                                                                        // gold fins, filigree edges, blue gem
+    for (const [f, y, d] of [[.86, .07, 1], [.7, .075, 1], [.86, -.02, -1]]) h.S([[f, y], [f + .1, y + d * .045], [f + .06, y]], .012, P.metal);
+    both(x => { h.Bf(.004, .006, .42, .96, .068, P.trim, x * .033); h.Bf(.004, .006, -.1, .42, .074, P.trim, x * .034); h.Bf(.006, .016, .02, .06, .02, P.gem, x * .034); });
+    h.S([[-.46, .06], [-.52, .1], [-.5, .0]], .02, P.metal);
+  }
+  if (line === 'reaver') {                                                                                           // silver spikes, violet glow veins
+    both(x => { h.Bf(.004, .01, .45, .9, .03, P.glow, x * .034); h.Bf(.004, .01, -.42, -.15, .045, P.glow, x * .026); h.Bf(.004, .008, -.08, .3, -.03, P.glow, x * .035); });
+    for (const [f, y] of [[.9, .07], [.6, .075], [.2, .088]]) h.S([[f, y], [f - .05, y + .035], [f - .07, y]], .014, P.trim);
+    h.S([[-.46, .06], [-.54, .11], [-.5, .02]], .02, P.trim); h.S([[-.47, -.16], [-.55, -.2], [-.44, -.17]], .02, P.trim);
+  }
+  if (line === 'glyph') {                                                                                            // teal glyph marks
+    both(x => { for (const [f0, f1, y] of [[.5, .58, .03], [.62, .7, .0], [.75, .86, .03], [.2, .3, .02], [-.35, -.2, .04], [.29, .35, -.15]]) h.Bf(.004, .008, f0, f1, y, P.glow, x * .035); });
+  }
+  return -1.04;
+}
 // Vandal: long swept upper, AK-style curved mag, long angular stock. Prime gets its own white/gold/black paint job.
 function vandalModel(h, M, line) {
   const pr = line === 'prime', gold = M.acc(0xd4af37), white = M.acc(0xeeeae2), violet = M.acc(0x7a4dff, 0x4a20c0);
@@ -1439,19 +1486,11 @@ const GUN_BUILDERS = {
     h.Cf(.013, .12, .52, .012, M.mt); h.Cf(.019, .05, .62, .012, M.blk); h.TG(.06, -.04, .05);
     return -.67;
   },
-  guardian(h, M) {
-    const tan = M.body(GC.tan);
-    h.S([[-.1, -.035], [.28, -.035], [.3, -.02], [.3, .045], [-.08, .05], [-.1, .04]], .062, M.dk);
-    h.S([[.3, -.03], [.66, -.025], [.68, -.008], [.68, .035], [.3, .04]], .062, M.blk);
-    for (let i = 0; i < 6; i++) for (const x of [-.032, .032]) h.Bf(.004, .012, .34 + i * .05, .37 + i * .05, .008, M.dk, x);
-    h.Cf(.012, .3, .68, .008, M.mt); h.Cf(.02, .07, .96, .008, M.blk); for (let i = 0; i < 3; i++) h.Cf(.022, .008, .97 + i * .02, .008, M.mt);
-    h.Bf(.012, .035, .64, .655, .06, M.blk); h.Rail(-.08, .28, .052, .026); h.Bf(.03, .035, .0, .06, .075, M.blk);
-    h.S([[.18, -.035], [.1, -.035], [.095, -.15], [.175, -.155]], .044, M.blk);
-    h.S([[.02, -.035], [-.035, -.035], [-.075, -.17], [-.03, -.18], [-.005, -.12], [.04, -.05]], .046, M.blk);
-    h.S([[-.1, .045], [-.1, -.03], [-.2, -.05], [-.5, -.075], [-.52, -.15], [-.56, -.15], [-.56, .045]], .058, tan, 0, .005, [[[-.16, .025], [-.46, .025], [-.46, -.05], [-.18, -.03]]]);
-    h.Bf(.06, .2, -.575, -.56, -.05, M.blk); h.TG(.03, -.035, .05);
-    return -1.03;
-  },
+  guardian(h, M) { return guardianModel(h, M, null); },
+  'prime:guardian'(h, M) { return guardianModel(h, M, 'prime'); },
+  'reaver:guardian'(h, M) { return guardianModel(h, M, 'reaver'); },
+  'sovereign:guardian'(h, M) { return guardianModel(h, M, 'sovereign'); },
+  'glyph:guardian'(h, M) { return guardianModel(h, M, 'glyph'); },
   phantom(h, M) {
     const body = M.body(0x2f3640);
     // sleek upper + handguard with angled nose, thinner lower receiver
@@ -1666,6 +1705,8 @@ const SKIN_LINES = [
   { id: 'tiger', name: 'Tigris', tier: 'deluxe', body: 0xe0761f, furn: 0x1b1b1b, metal: 0x2b2b2b, acc: 0xf5f0e6, pat: ['tiger', '#e0761f', '#141414'], guns: ['frenzy', 'bucky', 'outlaw', 'phantom'] },
   { id: 'waste', name: 'Wasteland', tier: 'select', body: 0xb59a6a, furn: 0x6e5a3a, metal: 0x5b5446, acc: 0x8a7a50, pat: ['camo', '#b59a6a', '#6e5a3a', '#8c7a52'], guns: ['ghost', 'stinger', 'bucky', 'bulldog', 'marshal'] },
   { id: 'rush', name: 'Rush', tier: 'select', body: 0x1c1f22, furn: 0x2a2f33, metal: 0x3a4045, acc: 0x7dff3a, glow: 0x2a7a00, pat: ['stripes', '#1c1f22', '#7dff3a'], guns: ['shorty', 'ghost', 'marshal', 'ares', 'outlaw'] },
+  { id: 'sovereign', name: 'Sovereign', tier: 'ultra', body: 0xf1eee8, furn: 0xf1eee8, metal: 0xd4af37, acc: 0xd4af37, pat: ['marble', '#f4f1ea', '#d9c58a'], guns: ['guardian'] },
+  { id: 'glyph', name: 'Glyph', tier: 'exclusive', body: 0xe8ecef, furn: 0x18191c, metal: 0x2a2a2e, acc: 0x3fffe0, glow: 0x10a090, pat: ['stripes', '#e8ecef', '#18191c'], guns: ['guardian'] },
   { id: 'arctic', name: 'Arctic', tier: 'select', body: 0xe6eef4, furn: 0x9fb8cc, metal: 0x5d7488, acc: 0x7fd0ff, pat: ['camo', '#e6eef4', '#9fb8cc', '#c3d4e2'], guns: ['classic', 'sheriff', 'judge', 'guardian', 'odin'] },
 ];
 const SKINS = {};
@@ -6382,7 +6423,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 37;
+const BUILD = 38;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
