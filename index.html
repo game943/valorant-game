@@ -123,6 +123,11 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .tab{position:relative;z-index:2;flex:1;min-height:0}
 .homeLeft{position:absolute;left:5vw;bottom:9vh}
 .homeLeft .logo{font-size:clamp(40px,5.2vw,80px)}
+.lobbyDeck{margin-top:18px;display:flex;flex-direction:column;gap:8px;background:rgba(10,16,22,.55);padding:10px 12px;border-left:2px solid var(--red);width:max-content;max-width:90vw}
+.ldRow{display:flex;align-items:center;gap:10px}.ldRow>span{font:600 11px Oswald,sans-serif;letter-spacing:2px;color:var(--muted,#8b97a3);width:118px}.ldRow>span b{color:var(--light)}
+.ldRow>div{display:flex;gap:6px;flex-wrap:wrap}
+.ldSw{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:var(--sw);cursor:pointer;padding:0}.ldSw.on{border-color:#fff;box-shadow:0 0 0 2px var(--sw)}
+.ldMu{background:#26313d;border:0;color:var(--light);font:600 11px Oswald,sans-serif;letter-spacing:1px;padding:4px 9px;cursor:pointer}.ldMu.on{background:var(--red);color:#fff}
 .homeLeft .sub{letter-spacing:4px;font-size:12px;margin:12px 0 26px}
 .bigPlay{width:300px;height:70px;border:0;background:var(--red);color:#fff;font:700 30px Oswald,sans-serif;letter-spacing:8px;cursor:pointer;clip-path:polygon(18px 0,100% 0,calc(100% - 18px) 100%,0 100%);transition:.15s;position:relative}
 .bigPlay:hover{background:#ff5f6c;letter-spacing:11px}
@@ -780,6 +785,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="logo">VALOR<br><span>STRIKE</span></div>
       <div class="sub">5V5 CHARACTER-BASED TACTICAL SHOOTER</div>
       <button class="bigPlay" id="homePlay"><span>PLAY</span></button>
+      <div class="lobbyDeck"><div class="ldRow"><span>THEME · <b id="ldName"></b></span><div id="ldThemes"></div></div><div class="ldRow"><span>MUSIC</span><div id="ldMusic"></div></div></div>
     </div>
     <div class="news">
       <div class="newsCard" id="newsCard"></div>
@@ -1164,6 +1170,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45,
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -6919,14 +6926,15 @@ const lKey = new THREE.DirectionalLight(0xfff2e0, .95); lKey.position.set(3, 6, 
 const lRimR = new THREE.PointLight(0xff4655, 2.4, 14); lRimR.position.set(-4, 3, -2.5);
 const lRimT = new THREE.PointLight(0x2fe0b6, 1.6, 14); lRimT.position.set(4.5, 3, -2.5);
 lobbyScene.add(lRimR, lRimT);
+const lobbySet = { rings: [], slabs: [] };
 (function buildLobbySet() {
-  const plat = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 6.8, .3, 64), new THREE.MeshLambertMaterial({ color: 0x1a242e }));
+  const plat = lobbySet.plat = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 6.8, .3, 64), new THREE.MeshLambertMaterial({ color: 0x1a242e }));
   plat.position.y = -.15; lobbyScene.add(plat);
   [[1.05, 0xff4655, .8], [3, 0xece8e1, .25], [5.9, 0xff4655, .45]].forEach(([r, c, o]) => {
     const ring = new THREE.Mesh(new THREE.RingGeometry(r - .035, r, 72), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o }));
-    ring.rotation.x = -Math.PI / 2; ring.position.y = .01; lobbyScene.add(ring);
+    ring.rotation.x = -Math.PI / 2; ring.position.y = .01; lobbyScene.add(ring); lobbySet.rings.push(ring);
   });
-  const slab = (w, h, x, y, z, rz, color, op = 1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color, transparent: op < 1, opacity: op, fog: false })); m.position.set(x, y, z); m.rotation.z = rz; lobbyScene.add(m); return m; };
+  const slab = (w, h, x, y, z, rz, color, op = 1) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color, transparent: op < 1, opacity: op, fog: false })); m.position.set(x, y, z); m.rotation.z = rz; lobbyScene.add(m); lobbySet.slabs.push(m); return m; };
   slab(5.5, 34, 7.5, 4, -10, -.3, 0xff4655, .92); slab(.3, 34, 4.2, 4, -9.9, -.3, 0xece8e1, .5);
   slab(2.2, 34, -9, 4, -10, -.3, 0xff4655, .35); slab(.12, 34, -6.8, 4, -9.9, -.3, 0xece8e1, .3);
 })();
@@ -6936,6 +6944,143 @@ for (let i = 0; i < 16; i++) {
   m.position.set(rand(-9, 9), rand(.6, 6), rand(-9, -3)); lobbyScene.add(m);
   shards.push({ m, sx: rand(-.6, .6), sy: rand(-.8, .8), by: m.position.y, ph: rand(0, 6) });
 }
+/* ---------- lobby themes ---------- */
+const LOBBY_THEMES = {
+  classic: { name: 'Classic', sw: '#ff4655', bg: ['#0b1219', '#1b2834', '#0f1923'], fog: 0x121c26, rimA: 0xff4655, rimB: 0x2fe0b6, slab: 0xff4655, line: 0xece8e1, plat: 0x1a242e, fx: 'shards' },
+  night: { name: 'Night', sw: '#3a52c8', bg: ['#01030a', '#0b1636', '#04070f'], fog: 0x050a18, rimA: 0x5470ff, rimB: 0xb7c6ff, slab: 0x22307a, line: 0x9fb4ff, plat: 0x0f1626, fx: 'stars' },
+  snow: { name: 'Snow', sw: '#cfe3f5', bg: ['#6f879f', '#c3d2e1', '#55687e'], fog: 0x9fb2c6, rimA: 0x8fd0ff, rimB: 0xffffff, slab: 0xe6f0fa, line: 0x8fd0ff, plat: 0xc9d6e2, fx: 'snow' },
+  neon: { name: 'Neon', sw: '#ff2bd6', bg: ['#07000f', '#2a0642', '#04000a'], fog: 0x12001c, rimA: 0xff2bd6, rimB: 0x00f0ff, slab: 0xff2bd6, line: 0x00f0ff, plat: 0x100a1c, fx: 'grid' },
+  sunset: { name: 'Sunset', sw: '#ff8a3d', bg: ['#26102c', '#d4643a', '#3a1820'], fog: 0x4a2228, rimA: 0xff8a3d, rimB: 0xffd27a, slab: 0xff7040, line: 0xffd27a, plat: 0x2a1a1e, fx: 'embers' },
+  sakura: { name: 'Sakura', sw: '#ff9cc8', bg: ['#24122c', '#e79abd', '#341c34'], fog: 0x5a3050, rimA: 0xff8fc0, rimB: 0xfff0f6, slab: 0xff9cc8, line: 0xfff0f6, plat: 0x2c1c2a, fx: 'petals' },
+};
+const lobbyFx = (() => {
+  const N = 260, pos = new Float32Array(N * 3), geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ map: glowTex, size: .12, transparent: true, depthWrite: false, opacity: .9, color: 0xffffff });
+  const pts = new THREE.Points(geo, mat); pts.frustumCulled = false; lobbyScene.add(pts);
+  const vel = new Float32Array(N * 3), ph = new Float32Array(N); for (let i = 0; i < N; i++) ph[i] = Math.random() * 6.28;
+  const grid = new THREE.GridHelper(60, 40, 0xff2bd6, 0x00f0ff); grid.position.y = -.31; grid.material.transparent = true; grid.material.opacity = .45; lobbyScene.add(grid);
+  return { N, pos, geo, mat, pts, vel, ph, grid, kind: '' };
+})();
+function seedLobbyFx(kind) {
+  const F = lobbyFx; F.kind = kind;
+  for (let i = 0; i < F.N; i++) {
+    const p = F.pos, v = F.vel, j = i * 3;
+    p[j] = rand(-14, 14); p[j + 1] = rand(-.2, 11); p[j + 2] = rand(-12, 4);
+    v[j] = rand(-.15, .15); v[j + 2] = rand(-.1, .1);
+    v[j + 1] = kind === 'snow' ? -rand(.4, .9) : kind === 'petals' ? -rand(.35, .6) : kind === 'embers' || kind === 'grid' ? rand(.3, .9) : 0;
+    if (kind === 'stars') { p[j + 1] = rand(2, 16); p[j + 2] = rand(-24, -12); }
+  }
+  F.geo.attributes.position.needsUpdate = true;
+  const look = { snow: [0xffffff, .2, 1], petals: [0xffb0d4, .2, .95], embers: [0xffa040, .13, .9], stars: [0xdfe6ff, .16, 1], grid: [0x00f0ff, .1, .8] }[kind];
+  F.pts.visible = !!look; F.grid.visible = kind === 'grid';
+  if (look) { F.mat.color.setHex(look[0]); F.mat.size = look[1]; F.mat.opacity = look[2]; F.mat.blending = kind === 'snow' || kind === 'petals' ? THREE.NormalBlending : THREE.AdditiveBlending; F.mat.needsUpdate = true; }
+}
+function updateLobbyFx(t, dt) {
+  const F = lobbyFx; if (!F.pts.visible) return; const p = F.pos, v = F.vel;
+  for (let i = 0; i < F.N; i++) {
+    const j = i * 3;
+    if (F.kind === 'stars') continue;
+    const sway = F.kind === 'petals' ? Math.sin(t * 1.4 + F.ph[i]) * .8 : F.kind === 'snow' ? Math.sin(t * .8 + F.ph[i]) * .25 : 0;
+    p[j] += (v[j] + sway) * dt; p[j + 1] += v[j + 1] * dt; p[j + 2] += v[j + 2] * dt;
+    if (p[j + 1] < -.3) p[j + 1] = 11; else if (p[j + 1] > 11) p[j + 1] = -.2;
+    if (p[j] > 14) p[j] = -14; else if (p[j] < -14) p[j] = 14;
+  }
+  if (F.kind === 'stars') F.mat.opacity = .75 + Math.sin(t * 2.1) * .2;
+  if (F.kind === 'grid') F.grid.position.z = (t * 1.2) % 1.5;
+  F.geo.attributes.position.needsUpdate = true;
+}
+function applyLobbyTheme(id) {
+  const T = LOBBY_THEMES[id] || LOBBY_THEMES.classic;
+  const c = document.createElement('canvas'); c.width = 4; c.height = 256; const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, T.bg[0]); g.addColorStop(.6, T.bg[1]); g.addColorStop(1, T.bg[2]);
+  x.fillStyle = g; x.fillRect(0, 0, 4, 256);
+  if (lobbyScene.background && lobbyScene.background.dispose) lobbyScene.background.dispose();
+  lobbyScene.background = new THREE.CanvasTexture(c); lobbyScene.fog.color.setHex(T.fog);
+  lRimR.color.setHex(T.rimA); lRimT.color.setHex(T.rimB);
+  lobbySet.plat.material.color.setHex(T.plat);
+  lobbySet.rings.forEach((r, i) => r.material.color.setHex(i === 1 ? T.line : T.rimA));
+  lobbySet.slabs.forEach((m, i) => m.material.color.setHex(i % 2 ? T.line : T.slab));
+  shards.forEach((s, i) => { s.m.visible = T.fx === 'shards' || T.fx === 'grid'; s.m.material.color.setHex(i % 3 ? T.rimA : T.line); });
+  seedLobbyFx(T.fx); renderLobbyDeck();
+}
+
+/* ---------- procedural menu music (WebAudio) ---------- */
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const MUSIC = {
+  off: { name: 'Off' },
+  chill: { name: 'Lo-fi', bpm: 80, swing: .12, chords: [[57, 60, 64, 67], [50, 57, 60, 65], [55, 59, 62, 65], [48, 55, 59, 64]] },
+  synth: { name: 'Synthwave', bpm: 104, swing: 0, chords: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]] },
+  drive: { name: 'Drum & Bass', bpm: 172, swing: 0, chords: [[50, 53, 57], [46, 50, 53], [48, 52, 55], [45, 48, 52]] },
+  ambient: { name: 'Ambient', bpm: 60, swing: 0, chords: [[48, 55, 62, 64], [45, 52, 59, 60], [41, 48, 55, 57], [43, 50, 57, 62]] },
+};
+const mus = { bus: null, step: 0, next: 0, on: false, timer: null };
+function musBus() {
+  if (!mus.bus) { mus.bus = AC.createGain(); mus.bus.gain.value = 0; mus.bus.connect(master); }
+  return mus.bus;
+}
+function mNote(t, f, dur, type, vol, atk = .01, cut = 0) {
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + atk); g.gain.exponentialRampToValueAtTime(.0005, t + dur);
+  let n = o; if (cut) { const fl = AC.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut; o.connect(fl); n = fl; }
+  n.connect(g); g.connect(musBus()); o.start(t); o.stop(t + dur + .05);
+}
+function mKick(t, v = .8) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + .12); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + .32); o.connect(g); g.connect(musBus()); o.start(t); o.stop(t + .35); }
+function mNoise(t, dur, freq, v, type = 'highpass') { const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf; f.type = type; f.frequency.value = freq; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); s.connect(f); f.connect(g); g.connect(musBus()); s.start(t, Math.random() * .3); s.stop(t + dur + .02); }
+function musicStep(M, i, t, sd) {
+  const bar = Math.floor(i / 16) % 4, st = i % 16, ch = M.chords[bar], id = settings.menuMusic;
+  if (id === 'chill') {
+    if (st === 0) ch.forEach(n => mNote(t, mtof(n + 12), sd * 15, 'triangle', .05, .03, 1800));
+    if (st === 0 || st === 10) mKick(t, .55); if (st === 4 || st === 12) mNoise(t, .18, 1500, .14, 'bandpass');
+    if (st % 2 === 0) mNoise(t, .05, 7000, st % 4 ? .03 : .05);
+    if (st === 0 || st === 7) mNote(t, mtof(ch[0] - 12), sd * 5, 'sine', .22, .01);
+    if (st === 6 || st === 14) if (Math.random() < .6) mNote(t, mtof(ch[1 + (Math.random() * (ch.length - 1) | 0)] + 24), sd * 3, 'sine', .04, .005);
+    if (st % 4 === 2) mNoise(t, .02, 3000, .01, 'bandpass'); // vinyl crackle
+  } else if (id === 'synth') {
+    if (st % 4 === 0) mKick(t, .7); if (st === 4 || st === 12) mNoise(t, .25, 1200, .18, 'bandpass');
+    if (st % 2 === 1) mNoise(t, .04, 8000, .035);
+    mNote(t, mtof(ch[st % ch.length] + 12 + (st >= 8 ? 12 : 0)), sd * 1.5, 'sawtooth', .025, .005, 2600);
+    if (st % 2 === 0) mNote(t, mtof(ch[0] - 12), sd * 1.8, 'sawtooth', .07, .005, 600);
+    if (st === 0) ch.forEach(n => mNote(t, mtof(n), sd * 16, 'sawtooth', .015, .4, 1400));
+  } else if (id === 'drive') {
+    const kicks = [0, 10], snares = [4, 12];
+    if (kicks.includes(st)) mKick(t, .75); if (snares.includes(st)) mNoise(t, .14, 1800, .22, 'bandpass');
+    if (st % 2 === 0) mNoise(t, .03, 9000, .04); if (st === 7 && Math.random() < .5) mNoise(t, .1, 1800, .1, 'bandpass');
+    if (st === 0 || st === 6 || st === 11) mNote(t, mtof(ch[0] - 24), sd * 4, 'sawtooth', .12, .005, 380);
+    if (st === 0) ch.forEach(n => mNote(t, mtof(n + 12), sd * 16, 'triangle', .03, .3, 2000));
+  } else if (id === 'ambient') {
+    if (st === 0) ch.forEach(n => mNote(t, mtof(n), sd * 18, 'sine', .05, sd * 4));
+    if (st % 4 === 0 && Math.random() < .35) { const pent = [0, 2, 4, 7, 9]; mNote(t, mtof(72 + pent[Math.random() * 5 | 0] + (Math.random() < .3 ? 12 : 0)), sd * 10, 'sine', .035, .005); }
+    if (st === 8 && bar % 2) mNote(t, mtof(ch[0] - 12), sd * 14, 'triangle', .07, sd * 2);
+  }
+}
+function musicTick() {
+  if (!AC || !master) return;
+  const M = MUSIC[settings.menuMusic], want = !!(M && M.bpm) && game.state === 'menu' && document.visibilityState !== 'hidden';
+  const bus = musBus(), now = AC.currentTime;
+  if (want !== mus.on) {
+    mus.on = want; bus.gain.cancelScheduledValues(now); bus.gain.setTargetAtTime(want ? settings.musicVol : 0, now, want ? .6 : .25);
+    if (want) { mus.next = now + .1; mus.step = 0; }
+  }
+  if (!want) return;
+  const sd = 60 / M.bpm / 4;
+  while (mus.next < now + .25) {
+    const sw = mus.step % 2 ? M.swing * sd : 0;
+    musicStep(M, mus.step, mus.next + sw, sd); mus.next += sd; mus.step++;
+  }
+}
+setInterval(musicTick, 60);
+function setMusicVol() { if (mus.bus && mus.on) mus.bus.gain.setTargetAtTime(settings.musicVol, AC.currentTime, .1); }
+function restartMusic() { if (mus.bus) { mus.on = false; mus.bus.gain.cancelScheduledValues(AC.currentTime); mus.bus.gain.setValueAtTime(0, AC.currentTime); } musicTick(); renderLobbyDeck(); }
+function renderLobbyDeck() {
+  const th = $('ldThemes'), mu = $('ldMusic'); if (!th || !mu) return;
+  th.innerHTML = Object.entries(LOBBY_THEMES).map(([k, T]) => `<button class="ldSw${settings.lobbyTheme === k ? ' on' : ''}" data-k="${k}" title="${T.name}" style="--sw:${T.sw}"></button>`).join('');
+  mu.innerHTML = Object.entries(MUSIC).map(([k, M]) => `<button class="ldMu${settings.menuMusic === k ? ' on' : ''}" data-k="${k}">${k === 'off' ? '🔇' : M.name}</button>`).join('');
+  th.querySelectorAll('button').forEach(b => b.onclick = () => { setSetting('lobbyTheme', b.dataset.k); tick(); });
+  mu.querySelectorAll('button').forEach(b => b.onclick = () => { initAudio(); setSetting('menuMusic', b.dataset.k); tick(); });
+  $('ldName').textContent = (LOBBY_THEMES[settings.lobbyTheme] || LOBBY_THEMES.classic).name.toUpperCase();
+}
+
 const LOBBY_SLOTS = [[0, 0], [-1.75, -1.1], [1.75, -1.1], [-3.4, -2.2], [3.4, -2.2]];
 const shadowGeo = new THREE.CircleGeometry(.55, 24), shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .45 });
 let party = [], lobbyChars = [], lobbyView = 'party', lobbyMX = 0, lobbyMY = 0;
@@ -8136,6 +8281,7 @@ function updateLobby(t, dt) {
     c.g.rotation.y = face + Math.sin(t * .45 + c.ph) * .07;
     const ud = c.g.userData; ud.legL.rotation.x = Math.sin(t * .8 + c.ph) * .03; ud.legR.rotation.x = -ud.legL.rotation.x;
   });
+  updateLobbyFx(t, dt);
   shards.forEach(s => { s.m.rotation.x += s.sx * dt; s.m.rotation.y += s.sy * dt; s.m.position.y = s.by + Math.sin(t * .6 + s.ph) * .25; });
   lRimR.intensity = 2.2 + Math.sin(t * 1.3) * .4;
   const cx = solo ? .9 : curTab === 'home' ? -1.6 : 0;
@@ -8232,6 +8378,10 @@ const SET_PAGES = {
     ['menuSfx', 'Menu click sounds', 'toggle'],
     ['tts', 'Spoken ultimate voice lines (text-to-speech)', 'toggle'],
     ['ttsVol', 'Voice line volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
+    ['sub', 'LOBBY'],
+    ['menuMusic', 'Menu music', 'seg', Object.entries(MUSIC).map(([k, M]) => [k, M.name])],
+    ['musicVol', 'Music volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
+    ['lobbyTheme', 'Lobby theme', 'seg', Object.entries(LOBBY_THEMES).map(([k, T]) => [k, T.name])],
   ],
 };
 const GFX_PRESETS = {
@@ -8252,6 +8402,9 @@ function applySetting(k) {
   if (k === 'sens') { $('sens2').value = v; $('sensVal2').textContent = (+v).toFixed(2); }
   else if (k === 'vol') { $('vol2').value = v; if (master) master.gain.value = v; }
   else if (k === 'shadows') applyShadows();
+  else if (k === 'lobbyTheme') applyLobbyTheme(v);
+  else if (k === 'menuMusic') restartMusic();
+  else if (k === 'musicVol') setMusicVol();
   else if (k === 'fov') { BASE_FOV = v; camera.fov = v; camera.updateProjectionMatrix(); }
   else if (k === 'quality') { renderer.setPixelRatio(Math.min(devicePixelRatio, v)); renderer.setSize(innerWidth, innerHeight); }
   else if (k === 'showFps' || k === 'perfStats') $('fps').classList.toggle('hidden', !settings.showFps && !settings.perfStats);
@@ -9836,7 +9989,7 @@ profile.customMaps = (Array.isArray(profile.customMaps) ? profile.customMaps : [
 if (settings.map && !MAPS[settings.map] && settings.map !== 'random') settings.map = 'dustwall';
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
-loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
+loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
 const BUILD = 77;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
