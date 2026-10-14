@@ -438,6 +438,12 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #progress .bar .half{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--light)}
 #hint{position:absolute;top:70%;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(15,25,35,.75);padding:5px 12px}
 #hint b{font-family:Oswald;padding:0 6px;background:var(--light);color:var(--dark);margin-right:4px}
+#over .msBox{margin-bottom:14px;text-align:left}
+.msTiles{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px}.msTiles div{background:rgba(255,255,255,.05);padding:6px 8px}
+.msTiles span{display:block;font:600 10px Oswald,sans-serif;letter-spacing:2px;opacity:.65}.msTiles b{font:700 22px Oswald,sans-serif}
+.msChart{background:rgba(255,255,255,.03);padding:6px 10px;margin-bottom:10px}.msChart svg g:hover rect{opacity:1}
+.msTable{width:100%;border-collapse:collapse;font-size:12px}.msTable th{text-align:left;font:600 10px Oswald,sans-serif;letter-spacing:2px;opacity:.6;padding:3px 6px}
+.msTable td{padding:3px 6px;border-top:1px solid rgba(255,255,255,.06)}.msTable tr.al td:first-child{color:var(--teal)}.msTable tr.en td:first-child{color:var(--red)}.msTable tr.me{background:rgba(255,211,77,.08)}
 #ffVote{position:absolute;top:84px;left:50%;transform:translateX(-50%);background:rgba(12,16,22,.86);border:1px solid rgba(255,70,85,.6);padding:8px 16px;font:600 13px Inter,sans-serif;color:#fff;text-align:center;pointer-events:none}
 #ffVote b{color:var(--red);letter-spacing:2px}#ffVote .y{color:var(--teal)}#ffVote .n{color:var(--red)}
 #voiceLines{position:absolute;left:24px;bottom:150px;display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:46vw}
@@ -677,7 +683,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 62</div>
+<div id="buildTag">VALOR STRIKE · build 63</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -2484,6 +2490,7 @@ function applyDamage(t, dmg, src, label, head) {
   if (game.phase === 'buy' && src && src !== t && isEnemy(src, t)) return; // nobody can be hurt before the round starts
   if (t.driftT > 0) return;
   if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
+  if (src && src !== t && isEnemy(src, t)) src.dmgDealt = (src.dmgDealt || 0) + Math.min(dmg, t.hp + t.armor);
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
   if (t.dummy && src === player && RANGE()) rangeHit(t, dmg, head);
@@ -2525,6 +2532,7 @@ function killEntity(t, src, label, head) {
   t.killedBy = src ? src.id : -1; t.killLabel = label || ''; t.invSeq = (t.invSeq || 0) + 1;
   t.ult = Math.min(AGENT[t.agent].ab.X.ult, t.ult + 1);
   if (src && src !== t && isEnemy(src, t)) {
+    if (game.firstKillRound !== game.round) { game.firstKillRound = game.round; if (src.isPlayer) matchStats.fk++; if (t.isPlayer) matchStats.fd++; }
     src.kills++; src.roundKills++; src.credits = Math.min(9000, src.credits + 200);
     src.ult = Math.min(AGENT[src.agent].ab.X.ult, src.ult + 1);
     if (src.agent === 'reyna') { src.soulT = 4; if (src.empressT > 0) src.empressT = 30; }
@@ -4305,6 +4313,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
   if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'ui', f: 'banner', a: fn(e.team) });
 }
 function setupMatch(agentId, humans = []) {
+  game.firstKillRound = 0;
   ffVote = null; renderFF(null); game.ffUsed = {}; game.suddenDeath = false;
   while (sprayGroup.children.length) sprayGroup.remove(sprayGroup.children[0]); for (const k in sprayOf) delete sprayOf[k];
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
@@ -4314,7 +4323,7 @@ function setupMatch(agentId, humans = []) {
   clearEffects(); clearDrops();
   if (game.spike && game.spike.mesh) scene.remove(game.spike.mesh);
   player = makeEntity({ id: 0, name: profile.name || 'You', team: 0, agent: agentId, isPlayer: true });
-  player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {}; matchStats = { hs: 0, abil: 0 };
+  player.skins = { ...profile.equip }; entities = [player]; bots = []; net.ents = {}; matchStats = newMatchStats();
   if (RANGE()) return setupRange();
   if (DM()) return setupDM();
   if (DUEL()) {
@@ -4523,6 +4532,28 @@ function playerVoteFF(yes) {
   if (net.role === 'client') { netSend({ t: 'ffa', y: yes ? 1 : 0 }); return; }
   castFF(player, yes);
 }
+// close the books on a round for the post-match chart
+function roundStat() {
+  const MS = matchStats, won = game.history.length >= MS.lastRound ? game.history[MS.lastRound - 1] === myTeam() : null;
+  MS.rounds.push({ r: MS.lastRound, k: player.kills - MS.k0, d: player.deaths - MS.d0, dmg: Math.round(MS.dmg - (MS.dmg0 || 0)), won });
+  MS.k0 = player.kills; MS.d0 = player.deaths; MS.dmg0 = MS.dmg; MS.lastRound = game.round;
+}
+function matchStatsHTML() {
+  const MS = matchStats, p = player; if (DM()) return '';
+  if (MS.rounds.length === 0 || MS.rounds[MS.rounds.length - 1].r !== game.round) { MS.lastRound = game.round; const wl = game.history[game.round - 1]; MS.rounds.push({ r: game.round, k: p.kills - MS.k0, d: p.deaths - MS.d0, dmg: Math.round(MS.dmg - (MS.dmg0 || 0)), won: wl === undefined ? null : wl === myTeam() }); }
+  const R = MS.rounds, n = Math.max(1, R.length), adr = Math.round(MS.dmg / n), acs = Math.round((MS.dmg + 50 * p.kills + 25 * p.assists + 30 * MS.fk) / n), hsp = MS.hits ? Math.round(MS.hs / MS.hits * 100) : 0;
+  const W = 560, H = 120, bw = Math.min(26, (W - 20) / n - 4), maxD = Math.max(150, ...R.map(r => r.dmg));
+  const bars = R.map((r, i) => { const x = 10 + i * (W - 20) / n + ((W - 20) / n - bw) / 2, h = Math.max(2, r.dmg / maxD * (H - 34)), col = r.won === null ? '#8a8f96' : r.won ? '#2fe0b6' : '#ff4655';
+    return `<g><title>Round ${r.r} · ${r.won === null ? '' : r.won ? 'won' : 'lost'} · ${r.k} kill${r.k === 1 ? '' : 's'} · ${r.dmg} damage${r.d ? ' · died' : ''}</title><rect x="${x}" y="${H - 18 - h}" width="${bw}" height="${h}" rx="3" fill="${col}" opacity=".85"/>${r.k ? Array.from({ length: Math.min(5, r.k) }, (_, j) => `<circle cx="${x + bw / 2}" cy="${H - 26 - h - j * 9}" r="3.5" fill="#ffd34d"/>`).join('') : ''}<text x="${x + bw / 2}" y="${H - 4}" font-size="10" fill="#9aa3ad" text-anchor="middle">${r.r}</text><rect x="${x - 2}" y="0" width="${bw + 4}" height="${H}" fill="transparent"/></g>`; }).join('');
+  const all = entities.slice().sort((a, b) => (b.dmgDealt || 0) + b.kills * 50 - ((a.dmgDealt || 0) + a.kills * 50));
+  const acsOf = e => e === p ? acs : net.role === 'client' ? '—' : Math.round(((e.dmgDealt || 0) + 50 * e.kills + 25 * e.assists) / n);
+  return `<div class="msBox"><div class="msTiles">
+      <div><span>COMBAT SCORE</span><b>${acs}</b></div><div><span>ADR</span><b>${adr}</b></div><div><span>HEADSHOT %</span><b>${hsp}%</b></div>
+      <div><span>FIRST KILLS</span><b>${MS.fk}</b></div><div><span>FIRST DEATHS</span><b>${MS.fd}</b></div><div><span>DAMAGE</span><b>${Math.round(MS.dmg)}</b></div></div>
+    <div class="msChart"><div class="ol">ROUND BY ROUND · bar = damage · ● = kill · <span style="color:#2fe0b6">won</span> / <span style="color:#ff4655">lost</span></div>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Damage and kills per round">${bars}</svg></div>
+    <table class="msTable"><tr><th>Player</th><th>Agent</th><th>ACS</th><th>K / D / A</th></tr>${all.map(e => `<tr class="${e === p ? 'me' : ''} ${e.team === p.team ? 'al' : 'en'}"><td>${esc(e.name)}</td><td>${AGENT[e.agent].name}</td><td class="os">${acsOf(e)}</td><td class="os">${e.kills} / ${e.deaths} / ${e.assists}</td></tr>`).join('')}</table></div>`;
+}
 function finishMatch() {
   if (net.role === 'host') { netBroadcast(buildSnap()); netBroadcast({ t: 'over' }); net.phase = 'lobby'; }
   game.state = 'over'; document.exitPointerLock && document.exitPointerLock();
@@ -4542,7 +4573,7 @@ function finishMatch() {
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
   profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined });
   profile.matches = profile.matches.slice(0, 30); saveProfile(); refreshVP();
-  $('overStats').innerHTML = rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
+  $('overStats').innerHTML = matchStatsHTML() + rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
     <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
@@ -4940,6 +4971,7 @@ function simStep(dt) {
   if (game.state === 'playing') { // the match never pauses: leaving the window only gives up mouse control
     game.time += dt;
     if (net.role !== 'client') ffTick(dt);
+    if (player && game.round !== matchStats.lastRound && !RANGE()) roundStat();
     if (net.role === 'client') clientTick(dt);
     else if (RANGE()) { updatePlayer(dt); rangeTick(dt); updateEffects(dt); updateParticles(dt); }
     else if (DM()) { updatePlayer(dt); for (const b of bots) updateBot(b, dt); separate(); updateEffects(dt); updateParticles(dt); dmTick(dt); }
@@ -5114,6 +5146,7 @@ function toastTo(e, msg) { if (!e) return; if (e.isPlayer) toast(msg); else if (
 function teleported(e) { e.tpSeq = (e.tpSeq || 0) + 1; e.nx = e.x; e.ny = e.y; e.nz = e.z; }
 function dealDamage(t, dmg, src, label, head) {
   if (head && src === player && t !== player && !RANGE()) matchStats.hs++;
+  if (src === player && t !== player && !RANGE() && t.alive && isEnemy(t, player)) { matchStats.hits++; matchStats.dmg += Math.min(dmg * (t.vulnT > 0 ? 2 : 1), t.hp + t.armor); }
   if (net.role === 'client') { netSend({ t: 'hit', id: t.id, dmg: r2(dmg), l: label, h: head ? 1 : 0 }); return; }
   applyDamage(t, dmg, src, label, head);
 }
@@ -5743,7 +5776,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
-  matchStats = { hs: 0, abil: 0 };
+  matchStats = newMatchStats();
   game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
   clearEffects(); clearDrops(); orbs.forEach(o => scene.remove(o.mesh)); orbs = [];
@@ -6844,7 +6877,8 @@ const MISSION_POOL = [
   { id: 'r20', type: 'range', n: 20, vp: 200, txt: 'Hit 20+ targets in a Range shooting test' },
 ];
 const LEVEL_VP = 500, RANGE_TESTS_PER_DAY = 5;
-let matchStats = { hs: 0, abil: 0 };
+const newMatchStats = () => ({ hs: 0, abil: 0, hits: 0, dmg: 0, fk: 0, fd: 0, rounds: [], lastRound: 1, k0: 0, d0: 0 });
+let matchStats = newMatchStats();
 function ensureMissions() {
   const d = today();
   if (!profile.missions || profile.missions.day !== d) {
@@ -7335,7 +7369,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 62;
+const BUILD = 63;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
