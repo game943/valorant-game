@@ -694,7 +694,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 65</div>
+<div id="buildTag">VALOR STRIKE · build 66</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -970,7 +970,7 @@ AGENTS.push(
   { id: 'cypher', name: 'Cypher', role: 'Sentinel', color: '#c9c3ae', glyph: 'CY', desc: 'An information broker who watches every flank.',
     ab: { C: { name: 'Trapwire', cost: 200, max: 2, free: 0, type: 'trap', desc: 'Aim at a wall: a tripwire stretches across to the opposite wall and reveals + slows the first enemy who crosses it.' },
           Q: { name: 'Cyber Cage', cost: 100, max: 2, free: 0, type: 'dormant', dkind: 'cage', color: 0x8e8a7a, desc: 'Throw a cage that waits on the floor. Press the key again to ACTIVATE all your cages into smokes (left click while readied throws another).' },
-          E: { name: 'Spycam', cost: 0, max: 1, free: 1, type: 'cam', desc: 'A camera that pulses to reveal nearby enemies for 15 seconds.' },
+          E: { name: 'Spycam', cost: 0, max: 1, free: 1, type: 'cam', desc: 'Stick a camera on the wall you aim at. Press E again to look through it and fire a tracking dart (left click). Enemies can shoot it.' },
           X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
   { id: 'skye', name: 'Skye', role: 'Initiator', color: '#7fd36b', glyph: 'SK', desc: 'A guide who heals the team and hunts enemies with creatures of light.',
     ab: { C: { name: 'Regrowth', cost: 150, max: 1, free: 0, type: 'regrowth', desc: 'Heal yourself and every hurt ally you can see within 14 m (60 HP over 3s). Not used up if nobody is hurt.' },
@@ -2458,6 +2458,7 @@ function traceShot(shooter, ox, oy, oz, dx, dy, dz, range) {
     if (!e.alive || e === shooter || !isEnemy(e, shooter) || e.dismissT > 0) continue;
     const h = rayEntity(ox, oy, oz, dx, dy, dz, e); if (h && h.t < res.t) { res.t = h.t; res.ent = e; res.reg = h.reg; res.wall = null; }
   }
+  for (const z of zones) if (z.kind === 'cam' && z.owner && shooter && isEnemy(z.owner, shooter) && z.t > 0) { const t = raySphere(ox, oy, oz, dx, dy, dz, z.x, z.cy !== undefined ? z.cy : 2.1, z.z, .26); if (t < res.t) { res.t = t; res.ent = null; res.wall = null; res.gadget = z; } }
   // buy phase: the spawn barrier stops bullets where they leave the shooter's spawn
   if (game.phase === 'buy' && barrierGroup.visible) {
     const z0 = zoneG[cellOf(oz) * GW + cellOf(ox)];
@@ -2671,9 +2672,9 @@ function makeZone(o) {
   if (z.kind === 'cam') {
     // Cypher's Spycam on a mast: rounded housing, hood, glowing iris
     const ivory = AB.lit(0xe2dccb, 0, { shininess: 50 }), dk = gm(0x2b2b30);
-    AB.mesh(new THREE.CylinderGeometry(.16, .2, .05, 16), dk, 0, .025, 0, g);
-    AB.mesh(new THREE.CylinderGeometry(.03, .035, 2, 10), dk, 0, 1, 0, g);
-    const head = new THREE.Group(); head.position.y = 2.1; g.add(head); z.head = head;
+    const wall = z.cy !== undefined, head = new THREE.Group(); head.position.y = wall ? z.cy : 2.1; g.add(head); z.head = head;
+    if (wall) { head.rotation.y = Math.atan2(z.nx, z.nz); const plate = AB.rbox(.2, .26, .06, .03, dk); plate.position.set(z.nx * -.2, z.cy, z.nz * -.2); plate.rotation.y = Math.atan2(z.nx, z.nz); g.add(plate); }
+    else { AB.mesh(new THREE.CylinderGeometry(.16, .2, .05, 16), dk, 0, .025, 0, g); AB.mesh(new THREE.CylinderGeometry(.03, .035, 2, 10), dk, 0, 1, 0, g); }
     head.add(AB.rbox(.28, .22, .32, .08, ivory));
     const hood = AB.rbox(.3, .04, .16, .02, ivory); hood.position.set(0, .12, -.15); head.add(hood);
     AB.mesh(new THREE.CylinderGeometry(.075, .085, .08, 18), dk, 0, 0, -.19, head).rotation.x = Math.PI / 2;
@@ -2998,7 +2999,8 @@ function startPilot(pr, kind) {
 function endPilot(how) {
   if (!pilot) return; const P = pilot, pr = P.p, p = player; pilot = null;
   $('pilotOv').classList.add('hidden');
-  if (projectiles.includes(pr)) {
+  if (P.zone && P.zone.mesh) P.zone.mesh.visible = true;
+  if (pr && projectiles.includes(pr)) {
     pr.piloted = false; pr.mesh.visible = true;
     if (how === 'leap' || (P.kind === 'drone' && how !== 'free')) pr.life = 0;
   }
@@ -3006,6 +3008,13 @@ function endPilot(how) {
 }
 function pilotStep(p, dt) {
   const P = pilot, pr = P.p;
+  if (P.kind === 'cam') { // Spycam: look around, one dart that recharges
+    const z = P.zone; if (!zones.includes(z) || z.t <= 0) { endPilot('gone'); return; }
+    p.vx = p.vz = 0; physics(p, dt); P.dartCD = Math.max(0, (P.dartCD || 0) - dt);
+    if (mouse[0] && !P.lmb) camDart(P); P.lmb = mouse[0];
+    if (mouse[2] && !P.rmb) { endPilot('exit'); return; } P.rmb = mouse[2];
+    $('pilotBar').style.width = (100 - (P.dartCD || 0) / 10 * 100) + '%'; return;
+  }
   if (!projectiles.includes(pr)) { endPilot('gone'); return; }
   p.vx = p.vz = 0; physics(p, dt); P.t += dt;
   const sy = Math.sin(p.yaw), cy = Math.cos(p.yaw), k = Math.min(1, dt * 5);
@@ -3023,6 +3032,24 @@ function pilotStep(p, dt) {
   if (mouse[2] && !P.rmb) { endPilot(P.kind === 'tiger' ? 'free' : 'exit'); return; }
   P.rmb = mouse[2];
   $('pilotBar').style.width = Math.max(0, pr.life / P.max * 100) + '%';
+}
+function startCamView(z) {
+  const p = player; cancelPlace(); clearReady(p);
+  pilot = { kind: 'cam', zone: z, yaw0: p.yaw, pitch0: p.pitch, t: 0, lmb: true, rmb: true, dartCD: 0 };
+  if (z.nx !== undefined) p.yaw = Math.atan2(-z.nx, -z.nz);
+  z.mesh.visible = false;
+  const ov = $('pilotOv'); ov.className = 'drone'; ov.classList.remove('hidden');
+  $('pilotHint').innerHTML = '<b>SPYCAM</b> · look around · <b>LEFT</b> click: tracking dart (10s recharge) · <b>RIGHT</b> click / E: exit';
+  sndTone(900, .15, .12, 'triangle', 1300);
+}
+function camDart(P) {
+  if (P.dartCD > 0) { SND.deny(); return; } P.dartCD = 10;
+  const z = P.zone, cy = z.cy !== undefined ? z.cy : 2.1, f = fwd(player), ox = z.x + (z.nx || 0) * .2, oz = z.z + (z.nz || 0) * .2;
+  const r = traceShot(player, ox, cy, oz, f.x, f.y, f.z, 80), hx = ox + f.x * r.t, hy = cy + f.y * r.t, hz = oz + f.z * r.t;
+  spawnTracer(ox, cy - .05, oz, hx, hy, hz, 0x9fd0ff); sndTone(1300, .07, .15, 'square', 700);
+  const tag = o => { o.revealedT = Math.max(o.revealedT, 4); fx('pulse', o.x, o.y + 1, o.z, 2); };
+  if (r.ent) { tag(r.ent); toast('Dart hit — ' + r.ent.name + ' is revealed'); }
+  else for (const o of entities) if (o.alive && isEnemy(o, player) && Math.hypot(o.x - hx, o.z - hz) < 2.5) tag(o);
 }
 function pilotDart(P) { // the drone fires one tracking dart: an enemy it hits (or anyone close to where it lands) is revealed
   if (P.dart) { SND.deny(); return; } P.dart = true;
@@ -3272,7 +3299,13 @@ const ABIL = {
     const p = spawnProj(Object.assign(throwFrom(e, 15, 2.5), { life: 4, color: ab.color, owner: e, model: 'canister', stick: true, bounces: 0 }));
     p.onLand = () => makeZone({ x: p.x, z: p.z, r: .45, kind: ab.dkind, t: 1e4, owner: e }); return true;
   },
-  cam(e) { const p = groundPoint(e, 30); makeZone({ x: p.x, z: p.z, r: .4, kind: 'cam', t: 15, owner: e, pulseT: .4 }); return true; },
+  cam(e) { // stick the camera on the wall you aim at (or the floor), it lasts the round
+    const ey = eyeY(e), f = fwd(e), t = rayGrid(e.x, ey, e.z, f.x, f.y, f.z, 30), nx = RH.nx, nz = RH.nz, hx = e.x + f.x * t, hy = ey + f.y * t, hz = e.z + f.z * t;
+    for (const z of zones) if (z.kind === 'cam' && z.owner === e) z.t = 0; // only one camera
+    if (t < 30 && (nx || nz)) makeZone({ x: hx + nx * .25, z: hz + nz * .25, r: .4, kind: 'cam', t: 1e4, owner: e, pulseT: .4, cy: clamp(hy, .5, 5), nx, nz });
+    else { const p = groundPoint(e, 30); makeZone({ x: p.x, z: p.z, r: .4, kind: 'cam', t: 1e4, owner: e, pulseT: .4 }); }
+    return true;
+  },
   neural(e) {
     const reveal = () => { for (const o of entities) if (o.alive && isEnemy(o, e)) { o.revealedT = Math.max(o.revealedT, 3); fx('pulse', o.x, o.y + 1, o.z, 3); } };
     reveal(); let k = 0; timedFx.push({ t: 3.2, update() { if (k === 0 && this.t < .2) { k = 1; reveal(); } }, end() { } });
@@ -3570,6 +3603,7 @@ function castAbility(e, key, target) {
   if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
+  if (ab.type === 'cam' && !target && e === player) { const cz = zones.find(z => z.kind === 'cam' && z.owner === e && z.t > 0); if (cz) { startCamView(cz); return false; } }
   if (ab.type === 'dormant' && !target && hasDormant(e, ab.dkind) && !(e.suppT > 0) && !(e.detainT > 0)) { // placed Nanoswarms / cages: the key activates them
     const readied = e.ready && e.ready.key === key;
     if (!e.isPlayer || e.charges[key] <= 0 || (readied && !e._readyClick)) { clearReady(e); activateDormant(e, ab.dkind); return true; }
@@ -3651,8 +3685,9 @@ const ZONE_TICK = {
     fx('shot', z.x, 1.1, z.z, best.x + (hit ? 0 : rand(-1, 1)), best.y + 1.2, best.z + (hit ? 0 : rand(-1, 1)), 'smg', 0xfff07a, z.owner.id);
   },
   cam(z, dt) {
-    if (z.head) z.head.rotation.y += dt;
-    z.pulseT -= dt; if (z.pulseT > 0 || !z.owner) return;
+    if (z.head && z.cy === undefined && !(pilot && pilot.zone === z)) z.head.rotation.y += dt;
+    if (!z.owner || z.owner.isPlayer || z.owner.remote) return; // human Cyphers look through the camera instead
+    z.pulseT -= dt; if (z.pulseT > 0) return;
     z.pulseT = 2.5; revealPulse(z.x, 2.1, z.z, 22, z.owner.team, 1.8);
   },
 };
@@ -3885,7 +3920,8 @@ function playerFire() {
       if (wasAlive && !res.ent.alive) killed = true;
       anyHit = true; if (res.reg === 0) anyHead = true;
       spawnParticles(hx, hy, hz, res.reg === 0 ? 10 : 5, res.reg === 0 ? 0xffe066 : 0xffffff, 2.5, .3);
-    } else if (res.wall) { if (net.role !== 'client') damageWall(res.wall, w.dmg[1]); }
+    } else if (res.gadget) { if (net.role !== 'client') { res.gadget.t = 0; fx('parts', hx, hy, hz, 18, 0x4fa3ff, 3, .5); toast('Spycam destroyed'); } }
+    else if (res.wall) { if (net.role !== 'client') damageWall(res.wall, w.dmg[1]); }
     else if (res.t < 199) { spawnDecal(hx, hy, hz, res.nx, res.ny, res.nz); if (k < 4) spawnParticles(hx, hy, hz, 3, 0xffd9a0, 2, .25); }
   }
   if (anyHit) { hitMarker(anyHead); anyHead ? SND.head() : SND.hit(); }
@@ -4917,7 +4953,11 @@ function updateCamera(dt) {
     const targetFov = (w.scope && adsT > .5 ? BASE_FOV / w.scope : BASE_FOV / (1 + (w.ads - 1) * adsT)) * (p.dashT > 0 ? 1.14 : 1) * (p.driftT > 0 ? 1.1 : 1);
     if (Math.abs(camera.fov - targetFov) > .05) { camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 18); camera.updateProjectionMatrix(); }
     vmRoot.visible = !(w.scope && adsT > .6);
-    if (pilot) {
+    if (pilot && pilot.kind === 'cam') {
+      const z = pilot.zone, cy = z.cy !== undefined ? z.cy : 2.1;
+      camera.position.set(z.x + (z.nx || 0) * .2, cy, z.z + (z.nz || 0) * .2); camera.rotation.set(p.pitch, p.yaw, 0); vmRoot.visible = false;
+      if (z.head) z.head.rotation.y = p.yaw;
+    } else if (pilot) {
       const pr = pilot.p;
       if (!projectiles.includes(pr) || game.state !== 'playing') endPilot('gone');
       else {
@@ -7466,7 +7506,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 65;
+const BUILD = 66;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
