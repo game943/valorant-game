@@ -561,6 +561,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #dmgOv{background:radial-gradient(circle,transparent 45%,rgba(255,30,40,.55) 100%)}
 #lowOv{background:radial-gradient(circle,transparent 55%,rgba(255,30,40,.35) 100%)}
 #updateBar{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:80;background:#1c2631;border:1px solid var(--teal);padding:8px 10px 8px 16px;font-size:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#updateBar.coming{border-color:#f5c542}#updateBar.coming button{background:#3a4552;color:#9aa6b2;cursor:default}
 #updateBar button{background:var(--teal);color:#0f1923;border:0;font:700 13px Oswald,sans-serif;letter-spacing:2px;padding:7px 14px;cursor:pointer}
 #buildTag{position:fixed;right:10px;bottom:6px;font:500 11px Oswald,sans-serif;letter-spacing:1px;opacity:.45;z-index:65;cursor:pointer;user-select:none}
 #buildTag:hover{opacity:.9;text-decoration:underline}
@@ -1002,7 +1003,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <button class="btn" id="pvBack">◀ BACK TO EDITOR</button></div>
 <div id="menuToast"></div>
 <div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
-<div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
+<div id="updateBar" class="hidden"><span id="updTxt">A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
     <div class="ol">DAILY REWARD</div><h2>WELCOME BACK, AGENT</h2>
@@ -10313,14 +10314,20 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 80;
+const BUILD = 81;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
 const UPD_REPO = 'game943/valorant-game', UPD_BRANCH = 'claude/valorant-style-game-html-5gr8zp', ON_PAGES = /\.github\.io$/.test(location.hostname);
-let updEtag = null, updBusy = false, updPending = 0, updRemoteT = 0;
+let updEtag = null, updBusy = false, updPending = 0, updRemoteT = 0, updComing = 0;
 $('buildTag').textContent = 'VALOR STRIKE · build ' + BUILD;
-function showUpdateBar() { if (updPending > BUILD && game.state !== 'playing') { $('updNum').textContent = 'build ' + updPending; $('updateBar').classList.remove('hidden'); } }
+function showUpdateBar() {
+  if (game.state === 'playing') return; const bar = $('updateBar');
+  if (updPending > BUILD) { bar.classList.remove('coming', 'hidden'); $('updTxt').innerHTML = `A newer version of VALOR STRIKE is out (<b id="updNum">build ${updPending}</b>)`; $('btnUpdate').textContent = 'UPDATE NOW'; $('btnUpdate').disabled = false; }
+  else if (updComing > BUILD) { // pushed to GitHub, but the website is still being published (usually 1-3 minutes)
+    bar.classList.remove('hidden'); bar.classList.add('coming'); $('updTxt').innerHTML = `Build ${updComing} is being published — the button lights up in a minute or two`; $('btnUpdate').textContent = 'PREPARING…'; $('btnUpdate').disabled = true;
+  }
+}
 function remoteBuild() { // small JSON, fresh within about a minute; raw.githubusercontent.com as a fallback (5 min cache)
   const api = `https://api.github.com/repos/${UPD_REPO}/contents/version.json?ref=${encodeURIComponent(UPD_BRANCH)}&t=${Date.now()}`;
   return fetch(api, { headers: { Accept: 'application/vnd.github.raw' }, cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject())
@@ -10341,7 +10348,9 @@ function checkForUpdate(manual) {
     updRemoteT = Date.now(); job = remoteBuild();
   }
   updBusy = true;
-  return job.catch(() => 0).then(n => { updBusy = false; if (n > BUILD) { updPending = n; showUpdateBar(); } return n; });
+  // on the website also ask GitHub directly, which knows about a new build a minute or two before the site is republished
+  const ahead = useSelf && ON_PAGES && (manual || Date.now() - updRemoteT > 60000) ? (updRemoteT = Date.now(), remoteBuild()) : Promise.resolve(0);
+  return Promise.all([job.catch(() => 0), ahead]).then(([n, r]) => { updBusy = false; if (r > BUILD) updComing = Math.max(updComing, r); if (n > BUILD) updPending = n; showUpdateBar(); return n > BUILD ? n : r > BUILD ? -r : n; });
 }
 $('btnUpdate').onclick = () => {
   if (ON_PAGES || /^https?:/.test(location.protocol) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) { const q = new URLSearchParams(location.search); q.set('v', Date.now()); location.href = location.pathname + '?' + q.toString(); }
@@ -10349,7 +10358,7 @@ $('btnUpdate').onclick = () => {
 };
 $('buildTag').onclick = () => {
   toastMenu('Checking for updates…');
-  checkForUpdate(true).then(n => { if (n > BUILD) toastMenu(`Build ${n} is out — press UPDATE NOW`); else if (n === BUILD) toastMenu(`You have the newest version (build ${BUILD})`); else if (n) toastMenu(`You have build ${BUILD} — the server still shows build ${n}, it updates within a minute or two`); else toastMenu(`Could not reach the update server — reload the page to get the newest version (you have build ${BUILD})`); });
+  checkForUpdate(true).then(n => { if (n < 0) toastMenu(`Build ${-n} is being published — wait a minute or two`); else if (n > BUILD) toastMenu(`Build ${n} is out — press UPDATE NOW`); else if (n === BUILD) toastMenu(`You have the newest version (build ${BUILD})`); else if (n) toastMenu(`You have build ${BUILD} — the server still shows build ${n}, it updates within a minute or two`); else toastMenu(`Could not reach the update server — reload the page to get the newest version (you have build ${BUILD})`); });
 };
 setTimeout(checkForUpdate, 1000); setInterval(() => { if (!document.hidden) checkForUpdate(); }, 15000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
