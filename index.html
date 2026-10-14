@@ -675,7 +675,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 60</div>
+<div id="buildTag">VALOR STRIKE · build 61</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -3803,7 +3803,12 @@ function switchSlot(s) {
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
   if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
   if (player.slot === s) return;
-  player.slot = s; player.reloadT = 0; player.fireCD = Math.max(player.fireCD, .35); equipView();
+  player.slot = s; player.reloadT = 0; const et = equipTime(curWeapon(player).key); player.fireCD = Math.max(player.fireCD, et); player.equipT = et; equipView();
+}
+// time to draw a weapon before it can fire (Valorant-like order: knife fastest, Operator slowest)
+function equipTime(key) {
+  const w = WEAPONS[key]; if (!w) return .35;
+  return ({ sheriff: .7, marshal: .8, outlaw: .85, operator: 1.05, guardian: .75 })[key] || ({ knife: .35, blades: .3, pistol: .5, smg: .5, shotgun: .7, rifle: .7, sniper: .9, heavy: .9 })[w.model] || .6;
 }
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
@@ -4832,7 +4837,7 @@ function updateCamera(dt) {
   const g = vmRoot.userData.gun;
   if (g && p.alive) {
     const spd = Math.hypot(p.vx, p.vz), bob = p.onGround ? spd / 6.75 : 0;
-    vmKick = Math.max(0, vmKick - dt * 8); vmEquip = Math.max(0, vmEquip - dt * 4); updateVmProps(dt);
+    vmKick = Math.max(0, vmKick - dt * 8); vmEquip = Math.max(0, vmEquip - dt / Math.max(.2, p.equipT || .25)); updateVmProps(dt);
     const ks = vmRoot.userData.gun && vmRoot.userData.gun.userData.kunai;
     if (ks) ks.forEach((k, i) => { const order = [2, 1, 3, 0, 4][i]; k.visible = order < p.bladeMag; k.position.y = .05 - Math.abs(i - 2) * .02 + Math.sin(game.time * 3 + i) * .012; k.rotation.z = Math.sin(game.time * 2 + i) * .15; });
     const t = game.time * 9;
@@ -7267,7 +7272,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 60;
+const BUILD = 61;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
