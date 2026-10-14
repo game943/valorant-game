@@ -275,6 +275,18 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .wsRight label{display:flex;flex-direction:column;gap:4px;font:600 11px Oswald,sans-serif;letter-spacing:2px;color:#9aa6b2;text-transform:uppercase}
 .wsRight select,.wsRight input[type=text]{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:8px 10px;font:500 14px 'Noto Sans KR',sans-serif}
 .wsRight input[type=color]{width:100%;height:34px;border:1px solid rgba(255,255,255,.18);background:none;padding:0;cursor:pointer}
+.ssStage{position:relative;width:min(100%,384px);aspect-ratio:1;margin:0 auto 10px;background:repeating-conic-gradient(#2a3440 0 25%,#1d252e 0 50%) 0 0/24px 24px;border:1px solid rgba(255,255,255,.15)}
+.ssStage canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.ssDrop{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(47,224,182,.18);border:2px dashed var(--teal);font:700 18px Oswald,sans-serif;letter-spacing:2px;pointer-events:none}.ssStage.drag .ssDrop{display:flex}
+.ssTools{margin-bottom:8px}.ssTools button.on{background:var(--red);border-color:var(--red);color:#fff}
+.ssPal{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}.ssPal button{width:22px;height:22px;border:1px solid rgba(255,255,255,.3);cursor:pointer;padding:0}
+.ssLbl{display:flex;flex-direction:column;gap:4px;font:600 11px Oswald,sans-serif;letter-spacing:2px;color:#9aa6b2}.ssLbl input[type=color]{height:30px;width:100%;border:1px solid rgba(255,255,255,.18);background:none;padding:0}
+.ssLbl input[type=text]{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:6px 8px;font:500 13px 'Noto Sans KR',sans-serif;min-width:0}
+.ssHow{font-size:12px;color:#aab4be;line-height:1.5;background:rgba(66,133,244,.1);border-left:2px solid #4285f4;padding:6px 9px}
+.wsRight .wsCols .btn{margin:0;width:auto;flex:1;padding:9px 6px}
+.ssMsg{font-size:12px;min-height:16px;color:var(--teal)}.ssMsg.err{color:#ff8a8a}
+.sprayCard{position:relative}.sprayCard .scEd{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:0;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px}
+.sprayCard.add{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;color:var(--teal);font:600 12px Oswald,sans-serif;letter-spacing:1px}.sprayCard.add b{font-size:30px;line-height:64px}
 .wsCols{display:flex;gap:8px}.wsCols label{flex:1}
 .wsPair{display:flex;gap:4px}.wsPair select{flex:1;min-width:0}.wsPair .btn{width:auto;margin:0;padding:4px 10px}
 .wsBtns{display:flex;gap:8px;margin-top:6px}.wsBtns .btn{margin:0;flex:1;width:auto;padding:10px 8px}
@@ -943,6 +955,34 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
         <div class="wsCols"><label>Muzzle flash<input type="color" id="wsFlash"></label><label>Tracer<input type="color" id="wsTracer"></label></div>
         <div class="wsBtns"><button class="btn" id="wsRand">🎲 Random</button><button class="btn hidden" id="wsDel" style="border-color:var(--red);color:var(--red)">Delete</button><button class="btn primary" id="wsSave">Save &amp; equip</button></div>
         <div class="note" style="margin:6px 0 0">Custom skins are free and saved in this browser. Other players in an online party see the standard skin.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="sprayStudio" class="screen hidden">
+  <div class="panel wsPanel">
+    <div class="pHead"><h2>SPRAY STUDIO</h2><button class="iconBtn" id="ssClose">✕</button></div>
+    <div class="wsBody">
+      <div class="wsLeft">
+        <div class="ssStage" id="ssStage"><canvas id="ssCv" width="256" height="256"></canvas><div class="ssDrop">Drop an image here</div></div>
+        <div class="wsPat ssTools" id="ssTools">
+          <button data-t="brush" class="on">🖌 Brush</button><button data-t="eraser">🧽 Eraser</button><button data-t="fill">🪣 Fill</button><button data-t="text">🔤 Text</button>
+          <button id="ssUndo">↶ Undo</button><button id="ssClear">🗑 Clear</button><button id="ssCut">✂ Remove background</button>
+        </div>
+        <div class="ssPal" id="ssPal"></div>
+        <div class="wsCols"><label class="ssLbl">Color<input type="color" id="ssColor" value="#ff4655"></label><label class="ssLbl">Size <input type="range" id="ssSize" min="2" max="48" value="10"></label><label class="ssLbl">Text<input type="text" id="ssText" maxlength="12" value="GG" spellcheck="false" autocomplete="off"></label></div>
+      </div>
+      <div class="wsRight">
+        <div class="ol">IMPORT A PICTURE</div>
+        <label>Find on Google Images<span class="wsPair"><input type="text" id="ssQuery" placeholder="e.g. cute cat sticker" spellcheck="false" autocomplete="off"><button class="btn" id="ssGoogle">Search</button></span></label>
+        <div class="ssHow">On Google: right-click a picture → <b>Copy image</b>, come back here and press <b>Ctrl+V</b>. You can also drag a picture straight onto the canvas.</div>
+        <div class="wsCols"><button class="btn" id="ssPaste">📋 Paste</button><button class="btn" id="ssUpload">📁 Upload</button></div>
+        <input type="file" id="ssFile" accept="image/*" class="hidden">
+        <label>…or an image address<span class="wsPair"><input type="text" id="ssUrl" placeholder="https://…" spellcheck="false" autocomplete="off"><button class="btn" id="ssLoad">Load</button></span></label>
+        <div class="ssMsg" id="ssMsg"></div>
+        <label>Spray name<input type="text" id="ssName" maxlength="18" spellcheck="false" autocomplete="off"></label>
+        <div class="wsBtns"><button class="btn hidden" id="ssDel" style="border-color:var(--red);color:var(--red)">Delete</button><button class="btn primary" id="ssSave">Save &amp; equip</button></div>
+        <div class="note" style="margin:6px 0 0">Up to 12 custom sprays, saved in this browser. Players in your online match see them too.</div>
       </div>
     </div>
   </div>
@@ -6140,7 +6180,7 @@ function rewardThumb(w) {
   return `<div class="ttl">“${esc(w.t)}”</div>`;
 }
 const SPRAY_URL = {};
-const sprayURL = id => SPRAY_URL[id] || (SPRAY_URL[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); return c.toDataURL(); })());
+const sprayURL = id => SPRAYS[id] && SPRAYS[id].data || SPRAY_URL[id] || (SPRAY_URL[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); return c.toDataURL(); })());
 function renderPass() {
   const xp = profile.bp.xp || 0, tier = bpTier(), into = xp - tier * BP_TIER_XP, done = tier >= BP_REWARDS.length;
   const cid = AGENT[profile.contract] ? profile.contract : profile.fav;
@@ -6159,7 +6199,15 @@ function renderPass() {
   $('passBox').querySelectorAll('[data-title]').forEach(b => b.onclick = () => { tick(); profile.title = b.dataset.title; saveProfile(); renderPass(); });
 }
 const SPRAY_TEX = {};
-const sprayTex = id => SPRAY_TEX[id] || (SPRAY_TEX[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); return t; })());
+const DATA_TEX = new Map();
+// a picture spray that came over the network (or is one of ours): textures cached by their data
+function dataTex(data) {
+  let t = DATA_TEX.get(data); if (t) return t;
+  if (DATA_TEX.size > 40) { const k = DATA_TEX.keys().next().value; DATA_TEX.get(k).dispose(); DATA_TEX.delete(k); }
+  t = new THREE.TextureLoader().load(data); DATA_TEX.set(data, t); return t;
+}
+const validSprayData = d => typeof d === 'string' && d.length < 90000 && /^data:image\/(png|webp|jpeg);base64,[A-Za-z0-9+/=]+$/.test(d);
+const sprayTex = id => SPRAYS[id] && SPRAYS[id].data ? dataTex(SPRAYS[id].data) : SPRAY_TEX[id] || (SPRAY_TEX[id] = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; (SPRAYS[id] || SPRAYS.logo).draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); return t; })());
 const sprayGroup = new THREE.Group(); scene.add(sprayGroup);
 const sprayOf = {}, pings = [];
 let pingCD = 0;
@@ -6195,7 +6243,9 @@ function doSpray() {
   const f = fwd(player), oy = eyeY(player), t = rayGrid(player.x, oy, player.z, f.x, f.y, f.z, 6);
   if (t >= 6) { toast('Get closer to a wall or the floor to spray'); SND.deny(); return; }
   player.sprayRound = game.round;
-  const a = [player.id, r2(player.x + f.x * t), r2(oy + f.y * t), r2(player.z + f.z * t), RH.nx, RH.ny, RH.nz, SPRAYS[profile.spray] ? profile.spray : 'logo', r2(player.yaw)];
+  const sid = SPRAYS[profile.spray] ? profile.spray : 'logo';
+  const a = [player.id, r2(player.x + f.x * t), r2(oy + f.y * t), r2(player.z + f.z * t), RH.nx, RH.ny, RH.nz, sid, r2(player.yaw)];
+  if (SPRAYS[sid].data) a.push(SPRAYS[sid].data); // custom picture: send it so everyone sees it
   if (net.role === 'client') netSend({ t: 'spray', a }); else fx('spray', ...a);
 }
 const VOICE = { // [what your own side hears, what the other team hears] when the ultimate goes off
@@ -6245,10 +6295,11 @@ const FX = {
     sndTone(kind === 'enemy' ? 990 : 760, .09, .14, 'sine', kind === 'enemy' ? 1480 : 1140);
     toast(`${String(who || 'Ally').slice(0, 16)}: ${text ? String(text).slice(0, 40) : kind === 'enemy' ? 'Enemy spotted!' : 'Over here'}`);
   },
-  spray(owner, x, y, z, nx, ny, nz, id, yaw) {
+  spray(owner, x, y, z, nx, ny, nz, id, yaw, data) {
     if (!isFinite(x) || !isFinite(z)) return;
     if (sprayOf[owner]) sprayGroup.remove(sprayOf[owner]);
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshLambertMaterial({ map: sprayTex(SPRAYS[id] ? id : 'logo'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+    const map = validSprayData(data) ? dataTex(data) : sprayTex(SPRAYS[id] ? id : 'logo');
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshLambertMaterial({ map, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
     m.position.set(x + nx * .02, y + ny * .02, z + nz * .02);
     if (ny > .5) { m.rotation.set(-Math.PI / 2, 0, 0); m.rotateZ(+yaw || 0); } else m.lookAt(x + nx, y, z + nz);
     sprayGroup.add(m); sprayOf[owner] = m;
@@ -6602,7 +6653,7 @@ function hostGameMsg(e, d) {
     case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
     case 'ffa': castFF(e, !!d.y); break;
     case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) { fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); botsFollowPing(e, +d.a[1], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc'); } break;
-    case 'spray': if (e.alive && Array.isArray(d.a) && d.a.length === 9) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]), +d.a[8] || 0); break;
+    case 'spray': if (e.alive && Array.isArray(d.a) && (d.a.length === 9 || d.a.length === 10)) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]).slice(0, 24), +d.a[8] || 0, ...(validSprayData(d.a[9]) ? [d.a[9]] : [])); break;
     case 'cast':
       if (e.alive && d.tp === e.tpSeq) { e.x = e.nx = +d.x || 0; e.y = e.ny = +d.y || 0; e.z = e.nz = +d.z || 0; e.yaw = +d.yw || 0; e.pitch = +d.pt || 0; e.vx = +d.vx || 0; e.vz = +d.vz || 0; castAbility(e, d.k, cleanTarget(d.tg)); }
       break;
@@ -9897,19 +9948,188 @@ function statsDashHTML() {
     <div class="sdCard"><div class="sdT">MAPS · win rate</div>${bars(maps, r => Math.round(r.v) + '% · ' + r.m)}</div>
     <div class="sdCard"><div class="sdT">WEAPONS · kills</div>${bars(weps, r => r.n)}</div></div>`;
 }
+/* ---------- spray studio: draw your own spray or import a picture ---------- */
+function registerCustomSpray(r) {
+  const img = new Image(); img.src = r.data;
+  SPRAYS[r.id] = { name: r.name, custom: true, data: r.data, draw(x) { if (img.complete) x.drawImage(img, 0, 0, 128, 128); } };
+  if (!profile.sprays.includes(r.id)) profile.sprays.push(r.id);
+  return r.id;
+}
+const SS_PAL = ['#ffffff', '#0b0e12', '#ff4655', '#ff9a2a', '#ffd34d', '#7fd36b', '#2fe0b6', '#4fa3ff', '#8a5cff', '#ff5c8a', '#8b5a2b', '#9aa6b2'];
+const ss = { tool: 'brush', undo: [], down: false, last: null, editId: null };
+const ssCtx = () => $('ssCv').getContext('2d', { willReadFrequently: true });
+function ssMsg(t, err) { const m = $('ssMsg'); m.textContent = t; m.classList.toggle('err', !!err); }
+function ssPush() { const x = ssCtx(); ss.undo.push(x.getImageData(0, 0, 256, 256)); if (ss.undo.length > 25) ss.undo.shift(); }
+function openSprayStudio(editId) {
+  const rec = editId && (profile.customSprays || []).find(r => r.id === editId);
+  ss.editId = rec ? rec.id : null; ss.undo = []; const x = ssCtx(); x.clearRect(0, 0, 256, 256);
+  if (rec) { const im = new Image(); im.onload = () => { x.imageSmoothingEnabled = true; x.drawImage(im, 0, 0, 256, 256); }; im.src = rec.data; }
+  $('ssName').value = rec ? rec.name : 'My Spray'; $('ssDel').classList.toggle('hidden', !rec); ssMsg('');
+  $('ssPal').innerHTML = SS_PAL.map(c => `<button style="background:${c}" data-c="${c}"></button>`).join('');
+  $('ssPal').querySelectorAll('button').forEach(b => b.onclick = () => { $('ssColor').value = b.dataset.c; if (ss.tool === 'eraser') ssTool('brush'); });
+  $('sprayStudio').classList.remove('hidden'); tick();
+}
+function closeSprayStudio() { $('sprayStudio').classList.add('hidden'); }
+function ssTool(t) { ss.tool = t; $('ssTools').querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t)); }
+function ssPos(e) { const r = $('ssCv').getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 256, (e.clientY - r.top) / r.height * 256]; }
+function ssLine(a, b) {
+  const x = ssCtx(); x.save(); x.globalCompositeOperation = ss.tool === 'eraser' ? 'destination-out' : 'source-over';
+  x.strokeStyle = x.fillStyle = $('ssColor').value; x.lineWidth = +$('ssSize').value; x.lineCap = x.lineJoin = 'round';
+  x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0] + .01, b[1]); x.stroke(); x.restore();
+}
+function ssFill(px, py) {
+  const x = ssCtx(), im = x.getImageData(0, 0, 256, 256), d = im.data, i0 = ((py | 0) * 256 + (px | 0)) * 4;
+  const c = $('ssColor').value, nr = parseInt(c.slice(1, 3), 16), ng = parseInt(c.slice(3, 5), 16), nb = parseInt(c.slice(5, 7), 16);
+  const [r0, g0, b0, a0] = [d[i0], d[i0 + 1], d[i0 + 2], d[i0 + 3]];
+  if (a0 === 255 && r0 === nr && g0 === ng && b0 === nb) return;
+  const same = i => Math.abs(d[i] - r0) + Math.abs(d[i + 1] - g0) + Math.abs(d[i + 2] - b0) + Math.abs(d[i + 3] - a0) < 60;
+  const seen = new Uint8Array(65536), st = [(py | 0) * 256 + (px | 0)];
+  while (st.length) { const p = st.pop(); if (seen[p]) continue; seen[p] = 1; const i = p * 4; if (!same(i)) continue; d[i] = nr; d[i + 1] = ng; d[i + 2] = nb; d[i + 3] = 255; const X = p & 255, Y = p >> 8; if (X > 0) st.push(p - 1); if (X < 255) st.push(p + 1); if (Y > 0) st.push(p - 256); if (Y < 255) st.push(p + 256); }
+  x.putImageData(im, 0, 0);
+}
+function ssText(px, py) {
+  const t = $('ssText').value.trim(); if (!t) { ssMsg('Type something in the Text box first', true); return; }
+  const x = ssCtx(), fs = Math.max(14, +$('ssSize').value * 3);
+  x.font = `900 ${fs}px Oswald, Impact, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.lineWidth = Math.max(3, fs / 9); x.strokeStyle = '#0b0e12'; x.lineJoin = 'round'; x.strokeText(t, px, py, 250); x.fillStyle = $('ssColor').value; x.fillText(t, px, py, 250);
+}
+// lay a picture onto the canvas, scaled to fit
+function ssPlace(img) {
+  const x = ssCtx(), w = img.naturalWidth || img.width, h = img.naturalHeight || img.height; if (!w || !h) return false;
+  ssPush(); const k = Math.min(248 / w, 248 / h), dw = w * k, dh = h * k;
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(img, (256 - dw) / 2, (256 - dh) / 2, dw, dh);
+  try { x.getImageData(0, 0, 1, 1); } catch (e) { x.putImageData(ss.undo.pop(), 0, 0); return false; } // cross-site picture we may not read
+  return true;
+}
+const SS_BLOCKED = 'That website does not allow copying its picture. Right-click the picture → Copy image, then press Ctrl+V here (or save it and use Upload).';
+function ssLoadBlob(blob) {
+  if (!blob || !/^image\//.test(blob.type)) { ssMsg('That is not a picture', true); return; }
+  if (blob.size > 15e6) { ssMsg('That picture is too large (15 MB max)', true); return; }
+  const u = URL.createObjectURL(blob), img = new Image();
+  img.onload = () => { URL.revokeObjectURL(u); ssPlace(img) ? ssMsg('Picture added. Tip: "Remove background" cuts out a plain backdrop.') : ssMsg(SS_BLOCKED, true); };
+  img.onerror = () => { URL.revokeObjectURL(u); ssMsg('Could not read that picture', true); };
+  img.src = u;
+}
+function ssLoadURL(u) {
+  u = String(u || '').trim(); if (!u) return;
+  if (!/^(https?:|data:image\/)/i.test(u)) { ssMsg('Paste a full image address starting with https://', true); return; }
+  // a Google Images result link carries the real picture in ?imgurl=
+  try { const q = new URL(u); if (q.searchParams.get('imgurl')) u = q.searchParams.get('imgurl'); } catch (e) { }
+  ssMsg('Loading…'); const img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = () => ssPlace(img) ? ssMsg('Picture added. Tip: "Remove background" cuts out a plain backdrop.') : ssMsg(SS_BLOCKED, true);
+  img.onerror = () => ssMsg(SS_BLOCKED, true);
+  img.src = u;
+}
+// make a plain backdrop transparent: flood from the edges, removing colours close to the corner colour
+function ssCutBg() {
+  const x = ssCtx(), im = x.getImageData(0, 0, 256, 256), d = im.data; ssPush();
+  const seen = new Uint8Array(65536), st = [];
+  for (let i = 0; i < 256; i++) st.push(i, 255 * 256 + i, i * 256, i * 256 + 255);
+  // the backdrop colour = the most common colour at the corners of the picture's opaque area
+  let x0 = 256, y0 = 256, x1 = -1, y1 = -1;
+  for (let p = 0; p < 65536; p++) if (d[p * 4 + 3] > 10) { const X = p & 255, Y = p >> 8; if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y; }
+  if (x1 < 0) { ssMsg('Nothing to cut out yet'); ss.undo.pop(); return; }
+  const cs = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([X, Y]) => (Y * 256 + X) * 4).filter(i => d[i + 3] > 10);
+  const near = (i, j) => Math.abs(d[i] - d[j]) + Math.abs(d[i + 1] - d[j + 1]) + Math.abs(d[i + 2] - d[j + 2]) < 60;
+  const ref = cs.sort((i, j) => cs.filter(k => near(k, j)).length - cs.filter(k => near(k, i)).length)[0];
+  if (ref === undefined) { ssMsg('The background is already see-through'); ss.undo.pop(); return; }
+  const r0 = d[ref], g0 = d[ref + 1], b0 = d[ref + 2]; let n = 0;
+  while (st.length) { const p = st.pop(); if (seen[p]) continue; seen[p] = 1; const i = p * 4;
+    if (d[i + 3] > 10 && Math.abs(d[i] - r0) + Math.abs(d[i + 1] - g0) + Math.abs(d[i + 2] - b0) > 90) continue;
+    d[i + 3] = 0; n++; const X = p & 255, Y = p >> 8; if (X > 0) st.push(p - 1); if (X < 255) st.push(p + 1); if (Y > 0) st.push(p - 256); if (Y < 255) st.push(p + 256); }
+  x.putImageData(im, 0, 0); ssMsg(n > 200 ? 'Background removed' : 'No plain background found');
+}
+function ssExport() {
+  const src = $('ssCv'); let out = '';
+  for (const size of [128, 96]) {
+    const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, size, size);
+    out = c.toDataURL('image/webp', .85); if (!out.startsWith('data:image/webp')) out = c.toDataURL('image/png');
+    if (out.length < 45000) break;
+  }
+  return out;
+}
+function ssEmpty() { const d = ssCtx().getImageData(0, 0, 256, 256).data; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) return false; return true; }
+function ssSave() {
+  if (ssEmpty()) { ssMsg('Draw something or add a picture first', true); return; }
+  profile.customSprays = profile.customSprays || [];
+  if (!ss.editId && profile.customSprays.length >= 12) { ssMsg('You have 12 custom sprays — delete one in the Collection first', true); return; }
+  const name = $('ssName').value.trim().slice(0, 18) || 'My Spray', data = ssExport();
+  let rec = ss.editId && profile.customSprays.find(r => r.id === ss.editId);
+  if (rec) { rec.name = name; rec.data = data; } else { rec = { id: 'cs_' + Date.now().toString(36), name, data }; profile.customSprays.push(rec); }
+  registerCustomSpray(rec); delete SPRAY_URL[rec.id]; profile.spray = rec.id;
+  try { saveProfile(); } catch (e) { ssMsg('Browser storage is full — delete some custom content first', true); return; }
+  SND.buy(); closeSprayStudio(); toastMenu(`Spray "${name}" saved and equipped`); if (curTab === 'collection') renderCollection();
+}
+function deleteCustomSpray(id) {
+  profile.customSprays = (profile.customSprays || []).filter(r => r.id !== id); profile.sprays = profile.sprays.filter(s => s !== id);
+  delete SPRAYS[id]; delete SPRAY_URL[id]; if (profile.spray === id) profile.spray = 'logo'; saveProfile();
+}
+(() => {
+  const cv = $('ssCv');
+  cv.addEventListener('pointerdown', e => {
+    const p = ssPos(e); ssPush();
+    if (ss.tool === 'fill') { ssFill(p[0], p[1]); return; }
+    if (ss.tool === 'text') { ssText(p[0], p[1]); return; }
+    ss.down = true; ss.last = p; ssLine(p, p); cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e => { if (!ss.down) return; const p = ssPos(e); ssLine(ss.last, p); ss.last = p; });
+  const up = () => { ss.down = false; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  $('ssTools').querySelectorAll('[data-t]').forEach(b => b.onclick = () => ssTool(b.dataset.t));
+  $('ssUndo').onclick = () => { if (ss.undo.length) ssCtx().putImageData(ss.undo.pop(), 0, 0); };
+  $('ssClear').onclick = () => { ssPush(); ssCtx().clearRect(0, 0, 256, 256); };
+  $('ssCut').onclick = ssCutBg;
+  $('ssClose').onclick = closeSprayStudio; $('ssSave').onclick = ssSave;
+  $('ssDel').onclick = () => { if (ss.editId) { deleteCustomSpray(ss.editId); closeSprayStudio(); if (curTab === 'collection') renderCollection(); } };
+  const google = () => { const q = $('ssQuery').value.trim() || 'sticker png'; window.open('https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q), '_blank', 'noopener'); ssMsg('Right-click a picture → Copy image, then come back and press Ctrl+V'); };
+  $('ssGoogle').onclick = google;
+  $('ssUpload').onclick = () => $('ssFile').click();
+  $('ssFile').onchange = () => { const f = $('ssFile').files[0]; if (f) ssLoadBlob(f); $('ssFile').value = ''; };
+  $('ssLoad').onclick = () => ssLoadURL($('ssUrl').value);
+  $('ssPaste').onclick = async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const it of items) { const t = it.types.find(t => t.startsWith('image/')); if (t) { ssLoadBlob(await it.getType(t)); return; } }
+      const txt = await navigator.clipboard.readText(); if (txt) { ssLoadURL(txt); return; }
+      ssMsg('No picture on the clipboard — right-click a picture → Copy image first', true);
+    } catch (e) { ssMsg('Press Ctrl+V (⌘V on Mac) to paste the picture', true); }
+  };
+  for (const id of ['ssName', 'ssText', 'ssQuery', 'ssUrl']) $(id).addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { if (id === 'ssQuery') google(); else if (id === 'ssUrl') ssLoadURL($('ssUrl').value); } });
+  // Ctrl+V anywhere in the studio (except while typing in a text box)
+  document.addEventListener('paste', e => {
+    if ($('sprayStudio').classList.contains('hidden')) return;
+    const cd = e.clipboardData; if (!cd) return;
+    const f = [...cd.items].find(i => i.kind === 'file' && i.type.startsWith('image/'));
+    if (f) { e.preventDefault(); ssLoadBlob(f.getAsFile()); return; }
+    if (e.target && e.target.tagName === 'INPUT') return;
+    const html = cd.getData('text/html'), m = html && html.match(/<img[^>]+src="([^"]+)"/i), t = m ? m[1].replace(/&amp;/g, '&') : cd.getData('text/plain');
+    if (t) { e.preventDefault(); ssLoadURL(t); }
+  });
+  const stage = $('ssStage');
+  stage.addEventListener('dragover', e => { e.preventDefault(); stage.classList.add('drag'); });
+  stage.addEventListener('dragleave', () => stage.classList.remove('drag'));
+  stage.addEventListener('drop', e => {
+    e.preventDefault(); stage.classList.remove('drag'); const dt = e.dataTransfer;
+    const f = [...dt.files].find(f => f.type.startsWith('image/')); if (f) { ssLoadBlob(f); return; }
+    const html = dt.getData('text/html'), m = html && html.match(/<img[^>]+src="([^"]+)"/i);
+    ssLoadURL(m ? m[1].replace(/&amp;/g, '&') : dt.getData('text/uri-list') || dt.getData('text/plain'));
+  });
+})();
+
 /* collection tab */
 function renderCollection() {
   const all = Object.values(WEAPONS).filter(w => w.price !== undefined && w.cat !== 'Ultimate');
   const maxD = Math.max(...all.map(w => w.dmg[1] * w.pellets)), maxR = 16, maxM = 100;
   const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
-  const sprayHTML = `<div class="collCat">SPRAYS · press ${keyName(settings.binds.spray)} in a match</div><div class="sprayGrid">${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}</div>`; }).join('')}</div>`;
+  const sprayHTML = `<div class="collCat">SPRAYS · press ${keyName(settings.binds.spray)} in a match</div><div class="sprayGrid"><div class="sprayCard add" id="collNewSpray"><b>+</b>CREATE SPRAY</div>${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).sort((a, b) => !!SPRAYS[b].custom - !!SPRAYS[a].custom).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}${SPRAYS[id].custom ? `<button class="scEd" data-sedit="${id}" title="Edit">✎</button>` : ''}</div>`; }).join('')}</div>`;
   $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     ${(() => { const lv = masteryLevel(k), n = masteryKills(k), nx = MASTERY[lv + 1]; return `<div class="mast"><span class="ml">MASTERY ${lv + 1} · ${MASTERY[lv][1]}</span><div class="b"><div style="width:${nx ? Math.min(100, (n - MASTERY[lv][0]) / (nx[0] - MASTERY[lv][0]) * 100) : 100}%"></div></div><span class="ol">${n} kills${nx ? ' · next: ' + nx[2] + ' at ' + nx[0] : ' · MAX'}</span></div>`; })()}
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
   $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
+  $('collNewSpray').onclick = () => openSprayStudio();
+  $('collBox').querySelectorAll('[data-sedit]').forEach(b => b.onclick = e => { e.stopPropagation(); openSprayStudio(b.dataset.sedit); });
   $('collBox').querySelectorAll('[data-spray]').forEach(c => c.onclick = () => { if (!profile.sprays.includes(c.dataset.spray)) return; tick(); profile.spray = c.dataset.spray; saveProfile(); renderCollection(); });
 }
 
@@ -9985,6 +10205,8 @@ $('btnCopyCode').onclick = () => {
 };
 
 profile.customAgents = profile.customAgents.map(d => { try { return registerCustomAgent(d).def; } catch (e) { return null; } }).filter(Boolean);
+profile.customSprays = (Array.isArray(profile.customSprays) ? profile.customSprays : []).filter(r => r && /^cs_[a-z0-9]+$/.test(r.id) && validSprayData(r.data)).slice(0, 12);
+profile.customSprays.forEach(r => { r.name = String(r.name || 'My Spray').slice(0, 18); registerCustomSpray(r); });
 profile.customMaps = (Array.isArray(profile.customMaps) ? profile.customMaps : []).filter(r => { try { return r && /^cm[a-z0-9]+$/.test(r.id) && registerCustomMap(r); } catch (e) { return false; } });
 if (settings.map && !MAPS[settings.map] && settings.map !== 'random') settings.map = 'dustwall';
 if (!AGENT[profile.fav]) profile.fav = 'jett';
