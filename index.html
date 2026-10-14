@@ -297,6 +297,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .skmFoot .btn:disabled{opacity:.55;cursor:default}
 .skpPanel{width:min(900px,94vw);max-height:86vh;overflow:auto}
 .wcard.pick{cursor:pointer;transition:.12s}
+.mast{margin:6px 0 4px}.mast .ml{font:700 11px Oswald,sans-serif;letter-spacing:1.5px;color:#ffd36a}.mast .b{height:4px;background:rgba(255,255,255,.1);margin:3px 0}.mast .b div{height:100%;background:linear-gradient(90deg,#ffd36a,#ff8a3d)}.mast .ol{font-size:10px}
 .wcard.pick:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25)}
 .wskin{font-size:12px;font-weight:700;margin-bottom:4px}
 #menuToast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);background:rgba(15,25,35,.95);border:1px solid var(--teal);padding:10px 18px;font-size:14px;z-index:70;opacity:0;pointer-events:none;transition:.25s}
@@ -2901,8 +2902,8 @@ function killEntity(t, src, label, head) {
     if (src.bladeMag > 0) src.bladeMag = 5;
     for (const id in t.damagedBy) { const a = entities[id]; if (a && a !== src && isEnemy(a, t) && game.time - t.damagedBy[id] < 10) { a.assists++; if (kit(a, 'clove')) a.soulT = 4; } }
     for (const c of [src, ...Object.keys(t.damagedBy).map(id => entities[id])]) if (c && keyOfType(c, 'pmu') && c.alive && !c.isPlayer && !c.remote && c.charges && c.charges[keyOfType(c, 'pmu')] > 0 && c.hp < 100) { timedFx.push({ t: .3, update() { }, end() { if (c.alive && c.soulT > 0) castAbility(c, keyOfType(c, 'pmu')); } }); break; }
-    if (src.isPlayer) playerKillFx(src.roundKills, !!head, skinOf(src, curWeapon(src)), t);
-    if (src.remote) netTo(src.remote, { t: 'kc', n: src.roundKills, h: head ? 1 : 0 });
+    if (src.isPlayer) { playerKillFx(src.roundKills, !!head, skinOf(src, curWeapon(src)), t); const wk = curWeapon(src).key; if (label === WEAPONS[wk].name || (wk === 'knife' && label === 'Knife')) addMasteryKill(wk); }
+    if (src.remote) netTo(src.remote, { t: 'kc', n: src.roundKills, h: head ? 1 : 0, w: Object.keys(WEAPONS).find(k => WEAPONS[k].name === label) || (label === 'Knife' ? 'knife' : '') });
   }
   if (t.primary || t.secondary) t.mvpGun = (t.primary || t.secondary).key;
   // weapon drop
@@ -4366,6 +4367,10 @@ function equipView() {
     const well = new THREE.Vector3(0, long ? -.13 : -.12, long ? gun.userData.muzzleZ * .33 : -.01); mg.position.copy(well); mg.visible = false; gun.add(mg);
     Object.assign(gun.userData, { magProp: mg, magWell: well });
   }
+  if (!knife && model !== 'blades' && model !== 'beam') {
+    const mz = gun.userData.muzzleZ, ch = masteryCharm(w.key); if (ch) { ch.position.set(-.045, -.035, mz * .22); ch.scale.setScalar(1.8); gun.add(ch); gun.userData.charm = ch; }
+    const ct = masteryCounter(w.key); if (ct) { ct.position.set(-.042, .012, mz * .42); ct.rotation.y = -Math.PI / 2; gun.add(ct); }
+  }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: (SKINS[skinOf(player, w)] && SKINS[skinOf(player, w)].line.flash != null) ? SKINS[skinOf(player, w)].line.flash : 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
@@ -5714,6 +5719,7 @@ function updateCamera(dt) {
   if (g && p.alive) {
     const spd = Math.hypot(p.vx, p.vz), bob = p.onGround ? spd / 6.75 : 0;
     vmKick = Math.max(0, vmKick - dt * 8); vmEquip = Math.max(0, vmEquip - dt / Math.max(.2, p.equipT || .25)); updateVmProps(dt);
+    { const chm = g.userData.charm; if (chm) { const sw = Math.hypot(p.vx, p.vz) / 6.75; chm.rotation.z = Math.sin(game.time * 7) * .25 * sw + vmKick * .5 + Math.sin(game.time * 1.7) * .06; chm.rotation.x = Math.sin(game.time * 5.3) * .15 * sw; if (chm.userData.prism) chm.userData.prism.rotation.y += dt * 2; } }
     const ks = vmRoot.userData.gun && vmRoot.userData.gun.userData.kunai;
     if (ks) ks.forEach((k, i) => { const order = [2, 1, 3, 0, 4][i]; k.visible = order < p.bladeMag; k.position.y = .05 - Math.abs(i - 2) * .02 + Math.sin(game.time * 3 + i) * .012; k.rotation.z = Math.sin(game.time * 2 + i) * .15; });
     const t = game.time * 9;
@@ -6596,7 +6602,7 @@ function clientRecv(d) {
     case 'toast': if (game.state === 'playing') toast(String(d.m || '')); break;
     case 'kb': if (player && player.alive) { player.vx = +d.vx || 0; player.vz = +d.vz || 0; player.vy = Math.max(player.vy, +d.vy || 0); player.onGround = false; player.kbT = .9; player.kbVx = player.vx; player.kbVz = player.vz; } break;
     case 'hurt': { const s = entities[d.s]; if (s && player && game.state === 'playing') showDamageDir(s); break; }
-    case 'kc': if (game.state === 'playing') { playerKillFx(d.n | 0 || 1, !!d.h, skinOf(player, curWeapon(player)), null); if (player.bladeMag > 0) player.bladeMag = 5; } break;
+    case 'kc': if (game.state === 'playing') { playerKillFx(d.n | 0 || 1, !!d.h, skinOf(player, curWeapon(player)), null); if (d.w && WEAPONS[d.w]) addMasteryKill(d.w); if (player.bladeMag > 0) player.bladeMag = 5; } break;
     case 'ffv': renderFF(d.s); break;
     case 'over': if (game.state === 'playing') finishMatch(); break;
   }
@@ -7216,6 +7222,51 @@ function botsReply(from, txt) {
   if (!key) return;
   const who = shuffle(bots.filter(b => key === 'replyGG' || b.team === from.team)).slice(0, key === 'replyGG' ? 3 : 1);
   who.forEach((b, i) => setTimeout(() => botSay(b, key, { force: true, delay: 0 }), 700 + i * 900));
+}
+/* =====================================================================
+   WEAPON MASTERY — kills with a gun level it up: charms on the gun and titles
+   ===================================================================== */
+const MASTERY = [ // [kills needed, level name, reward text]
+  [0, 'Recruit', ''], [10, 'Trained', 'Kill counter on the gun'], [25, 'Skilled', 'Bronze charm'], [60, 'Veteran', 'Silver charm'],
+  [120, 'Expert', 'Title'], [250, 'Master', 'Gold charm'], [500, 'Legend', 'Prismatic charm + Legend title'],
+];
+const masteryKills = k => (profile.mastery && profile.mastery[k]) || 0;
+const masteryLevel = k => { const n = masteryKills(k); let l = 0; MASTERY.forEach((m, i) => { if (n >= m[0]) l = i; }); return l; };
+const wName = k => k === 'knife' ? 'Knife' : WEAPONS[k] ? WEAPONS[k].name : k;
+function addMasteryKill(key) {
+  if (!WEAPONS[key] || WEAPONS[key].cat === 'Ultimate' || RANGE()) return;
+  profile.mastery = profile.mastery || {}; const before = masteryLevel(key);
+  profile.mastery[key] = (profile.mastery[key] || 0) + 1; const after = masteryLevel(key);
+  if (after > before) {
+    const [, name, rw] = MASTERY[after];
+    if (after === 4 && !profile.titles.includes(wName(key) + ' Expert')) profile.titles.push(wName(key) + ' Expert');
+    if (after === 6 && !profile.titles.includes(wName(key) + ' Legend')) profile.titles.push(wName(key) + ' Legend');
+    banner(`${wName(key).toUpperCase()} MASTERY ${after + 1}`, `${name}${rw ? ' · unlocked: ' + rw : ''}`, 'win', 3, true); sndTone(660, .3, .2, 'triangle', 1320);
+    if (player && player.alive) equipView();
+  }
+  saveProfile();
+}
+// a little charm hanging off the side of the gun (viewmodel), by mastery level
+function masteryCharm(key) {
+  const lv = masteryLevel(key); if (lv < 2) return null;
+  const g = new THREE.Group(), col = lv >= 6 ? 0xffffff : lv >= 5 ? 0xffc83a : lv >= 3 ? 0xd8dde4 : 0xc0804a;
+  const metal = new THREE.MeshPhongMaterial({ color: col, shininess: 120, specular: 0xffffff, emissive: lv >= 6 ? 0x6a3aff : 0 });
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(.002, .002, .03, 4), metal); chain.position.y = -.015; g.add(chain);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.006, .0015, 6, 12), metal); g.add(ring);
+  let gem;
+  if (lv >= 3) { const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const r = i % 2 ? .006 : .014, a = i / 10 * Math.PI * 2 + Math.PI / 2; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); } gem = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .004, bevelEnabled: false }), metal); gem.position.set(0, -.044, -.002); }
+  else { gem = new THREE.Mesh(new THREE.BoxGeometry(.014, .014, .006), metal); gem.position.y = -.04; }
+  g.add(gem);
+  if (lv >= 6) { const gl = AB.glow(0xb07aff, .06); gl.position.copy(gem.position); g.add(gl); g.userData.prism = gem; }
+  return g;
+}
+// kill counter decal (level 2+): small glowing digits on the side of the gun
+function masteryCounter(key) {
+  if (masteryLevel(key) < 1) return null;
+  const c = document.createElement('canvas'); c.width = 128; c.height = 40; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(0,0,0,.65)'; x.fillRect(0, 0, 128, 40); x.fillStyle = '#7dffd0'; x.font = '700 28px Oswald, monospace'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(masteryKills(key)).padStart(4, '0'), 64, 21);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(.06, .019), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
+  return m;
 }
 /* =====================================================================
    EMOTES (hold J for the wheel) + ACE CINEMATIC
@@ -9241,6 +9292,7 @@ function renderCollection() {
   const sprayHTML = `<div class="collCat">SPRAYS · press ${keyName(settings.binds.spray)} in a match</div><div class="sprayGrid">${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}</div>`; }).join('')}</div>`;
   $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
+    ${(() => { const lv = masteryLevel(k), n = masteryKills(k), nx = MASTERY[lv + 1]; return `<div class="mast"><span class="ml">MASTERY ${lv + 1} · ${MASTERY[lv][1]}</span><div class="b"><div style="width:${nx ? Math.min(100, (n - MASTERY[lv][0]) / (nx[0] - MASTERY[lv][0]) * 100) : 100}%"></div></div><span class="ol">${n} kills${nx ? ' · next: ' + nx[2] + ' at ' + nx[0] : ' · MAX'}</span></div>`; })()}
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
   $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
