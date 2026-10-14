@@ -635,7 +635,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 46</div>
+<div id="buildTag">VALOR STRIKE · build 48</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -758,7 +758,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <!-- ================= PAUSE ================= -->
 <div id="pause" class="screen hidden">
   <div class="panel">
-    <h3>PAUSED</h3>
+    <h3>MENU</h3>
+    <p class="os" style="margin:-4px 0 10px;opacity:.75;font-size:13px">The match keeps running while you are away — click Resume to take control again.</p>
     <button class="btn primary" id="btnResume">Resume</button>
     <div class="row"><label>Sensitivity <span id="sensVal2" class="os">1.00</span></label><input type="range" id="sens2" min="0.2" max="3" step="0.05" value="1"></div>
     <div class="row"><label>Volume</label><input type="range" id="vol2" min="0" max="1" step="0.05" value="0.6"></div>
@@ -876,7 +877,7 @@ const AGENTS = [
           X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Draw your glowing bow and fire up to three wall-piercing energy blasts yourself (left click) within 6 seconds.' } } },
   { id: 'brim', name: 'Brimstone', role: 'Controller', color: '#d29a52', glyph: 'BR', desc: 'A commander who rains smokes and fire from the sky.',
     ab: { C: { name: 'Stim Beacon', cost: 200, max: 1, free: 0, type: 'stim', desc: 'A field that boosts allies\' fire rate and speed.' },
-          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', desc: 'Fire an incendiary grenade from your wrist launcher; it bounces once, then bursts into a zone of fire.' },
+          Q: { name: 'Incendiary', cost: 250, max: 1, free: 0, type: 'molly', launcher: true, desc: 'Fire an incendiary grenade from your wrist launcher; it bounces once, then bursts into a zone of fire.' },
           E: { name: 'Sky Smoke', cost: 100, max: 3, free: 1, type: 'skySmoke', desc: 'Long-range, long-lasting smoke. (1 free)' },
           X: { name: 'Orbital Strike', ult: 7, type: 'orbital', desc: 'A devastating orbital laser strike where you aim.' } } },
   { id: 'reyna', name: 'Reyna', role: 'Duelist', color: '#c25bff', glyph: 'RY', desc: 'A vampiric duelist who grows stronger with every kill.',
@@ -895,15 +896,15 @@ AGENTS.push(
     ab: { C: { name: 'Boom Bot', cost: 300, max: 1, free: 0, type: 'boombot', desc: 'A bot that rolls forward, chases the nearest enemy and explodes.' },
           Q: { name: 'Blast Pack', cost: 200, max: 2, free: 0, type: 'satchel', dmg: 50, rad: 4.5, color: 0xff9b3d, label: 'Blast Pack', desc: 'Throw a satchel that sticks to surfaces. Press Q again to blow it up and launch everyone nearby — yourself too. Press Q twice fast to blast yourself into the air.' },
           E: { name: 'Paint Shells', cost: 0, max: 1, free: 1, type: 'paint', desc: 'A cluster grenade that splits into four more explosions.' },
-          X: { name: 'Showstopper', ult: 8, type: 'rocket', desc: 'Fire a rocket that explodes on impact with huge damage.' } } },
+          X: { name: 'Showstopper', ult: 8, type: 'rocket', desc: 'Equip a rocket launcher (press X again to put it away), then LEFT click to fire a rocket that explodes on impact with huge damage.' } } },
   { id: 'killjoy', name: 'Killjoy', role: 'Sentinel', color: '#d8e04a', glyph: 'KJ', desc: 'A genius inventor who locks down sites with gadgets.',
-    ab: { C: { name: 'Nanoswarm', cost: 200, max: 2, free: 0, type: 'molly', zkind: 'fire', zr: 3.2, zt: 5, dps: 45, color: 0xd8e04a, desc: 'A grenade that bursts into a damaging swarm.' },
+    ab: { C: { name: 'Nanoswarm', cost: 200, max: 2, free: 0, type: 'dormant', dkind: 'nano', color: 0xd8e04a, desc: 'Throw a hidden grenade. Press the key again to ACTIVATE every Nanoswarm you placed (left click while readied throws another).' },
           Q: { name: 'Alarmbot', cost: 200, max: 1, free: 0, type: 'alarm', desc: 'A little robot that waits for enemies. When one comes close it hops at them and bursts: they are revealed and VULNERABLE (take double damage) for 4s.' },
           E: { name: 'Turret', cost: 0, max: 1, free: 1, type: 'turret', desc: 'Automatically shoots enemies it can see for 45 seconds.' },
           X: { name: 'Lockdown', ult: 9, type: 'lockdown', desc: 'Place a device that charges for 6 seconds, then detains every enemy in a huge radius for 8 seconds: slowed, unable to shoot or use abilities.' } } },
   { id: 'cypher', name: 'Cypher', role: 'Sentinel', color: '#c9c3ae', glyph: 'CY', desc: 'An information broker who watches every flank.',
     ab: { C: { name: 'Trapwire', cost: 200, max: 2, free: 0, type: 'trap', desc: 'Aim at a wall: a tripwire stretches across to the opposite wall and reveals + slows the first enemy who crosses it.' },
-          Q: { name: 'Cyber Cage', cost: 100, max: 2, free: 0, type: 'smokeSmall', range: 25, r: 3.2, dur: 8, color: 0x8e8a7a, desc: 'A quick smoke cage where you aim.' },
+          Q: { name: 'Cyber Cage', cost: 100, max: 2, free: 0, type: 'dormant', dkind: 'cage', color: 0x8e8a7a, desc: 'Throw a cage that waits on the floor. Press the key again to ACTIVATE all your cages into smokes (left click while readied throws another).' },
           E: { name: 'Spycam', cost: 0, max: 1, free: 1, type: 'cam', desc: 'A camera that pulses to reveal nearby enemies for 15 seconds.' },
           X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
   { id: 'skye', name: 'Skye', role: 'Initiator', color: '#7fd36b', glyph: 'SK', desc: 'A guide who heals the team and hunts enemies with creatures of light.',
@@ -912,7 +913,7 @@ AGENTS.push(
           E: { name: 'Guiding Light', cost: 150, max: 2, free: 1, type: 'flash', life: .75, guided: 1, desc: 'A hawk that bursts into a flash. Hold the key and turn to curve it with your aim, release to pop it. (1 free per round)' },
           X: { name: 'Seekers', ult: 8, type: 'seekers', desc: 'Three seekers hunt the nearest enemies and nearsight them.' } } },
   { id: 'viper', name: 'Viper', role: 'Controller', color: '#3fbf7a', glyph: 'VP', desc: 'A chemist who chokes out areas with poison and acid.',
-    ab: { C: { name: 'Snake Bite', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'acid', zr: 3.6, zt: 6, dps: 32, color: 0x5fd35a, desc: 'A canister that bursts into a pool of acid.' },
+    ab: { C: { name: 'Snake Bite', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'acid', zr: 3.6, zt: 6, dps: 32, color: 0x5fd35a, launcher: true, desc: 'Fire a chemical canister from your wrist launcher; it shatters into a pool of acid.' },
           Q: { name: 'Poison Cloud', cost: 200, max: 1, free: 0, type: 'skySmoke', range: 40, r: 4.6, dur: 14, color: 0x2f8f55, desc: 'Throw a toxic cloud. Press Q again to turn it off or on. Uses fuel while active.' },
           E: { name: 'Toxic Screen', cost: 0, max: 1, free: 1, type: 'screen', desc: 'A long toxic wall that goes through walls. Press E again to turn it off or on. Uses fuel while active.' },
           X: { name: "Viper's Pit", ult: 8, type: 'pit', desc: 'A huge toxic cloud that lasts while you stay inside it. You see enemies close to you inside it.' } } },
@@ -2348,7 +2349,15 @@ function makeZone(o) {
   const g = new THREE.Group();
   const disc = new THREE.Mesh(new THREE.CircleGeometry(z.r, 28), new THREE.MeshBasicMaterial({ color: colors[z.kind], transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = .05; g.add(disc);
-  if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap') disc.visible = false;
+  if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap' || z.kind === 'nano' || z.kind === 'cage') disc.visible = false;
+  if (z.kind === 'nano') { // dormant Nanoswarm: small capsule with a slow yellow blink
+    AB.mesh(new THREE.SphereGeometry(.09, 14, 10), AB.lit(0x3b4048), 0, .07, 0, g).scale.y = .6;
+    z.led = AB.mesh(new THREE.SphereGeometry(.025, 8, 6), new THREE.MeshBasicMaterial({ color: 0xd8e04a }), 0, .12, 0, g);
+  }
+  if (z.kind === 'cage') { // dormant Cyber Cage: ivory disc with blue core
+    AB.mesh(new THREE.CylinderGeometry(.12, .14, .05, 16), AB.lit(0xe2dccb), 0, .03, 0, g);
+    z.led = AB.mesh(new THREE.SphereGeometry(.035, 10, 8), new THREE.MeshBasicMaterial({ color: 0x4fa3ff }), 0, .07, 0, g);
+  }
   if (z.kind === 'frag') { z.pulseT = 0; const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - .2, z.r, 32), new THREE.MeshBasicMaterial({ color: 0xb8d6f0, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .07; g.add(ring); }
   if (z.kind === 'acid') {
     const cyl = new THREE.Mesh(new THREE.CylinderGeometry(z.r, z.r, .9, 20, 1, true), new THREE.MeshBasicMaterial({ color: colors.acid, transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -2607,10 +2616,10 @@ const PROJ_MODELS = {
   },
   incShell(c) { // Brimstone's incendiary grenade round: orange body, brass base, tumbling slightly
     const g = new THREE.Group(), sp = new THREE.Group(); g.add(sp);
-    const body = AB.lathe([[0, -.07], [.04, -.07], [.042, -.05], [.042, .04], [.03, .07], [0, .08]], AB.lit(0xff7a22, 0x3a1400)); body.rotation.x = Math.PI / 2; sp.add(body);
+    const body = AB.lathe([[0, -.07], [.04, -.07], [.042, -.05], [.042, .04], [.03, .07], [0, .08]], AB.lit(c, new THREE.Color(c).multiplyScalar(.2).getHex())); body.rotation.x = Math.PI / 2; sp.add(body);
     AB.mesh(new THREE.CylinderGeometry(.044, .044, .025, 14), gm(0xc9a227), 0, 0, -.07, sp).rotation.x = Math.PI / 2;
     AB.mesh(new THREE.TorusGeometry(.043, .006, 6, 16), gm(0x2b3038), 0, 0, .0, sp);
-    g.add(AB.glow(0xff8a2a, .45));
+    g.add(AB.glow(c, .45));
     return { g, anim(t) { sp.rotation.z = t * 10; } };
   },
   canister(c) { // molotovs, incendiaries, acid, nanoswarm, slow orb ...
@@ -2818,13 +2827,13 @@ const ABIL = {
     p.onExpire = () => popFlash(p.x, p.y, p.z, e, 1.8, 'flash'); return true;
   },
   molly(e, ab, target) {
-    const isBrim = e.agent === 'brim' && ab.type === 'molly' && !target, isPhx = e.agent === 'phoenix';
-    const o = target ? lobTo(e, target.x, target.y, target.z) : isBrim ? throwFrom(e, 24, 1.6) : throwFrom(e, 17, 2.5);
-    if (isBrim) { // launched, not thrown: thump, muzzle smoke, recoil on the viewmodel
+    const isLaunch = ab.launcher && !target, isBrim = isLaunch && e.agent === 'brim', isPhx = e.agent === 'phoenix';
+    const o = target ? lobTo(e, target.x, target.y, target.z) : isLaunch ? throwFrom(e, 24, 1.6) : throwFrom(e, 17, 2.5);
+    if (isLaunch) { // launched from the wrist, not thrown: thump, muzzle smoke, recoil on the viewmodel
       e.launchT = .7; sndTone(95, .18, .55, 'square', 40, e.x, e.z); sndNoise(.2, 900, 1, .35, e.x, e.z);
       const f = fwd(e); spawnParticles(o.x + f.x * .4, o.y + f.y * .4, o.z + f.z * .4, 8, 0x9a948a, 1.2, .5);
     }
-    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isBrim ? 'incShell' : 'canister' }, isBrim ? { stick: true, bounces: 1, bounceH: .55, life: 4 } : {})); // Brim's shell skips once, then bursts
+    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isLaunch ? 'incShell' : 'canister' }, isBrim ? { stick: true, bounces: 1, bounceH: .55, life: 4 } : {})); // Brim's shell skips once, then bursts
     p.onLand = () => makeZone({ x: p.x, z: p.z, r: ab.zr || (isPhx ? 3.2 : 4.2), kind: ab.zkind || 'fire', t: ab.zt || (isPhx ? 4 : 7), dps: ab.dps || 60, owner: e, heal: isPhx, label: ab.name }); return true;
   },
   rib(e) {
@@ -2905,6 +2914,7 @@ const ABIL = {
   },
   rocket(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 42), { g: 0, life: 3, color: 0xff7a22, owner: e, stick: true, size: .28, model: 'rocket' }));
+    sndTone(160, .3, .45, 'sawtooth', 60, e.x, e.z); sndNoise(.5, 700, 1, .4, e.x, e.z); const f = fwd(e); spawnParticles(e.x - f.x * .6, eyeY(e), e.z - f.z * .6, 12, 0xb0aaa0, 2, .6);
     const boom = () => explodeAt(p.x, p.y, p.z, e, 150, 80, 6.5, 0xff7a22, 'Showstopper');
     p.onLand = boom; p.onExpire = boom;
     p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.y + 1 - p.y, o.z - p.z) < 1.3) { p.life = 0; break; } };
@@ -2930,6 +2940,10 @@ const ABIL = {
     if (t2 >= 12 || t2 < .6) return fail(t2 < .6 ? 'Not enough room for a Trapwire' : 'Too wide — no wall across to anchor to');
     const len = t2 - .05; makeZone({ x: ax + nx * len / 2, z: az + nz * len / 2, r: len / 2, kind: 'trap', t: 60, owner: e, wa: nz ? 1 : 0 });
     return true;
+  },
+  dormant(e, ab) { // thrown; lands and waits (hidden) until activated
+    const p = spawnProj(Object.assign(throwFrom(e, 15, 2.5), { life: 4, color: ab.color, owner: e, model: 'canister', stick: true, bounces: 0 }));
+    p.onLand = () => makeZone({ x: p.x, z: p.z, r: .45, kind: ab.dkind, t: 1e4, owner: e }); return true;
   },
   cam(e) { const p = groundPoint(e, 30); makeZone({ x: p.x, z: p.z, r: .4, kind: 'cam', t: 15, owner: e, pulseT: .4 }); return true; },
   neural(e) {
@@ -3125,7 +3139,7 @@ function updateGauge(dt) {
     if (gauge.mode === 'wait' && gauge.t >= .2) { gauge.mode = held ? 'steer' : 'auto'; if (held) gauge.max = gauge.steer; }
     if (gauge.mode === 'steer' && !held) { if (gauge.release === 'pop') gauge.t = gauge.max; else gauge.mode = 'auto'; }
     if (gauge.t >= gauge.max) { if (gauge.readyG && p) p.ready = null; gauge = null; }
-    else { frac = gauge.t / gauge.max; label = gauge.readyG ? `${gauge.name} ready · press ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} again or LEFT click` : gauge.satchel ? `${gauge.name} · press ${keyName(settings.binds['ab' + gauge.key])} again to detonate` : gauge.tailwind ? `${gauge.name} ready · press ${keyName(settings.binds['ab' + gauge.key])} to dash` : gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
+    else { frac = gauge.t / gauge.max; label = gauge.readyG && gauge.dormant ? `${gauge.name} · LEFT click: throw another · press ${keyName(settings.binds['ab' + gauge.key])} again: ACTIVATE` : gauge.readyG ? `${gauge.name} ready · press ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} again or LEFT click` : gauge.satchel ? `${gauge.name} · press ${keyName(settings.binds['ab' + gauge.key])} again to detonate` : gauge.tailwind ? `${gauge.name} ready · press ${keyName(settings.binds['ab' + gauge.key])} to dash` : gauge.mode === 'steer' ? `${gauge.name} · steering — release to ${gauge.release === 'pop' ? 'trigger' : 'let go'}` : gauge.mode === 'wait' ? `${gauge.name} · hold ${keyName(settings.binds[gauge.key === 'X' ? 'ult' : 'ab' + gauge.key])} to steer` : gauge.name; }
   }
   if (frac < 0) { el.classList.add('hidden'); return; }
   el.classList.remove('hidden'); setText('agLabel', label); $('agFill').style.width = (Math.min(1, frac) * 100).toFixed(1) + '%';
@@ -3179,15 +3193,37 @@ function neonTick(e, dt) {
   e.slideCD = Math.max(0, (e.slideCD || 0) - dt);
 }
 // Thrown / launched abilities: first press readies them (time gauge), second press or LEFT click uses them
-const READY_TYPES = new Set(['fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay']);
+const READY_TYPES = new Set(['dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay']);
+// Raze's Showstopper: X equips the launcher (no ult spent yet), X again puts it away, left click fires
+function armRocket(e, ab) {
+  if (e.rocketArmed) { e.rocketArmed = false; sndTone(300, .08, .1, 'triangle', 200); return false; }
+  if (DM() || !e.alive || game.phase === 'end' || game.state !== 'playing') return false;
+  if (e.ult < ab.ult) { ultNotReady(ab, e.ult); return false; }
+  if (e.suppT > 0 || e.detainT > 0 || e.driftT > 0) { toastTo(e, 'You cannot use abilities right now'); SND.deny(); return false; }
+  cancelPlace(); clearReady(e); e.rocketArmed = true; sndTone(220, .15, .15, 'square', 440);
+  toast('Showstopper equipped — LEFT click to fire · X to put it away'); return false;
+}
+// Killjoy's Nanoswarm / Cypher's Cyber Cage wait on the floor until their owner activates them
+const hasDormant = (e, kind) => zones.some(z => z.kind === kind && z.owner === e && z.t > 0);
+function activateDormant(e, kind) {
+  let n = 0;
+  for (const z of zones) if (z.kind === kind && z.owner === e && z.t > 0) {
+    z.t = 0; n++;
+    if (kind === 'nano') { makeZone({ x: z.x, z: z.z, r: 3.2, kind: 'fire', t: 4.5, dps: 45, owner: e }); fx('parts', z.x, .4, z.z, 30, 0xd8e04a, 3, .6); }
+    else { const sm = makeSmoke(z.x, z.z, 3.2, 7, 0x8e8a7a, e); fx('parts', z.x, .5, z.z, 20, 0xe2dccb, 2, .5); }
+  }
+  if (n) sndTone(kind === 'nano' ? 520 : 380, .25, .2, 'sawtooth', kind === 'nano' ? 1200 : 160, e.x, e.z);
+  return n;
+}
 function readyGate(e, ab, key) { // true = this press only readied the ability
+  if (e._fireRocket) return false;
   if (e.isPlayer && e.ready && e.ready.key !== key) clearReady(e); // another ability replaces it
   if (!e.isPlayer || e.agent === 'sova' || !READY_TYPES.has(ab.type)) return false;
   if (e.ready && e.ready.key === key) { e.ready = null; if (gauge && gauge.readyG) gauge = null; return false; } // second press: use it
   if (key === 'X' ? e.ult < ab.ult : e.charges[key] <= 0) return false; // the normal "not available" feedback
   if (e.detainT > 0 || (e.sprint && !(e.odT > 0))) return false;
   cancelPlace(); e.ready = { key };
-  gauge = { name: ab.name, key, t: 0, max: 7.5, readyG: true, mode: 'auto' };
+  gauge = { name: ab.name, key, t: 0, max: 7.5, readyG: true, mode: 'auto', dormant: ab.type === 'dormant' && hasDormant(e, ab.dkind) };
   sndTone(650, .1, .1, 'triangle', 950);
   return true;
 }
@@ -3200,9 +3236,15 @@ function suppressAround(x, y, z, r, owner, dur, needLos) {
 }
 function castAbility(e, key, target) {
   if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
+  const ab0 = AGENT[e.agent] && AGENT[e.agent].ab[key];
+  if (e === player && ab0 && ab0.type === 'rocket' && !target && !e._fireRocket) return armRocket(e, ab0);
   if (net.role === 'client' && e === player) return clientCast(key, target);
   if (!e.alive || game.phase === 'end' || game.state !== 'playing') return false;
   const ab = AGENT[e.agent].ab[key]; if (!ab) return false;
+  if (ab.type === 'dormant' && !target && hasDormant(e, ab.dkind) && !(e.suppT > 0) && !(e.detainT > 0)) { // placed Nanoswarms / cages: the key activates them
+    const readied = e.ready && e.ready.key === key;
+    if (!e.isPlayer || e.charges[key] <= 0 || (readied && !e._readyClick)) { clearReady(e); activateDormant(e, ab.dkind); return true; }
+  }
   if (e.agent === 'viper' && ab.type === 'screen' && e.viperWall) { toggleViper(e, 'wall'); return true; }
   if (e.agent === 'viper' && ab.type === 'skySmoke' && e.viperCloud) { toggleViper(e, 'cloud'); return true; }
   if (!target && e.isPlayer && e.ready && e.ready.key !== key && !READY_TYPES.has(ab.type)) clearReady(e);
@@ -3245,7 +3287,15 @@ function lockdownFire(z) {
   for (const e of entities) if (e.alive && isEnemy(e, z.owner) && Math.hypot(e.x - z.x, e.z - z.z) < z.r) { e.detainT = 8; e.slowT = Math.max(e.slowT, 8); toastTo(e, 'DETAINED by Lockdown!'); }
   z.t = .8;
 }
+// dormant gadgets blink; bots' ones go off by themselves when an enemy comes close
+function dormantTick(z, kind, r) {
+  if (z.led) z.led.visible = Math.sin(game.time * 3 + z.x) > .6;
+  const o = z.owner; if (!o || o.isPlayer || o.remote || !o.alive) return;
+  for (const e of entities) if (e.alive && isEnemy(e, o) && Math.hypot(e.x - z.x, e.z - z.z) < r) { activateDormant(o, kind); return; }
+}
 const ZONE_TICK = {
+  nano(z, dt) { dormantTick(z, 'nano', 4.5); },
+  cage(z, dt) { dormantTick(z, 'cage', 7); },
   alarm(z, dt) { // arm, wait, then hop at the first enemy that comes close and burst
     z.armT = (z.armT || 0) + dt;
     if (!z.trig && z.armT > 1) for (const e of entities) if (e.alive && isEnemy(e, z.owner) && Math.hypot(e.x - z.x, e.z - z.z) < z.r && los(z.x, .5, z.z, e.x, e.y + 1, e.z, true)) { z.trig = e; z.trigT = .6; SND.beep(z.x, z.z); break; }
@@ -3437,6 +3487,7 @@ function equipView() {
 }
 function switchSlot(s) {
   if (!player.alive) return;
+  player.rocketArmed = false;
   cancelPlace(); clearReady(player);
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
   if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
@@ -3578,7 +3629,8 @@ function updatePlayer(dt) {
   if (p.onGround && spd > 5) { stepT -= dt; if (stepT <= 0) { stepT = .36; SND.step(undefined, undefined, .12); alertEnemies(p, 16); } }
   // shooting
   if (!p.ready) p.readyPrev = true;
-  if (p.ready) { if (mouse[0] && !p.readyPrev) castAbility(p, p.ready.key); p.readyPrev = mouse[0]; triggerHeld = true; }
+  if (p.rocketArmed) { if (mouse[0] && !triggerHeld && game.phase !== 'buy') { p._fireRocket = true; const ok = castAbility(p, 'X'); p._fireRocket = false; if (ok) { p.rocketArmed = false; p.rocketT = .8; } } triggerHeld = mouse[0]; }
+  else if (p.ready) { if (mouse[0] && !p.readyPrev) { p._readyClick = true; castAbility(p, p.ready.key); p._readyClick = false; } p.readyPrev = mouse[0]; triggerHeld = true; }
   else if (p.sprint && !(p.odT > 0)) { triggerHeld = true; } // can't shoot while sprinting
   else if (updatePlace(dt) || furyInput(p, dt)) { triggerHeld = true; }
   else if (brimMap) { if (!p.alive || game.phase === 'end') closeBrimMap(); else if (mouse[0] && !brimMap.click) { mouse[0] = false; confirmBrimMap(); } else if (mouse[2] && !brimMap.click) { mouse[2] = false; closeBrimMap(); } else if (brimMap) brimMap.click = mouse[0] || mouse[2]; triggerHeld = true; }
@@ -4470,7 +4522,7 @@ function render() {
 let last = performance.now(), spotT = 0;
 function simStep(dt) {
   // in an online match the world keeps running while someone has the pause menu open
-  if (game.state === 'playing' && (!game.paused || net.role !== 'off')) {
+  if (game.state === 'playing') { // the match never pauses: leaving the window only gives up mouse control
     game.time += dt;
     if (net.role === 'client') clientTick(dt);
     else if (RANGE()) { updatePlayer(dt); rangeTick(dt); updateEffects(dt); updateParticles(dt); }
@@ -5205,7 +5257,7 @@ function syncList(list, arr, create, update, remove) {
   }
   for (let i = arr.length - 1; i >= 0; i--) if (!seen.has(arr[i].nid)) { remove(arr[i]); arr.splice(i, 1); }
 }
-const ZONE_KINDS = new Set(['fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'frag', 'turret', 'alarm', 'lockdown', 'trap', 'cam']);
+const ZONE_KINDS = new Set(['nano', 'cage', 'fire', 'slow', 'stim', 'orbital', 'blaze', 'acid', 'frag', 'turret', 'alarm', 'lockdown', 'trap', 'cam']);
 function applySnap(s) {
   const [ph, pt, s0, s1, side0, rd, ot] = s.g;
   if (s0 + s1 > game.score[0] + game.score[1]) game.history.push(s0 > game.score[0] ? 0 : 1);
@@ -6110,8 +6162,8 @@ function makeBrimArm() {
   return g;
 }
 // Brimstone's Incendiary: grenade launcher strapped along the right forearm (shown while the ability is readied / just fired)
-function makeBrimLauncher() {
-  const g = new THREE.Group(), olive = cm(0x5a6a3e, 8), dk = gm(0x2b3038), mt = gm(GC.mt), orange = AB.lit(0xff7a22, 0x3a1400);
+function makeBrimLauncher(accent = 0xff7a22, sleeve = 0x5a6a3e) {
+  const g = new THREE.Group(), olive = cm(sleeve, 8), dk = gm(0x2b3038), mt = gm(GC.mt), orange = AB.lit(accent, new THREE.Color(accent).multiplyScalar(.2).getHex());
   const fore = new THREE.Mesh(new THREE.CylinderGeometry(.055, .065, .42, 14), olive); fore.rotation.x = Math.PI / 2; fore.position.set(0, -.04, .16); g.add(fore);
   const fist = AB.rbox(.1, .09, .12, .04, MAT.glove); fist.position.set(0, -.045, -.08); g.add(fist);
   for (const z of [.04, .22]) { const st = new THREE.Mesh(new THREE.TorusGeometry(.068, .012, 8, 20), dk); st.position.set(0, -.04, z); g.add(st); }
@@ -6122,10 +6174,31 @@ function makeBrimLauncher() {
   for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + .4, c = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .112, 10), orange); c.rotation.x = Math.PI / 2; c.position.set(Math.cos(a) * .05, .07 + Math.sin(a) * .05, .12); g.add(c); }
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(.004, .018, .2), orange); stripe.position.set(.049, .07, -.08); g.add(stripe);
   const sight = AB.rbox(.03, .035, .06, .01, dk); sight.position.set(0, .135, -.02); g.add(sight);
-  const dot = AB.glow(0xff8a2a, .08); dot.position.set(0, .14, -.055); g.add(dot);
+  const dot = AB.glow(accent, .08); dot.position.set(0, .14, -.055); g.add(dot);
   const flash = AB.glow(0xffb347, .5); flash.position.set(0, .07, -.36); flash.visible = false; g.add(flash);
   g.userData = { shell, flash, base: new THREE.Vector3(.2, -.17, -.5) };
   g.position.copy(g.userData.base); g.rotation.set(.12, -.14, .06); g.scale.setScalar(.42);
+  return g;
+}
+// Raze's Showstopper: shoulder-fired rocket launcher with the pink warhead peeking out of the muzzle
+function makeRazeLauncher() {
+  const g = new THREE.Group(), blue = AB.lit(0x3fa7d6, 0, { shininess: 70 }), yel = AB.lit(0xffd23a), pink = AB.lit(0xff4fa3), dk = gm(0x2b2b30);
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .95, 22, 1, true), blue); tube.rotation.x = Math.PI / 2; tube.position.z = -.1; g.add(tube);
+  const bore = new THREE.Mesh(new THREE.CylinderGeometry(.095, .095, .95, 18, 1, true), new THREE.MeshBasicMaterial({ color: 0x111215, side: THREE.BackSide })); bore.rotation.x = Math.PI / 2; bore.position.z = -.1; g.add(bore);
+  for (const z of [-.5, -.22, .2]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.112, .02, 8, 26), yel); b.position.z = z; g.add(b); }
+  const mouth = new THREE.Mesh(new THREE.CylinderGeometry(.125, .115, .08, 22, 1, true), dk); mouth.material.side = THREE.DoubleSide; mouth.rotation.x = Math.PI / 2; mouth.position.z = -.6; g.add(mouth);
+  const nose = AB.lathe([[0, 0], [.085, 0], [.075, .06], [.04, .12], [0, .15]], pink); nose.rotation.x = -Math.PI / 2; nose.position.z = -.56; g.add(nose);
+  const back = AB.lathe([[.11, 0], [.15, .1], [.15, .13], [.1, .13]], dk); back.rotation.x = -Math.PI / 2; back.position.z = .5; g.add(back);
+  const sight = AB.rbox(.05, .07, .12, .02, dk); sight.position.set(-.09, .13, -.18); g.add(sight);
+  const sg = AB.glow(0xff4fa3, .1); sg.position.set(-.09, .14, -.25); g.add(sg);
+  const grip = AB.rbox(.05, .14, .06, .02, dk); grip.position.set(0, -.15, -.02); grip.rotation.x = .25; g.add(grip);
+  const hand = AB.rbox(.1, .09, .12, .04, MAT.glove); hand.position.set(0, -.2, .0); g.add(hand);
+  const fore = AB.rbox(.08, .12, .06, .03, dk); fore.position.set(0, -.12, -.4); g.add(fore);
+  const hand2 = AB.rbox(.09, .09, .11, .035, MAT.glove); hand2.position.set(-.02, -.18, -.4); g.add(hand2);
+  for (let i = 0; i < 3; i++) { const st = new THREE.Mesh(new THREE.CircleGeometry(.035, 12), new THREE.MeshBasicMaterial({ color: [0xff4fa3, 0xffd23a, 0x6fd0ff][i] })); st.position.set(.111, .02 - i * .03, -.05 + i * .09); st.rotation.y = Math.PI / 2; g.add(st); }
+  const flash = AB.glow(0xffb347, .9); flash.position.z = -.75; flash.visible = false; g.add(flash);
+  g.userData = { nose, flash, base: new THREE.Vector3(.2, -.15, -.62) };
+  g.position.copy(g.userData.base); g.rotation.set(.05, .28, 0); g.scale.setScalar(.36);
   return g;
 }
 function makeReynaHand(side) {
@@ -6146,11 +6219,17 @@ function updateVmProps(dt) {
   if (ud.brimArm) { ud.brimArm.visible = !!brimMap && brimMap.theme === 'orange'; ud.brimArm.userData.rings[0].rotation.z += dt * 2; ud.brimArm.userData.rings[1].rotation.z -= dt; if (!brimMap || brimMap.theme !== 'orange') { vmRoot.remove(ud.brimArm); ud.brimArm = null; } }
   const wantBow = (aimMode && aimMode.kind === 'bow') || (p.furyN > 0 && p.furyManual > 0);
   if (p.launchT > 0) p.launchT -= dt;
-  const wantLauncher = p.agent === 'brim' && ((p.ready && p.ready.key === 'Q') || p.launchT > 0);
-  if (wantLauncher && !ud.launcher) { ud.launcher = makeBrimLauncher(); vmRoot.add(ud.launcher); }
+  if (p.rocketArmed && (!p.alive || p.ult < AGENT[p.agent].ab.X.ult)) p.rocketArmed = false;
+  const rab = p.ready && AGENT[p.agent].ab[p.ready.key], wantLauncher = !!(rab && rab.launcher) || p.launchT > 0;
+  if (wantLauncher && !ud.launcher) { ud.launcher = p.agent === 'viper' ? makeBrimLauncher(0x5fd35a, 0x1b1d22) : makeBrimLauncher(); vmRoot.add(ud.launcher); }
+  const wantRocket = !!p.rocketArmed || p.rocketT > 0;
+  if (p.rocketT > 0) p.rocketT -= dt;
+  if (wantRocket && !ud.rocketL) { ud.rocketL = makeRazeLauncher(); vmRoot.add(ud.rocketL); }
+  if (!wantRocket && ud.rocketL) { vmRoot.remove(ud.rocketL); ud.rocketL = null; }
+  if (ud.rocketL) { const R = ud.rocketL, k = Math.max(0, p.rocketT || 0) / .8, kick = k > .7 ? (k - .7) * 3.3 : 0; R.position.set(R.userData.base.x, R.userData.base.y + kick * .04 + Math.sin(game.time * 2) * .004, R.userData.base.z + kick * .12); R.rotation.x = .05 + kick * .3; R.userData.nose.visible = !!p.rocketArmed; R.userData.flash.visible = k > .8; }
   if (!wantLauncher && ud.launcher) { vmRoot.remove(ud.launcher); ud.launcher = null; }
   if (ud.launcher) { const L = ud.launcher, k = Math.max(0, p.launchT || 0) / .7, kick = k > .75 ? (k - .75) * 4 : 0; L.position.set(L.userData.base.x, L.userData.base.y + kick * .03, L.userData.base.z + kick * .06); L.rotation.x = .12 + kick * .35; L.userData.shell.visible = !(p.launchT > 0); L.userData.flash.visible = k > .85; }
-  const wantOrb = !wantBow && !wantLauncher && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)) || !!p.ready);
+  const wantOrb = !wantBow && !wantLauncher && !wantRocket && ((aimMode && aimMode.kind !== 'bow') || (brimMap && brimMap.theme === 'purple') || (p.sprint && !(p.odT > 0)) || !!p.ready);
   if (wantBow && !ud.bow) { ud.bow = makeBow(p.furyN > 0 && p.furyManual > 0); vmRoot.add(ud.bow); }
   if (!wantBow && ud.bow) { vmRoot.remove(ud.bow); ud.bow = null; }
   if (ud.bow) { const fury = p.furyN > 0 && p.furyManual > 0; setBowDraw(ud.bow, fury ? .6 + Math.sin(game.time * 6) * .1 : aimMode ? aimMode.power : 0); ud.bow.userData.arrow.visible = !fury || p.furyCD <= 0; }
@@ -6158,7 +6237,7 @@ function updateVmProps(dt) {
   if (!wantOrb && ud.orbHand) { vmRoot.remove(ud.orbHand); ud.orbHand = null; }
   if (ud.orbHand) { ud.orbHand.userData.orb.scale.setScalar(1 + Math.sin(game.time * 8) * .12); if (p.sprint) ud.orbHand.position.y = -.2 + Math.sin(game.time * 14) * .03; }
   if (ud.gun && ud.gun.userData.zap) { const s2 = 1 + Math.random() * .4; ud.gun.userData.zap[1].scale.set(.4 * s2, .4 * s2, 1); }
-  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb && !wantLauncher && !(p.driftT > 0);
+  if (ud.gun) ud.gun.visible = !brimMap && reynaCast <= 0 && !wantBow && !wantOrb && !wantLauncher && !wantRocket && !(p.driftT > 0);
   $('driftOv').style.opacity = p.driftT > 0 ? .85 : 0;
   // Omen's shadow fade, Viper's fuel bar
   if (shadeT > 0) { shadeT -= dt; $('shadeOv').style.opacity = Math.min(1, shadeT / shadeMax * 3, (shadeMax - shadeT) * 6); if (shadeT <= 0) $('shadeOv').classList.add('hidden'); }
@@ -6681,7 +6760,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 46;
+const BUILD = 48;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
