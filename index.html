@@ -438,6 +438,12 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #progress .bar .half{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--light)}
 #hint{position:absolute;top:70%;left:50%;transform:translateX(-50%);font-size:14px;background:rgba(15,25,35,.75);padding:5px 12px}
 #hint b{font-family:Oswald;padding:0 6px;background:var(--light);color:var(--dark);margin-right:4px}
+#killBanner{position:absolute;bottom:160px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;--kc:#ff4655}
+#killBanner .kbIcon{width:58px;height:58px;margin:0 auto 6px;transform:rotate(45deg);border:3px solid var(--kc);background:radial-gradient(circle,var(--kc) 0,transparent 70%);box-shadow:0 0 24px var(--kc)}
+#killBanner .kbTxt{font:700 30px Oswald,sans-serif;letter-spacing:6px;color:#fff;text-shadow:0 0 14px var(--kc),0 2px 4px #000}
+#killBanner .kbSub{font:600 12px Inter,sans-serif;letter-spacing:3px;color:var(--kc);text-shadow:0 1px 3px #000}
+#killBanner.show{animation:kbIn .9s ease-out both}
+@keyframes kbIn{0%{opacity:0;transform:translateX(-50%) scale(1.6)}12%{opacity:1;transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) scale(.96)}}
 #killIcons{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
 #killIcons i{width:34px;height:34px;transform:rotate(45deg);border:2px solid var(--red);background:rgba(255,70,85,.25);animation:pop .35s}
 @keyframes pop{0%{transform:rotate(45deg) scale(2);opacity:0}100%{transform:rotate(45deg) scale(1);opacity:1}}
@@ -666,7 +672,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 58</div>
+<div id="buildTag">VALOR STRIKE · build 59</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -764,6 +770,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div id="progress" class="hidden"><div class="lbl" id="progLbl">PLANTING SPIKE</div><div class="bar"><div id="progFill"></div><span class="half hidden" id="progHalf"></span></div></div>
   <div id="hint" class="hidden"></div>
   <div id="killIcons"></div>
+  <div id="killBanner" class="hidden"><div class="kbIcon"></div><div class="kbTxt"></div><div class="kbSub"></div></div>
   <div id="deathInfo" class="hidden"></div>
   <div id="bl">
     <div>
@@ -2477,6 +2484,25 @@ function applyDamage(t, dmg, src, label, head) {
   if (!t.isPlayer && src && src !== t && !t.target) { t.investigate = { x: src.x, z: src.z, t: game.time }; t.alertYaw = Math.atan2(-(src.x - t.x), -(src.z - t.z)); }
   if (t.hp <= 0) killEntity(t, src, label, head);
 }
+// kill feedback that builds up through the round: rising chime, banner (DOUBLE / TRIPLE / QUADRA / ACE), skin-coloured burst
+const KILL_NAMES = ['', '', 'DOUBLE KILL', 'TRIPLE KILL', 'QUADRA KILL', 'ACE'];
+function playerKillFx(n, head, skinId, victim) {
+  n = Math.max(1, Math.min(6, n | 0));
+  const S = skinId && SKINS[skinId], tierHi = S && ['premium', 'exclusive', 'ultra'].includes(S.tier), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
+  const base = [0, 660, 740, 830, 990, 1180, 1320][n];
+  sndTone(base, .14, .22, 'triangle'); sndTone(base * 1.5, .2, .2, 'triangle', 0, undefined, undefined, .08);
+  if (n >= 3) sndTone(base * 2, .3, .16, 'sine', 0, undefined, undefined, .16);
+  if (tierHi) sndNoise(.25, 2600, 1, .12);
+  if (head) sndTone(1900, .06, .12, 'square', 2400);
+  const ki = document.createElement('i'); ki.style.borderColor = css; ki.style.background = css + '40'; $('killIcons').appendChild(ki);
+  const kb = $('killBanner'), enemiesLeft = entities.some(e => e.alive && player && isEnemy(e, player));
+  kb.style.setProperty('--kc', css);
+  kb.querySelector('.kbTxt').textContent = n >= 5 || (!enemiesLeft && n >= 3 && !DM()) ? 'ACE' : KILL_NAMES[n] || '';
+  kb.querySelector('.kbSub').textContent = (head ? 'HEADSHOT · ' : '') + (tierHi ? S.line.name.toUpperCase() + ' KILL' : n + (n === 1 ? ' KILL' : ' KILLS'));
+  kb.classList.remove('hidden', 'show'); void kb.offsetWidth; kb.classList.add('show');
+  clearTimeout(kb._t); kb._t = setTimeout(() => kb.classList.add('hidden'), 950);
+  if (victim && tierHi) { spawnParticles(victim.x, victim.y + 1.2, victim.z, 26, col, 4, .7); fx('pulse', victim.x, victim.y + 1, victim.z, 1.6); }
+}
 function killEntity(t, src, label, head) {
   if (t.ribT > 0 && t.ribPos) { // Phoenix Run It Back
     Object.assign(t, { hp: 100, x: t.ribPos.x, y: t.ribPos.y, z: t.ribPos.z, ribT: 0, vx: 0, vz: 0, flashT: 0 });
@@ -2498,8 +2524,8 @@ function killEntity(t, src, label, head) {
     if (src.agent === 'jett' && !RANGE()) { src.twKills = (src.twKills || 0) + 1; if (src.twKills >= 2) { src.twKills = 0; if (src.charges.E < 1 && !(src.tailwindT > 0)) { src.charges.E = 1; toastTo(src, 'Tailwind recharged (2 kills)'); } } }
     if (src.bladeMag > 0) src.bladeMag = 5;
     for (const id in t.damagedBy) { const a = entities[id]; if (a && a !== src && isEnemy(a, t) && game.time - t.damagedBy[id] < 10) a.assists++; }
-    if (src.isPlayer) { SND.kill(); const ki = document.createElement('i'); $('killIcons').appendChild(ki); }
-    if (src.remote) netTo(src.remote, { t: 'kc' });
+    if (src.isPlayer) playerKillFx(src.roundKills, !!head, skinOf(src, curWeapon(src)), t);
+    if (src.remote) netTo(src.remote, { t: 'kc', n: src.roundKills, h: head ? 1 : 0 });
   }
   // weapon drop
   const dw = t.primary || (t.secondary && t.secondary.key !== 'classic' ? t.secondary : null);
@@ -5622,7 +5648,7 @@ function clientRecv(d) {
     case 'toast': if (game.state === 'playing') toast(String(d.m || '')); break;
     case 'kb': if (player && player.alive) { player.vx = +d.vx || 0; player.vz = +d.vz || 0; player.vy = Math.max(player.vy, +d.vy || 0); player.onGround = false; player.kbT = .9; player.kbVx = player.vx; player.kbVz = player.vz; } break;
     case 'hurt': { const s = entities[d.s]; if (s && player && game.state === 'playing') showDamageDir(s); break; }
-    case 'kc': if (game.state === 'playing') { SND.kill(); $('killIcons').appendChild(document.createElement('i')); if (player.bladeMag > 0) player.bladeMag = 5; } break;
+    case 'kc': if (game.state === 'playing') { playerKillFx(d.n | 0 || 1, !!d.h, skinOf(player, curWeapon(player)), null); if (player.bladeMag > 0) player.bladeMag = 5; } break;
     case 'over': if (game.state === 'playing') finishMatch(); break;
   }
 }
@@ -7218,7 +7244,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 58;
+const BUILD = 59;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
