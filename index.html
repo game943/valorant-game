@@ -610,6 +610,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #over.mvp .panel{animation:mvpIn .6s ease-out both .9s}
 @keyframes mvpIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 #mvpTags{position:fixed;inset:0;z-index:35;pointer-events:none}
+#reactOv{position:fixed;inset:0;z-index:34;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Oswald,sans-serif;color:#fff}
+#reactOv b{font:900 90px Oswald;letter-spacing:6px}#reactOv span{font:500 18px Oswald;letter-spacing:3px;opacity:.85}
+#reactOv.wait{background:rgba(200,40,50,.55)}#reactOv.go{background:rgba(40,220,120,.75)}#reactOv.early{background:rgba(255,170,40,.6)}#reactOv.result{background:rgba(30,60,110,.55)}
+.dailyCard{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid rgba(255,211,106,.4);background:rgba(255,211,106,.06);margin-bottom:8px}
+.dailyCard>div:first-child{flex:1}.dailyCard small{opacity:.8}.dBars{display:flex;align-items:flex-end;gap:3px;height:40px}.dBars i{width:8px;background:#ffd36a;opacity:.8}.dBars i.no{background:#555}.dBars i.td{outline:1px solid #fff}
 #gameChatWrap{position:fixed;left:14px;bottom:150px;width:min(420px,60vw);z-index:42;pointer-events:none}
 #gameChat{display:flex;flex-direction:column;gap:2px;font:500 13px 'Noto Sans KR',sans-serif;text-shadow:0 1px 2px #000}
 #gameChat div{background:rgba(10,16,22,.55);padding:3px 8px;transition:opacity 1.2s}#gameChat div.old{opacity:0}#gameChat.typing div.old{opacity:1}
@@ -1048,6 +1053,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 
 <!-- ================= MATCH OVER ================= -->
 <div id="mvpTags" class="hidden"></div>
+<div id="reactOv" class="hidden"></div>
 <div id="gameChatWrap"><div id="gameChat"></div><input type="text" id="gcIn" class="hidden" maxlength="120" spellcheck="false" autocomplete="off" placeholder="Say something… (Enter to send, Esc to cancel)"></div>
 <div id="emoteWheel" class="hidden"></div>
 <div id="aceCine" class="hidden"></div>
@@ -8888,64 +8894,127 @@ const AIM_MODES = {
   grid: { name: 'Gridshot', desc: 'three targets at once, hit as many as you can', dur: 30, r: .34, n: 3 },
   track: { name: 'Tracking', desc: 'hold the trigger on a moving target', dur: 20, r: .42, n: 1 },
   reflex: { name: 'Reflex', desc: 'one target at a time, it vanishes fast — speed bonus', dur: 30, r: .3, n: 1, life: 1.1 },
+  flick: { name: 'Flick', desc: 'one target anywhere around you — snap to it', dur: 30, r: .36, n: 1, wide: 1 },
+  precision: { name: 'Precision', desc: 'tiny far-away targets — accuracy multiplies your score', dur: 30, r: .15, n: 2, far: 1.7, accScore: 1 },
+  motion: { name: 'Motion', desc: 'three targets that keep drifting around', dur: 30, r: .34, n: 3, move: 1 },
+  reaction: { name: 'Reaction Time', desc: 'wait for green, then click as fast as you can (5 tries, lower is better)', reaction: 1, lower: 1, n: 0, dur: 99 },
 };
+// today's challenge: one trainer with one or two twists, the same for everyone on that day
+const DAILY_MODS = {
+  tiny: { txt: 'tiny targets', f: M => { M.r *= .7; } }, fast: { txt: 'faster', f: M => { if (M.life) M.life *= .75; M.moveMul = 1.6; } },
+  sudden: { txt: 'one miss ends the run', f: M => { M.oneMiss = 1; } }, long: { txt: '45 seconds', f: M => { M.dur = 45; } }, blitz: { txt: '20 seconds', f: M => { M.dur = 20; } },
+  crowd: { txt: '+2 targets', f: M => { M.n += 2; } },
+};
+function dailyAim(day = today()) {
+  const rng = seeded(day * 7919 + 13), base = seededPick(rng, ['grid', 'flick', 'reflex', 'motion', 'precision'], 1)[0];
+  let mods = seededPick(rng, Object.keys(DAILY_MODS), 1 + (rng() < .5 ? 1 : 0)); if (mods.includes('long') && mods.includes('blitz')) mods = ['long'];
+  if (base === 'precision') mods = mods.filter(m => m !== 'tiny'); if (!mods.length) mods = ['fast'];
+  const M = Object.assign({}, AIM_MODES[base], { kind: base, daily: day });
+  mods.forEach(m => DAILY_MODS[m].f(M));
+  M.name = 'Daily Challenge'; M.desc = `${AIM_MODES[base].name} · ${mods.map(m => DAILY_MODS[m].txt).join(' · ')}`;
+  return M;
+}
+function dailyStreak() { const D = profile.aimDaily || {}; let d = today(), n = 0; if (!D[d]) d--; while (D[d]) { n++; d--; } return n; }
 let aimT = null;
 const AIM_MAT = new THREE.MeshPhongMaterial({ color: 0x6fe8ff, emissive: 0x1a8aa8, shininess: 90 });
 function startAim(mode) {
-  const M = AIM_MODES[mode]; if (!M || !RANGE()) return;
+  const M = mode === 'daily' ? dailyAim() : AIM_MODES[mode]; if (!M || !RANGE()) return;
   closeRangeMenu(); rs.test = null; if (aimT) endAim(true);
   for (const d of dummies()) hideDummy(d);
-  const p = player, f = fwd(p), l = Math.hypot(f.x, f.z) || 1, fx0 = f.x / l, fz0 = f.z / l, ey = eyeY(p);
-  aimT = { mode, M, t: M.dur, score: 0, hits: 0, shots: 0, onT: 0, orbs: [], c: { x: p.x + fx0 * 11, y: ey + .2, z: p.z + fz0 * 11 }, rgt: { x: -fz0, z: fx0 }, ph: Math.random() * 6 };
+  const p = player, f = fwd(p), l = Math.hypot(f.x, f.z) || 1, fx0 = f.x / l, fz0 = f.z / l, ey = eyeY(p), far = M.far || 1;
+  aimT = { mode, kind: M.kind || mode, M, t: M.dur, score: 0, hits: 0, shots: 0, onT: 0, orbs: [], c: { x: p.x + fx0 * 11 * far, y: ey + .2, z: p.z + fz0 * 11 * far }, rgt: { x: -fz0, z: fx0 }, fw: { x: fx0, z: fz0 }, eye: { x: p.x, y: ey, z: p.z }, ph: Math.random() * 6, prevM: true };
+  if (aimT.kind === 'reaction') { aimT.rx = { i: 0, wait: rand(1.4, 3.6), green: false, times: [], early: 0 }; reactOv('wait'); }
   for (let i = 0; i < M.n; i++) aimSpawn();
-  banner(M.name.toUpperCase(), M.desc, '', 1.6); sndTone(520, .15, .15, 'triangle', 780);
+  banner(M.name.toUpperCase(), M.desc, '', 1.8); sndTone(520, .15, .15, 'triangle', 780);
 }
 function aimSpawn() {
   const A = aimT, M = A.M; let x, y, z, ok = false;
-  for (let i = 0; i < 20 && !ok; i++) { const u = rand(-4.2, 4.2), v = rand(-1.5, 1.7); x = A.c.x + A.rgt.x * u; y = A.c.y + v; z = A.c.z + A.rgt.z * u; ok = A.orbs.every(o => Math.hypot(o.x - x, o.y - y, o.z - z) > 1.2); }
+  for (let i = 0; i < 24 && !ok; i++) {
+    if (M.wide) { const a = rand(-1.45, 1.45), d = rand(8, 13), cs = Math.cos(a), sn = Math.sin(a); x = A.eye.x + (A.fw.x * cs + A.rgt.x * sn) * d; z = A.eye.z + (A.fw.z * cs + A.rgt.z * sn) * d; y = A.eye.y + rand(-1.3, 2.2); }
+    else { const u = rand(-4.2, 4.2) * (M.far || 1), v = rand(-1.5, 1.7); x = A.c.x + A.rgt.x * u; y = A.c.y + v; z = A.c.z + A.rgt.z * u; }
+    ok = A.orbs.every(o => Math.hypot(o.x - x, o.y - y, o.z - z) > 1.2) && (!M.wide || los(A.eye.x, A.eye.y, A.eye.z, x, y, z, true));
+  }
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(M.r, 18, 14), AIM_MAT); mesh.position.set(x, y, z); scene.add(mesh);
   const gl = AB.glow(0x6fe8ff, M.r * 3.2); mesh.add(gl);
-  A.orbs.push({ x, y, z, mesh, born: game.time, u0: rand(-3, 3), v0: rand(-1, 1) });
+  A.orbs.push({ x, y, z, bx: x, by: y, bz: z, mesh, born: game.time, u0: rand(-3, 3), v0: rand(-1, 1), ph: rand(0, 6), sp: rand(.8, 1.4) });
 }
 function aimRemove(o) { scene.remove(o.mesh); aimT.orbs.splice(aimT.orbs.indexOf(o), 1); }
 const rayOrb = (ox, oy, oz, dx, dy, dz, o, r) => { const lx = o.x - ox, ly = o.y - oy, lz = o.z - oz, t = lx * dx + ly * dy + lz * dz; if (t < 0) return Infinity; const d2 = lx * lx + ly * ly + lz * lz - t * t; return d2 <= r * r ? t - Math.sqrt(r * r - d2) : Infinity; };
 // called for each shot fired in the Range; returns true when an orb was hit
 function aimShot(ox, oy, oz, dx, dy, dz, maxT) {
-  const A = aimT; if (!A || A.mode === 'track') return false;
+  const A = aimT; if (!A || A.kind === 'track' || A.kind === 'reaction') return false;
   A.shots++; let best = null, bt = maxT;
   for (const o of A.orbs) { const t = rayOrb(ox, oy, oz, dx, dy, dz, o, A.M.r * 1.05); if (t < bt) { bt = t; best = o; } }
-  if (!best) return false;
-  A.hits++; A.score += A.mode === 'reflex' ? 100 + Math.round(Math.max(0, A.M.life - (game.time - best.born)) * 150) : 100;
+  if (!best) { if (A.M.oneMiss) { sndTone(180, .3, .2, 'sawtooth', 90); setTimeout(() => endAim(false), 0); } return false; }
+  A.hits++; A.score += A.kind === 'reflex' ? 100 + Math.round(Math.max(0, A.M.life - (game.time - best.born)) * 150) : A.kind === 'precision' ? 150 : 100;
   spawnParticles(best.x, best.y, best.z, 14, 0x6fe8ff, 3, .35); sndTone(1100 + (A.hits % 5) * 80, .06, .14, 'triangle');
   aimRemove(best); aimSpawn(); return true;
+}
+function reactOv(state, txt) {
+  const el = $('reactOv'); if (!state) { el.className = 'hidden'; return; }
+  el.className = state; el.innerHTML = state === 'wait' ? '<b>WAIT…</b><span>click when the screen turns green</span>' : state === 'go' ? '<b>CLICK!</b>' : `<b>${txt}</b><span>${state === 'early' ? 'too soon — wait for green' : 'next one coming…'}</span>`;
 }
 function aimTick(dt) {
   const A = aimT; if (!A) return;
   if (!RANGE() || game.state !== 'playing') { endAim(true); return; }
+  if (A.kind === 'reaction') { // reaction test: random wait, green, measure the click
+    const R = A.rx, click = mouse[0] && !A.prevM; A.prevM = mouse[0];
+    R.wait -= dt;
+    if (!R.green && click && R.wait > -1) { R.early++; R.wait = rand(1.4, 3.6); reactOv('early', 'TOO SOON'); sndTone(200, .2, .15, 'sawtooth', 120); setTimeout(() => { if (aimT === A && !R.green) reactOv('wait'); }, 700); return; }
+    if (!R.green && R.wait <= 0) { R.green = true; R.t0 = performance.now(); reactOv('go'); }
+    else if (R.green && click) {
+      const ms = Math.round(performance.now() - R.t0); R.times.push(ms); R.green = false; R.i++; sndTone(1200, .08, .14, 'triangle');
+      if (R.i >= 5) { A.score = Math.round(R.times.reduce((a, b) => a + b, 0) / R.times.length) + R.early * 50; reactOv(null); endAim(false); return; }
+      reactOv('result', ms + ' ms'); R.wait = rand(1.4, 3.6); setTimeout(() => { if (aimT === A && !R.green) reactOv('wait'); }, 800);
+    }
+    return;
+  }
   A.t -= dt;
-  if (A.mode === 'track') {
-    const o = A.orbs[0]; A.ph += dt;
+  if (A.kind === 'track') {
+    const o = A.orbs[0]; A.ph += dt * (A.M.moveMul || 1);
     const u = Math.sin(A.ph * 1.3) * 3.4 + Math.sin(A.ph * 2.9) * .9, v = Math.sin(A.ph * 1.7 + 1) * 1.1;
     o.x = A.c.x + A.rgt.x * u; o.z = A.c.z + A.rgt.z * u; o.y = A.c.y + v; o.mesh.position.set(o.x, o.y, o.z);
     const p = player, f = fwd(p), on = mouse[0] && rayOrb(p.x, eyeY(p), p.z, f.x, f.y, f.z, o, A.M.r) < 60;
     A.shots += dt; if (on) { A.onT += dt; A.score += Math.round(dt * 120); }
     o.mesh.material = on ? AIM_ON_MAT : AIM_MAT;
   }
-  if (A.mode === 'reflex') for (const o of A.orbs.slice()) if (game.time - o.born > A.M.life) { aimRemove(o); aimSpawn(); A.shots++; sndTone(240, .08, .08, 'sine'); }
+  if (A.M.move || (A.M.moveMul && A.kind !== 'track' && A.kind !== 'reflex')) for (const o of A.orbs) { // drifting targets
+    const t = (game.time - o.born) * o.sp * (A.M.moveMul || 1) + o.ph, u = Math.sin(t * 1.4) * 1.6, v = Math.sin(t * 1.9 + 1) * .7;
+    o.x = o.bx + A.rgt.x * u; o.z = o.bz + A.rgt.z * u; o.y = o.by + v; o.mesh.position.set(o.x, o.y, o.z);
+  }
+  if (A.kind === 'reflex') for (const o of A.orbs.slice()) if (game.time - o.born > A.M.life) { aimRemove(o); aimSpawn(); A.shots++; sndTone(240, .08, .08, 'sine'); if (A.M.oneMiss) { endAim(false); return; } }
   if (A.t <= 0) endAim(false);
 }
 const AIM_ON_MAT = new THREE.MeshPhongMaterial({ color: 0xffe14a, emissive: 0x8a6a00, shininess: 90 });
 function endAim(silent) {
-  const A = aimT; if (!A) return; aimT = null;
+  const A = aimT; if (!A) return; aimT = null; reactOv(null);
   for (const o of A.orbs) scene.remove(o.mesh);
   if (!silent) {
-    const acc = A.mode === 'track' ? Math.round(A.onT / Math.max(.01, A.shots) * 100) : A.shots ? Math.round(A.hits / A.shots * 100) : 0;
-    profile.aimBest = profile.aimBest || {}; const lb = profile.aimBest[A.mode] = profile.aimBest[A.mode] || [];
-    const prevTop = lb.length ? lb[0].s : 0; lb.push({ s: A.score, acc, d: Date.now() }); lb.sort((a, b) => b.s - a.s); lb.length = Math.min(lb.length, 10); saveProfile();
-    banner(`${A.score} POINTS`, `${A.M.name} · accuracy ${acc}%${A.score > prevTop ? ' · NEW BEST!' : ' · best ' + prevTop}`, '', 4.5);
-    if (A.score > prevTop) SND.kill();
+    const acc = A.kind === 'reaction' ? 100 : A.kind === 'track' ? Math.round(A.onT / Math.max(.01, A.shots) * 100) : A.shots ? Math.round(A.hits / A.shots * 100) : 0;
+    if (A.M.accScore) A.score = Math.round(A.score * (.5 + acc / 200));
+    const lower = !!A.M.lower, better = (a, b) => lower ? a < b : a > b, key = A.M.daily ? 'daily' + A.M.daily : A.mode;
+    profile.aimBest = profile.aimBest || {}; const lb = profile.aimBest[key] = profile.aimBest[key] || [];
+    const prevTop = lb.length ? lb[0].s : null; lb.push({ s: A.score, acc, d: Date.now() }); lb.sort((a, b) => lower ? a.s - b.s : b.s - a.s); lb.length = Math.min(lb.length, 10);
+    let extra = '';
+    if (A.M.daily) {
+      profile.aimDaily = profile.aimDaily || {}; const first = !profile.aimDaily[A.M.daily]; profile.aimDaily[A.M.daily] = Math.max(profile.aimDaily[A.M.daily] || 0, A.score);
+      for (const d in profile.aimDaily) if (+d < A.M.daily - 30) delete profile.aimDaily[d];
+      if (first) { profile.vp += 150; extra = ' · +150 VP (first run today)'; toastMenu(`Daily Challenge done · streak ${dailyStreak()} day${dailyStreak() === 1 ? '' : 's'} · +150 VP`); }
+    }
+    saveProfile();
+    const isBest = prevTop === null || better(A.score, prevTop), unit = A.kind === 'reaction' ? ' ms' : ' POINTS';
+    banner(`${A.score}${unit}`, `${A.M.name}${A.kind === 'reaction' ? (A.rx.early ? ` · ${A.rx.early} early click${A.rx.early > 1 ? 's' : ''} (+50 ms each)` : '') : ' · accuracy ' + acc + '%'}${isBest ? ' · NEW BEST!' : ' · best ' + prevTop + (A.kind === 'reaction' ? ' ms' : '')}${extra}`, '', 4.5);
+    if (isBest) SND.kill();
   }
   layoutDummies();
+}
+function dailyCardHTML() {
+  const M = dailyAim(), d = today(), D = profile.aimDaily || {}, lb = (profile.aimBest || {})['daily' + d] || [], st = dailyStreak();
+  const days = Array.from({ length: 7 }, (_, i) => d - 6 + i), mx = Math.max(1, ...days.map(x => D[x] || 0));
+  const bars = days.map(x => `<i style="height:${D[x] ? 8 + D[x] / mx * 30 : 3}px" class="${x === d ? 'td' : ''}${D[x] ? '' : ' no'}" title="${D[x] ? D[x] + ' pts' : 'not played'}"></i>`).join('');
+  return `<div class="setSub" style="color:var(--gold)">★ DAILY CHALLENGE · new every day</div>
+    <div class="dailyCard"><div><b>${M.desc}</b><br><small>${M.dur}s · today's best: <b>${lb.length ? lb[0].s : '—'}</b> · streak: <b>${st} day${st === 1 ? '' : 's'}</b>${D[d] ? '' : ' · first run today: +150 VP'}</small></div>
+    <div class="dBars">${bars}</div><div class="seg"><button data-aim="daily" style="border-color:var(--gold);color:var(--gold)">Start</button></div></div>`;
 }
 function startRangeTest(diff) {
   closeRangeMenu(); if (aimT) endAim(true);
@@ -8993,8 +9062,9 @@ function renderRangeMenu() {
     <div class="row"><label>Stats</label><button class="btn small" id="rmReset">Reset stats</button></div>
     <div class="setSub">SHOOTING TEST · 30 targets pop up one by one</div>
     <div class="row"><label>Start a test</label><div class="seg">${['easy', 'medium', 'hard'].map(d => `<button data-test="${d}">${d[0].toUpperCase() + d.slice(1)}${best[d] ? ' · best ' + best[d] : ''}</button>`).join('')}</div></div>
+    ${dailyCardHTML()}
     <div class="setSub">AIM TRAINER · floating targets, timed score</div>
-    ${Object.entries(AIM_MODES).map(([k, M]) => { const lb = (profile.aimBest || {})[k] || []; return `<div class="row"><label><b>${M.name}</b> · ${M.desc}<br><small style="opacity:.7">${lb.length ? 'Best: ' + lb.slice(0, 5).map((r, i) => `${i + 1}. ${r.s} (${r.acc}%)`).join(' · ') : 'No scores yet'}</small></label><div class="seg"><button data-aim="${k}">Start ${M.dur}s</button></div></div>`; }).join('')}`;
+    ${Object.entries(AIM_MODES).map(([k, M]) => { const lb = (profile.aimBest || {})[k] || [], u = M.lower ? ' ms' : ''; return `<div class="row"><label><b>${M.name}</b> · ${M.desc}<br><small style="opacity:.7">${lb.length ? 'Best: ' + lb.slice(0, 5).map((r, i) => `${i + 1}. ${r.s}${u}${M.lower ? '' : ' (' + r.acc + '%)'}`).join(' · ') : 'No scores yet'}</small></label><div class="seg"><button data-aim="${k}">${M.reaction ? 'Start' : 'Start ' + M.dur + 's'}</button></div></div>`; }).join('')}`;
   $('rmBody').querySelectorAll('[data-ro]').forEach(b => b.onclick = () => {
     const k = b.dataset.ro, raw = b.dataset.v; rangeOpts[k] = raw === 'true' ? true : raw === 'false' ? false : isNaN(+raw) ? raw : +raw;
     if (k === 'mode' && raw === 'peek' && rangeOpts.count > 4) rangeOpts.count = 4;
