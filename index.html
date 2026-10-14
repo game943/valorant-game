@@ -465,6 +465,14 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .dd{position:absolute;left:-60px;top:-160px;width:120px;height:26px;border-top:5px solid rgba(255,50,60,.9);border-radius:50%/100% 100% 0 0;transform-origin:60px 160px}
 #deathInfo{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);text-align:center;background:rgba(15,25,35,.8);padding:10px 20px}
 #deathInfo .k{color:var(--red);font-weight:900}
+#pilotOv{position:absolute;inset:0;pointer-events:none}
+#pilotOv.drone{box-shadow:inset 0 0 160px 40px rgba(60,120,255,.45);background:repeating-linear-gradient(0deg,rgba(120,170,255,.06) 0 2px,transparent 2px 5px)}
+#pilotOv.tiger{box-shadow:inset 0 0 170px 50px rgba(110,220,90,.45)}
+#pilotOv.drone::after{content:'';position:absolute;left:50%;top:50%;width:90px;height:90px;margin:-45px 0 0 -45px;border:2px solid rgba(140,190,255,.7);border-radius:50%}
+#pilotHint{position:absolute;top:84px;left:50%;transform:translateX(-50%);color:#fff;font:600 14px Inter,sans-serif;letter-spacing:.5px;text-shadow:0 1px 3px #000;white-space:nowrap}
+#pilotTime{position:absolute;top:110px;left:50%;width:260px;margin-left:-130px;height:5px;background:rgba(0,0,0,.4)}
+#pilotBar{height:100%;width:100%;background:#9fd0ff}
+#pilotOv.tiger #pilotBar{background:#9be86b}
 #revealWarn{position:absolute;top:120px;left:50%;transform:translateX(-50%);color:var(--red);font-weight:900;letter-spacing:3px}
 
 /* shop */
@@ -635,7 +643,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 48</div>
+<div id="buildTag">VALOR STRIKE · build 49</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -727,6 +735,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div id="hitmark"></div>
   <div id="dmgDirs"></div>
   <div id="revealWarn" class="hidden">⚠ YOUR POSITION IS REVEALED</div>
+  <div id="pilotOv" class="hidden"><div id="pilotHint"></div><div id="pilotTime"><div id="pilotBar"></div></div></div>
   <div id="centerMsg"><div id="bannerBig"></div><div id="bannerSub"></div></div>
   <div id="toast"></div>
   <div id="progress" class="hidden"><div class="lbl" id="progLbl">PLANTING SPIKE</div><div class="bar"><div id="progFill"></div><span class="half hidden" id="progHalf"></span></div></div>
@@ -871,7 +880,7 @@ const AGENTS = [
           E: { name: 'Healing Orb', cost: 0, max: 1, free: 1, type: 'heal', desc: 'Press E, then LEFT click to heal the ally you aim at or RIGHT click to heal yourself (60 HP over 4s).' },
           X: { name: 'Resurrection', ult: 8, type: 'revive', desc: 'Aim at a fallen ally and left click to bring them back.' } } },
   { id: 'sova', name: 'Sova', role: 'Initiator', color: '#5b86ff', glyph: 'SV', desc: 'A tracker who reveals enemies with his bow and drone.',
-    ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', guided: 1, desc: 'A drone that reveals nearby enemies. Hold the key and turn to steer it with your aim.' },
+    ab: { C: { name: 'Owl Drone', cost: 400, max: 1, free: 0, type: 'drone', guided: 1, desc: 'Fly the drone in first person (WASD + mouse, Space/Crouch for height). It reveals enemies it sees; LEFT click fires one tracking dart. Right click or the key again to exit.' },
           Q: { name: 'Shock Bolt', cost: 150, max: 2, free: 0, type: 'shock', desc: 'Draw your bow: HOLD left click to charge, right click to set bounces (0–2), release to fire. Explodes where it lands.' },
           E: { name: 'Recon Bolt', cost: 0, max: 1, free: 1, type: 'recon', desc: 'Draw your bow (hold to charge, right click for bounces). The bolt sticks and pulses twice to reveal enemies.' },
           X: { name: 'Hunter\'s Fury', ult: 8, type: 'fury', desc: 'Draw your glowing bow and fire up to three wall-piercing energy blasts yourself (left click) within 6 seconds.' } } },
@@ -909,7 +918,7 @@ AGENTS.push(
           X: { name: 'Neural Theft', ult: 6, type: 'neural', desc: 'Reveal the position of every enemy, twice.' } } },
   { id: 'skye', name: 'Skye', role: 'Initiator', color: '#7fd36b', glyph: 'SK', desc: 'A guide who heals the team and hunts enemies with creatures of light.',
     ab: { C: { name: 'Regrowth', cost: 150, max: 1, free: 0, type: 'regrowth', desc: 'Heal yourself and every hurt ally you can see within 14 m (60 HP over 3s). Not used up if nobody is hurt.' },
-          Q: { name: 'Trailblazer', cost: 250, max: 1, free: 0, type: 'trailblazer', guided: 1, desc: 'A tiger that concusses enemies. Tap to send it on its own, or hold the key and turn to steer it, then release to make it leap.' },
+          Q: { name: 'Trailblazer', cost: 250, max: 1, free: 0, type: 'trailblazer', guided: 1, desc: 'Take control of a spirit tiger and see through its eyes: steer with the mouse, LEFT click (or the key) to leap and concuss enemies. Right click lets it run on its own.' },
           E: { name: 'Guiding Light', cost: 150, max: 2, free: 1, type: 'flash', life: .75, guided: 1, desc: 'A hawk that bursts into a flash. Hold the key and turn to curve it with your aim, release to pop it. (1 free per round)' },
           X: { name: 'Seekers', ult: 8, type: 'seekers', desc: 'Three seekers hunt the nearest enemies and nearsight them.' } } },
   { id: 'viper', name: 'Viper', role: 'Controller', color: '#3fbf7a', glyph: 'VP', desc: 'A chemist who chokes out areas with poison and acid.',
@@ -2706,6 +2715,56 @@ function spawnProj(o) {
 // Guided abilities: tap = normal throw, hold the key = it turns toward where you aim, release = it pops / leaps.
 function guide(p, e, o) { p.guide = Object.assign({ e, key: e._castKey, age: 0, mode: 'wait' }, o); }
 const abHeld = (e, k) => !!(e.abHold && e.abHold[k]);
+/* --- Piloting: Sova's Owl Drone and Skye's Trailblazer are flown in first person, like in Valorant --- */
+let pilot = null;
+function startPilot(pr, kind) {
+  const p = player; cancelPlace(); clearReady(p);
+  pilot = { p: pr, kind, yaw0: p.yaw, pitch0: p.pitch, t: 0, max: pr.life, lmb: true, rmb: true, dart: false };
+  pr.piloted = true; pr.mesh.visible = false;
+  if (kind === 'tiger') p.pitch = clamp(p.pitch, -.3, .2);
+  const ov = $('pilotOv'); ov.className = kind; ov.classList.remove('hidden');
+  $('pilotHint').innerHTML = kind === 'drone' ? '<b>OWL DRONE</b> · WASD fly · Space / Crouch up-down · <b>LEFT</b> click: tracking dart · <b>RIGHT</b> click / ability key: exit'
+                                               : '<b>TRAILBLAZER</b> · steer with the mouse · <b>LEFT</b> click / ability key: LEAP · <b>RIGHT</b> click: let it run';
+  sndTone(kind === 'drone' ? 700 : 260, .2, .15, 'triangle', kind === 'drone' ? 1200 : 120);
+}
+function endPilot(how) {
+  if (!pilot) return; const P = pilot, pr = P.p, p = player; pilot = null;
+  $('pilotOv').classList.add('hidden');
+  if (projectiles.includes(pr)) {
+    pr.piloted = false; pr.mesh.visible = true;
+    if (how === 'leap' || (P.kind === 'drone' && how !== 'free')) pr.life = 0;
+  }
+  p.yaw = P.yaw0; p.pitch = P.pitch0;
+}
+function pilotStep(p, dt) {
+  const P = pilot, pr = P.p;
+  if (!projectiles.includes(pr)) { endPilot('gone'); return; }
+  p.vx = p.vz = 0; physics(p, dt); P.t += dt;
+  const sy = Math.sin(p.yaw), cy = Math.cos(p.yaw), k = Math.min(1, dt * 5);
+  if (P.kind === 'drone') {
+    const f = (kd('fwd') ? 1 : 0) - (kd('back') ? 1 : 0), s = (kd('right') ? 1 : 0) - (kd('left') ? 1 : 0), up = (kd('jump') ? 1 : 0) - (kd('crouch') ? 1 : 0);
+    let vx = -sy * f + cy * s, vz = -cy * f - sy * s; const l = Math.hypot(vx, vz) || 1;
+    pr.vx += ((f || s ? vx / l * 9 : 0) - pr.vx) * k; pr.vz += ((f || s ? vz / l * 9 : 0) - pr.vz) * k; pr.vy += (up * 4 - pr.vy) * k;
+    pr.y = clamp(pr.y, .6, WALL_H + 2);
+  } else {
+    p.pitch = clamp(p.pitch, -.3, .2); pr.vx = -sy * 13; pr.vz = -cy * 13; pr.vy = 0;
+    for (const o of entities) if (o.alive && isEnemy(o, p) && Math.hypot(o.x - pr.x, o.z - pr.z) < 1.6) { endPilot('leap'); return; }
+  }
+  if (mouse[0] && !P.lmb) { if (P.kind === 'drone') pilotDart(P); else { endPilot('leap'); return; } }
+  P.lmb = mouse[0];
+  if (mouse[2] && !P.rmb) { endPilot(P.kind === 'tiger' ? 'free' : 'exit'); return; }
+  P.rmb = mouse[2];
+  $('pilotBar').style.width = Math.max(0, pr.life / P.max * 100) + '%';
+}
+function pilotDart(P) { // the drone fires one tracking dart: an enemy it hits (or anyone close to where it lands) is revealed
+  if (P.dart) { SND.deny(); return; } P.dart = true;
+  const pr = P.p, f = fwd(player), r = traceShot(player, pr.x, pr.y, pr.z, f.x, f.y, f.z, 60), hx = pr.x + f.x * r.t, hy = pr.y + f.y * r.t, hz = pr.z + f.z * r.t;
+  spawnTracer(pr.x, pr.y - .1, pr.z, hx, hy, hz, 0x9fd0ff); sndTone(1200, .08, .15, 'square', 600);
+  const tag = o => { o.revealedT = Math.max(o.revealedT, 4); fx('pulse', o.x, o.y + 1, o.z, 2); if (o.isPlayer) $('revealWarn').classList.remove('hidden'); };
+  if (r.ent) { tag(r.ent); toast('Dart hit — ' + r.ent.name + ' is tagged'); }
+  else { fx('pulse', hx, hy, hz, 3); for (const o of entities) if (o.alive && isEnemy(o, player) && Math.hypot(o.x - hx, o.z - hz) < 3) tag(o); }
+  $('pilotHint').innerHTML = '<b>OWL DRONE</b> · dart used · <b>RIGHT</b> click / ability key: exit';
+}
 function guideStep(p, dt) {
   const G = p.guide, e = G.e; G.age += dt;
   if (!e.alive) { G.mode = 'auto'; return; }
@@ -2862,7 +2921,7 @@ const ABIL = {
   },
   drone(e) {
     const p = spawnProj(Object.assign(throwFrom(e, 9), { g: 0, life: 5, color: 0x5b86ff, owner: e, size: .2, bounce: 1, land: false, model: 'owl' }));
-    guide(p, e, { turn: 2.6, release: 'free' });
+    if (e === player && net.role !== 'client') { p.life = 7; startPilot(p, 'drone'); } else guide(p, e, { turn: 2.6, release: 'free' });
     p.tick = 0; p.onUpdate = dt => { p.tick -= dt; if (p.tick <= 0) { p.tick = .5; for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 13 && los(p.x, p.y, p.z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = 1.2; if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } } };
     return true;
   },
@@ -3062,8 +3121,8 @@ const ABIL = {
   trailblazer(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1;
     const p = spawnProj({ x: e.x + f.x / l, y: e.y + .5, z: e.z + f.z / l, vx: f.x / l * 13, vy: 0, vz: f.z / l * 13, g: 0, life: 3, color: 0x7fd36b, owner: e, land: false, bounce: 1, size: .35, model: 'tiger' });
-    p.onUpdate = () => { if (!p.guide || p.guide.mode === 'auto') homeAndHit(p, e, 13, 14, 2); };
-    guide(p, e, { turn: 3.6, maxLife: 4, ground: true, release: 'pop' });
+    p.onUpdate = () => { if (p.piloted) return; if (!p.guide || p.guide.mode === 'auto') homeAndHit(p, e, 13, 14, 2); };
+    if (e === player && net.role !== 'client') { p.life = 3.5; startPilot(p, 'tiger'); } else guide(p, e, { turn: 3.6, maxLife: 4, ground: true, release: 'pop' });
     p.onExpire = () => { fx('pop', p.x, p.y + .5, p.z, 'flash'); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 3.5) { o.slowT = Math.max(o.slowT, 2.5); o.nearT = Math.max(o.nearT, 1.2); applyDamage(o, 30, e, 'Trailblazer'); } };
     return true;
   },
@@ -3236,6 +3295,7 @@ function suppressAround(x, y, z, r, owner, dur, needLos) {
 }
 function castAbility(e, key, target) {
   if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
+  if (pilot && e === player) { endPilot(pilot.kind === 'tiger' ? 'leap' : 'exit'); return false; }
   const ab0 = AGENT[e.agent] && AGENT[e.agent].ab[key];
   if (e === player && ab0 && ab0.type === 'rocket' && !target && !e._fireRocket) return armRocket(e, ab0);
   if (net.role === 'client' && e === player) return clientCast(key, target);
@@ -3596,6 +3656,7 @@ function updatePlayer(dt) {
   const p = player;
   updateStatus(p, dt);
   if (!p.alive) return;
+  if (pilot) { pilotStep(p, dt); return; } // body stands still while flying the drone / running as the tiger
   const busy = p.plantHold > 0;
   p.abHold = { C: kd('abC'), Q: kd('abQ'), E: kd('abE') };
   p.crouch = settings.crouchToggle ? crouchOn : kd('crouch');
@@ -4487,7 +4548,18 @@ function updateCamera(dt) {
     const targetFov = (w.scope && adsT > .5 ? BASE_FOV / w.scope : BASE_FOV / (1 + (w.ads - 1) * adsT)) * (p.dashT > 0 ? 1.14 : 1);
     if (Math.abs(camera.fov - targetFov) > .05) { camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 18); camera.updateProjectionMatrix(); }
     vmRoot.visible = !(w.scope && adsT > .6);
+    if (pilot) {
+      const pr = pilot.p;
+      if (!projectiles.includes(pr) || game.state !== 'playing') endPilot('gone');
+      else {
+        const f = fwd(p), lift = pilot.kind === 'tiger' ? .75 : 0;
+        camera.position.set(pr.x + (pilot.kind === 'tiger' ? -Math.sin(p.yaw) * .55 : 0), pr.y + lift, pr.z + (pilot.kind === 'tiger' ? -Math.cos(p.yaw) * .55 : 0));
+        camera.rotation.set(p.pitch + (pilot.kind === 'tiger' ? Math.sin(game.time * 16) * .015 : Math.sin(game.time * 3) * .01), p.yaw, pilot.kind === 'drone' ? Math.sin(game.time * 2) * .02 : 0);
+        vmRoot.visible = false; p.mesh && (p.mesh.visible = true);
+      }
+    }
   } else if (viewEnt) {
+    if (pilot) endPilot('gone');
     camera.position.set(viewEnt.x, viewEnt.y + 1.6, viewEnt.z); camera.rotation.set(viewEnt.pitch, viewEnt.yaw, 0); camRig.yaw = viewEnt.yaw;
     viewEnt.mesh.visible = false; vmRoot.visible = false;
     if (camera.fov !== BASE_FOV) { camera.fov = BASE_FOV; camera.updateProjectionMatrix(); }
@@ -6760,7 +6832,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 48;
+const BUILD = 49;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
