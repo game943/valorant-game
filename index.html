@@ -609,6 +609,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #over.mvp .panel{animation:mvpIn .6s ease-out both .9s}
 @keyframes mvpIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 #mvpTags{position:fixed;inset:0;z-index:35;pointer-events:none}
+#gameChatWrap{position:fixed;left:14px;bottom:150px;width:min(420px,60vw);z-index:42;pointer-events:none}
+#gameChat{display:flex;flex-direction:column;gap:2px;font:500 13px 'Noto Sans KR',sans-serif;text-shadow:0 1px 2px #000}
+#gameChat div{background:rgba(10,16,22,.55);padding:3px 8px;transition:opacity 1.2s}#gameChat div.old{opacity:0}#gameChat.typing div.old{opacity:1}
+#gameChat .ch{color:#9aa6b2;font-size:11px}#gameChat b.a{color:#2fe0b6}#gameChat b.e{color:#ff6b78}
+#gcIn{pointer-events:auto;width:100%;box-sizing:border-box;margin-top:4px;background:rgba(10,16,22,.85);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 10px;font:500 13px 'Noto Sans KR',sans-serif}
 #hud.cine>*:not(#killfeed){opacity:0!important;transition:opacity .3s}#hud.emo #crosshair{opacity:0!important}
 #emoteWheel{position:fixed;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 22%,rgba(10,16,22,.78) 23% 100%);border:2px solid rgba(255,255,255,.15)}
 #emoteWheel .ew{position:absolute;width:96px;height:70px;margin:-35px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
@@ -1040,6 +1045,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 
 <!-- ================= MATCH OVER ================= -->
 <div id="mvpTags" class="hidden"></div>
+<div id="gameChatWrap"><div id="gameChat"></div><input type="text" id="gcIn" class="hidden" maxlength="120" spellcheck="false" autocomplete="off" placeholder="Say something… (Enter to send, Esc to cancel)"></div>
 <div id="emoteWheel" class="hidden"></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
@@ -1093,7 +1099,7 @@ const SET_DEFAULTS = {
   chOOp: .35, chOThick: 2, chDotOp: 1, chOutThick: 1, chVLen: -1, chOVLen: -1, chOMoveErr: true,
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
-  vol: 0.6, menuSfx: true, hitSfx: true,
+  vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true,
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -2862,6 +2868,13 @@ function killEntity(t, src, label, head) {
   addKillfeed(src, t, label, head);
   fx('parts', t.x, t.y + 1.2, t.z, 25, AGENT[t.agent].color, 3, .6);
   if (t.isPlayer) onPlayerDeath(src, label);
+  if (src && src !== t && isEnemy(src, t) && !RANGE()) {
+    if (!src.isPlayer && !src.remote) botSay(src, 'kill', { p: .3 });
+    if (!t.isPlayer && !t.remote) botSay(t, 'death', { p: .35, delay: rand(900, 2200) });
+    const mates = bots.filter(b => b.team === src.team && b !== src && b.alive);
+    if ((src.isPlayer || src.remote) && mates.length) { const enemiesLeft = entities.some(e => e.alive && isEnemy(e, src)); const k = src.roundKills >= 5 || (!enemiesLeft && src.roundKills >= 3 && !DM()) ? 'mateAce' : src.roundKills >= 3 ? 'mateMulti' : 'mateNice'; botSay(pick(mates), k, { p: k === 'mateNice' ? .22 : 1, force: k === 'mateAce', name: src.name, team: k === 'mateNice' }); }
+    if ((t.isPlayer || t.remote)) { const m2 = bots.filter(b => b.team === t.team && b.alive); if (m2.length) botSay(pick(m2), 'mateDied', { p: .3, name: t.name, team: true }); }
+  }
   if (src && src !== t && isEnemy(src, t) && !DM()) for (const b of bots) if (b.alive && b.team === t.team && Math.hypot(b.x - t.x, b.z - t.z) < 26 && !(b.target && b.targetVisible)) { b.investigate = { x: src.x, z: src.z, t: game.time - 1.1 }; b.tradeT = game.time; } // teammates swing to trade the kill
   if (AGENT[t.agent].ab.X.type === 'ndy' && !t.isPlayer && !t.remote && t.ult >= AGENT[t.agent].ab.X.ult && net.role !== 'client' && !RANGE()) timedFx.push({ t: 1.5, update() { }, end() { if (!t.alive && game.phase !== 'end') castAbility(t, 'X'); } });
   if (game.spike && game.spike.defuser === t) game.spike.defuser = null;
@@ -2896,6 +2909,7 @@ function plantSpike(e) {
   entities.forEach(m => { if (sideOf(m) === 'atk') m.credits = Math.min(9000, m.credits + 300); });
   e.ult = Math.min(AGENT[e.agent].ab.X.ult, e.ult + 1);
   banner('SPIKE PLANTED', 'Site ' + (SITE_LABEL[sp.site] || 'A'), 'lose', 2.2, true);
+  if (!e.isPlayer && !e.remote) botSay(e, 'plant', { team: true, p: 1.4 });
   SND.beep(e.x, e.z); SND.beep(e.x, e.z);
 }
 function makeOrb(x, z) {
@@ -4574,7 +4588,9 @@ function botBuy(b, pistol, eco) {
     if (r < .4 && can('ghost')) buyW('ghost'); else if (r < .55 && can('sheriff')) buyW('sheriff'); else if (r < .7 && can('frenzy')) buyW('frenzy'); else buyS('light');
   } else if (!eco || b.credits > 3900) {
     if (!b.primary) {
-      if (b.credits >= 5700 && Math.random() < .15) buyW('operator');
+      if (b.persona === 'sniper' && b.credits >= 4700 && Math.random() < .75) buyW('operator');
+      else if (b.persona === 'sniper' && b.credits >= 1950 && b.credits < 3900 && Math.random() < .6) buyW('marshal');
+      else if (b.credits >= 5700 && Math.random() < .15) buyW('operator');
       else if (b.credits >= 3900) buyW(pick(['vandal', 'phantom', 'vandal', 'phantom', 'guardian', 'bulldog']));
       else if (b.credits >= 2900) buyW(pick(['spectre', 'bulldog', 'judge', 'marshal']));
       else if (b.credits >= 1600) buyW(pick(['spectre', 'stinger', 'bucky']));
@@ -4597,7 +4613,7 @@ function botPerceive(b) {
   if (best) {
     if (best !== b.target) {
       const ty = Math.atan2(-(best.x - b.x), -(best.z - b.z)), ang = Math.abs(angDiff(b.yaw, ty));
-      b.reactT = D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0); b.burst = 0;
+      b.reactT = (D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0)) * ((PERSONAS[b.persona] || {}).react || 1); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
       if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout', 'wingman', 'meddle'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
@@ -4950,7 +4966,9 @@ function setupMatch(agentId, humans = []) {
   const enemyPool = shuffle(realAgents().map(a => a.id));
   for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
   for (let i = 0; i < (DUEL() ? 0 : CUSTOM() ? customRules().enemies : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
-  for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; }
+  $('gameChat').innerHTML = '';
+  for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
+  if (!RANGE()) shuffle(bots.slice()).slice(0, 2).forEach((b, i) => botSay(b, 'greet', { force: i === 0, delay: 2500 + i * 1800 }));
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0 });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
@@ -5023,7 +5041,7 @@ function nextRound() {
   const defBots = bots.filter(b => sideOf(b) === 'def');
   const holdSites = shuffle(SITE_IDS.length === 3 ? [1, 2, 5, pick(SITE_IDS), 'mid'] : [1, 1, 2, 2, 'mid']);
   const anchored = new Set();
-  defBots.forEach((b, i) => { const s = holdSites[i]; b.anchor = s !== 'mid' && !anchored.has(s); anchored.add(s); b.holdSite = s === 'mid' ? 0 : s; const h = pick(HOLDS[s]); b.hold = cc(...h); const ent = s === 'mid' ? null : ENTRANCES[s][i % 2]; b.holdYaw = ent ? Math.atan2(-(cc(...ent).x - b.hold.x), -(cc(...ent).z - b.hold.z)) : Math.PI; b.rotated = false; b.role = Math.random() < .3 ? 'aggro' : 'hold'; });
+  defBots.forEach((b, i) => { const s = holdSites[i]; b.anchor = s !== 'mid' && !anchored.has(s); anchored.add(s); b.holdSite = s === 'mid' ? 0 : s; const h = pick(HOLDS[s]); b.hold = cc(...h); const ent = s === 'mid' ? null : ENTRANCES[s][i % 2]; b.holdYaw = ent ? Math.atan2(-(cc(...ent).x - b.hold.x), -(cc(...ent).z - b.hold.z)) : Math.PI; b.rotated = false; b.role = Math.random() < (b.persona === 'hothead' ? .85 : .3) ? 'aggro' : 'hold'; });
   const atkBots = bots.filter(b => sideOf(b) === 'atk'), lurkIdx = atkBots.length >= 4 && Math.random() < .5 ? atkBots.length - 1 : -1;
   game.exec = null; game.retake = null; game.seen = [{}, {}];
   atkBots.forEach((b, i) => {
@@ -5088,6 +5106,7 @@ function endRound(winner, reason) {
   for (const e of entities) e.credits = Math.min(9000, e.credits + (e.team === winner ? 3000 : lossBonus));
   bannerTeams(t => [t === winner ? 'ROUND WON' : 'ROUND LOST', reason, t === winner ? 'win' : 'lose', 3.5]);
   if (net.role !== 'client') setTimeout(() => { if (game.phase === 'end') botsCelebrate(winner); }, 900);
+  if (!DUEL()) { const w = bots.filter(b => b.team === winner), l = bots.filter(b => b.team !== winner); if (w.length && Math.random() < .5) botSay(pick(w), 'roundWin', { team: true }); else if (l.length) botSay(pick(l), 'roundLose', { team: true, p: .7 }); }
   myTeam() === winner ? SND.win() : SND.lose();
   if (net.role === 'host') for (const e of entities) if (e.remote) netTo(e.remote, { t: 'snd', n: e.team === winner ? 'win' : 'lose' });
   if (shopOpen) closeShop();
@@ -5212,6 +5231,7 @@ function finishMatch() {
   $('btnAgain').classList.toggle('hidden', net.role !== 'off'); $('btnMenu').textContent = net.role !== 'off' ? 'Back to Party Lobby' : 'Main Menu';
   won ? SND.win() : SND.lose();
   if (REC) { REC.on = false; REC.winTeam = winTeam; }
+  if (!RANGE()) shuffle(bots.slice()).slice(0, 3).forEach((b, i) => setTimeout(() => botSay(b, 'gg', { force: true, delay: 0 }), 1200 + i * 1100));
   setTimeout(showUpdateBar, 2500);
   $('btnReplay').classList.toggle('hidden', !(REC && REC.entsRef === entities && REC.frames.length >= 10));
   { const ok = REC && REC.entsRef === entities && REC.frames.length >= 10; REC && (REC.hl = null); const n = ok ? findHighlights().length : 0; $('btnHighlights').classList.toggle('hidden', !n); $('btnHighlights').textContent = `★ Highlights (${n})`; }
@@ -5584,7 +5604,7 @@ function renderBoard() {
     const w = e.primary ? WEAPONS[e.primary.key].name : e.secondary ? WEAPONS[e.secondary.key].name : '-';
     const mine = team === myTeam();
     return `<tr class="${mine ? 'ally' : 'enemy'} ${e.isPlayer ? 'me' : ''} ${e.alive ? '' : 'dead'}">
-      <td><b style="color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</b> ${e.name} <small style="opacity:.6">${AGENT[e.agent].name}</small>${e.hasSpike ? ' <span style="color:var(--red)">◆</span>' : ''}</td>
+      <td><b style="color:${AGENT[e.agent].color}">${AGENT[e.agent].glyph}</b> ${e.name} <small style="opacity:.6">${AGENT[e.agent].name}${e.persona && PERSONAS[e.persona] ? ' · ' + PERSONAS[e.persona].name : ''}</small>${e.hasSpike ? ' <span style="color:var(--red)">◆</span>' : ''}</td>
       <td class="os">${e.kills}</td><td class="os">${e.deaths}</td><td class="os">${e.assists}</td>
       <td class="os">${mine ? e.credits : '—'}</td><td>${mine || !e.alive ? w : '?'}</td>
       <td class="os">${e.ult}/${AGENT[e.agent].ab.X.ult}</td></tr>`;
@@ -5780,6 +5800,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Escape' && shopOpen) { closeShop(); return; }
   if (act === 'shop') { shopOpen ? closeShop() : openShop(); return; }
   if ((e.code === 'F1' || e.code === 'F2') && !e.repeat) { e.preventDefault(); playerVoteFF(e.code === 'F1'); return; }
+  if ((e.code === 'Enter' || e.code === 'NumpadEnter') && !e.repeat && !shopOpen && !RANGE()) { e.preventDefault(); openChatInput(); return; }
   if (game.paused) return;
   if (act || e.code === 'Space' || e.code.startsWith('Control')) e.preventDefault();
   keys[e.code] = true;
@@ -6011,6 +6032,21 @@ const VOICE = { // [what your own side hears, what the other team hears] when th
   chamber: ['Allow me to settle this personally.', 'Their marksman has a new toy — stay out of sight!'], clove: ['Not finished with you yet!', "That one won't stay down — finish the job!"],
   gekko: ['Thrash, sic \'em!', 'Some creature is crawling at us!'],
 };
+// spoken voice lines: the browser's speech synthesis with a pitch / speed per agent
+const VOICE_TONE = { jett: [1.35, 1.1], phoenix: [1.05, 1.08], sage: [1.2, .95], sova: [.8, .95], brim: [.6, .9], reyna: [1.15, .92], omen: [.45, .82], raze: [1.3, 1.15], killjoy: [1.4, 1.1], cypher: [.75, .95],
+  skye: [1.2, 1], viper: [.95, .88], neon: [1.45, 1.25], yoru: [.9, 1.05], kayo: [.5, .9], fade: [.95, .9], chamber: [.85, .95], clove: [1.3, 1.1], gekko: [1.1, 1.15] };
+let ttsVoices = [];
+try { const load = () => { ttsVoices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); }; load(); speechSynthesis.onvoiceschanged = load; } catch (e) { }
+function speakLine(text, agentId) {
+  if (!settings.tts || !window.speechSynthesis || !text) return;
+  try {
+    const u = new SpeechSynthesisUtterance(String(text).replace(/[—–]/g, ',')), h = [...String(agentId)].reduce((a, c) => a + c.charCodeAt(0), 0);
+    const [pitch, rate] = VOICE_TONE[agentId] || [.7 + (h % 8) * .1, .95 + (h % 3) * .07];
+    u.pitch = pitch; u.rate = rate; u.volume = clamp((settings.ttsVol ?? .9) * (settings.vol ?? .6) / .6, 0, 1); u.lang = 'en-US';
+    if (ttsVoices.length) u.voice = ttsVoices[h % ttsVoices.length];
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) { }
+}
 const FX = {
   voice(id) {
     const e = entities[id]; if (!e || !player || !VOICE[e.agent]) return;
@@ -6019,6 +6055,7 @@ const FX = {
     d.innerHTML = `<b>${esc(AGENT[e.agent].name.toUpperCase())}</b>${esc(VOICE[e.agent][ally ? 0 : 1])}`;
     box.appendChild(d); while (box.children.length > 3) box.removeChild(box.firstChild);
     setTimeout(() => d.remove(), 3500); sndTone(ally ? 520 : 300, .25, .1, 'sine', ally ? 780 : 200);
+    speakLine(VOICE[e.agent][ally ? 0 : 1], e.agent);
   },
   ping(team, x, y, z, kind, who, text) {
     if (!player || team !== player.team || !isFinite(x) || !isFinite(z)) return;
@@ -6375,6 +6412,7 @@ function hostGameMsg(e, d) {
     case 'shot':
       if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
       break;
+    case 'gchat': if (typeof d.m === 'string' && d.m.trim()) { const m = d.m.trim().slice(0, 120); gameChat(e.name, e.team, m, true); botsReply(e, m); } break;
     case 'hhs': { const hk = keyOfType(e, 'hh') || 'Q'; if (e.charges && e.charges[hk] > 0) e.charges[hk]--; break; }
     case 'ndy': if (!e.alive) castAbility(e, 'X'); break;
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
@@ -6505,6 +6543,7 @@ function clientRecv(d) {
       if (d.f === 'banner') banner(...d.a);
       else if (d.f === 'kf') { const s = d.a[0] >= 0 ? entities[d.a[0]] : null, v = entities[d.a[1]]; if (v) addKillfeed(s, v, String(d.a[2] || ''), !!d.a[3]); }
       else if (d.f === 'feed') addFeedText(esc(d.a[0]), d.a[1]);
+      else if (d.f === 'gchat') showChatLine(String(d.a[0]), d.a[1] | 0, String(d.a[2] || ''), !!d.a[3]);
       break;
     case 'snd': if (game.state === 'playing' && ['win', 'lose', 'roundStart'].includes(d.n)) SND[d.n](); break;
     case 'toast': if (game.state === 'playing') toast(String(d.m || '')); break;
@@ -6516,7 +6555,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
-  matchStats = newMatchStats();
+  matchStats = newMatchStats(); $('gameChat').innerHTML = '';
   if (d.mrec && typeof d.mrec === 'object' && /^cm[a-z0-9]+$/.test(String(d.map)) && typeof d.mrec.g === 'string') { try { registerCustomMap({ id: d.map, n: String(d.mrec.n || 'Custom').slice(0, 18), th: String(d.mrec.th || 'dustwall'), g: d.mrec.g.slice(0, 20000) }); } catch (e) { } }
   game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
   entities.forEach(e => e.mesh && scene.remove(e.mesh));
@@ -7070,6 +7109,68 @@ function closeMapEditor() { me = null; $('mapEditor').classList.add('hidden'); }
   document.addEventListener('keydown', e => { if (me && (e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); $('meUndo').onclick(); } });
 })();
 /* =====================================================================
+   BOT PERSONALITIES + IN-GAME CHAT (Enter to type)
+   ===================================================================== */
+const PERSONAS = {
+  hothead: { name: 'Hothead', react: .95, chat: .6 }, tryhard: { name: 'Tryhard', react: .85, chat: .35 }, chill: { name: 'Chill', react: 1.05, chat: .4 },
+  joker: { name: 'Joker', react: 1, chat: .75 }, rookie: { name: 'Rookie', react: 1.15, chat: .5 }, sniper: { name: 'Sniper', react: .95, chat: .3 },
+};
+const BOT_LINES = {
+  greet: { any: ['glhf', 'hi team', 'gl hf everyone', 'yo'], hothead: ['lets go, no throwing', 'follow me and we win'], tryhard: ['comms pls', 'play for picks, trade each other'], chill: ['hey all, gl', 'have fun guys'], joker: ['hello frens 🐸', 'i brought snacks'], rookie: ['hi! first time on this map lol', 'how do i plant again?'], sniper: ['ill hold mid with the op'] },
+  kill: { any: ['got one', '1 down', 'nice'], hothead: ['TOO EASY', 'sit down', 'next'], tryhard: ['one down, one low', 'traded'], chill: ['got him', 'nice'], joker: ['bonk', 'boom 💥', 'oops was that you'], rookie: ['I GOT ONE', 'wait did i get him?'], sniper: ['one shot', 'click'] },
+  death: { any: ['ugh', 'unlucky', 'dead'], hothead: ['how did that hit me??', 'he is lagging', 'ok that was bs'], tryhard: ['one is low, finish him', 'two on me'], chill: ['my bad', 'nt me'], joker: ['i meant to do that', 'tell my family i love them'], rookie: ['sorry guys :(', 'i didnt see him'], sniper: ['missed the flick', 'they pushed my angle'] },
+  mateNice: { any: ['nice shot {name}', 'ns', 'nice one {name}!'], hothead: ['ok not bad'], tryhard: ['good trade'], joker: ['who taught you that'], rookie: ['how did you do that??'] },
+  mateMulti: { any: ['{name} is cracked', 'WHAT', 'carry us {name}', 'holy'], joker: ['call the police 🚨'], rookie: ['teach me pls'] },
+  mateAce: { any: ['ACE!!! 🔥', '{name} ACE OMG', 'clip it!!', 'GG {name} is insane'] },
+  mateDied: { any: ['nt', 'unlucky {name}', 'i got your trade'], hothead: ['why did you peek that'], joker: ['F'], rookie: ['nooo'] },
+  roundWin: { any: ['ez', 'nice round', 'lets go', 'nice'], hothead: ['EZ'], chill: ['nice one team'], joker: ['dance party 🕺'] },
+  roundLose: { any: ['next', 'we got this', 'eco?', 'np'], hothead: ['wake up team', 'what was that'], chill: ['all good, next one'], tryhard: ['save if you cant buy rifles'], rookie: ['sorry 😅'] },
+  plant: { any: ['planted, play safe', 'spike down, hold angles', 'planted'] },
+  gg: { any: ['gg', 'gg wp', 'ggs'], hothead: ['gg i guess', 'gg we would win with a better team'], joker: ['gg see you in the replay'], rookie: ['gg that was fun!!'] },
+  replyGG: { any: ['gg', 'gg wp', 'ggs!'] }, replyHi: { any: ['hey!', 'hi :)', 'yo'] }, replyNice: { any: ['ty', 'thanks!', 'ty ty'] }, replyQ: { any: ['?', 'huh', 'what'] },
+};
+function botLine(b, key) { const L = BOT_LINES[key]; if (!L) return null; const pool = (L[b.persona] && Math.random() < .6 ? L[b.persona] : L.any) || L.any; return pick(pool); }
+let chatCD = 0;
+// a bot says something (host / offline only); team-only lines are shown to its own team
+function botSay(b, key, o = {}) {
+  if (!b || net.role === 'client' || RANGE() || !settings.botChat) return;
+  const P = PERSONAS[b.persona] || PERSONAS.chill;
+  if (!o.force && (performance.now() < chatCD || Math.random() > P.chat * (o.p ?? 1))) return;
+  let txt = botLine(b, key); if (!txt) return;
+  txt = txt.replace('{name}', o.name || 'team');
+  chatCD = performance.now() + 2200;
+  setTimeout(() => { if (game.state === 'playing' || game.state === 'over') gameChat(b.name, b.team, txt, !o.team); }, o.delay ?? rand(500, 1600));
+}
+// show a chat line locally and pass it on to the party
+function gameChat(name, team, text, all) {
+  if (net.role === 'host') netBroadcast({ t: 'ui', f: 'gchat', a: [name, team, text, all ? 1 : 0] });
+  showChatLine(name, team, text, all);
+}
+function showChatLine(name, team, text, all) {
+  if (!player || (!all && team !== player.team)) return;
+  const box = $('gameChat'), d = document.createElement('div'), mine = team === player.team;
+  d.innerHTML = `<span class="ch">[${all ? 'ALL' : 'TEAM'}]</span> <b class="${mine ? 'a' : 'e'}">${esc(String(name).slice(0, 16))}:</b> ${esc(String(text).slice(0, 120))}`;
+  box.appendChild(d); while (box.children.length > 7) box.firstChild.remove();
+  setTimeout(() => d.classList.add('old'), 9000);
+  if (name !== profile.name) sndTone(880, .04, .05, 'sine');
+}
+// the player types: Enter opens the box, Enter sends (all chat), Esc cancels
+function openChatInput() { const i = $('gcIn'); i.classList.remove('hidden'); i.value = ''; i.focus(); $('gameChat').classList.add('typing'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
+function closeChatInput(send) {
+  const i = $('gcIn'), txt = i.value.trim().slice(0, 120); i.classList.add('hidden'); i.blur(); $('gameChat').classList.remove('typing');
+  if (!send || !txt) return;
+  if (net.role === 'client') { netSend({ t: 'gchat', m: txt }); return; }
+  gameChat(player.name, player.team, txt, true); botsReply(player, txt);
+}
+$('gcIn').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); closeChatInput(true); } else if (e.key === 'Escape') closeChatInput(false); });
+$('gcIn').addEventListener('blur', () => { if (!$('gcIn').classList.contains('hidden')) setTimeout(() => closeChatInput(false), 0); });
+function botsReply(from, txt) {
+  const t = txt.toLowerCase(), key = /\bgg\b|ㅈㅈ|지지/.test(t) ? 'replyGG' : /\b(hi|hello|hey)\b|안녕|ㅎㅇ/.test(t) ? 'replyHi' : /\b(ns|nice|gj)\b|나이스|굿/.test(t) ? 'replyNice' : /^\?+$/.test(t) ? 'replyQ' : null;
+  if (!key) return;
+  const who = shuffle(bots.filter(b => key === 'replyGG' || b.team === from.team)).slice(0, key === 'replyGG' ? 3 : 1);
+  who.forEach((b, i) => setTimeout(() => botSay(b, key, { force: true, delay: 0 }), 700 + i * 900));
+}
+/* =====================================================================
    EMOTES (hold J for the wheel) + ACE CINEMATIC
    ===================================================================== */
 const EMOTES = [
@@ -7157,7 +7258,7 @@ function aceTick(dt) {
 }
 // bots celebrate a won round now and then
 function botsCelebrate(winner) {
-  for (const b of bots) if (b.alive && b.team === winner && Math.random() < .35) { b.emote = 1 + randi(0, EMOTES.length - 1); b.emoteT = 0; }
+  for (const b of bots) if (b.alive && b.team === winner && Math.random() < (b.persona === 'joker' ? .9 : .35)) { b.emote = 1 + randi(0, EMOTES.length - 1); b.emoteT = 0; }
 }
 /* =====================================================================
    MATCH REPLAY — the match is recorded 10x a second (positions, weapons,
@@ -7580,6 +7681,7 @@ const SET_PAGES = {
     ['adsToggle', 'Aim / scope', 'seg', [[false, 'Hold'], [true, 'Toggle']]],
     ['crouchToggle', 'Crouch', 'seg', [[false, 'Hold'], [true, 'Toggle']]],
     ['showMinimap', 'Show minimap', 'toggle'],
+    ['botChat', 'Bot chat messages', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']]],
   ],
   crosshair: [
@@ -7632,6 +7734,8 @@ const SET_PAGES = {
     ['vol', 'Master volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
     ['hitSfx', 'Hit sound', 'toggle'],
     ['menuSfx', 'Menu click sounds', 'toggle'],
+    ['tts', 'Spoken ultimate voice lines (text-to-speech)', 'toggle'],
+    ['ttsVol', 'Voice line volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
   ],
 };
 const GFX_PRESETS = {
@@ -9069,7 +9173,7 @@ $('btnLock').onclick = () => {
 $('btnFF').onclick = () => { playerStartFF(); };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
-  game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
+  $('gameChat').innerHTML = ''; game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
   game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); cancelPlace(); reynaCast = 0; shadeT = 0; $('shadeOv').classList.add('hidden');
   $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
   ['pause', 'over', 'hud', 'shop', 'board', 'select'].forEach(id => $(id).classList.add('hidden')); $('menu').classList.remove('hidden');
