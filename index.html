@@ -643,7 +643,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
 </div>
 <div id="menuToast"></div>
-<div id="buildTag">VALOR STRIKE · build 49</div>
+<div id="buildTag">VALOR STRIKE · build 50</div>
 <div id="updateBar" class="hidden"><span>A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
 <div id="dailyModal" class="screen hidden">
   <div class="panel drPanel">
@@ -819,6 +819,7 @@ const BIND_DEFS = [
   ['abC', 'Ability (C slot)', 'KeyC'], ['abQ', 'Ability (Q slot)', 'KeyQ'], ['abE', 'Signature ability (E slot)', 'KeyE'], ['ult', 'Ultimate', 'KeyX'],
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
+  ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -3536,7 +3537,12 @@ function equipView() {
   gun.add(arm, cuff);
   const es = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xc25bff, transparent: true, opacity: .7, depthWrite: false, blending: THREE.AdditiveBlending })); es.scale.set(.32, .32, 1); es.material.opacity = .45; es.position.set(0, -.08, .05); es.visible = false; gun.add(es);
   Object.assign(gun.userData, { armMesh: arm, armMat: arm.material, handMesh: hand, empSprite: es });
-  if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = AB.rbox(.09, .09, .14, .035, MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); }
+  if (model !== 'pistol' && model !== 'knife' && model !== 'blades') { const h2 = AB.rbox(.09, .09, .14, .035, MAT.glove); h2.position.set(-.02, -.08, -.32); gun.add(h2); gun.userData.lhand = h2; gun.userData.lhand0 = h2.position.clone(); }
+  if (!knife && model !== 'blades' && WEAPONS[w.key].reload) { // spare magazine used by the reload animation
+    const long = model !== 'pistol', mg = AB.rbox(long ? .045 : .04, long ? .16 : .11, long ? .07 : .045, .012, gm(GC.blk));
+    const well = new THREE.Vector3(0, long ? -.13 : -.12, long ? gun.userData.muzzleZ * .33 : -.01); mg.position.copy(well); mg.visible = false; gun.add(mg);
+    Object.assign(gun.userData, { magProp: mg, magWell: well });
+  }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
@@ -3547,7 +3553,7 @@ function equipView() {
 }
 function switchSlot(s) {
   if (!player.alive) return;
-  player.rocketArmed = false;
+  player.rocketArmed = false; player.inspT = 0;
   cancelPlace(); clearReady(player);
   if (s === 1 && !player.primary) return; if (s === 2 && !player.secondary) return;
   if (player.slot === 'X' && player.bladeMag > 0 && s !== 'X') { /* can swap while Blade Storm is active */ }
@@ -4578,7 +4584,28 @@ function updateCamera(dt) {
     const t = game.time * 9;
     const ads = adsT;
     g.position.set(.17 * (1 - ads * .9) + Math.sin(t) * .008 * bob, -.15 + ads * .06 + Math.abs(Math.cos(t)) * .006 * bob - vmEquip * .2 - (p.reloadT > 0 ? .04 : 0), -.4 + vmKick * .03);
-    g.rotation.set(vmKick * .12 + (p.reloadT > 0 ? -.6 : 0) - vmEquip * .8, ads * .0, (p.reloadT > 0 ? .4 : 0));
+    g.rotation.set(vmKick * .12 - vmEquip * .8, ads * .0, 0);
+    const ud = g.userData, W0 = WEAPONS[curWeapon(p).key];
+    if (p.reloadT > 0 && W0.reload) { // tilt, drop the old mag, bring a new one up with the left hand, slap it in
+      const f = 1 - p.reloadT / (W0.reload * (p.empressT > 0 ? .6 : 1)), sm = x => x * x * (3 - 2 * x), env = sm(clamp(f / .15, 0, 1)) * sm(clamp((1 - f) / .15, 0, 1));
+      g.rotation.x += .22 * env; g.rotation.z -= .7 * env; g.position.y += .04 * env; g.position.x -= .06 * env;
+      if (ud.magProp) {
+        const m = ud.magProp, w = ud.magWell; let y = 0;
+        if (f < .15) y = 0; else if (f < .38) y = -.28 * sm((f - .15) / .23); else if (f < .5) y = -.32; else if (f < .78) y = -.26 + .26 * sm((f - .5) / .28); else y = 0;
+        m.visible = f > .12 && f < .8; m.position.set(w.x, w.y + y, w.z);
+        if (ud.lhand) { const hd = f > .4 && f < .86; ud.lhand.position.set(hd ? w.x - .01 : ud.lhand0.x, hd ? w.y + y - .1 : ud.lhand0.y, hd ? w.z + .01 : ud.lhand0.z); }
+      }
+    } else if (ud.magProp) { ud.magProp.visible = false; if (ud.lhand) ud.lhand.position.copy(ud.lhand0); }
+    if (p.inspT > 0) { // weapon inspect: bring it in, show one side, flip, show the other side, put it back
+      if (mouse[0] || adsT > .2 || p.reloadT > 0 || !p.alive) p.inspT = 0;
+      else {
+        p.inspT += dt; const t = p.inspT, sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+        const a = sm(t / .5) * (1 - sm((t - 1.5) / .5)), b = sm((t - 1.5) / .5) * (1 - sm((t - 2.8) / .45)), wob = Math.sin(t * 2.2) * .03;
+        g.rotation.y += a * .75 - b * .7 + wob; g.rotation.z += -a * .3 + b * .55; g.rotation.x += (a + b) * .1;
+        g.position.x += a * .05 - b * .04; g.position.y += (a + b) * .02; g.position.z -= (a + b) * .12;
+        if (t > 3.25) p.inspT = 0;
+      }
+    }
   }
 }
 function render() {
@@ -4678,7 +4705,8 @@ document.addEventListener('keydown', e => {
     case 'prim': switchSlot(1); break;
     case 'sec': switchSlot(2); break;
     case 'melee': switchSlot(3); break;
-    case 'reload': startReload(player); break;
+    case 'reload': startReload(player); player.inspT = 0; break;
+    case 'inspect': if (!(player.reloadT > 0) && !aimMode && !pilot) player.inspT = .001; break;
     case 'use': interact(); break;
     case 'drop': if (net.role === 'client') { netSend({ t: 'g' }); break; } if (player.hasSpike && game.phase !== 'buy') { player.hasSpike = false; dropSpike(player.x, player.y, player.z); game.spike.ignore = player; game.spike.ignoreUntil = game.time + 2; toast('You dropped the spike'); } break;
     case 'abC': castAbility(player, 'C'); break;
@@ -6832,7 +6860,7 @@ $('btnCopyCode').onclick = () => {
 
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 49;
+const BUILD = 50;
 function checkForUpdate() {
   if (!/^https?:/.test(location.protocol) || game.state === 'playing') return;
   fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '').then(t => {
