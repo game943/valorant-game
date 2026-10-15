@@ -785,6 +785,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .bmHead b{font:700 18px Oswald,sans-serif;letter-spacing:4px;color:#ece8e1}.bmCols{margin-left:auto;display:flex;gap:5px;align-items:center}.bmCols button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
 .bmCols button.on{border-color:#fff}#bmClear{width:auto!important;height:auto!important;border-radius:0!important;background:#26313d!important;color:#c9d0d6;font:600 11px Oswald,sans-serif;padding:3px 8px!important}
 #bigMapCv{display:block;cursor:crosshair;image-rendering:auto}
+#doorHint{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:30;pointer-events:none;font:600 14px Oswald,sans-serif;letter-spacing:1px;color:#ece8e1;background:rgba(10,16,22,.65);padding:4px 12px}
+#doorHint b{background:#ece8e1;color:#111;padding:0 6px;margin-right:6px}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -1314,6 +1316,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
 <div id="banter"></div>
+<div id="doorHint" class="hidden"></div>
 <div id="bigMap" class="hidden"><div class="bmBox"><div class="bmHead"><b>MAP</b><span>Click: ping · Right-click: enemy here · Drag: draw (your team sees it) · M / Esc: close</span>
   <span class="bmCols"><button data-bmc="#ffd34d" class="on" style="background:#ffd34d"></button><button data-bmc="#2fe0b6" style="background:#2fe0b6"></button><button data-bmc="#ff4655" style="background:#ff4655"></button><button data-bmc="#ffffff" style="background:#fff"></button><button id="bmClear">Clear mine</button></span></div>
   <canvas id="bigMapCv"></canvas></div></div>
@@ -1789,9 +1792,9 @@ function astar(sc, sr, ec, er) {
     const cx = cur % GW, cy = (cur / GW) | 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       if (!dx && !dy) continue;
-      const nx = cx + dx, ny = cy + dy, brk = !walkable(nx, ny) && !(dx && dy) && isBreakCell(nx, ny); if (!walkable(nx, ny) && !brk) continue;
+      const nx = cx + dx, ny = cy + dy, brk = !walkable(nx, ny) && !(dx && dy) && (isBreakCell(nx, ny) || isClosedDoor(nx, ny)); if (!walkable(nx, ny) && !brk) continue;
       const diag = dx && dy; if (diag && (!walkable(cx + dx, cy) || !walkable(cx, cy + dy))) continue;
-      const ni = ny * GW + nx, ng = g[cur] + (diag ? 1.414 : 1) + (brk ? 10 : 0);
+      const ni = ny * GW + nx, ng = g[cur] + (diag ? 1.414 : 1) + (brk ? (isClosedDoor(nx, ny) ? 1.5 : 10) : 0);
       if (ng < g[ni]) { g[ni] = ng; came[ni] = cur; push(ng + heur(ni), ni); }
     }
   }
@@ -4999,6 +5002,7 @@ function nearestDrop(p) { let best = null, bd = 2; for (const d of drops) { cons
 function interact(p = player) {
   if (net.role === 'client' && p === player) { netSend({ t: 'use' }); return; }
   if (!p.alive) return;
+  { const di = doorInFront(p); if (di >= 0 && !nearestDrop(p)) { toggleDoor(di, undefined, p); return; } }
   const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8);
   if (orb) { scene.remove(orb.mesh); orbs.splice(orbs.indexOf(orb), 1); p.ult = Math.min(AGENT[p.agent].ab.X.ult, p.ult + 1); toastTo(p, 'Ult point +1'); if (p.isPlayer) { SND.buy(); refreshAbilHud(); } return; }
   const d = nearestDrop(p); if (!d) return;
@@ -5027,6 +5031,7 @@ function setGoal(b, x, z) {
 function followPath(b, dt, speed) {
   if (!b.path.length) { b.vx = b.vz = 0; return false; }
   const wp = b.path[0], dx = wp.x - b.x, dz = wp.z - b.z, d = Math.hypot(dx, dz);
+  if (d < 2.4 && isClosedDoor(cellOf(wp.x), cellOf(wp.z))) { toggleDoor(cellOf(wp.z) * GW + cellOf(wp.x), true, b); b.vx = b.vz = 0; return true; } // open the door on the way
   if (d < 3.4 && isBreakCell(cellOf(wp.x), cellOf(wp.z))) { // a breakable wall is in the way: stop and shoot it down
     b.vx = b.vz = 0; b.yaw += angDiff(b.yaw, Math.atan2(-dx, -dz)) * Math.min(1, dt * 8); b.pitch *= .9;
     if (b.fireCD <= 0 && b.reloadT <= 0) { const w = WEAPONS[curWeapon(b).key]; b.fireCD = Math.max(.12, 1 / (w.rate || 2)); damageBreak(cellOf(wp.z) * GW + cellOf(wp.x), w.dmg[1] * (w.pellets || 1)); const ey = eyeY(b); spawnTracer(b.x, ey - .3, b.z, wp.x, 1.4, wp.z, 0xffb090); SND.shot(w.model, b.x, b.z); }
@@ -6408,7 +6413,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt);
+    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint();
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6875,6 +6880,8 @@ function adaptKill(src, t) { // you killed an enemy bot from here: remember the 
   sp.n++; M.spots.sort((a, b) => b.n - a.n); M.spots = M.spots.slice(0, 24);
 }
 const adaptHot = e => { const M = profile.botMem && game.mapId && profile.botMem[game.mapId]; if (!M || !adaptOn()) return false; return M.spots.some(s => s.n >= 3 && Math.hypot((s.c % GW + .5) * CELL - e.x, (Math.floor(s.c / GW) + .5) * CELL - e.z) < 4); };
+function doorHint() { const el = $('doorHint'); if (!player || !player.alive || !mapGadgets || !mapGadgets.doors || !mapGadgets.doors.size) { el.classList.add('hidden'); return; } const i = doorInFront(player), d = i >= 0 && mapGadgets.doors.get(i);
+  if (!d || d.hp <= 0) { el.classList.add('hidden'); return; } el.classList.remove('hidden'); el.innerHTML = `<b>${keyName(settings.binds.use)}</b> ${d.open ? 'Close door' : 'Open door'}`; }
 /* --- clutch: last one alive on your team gets a heartbeat, a dark vignette and a "1 vs N" banner; win it for CLUTCH! --- */
 const clutch = { on: false, vs: 0, beat: 0, hist: 0 };
 function clutchTick(dt) {
@@ -7052,6 +7059,9 @@ const FX = {
     const mine = player && src === player.id;
     sndTone(200, .6, .5, 'sawtooth', 1600, mine ? undefined : ox, mine ? undefined : oz);
   },
+  door(i, st) { const d = mapGadgets && mapGadgets.doors && mapGadgets.doors.get(i); if (!d) return; const { x, z } = cc(d.c, d.r);
+    if (st === 2) { d.hp = 0; d.open = true; d.slab.visible = false; grid[i] = 0; spawnParticles(x, 1.4, z, 46, 0x8a5a32, 6, .9); sndNoise(.5, 700, 1, .5, x, z); sndTone(90, .3, .3, 'square', 45, x, z); return; }
+    d.open = !!st; grid[i] = d.open ? 0 : DOOR_H; sndNoise(.25, d.open ? 500 : 380, 2, .25, x, z, 'bandpass'); sndTone(d.open ? 180 : 140, .18, .12, 'triangle', d.open ? 120 : 90, x, z); },
   brk(i) { const b = mapGadgets && mapGadgets.breaks.get(i); if (!b || !b.mesh.visible) return; b.mesh.visible = false; grid[i] = 0; const { x, z } = cc(b.c, b.r); spawnParticles(x, 1.5, z, 40, 0xb58a5a, 6, .8); sndNoise(.5, 900, 1, .5, x, z); sndTone(110, .3, .3, 'square', 50, x, z); },
   boom(x, y, z, color) { worldFlash(x, y + .5, z, 5, color, .2); SND.boom(x, z); spawnParticles(x, y + .3, z, 40, color, 6, .5); },
   explode(x, y, z) {
@@ -8265,7 +8275,7 @@ $('agentMaker').onclick = e => { if (e.target.id === 'agentMaker') closeAgentMak
 const ME_TYPES = { WALL: 0, FLOOR: 1, LOW: 2, HIGH: 3 }, ME_ZONE_IDX = [0, 1, 2, 3, 4, 5];
 const ME_TOOLS = [
   ['erase', 'Eraser', '#ffffff'], ['floor', 'Floor', '#c9bfa9'], ['wall', 'Wall', '#1a222b'], ['low', 'Low cover', '#a08660'], ['high', 'Crate / pillar', '#6b5538'],
-  ['pad', 'Jump pad', '#3cff8a'], ['teleA', 'Teleporter A', '#b07aff'], ['teleB', 'Teleporter B', '#ff9a3c'], ['break', 'Breakable wall', '#c79a5e'],
+  ['pad', 'Jump pad', '#3cff8a'], ['teleA', 'Teleporter A', '#b07aff'], ['teleB', 'Teleporter B', '#ff9a3c'], ['break', 'Breakable wall', '#c79a5e'], ['door', 'Door', '#8a5a32'],
   ['z1', 'Site A', '#ff9a3c'], ['z2', 'Site B', '#3ca8ff'], ['z5', 'Site C', '#5fd35a'], ['z3', 'Attacker spawn', '#ff4655'], ['z4', 'Defender spawn', '#2fe0b6'], ['z0', 'Clear zone', '#888888'],
 ];
 const ME_THEMES = () => MAP_IDS.map(id => [id, MAPS[id].name]);
@@ -8339,7 +8349,7 @@ function deriveMap(T, Z, S) {
   return { errors: [], holds, entrances, orbs: orbs.length ? orbs : [xy(midC[0] || atk[0])], duel, zones, labels };
 }
 // build a MAPS entry from painted cells
-const decodeSpecial = sp => { const S = new Uint8Array(GW * GH); if (typeof sp !== 'string') return S; let i = 0; const re = /([a-e])(\d*)/g; let m; while ((m = re.exec(sp)) && i < GW * GH) { const v = m[1].charCodeAt(0) - 97, n = m[2] ? Math.min(+m[2], GW * GH) : 1; for (let k = 0; k < n && i < GW * GH; k++, i++) S[i] = v; } return S; };
+const decodeSpecial = sp => { const S = new Uint8Array(GW * GH); if (typeof sp !== 'string') return S; let i = 0; const re = /([a-f])(\d*)/g; let m; while ((m = re.exec(sp)) && i < GW * GH) { const v = m[1].charCodeAt(0) - 97, n = m[2] ? Math.min(+m[2], GW * GH) : 1; for (let k = 0; k < n && i < GW * GH; k++, i++) S[i] = v; } return S; };
 const encodeSpecial = S => { let out = '', prev = '', n = 0; const flush = () => { if (n) out += prev + (n > 1 ? n : ''); }; for (let i = 0; i < GW * GH; i++) { const ch = String.fromCharCode(97 + S[i]); if (ch === prev) n++; else { flush(); prev = ch; n = 1; } } flush(); return /^a\d*$/.test(out) ? '' : out; };
 const BREAK_H = 3.15; // grid height that marks a breakable wall
 function cellsToMap(rec, preview) {
@@ -8357,10 +8367,10 @@ function cellsToMap(rec, preview) {
     for (let c = 0; c < GW;) { const t = T[r * GW + c]; if (t < 2) { c++; continue; } let e = c; while (e + 1 < GW && T[r * GW + e + 1] === t) e++; obst.push([c, r, e, r, t === 3 ? 3.2 : 1.4]); c = e + 1; }
     for (let c = 0; c < GW;) { const z = Z[r * GW + c]; if (!z) { c++; continue; } let e = c; while (e + 1 < GW && Z[r * GW + e + 1] === z) e++; zoneList.push([c, r, e, z]); c = e + 1; }
   }
-  const pads = [], teles = [], breaks = [];
-  for (let i = 0; i < GW * GH; i++) { const c = i % GW, r = (i / GW) | 0; if (S[i] === 1) pads.push([c, r]); else if (S[i] === 2 || S[i] === 3) teles.push([c, r, S[i] === 2 ? 0 : 1]); else if (S[i] === 4) { breaks.push([c, r]); obst.push([c, r, c, r, BREAK_H]); } }
+  const pads = [], teles = [], breaks = [], doors = [];
+  for (let i = 0; i < GW * GH; i++) { const c = i % GW, r = (i / GW) | 0; if (S[i] === 5) doors.push([c, r]); if (S[i] === 1) pads.push([c, r]); else if (S[i] === 2 || S[i] === 3) teles.push([c, r, S[i] === 2 ? 0 : 1]); else if (S[i] === 4) { breaks.push([c, r]); obst.push([c, r, c, r, BREAK_H]); } }
   const th = MAPS[rec.th] && !MAPS[rec.th].custom ? MAPS[rec.th].theme : MAPS.dustwall.theme;
-  return { pads, teles, breaks, name: String(rec.n || 'CUSTOM').toUpperCase().slice(0, 18), desc: 'Custom map · made in the Map Editor', rooms, obst, zones: D.zones, zoneList, holds: D.holds, entrances: D.entrances, orbs: D.orbs, duel: D.duel, labels: D.labels, signs: [], theme: th, cover: false, custom: true, rec };
+  return { pads, teles, breaks, doors, name: String(rec.n || 'CUSTOM').toUpperCase().slice(0, 18), desc: 'Custom map · made in the Map Editor', rooms, obst, zones: D.zones, zoneList, holds: D.holds, entrances: D.entrances, orbs: D.orbs, duel: D.duel, labels: D.labels, signs: [], theme: th, cover: false, custom: true, rec };
 }
 function registerCustomMap(rec) {
   const m = cellsToMap(rec); if (m.errors) return null;
@@ -8400,6 +8410,7 @@ function meDraw() {
   if (me.S) for (let i = 0; i < GW * GH; i++) { const v = me.S[i]; if (!v) continue; const c = i % GW, r = (i / GW) | 0, cx = (c + .5) * P, cy = (r + .5) * P;
     if (v === 1) { x.fillStyle = '#3cff8a'; x.beginPath(); x.arc(cx, cy, P * .42, 0, 7); x.fill(); x.fillStyle = '#0f1923'; x.fillText('↑', cx, cy + 1); }
     else if (v === 2 || v === 3) { x.strokeStyle = v === 2 ? '#b07aff' : '#ff9a3c'; x.lineWidth = 3; x.beginPath(); x.arc(cx, cy, P * .36, 0, 7); x.stroke(); x.fillStyle = '#fff'; x.fillText(v === 2 ? 'A' : 'B', cx, cy + 1); }
+    else if (v === 5) { x.fillStyle = '#8a5a32'; x.fillRect(c * P + 2, r * P + 1, P - 4, P - 2); x.fillStyle = '#ffd36a'; x.beginPath(); x.arc(c * P + P - 5, r * P + P / 2, 1.6, 0, 7); x.fill(); }
     else if (v === 4) { x.fillStyle = '#c79a5e'; x.fillRect(c * P + 1, r * P + 1, P - 2, P - 2); x.strokeStyle = '#6b4a2a'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(c * P + 2, r * P + 2); x.lineTo(c * P + P - 2, r * P + P - 2); x.moveTo(c * P + P - 2, r * P + 2); x.lineTo(c * P + 2, r * P + P - 2); x.stroke(); } }
   x.font = '700 22px Oswald, sans-serif';
   const D = me.derived;
@@ -8421,7 +8432,7 @@ function meRectCells() { const a = me.rect.a, b = me.rect.b; return [Math.min(a[
 function mePaintCell(c, r, erase) {
   if (c < 1 || r < 1 || c >= GW - 1 || r >= GH - 1) return; const i = r * GW + c, t = me.tool;
   if (erase || t === 'erase') { me.T[i] = 1; me.Z[i] = 0; me.S[i] = 0; return; } // eraser: back to plain floor (removes walls, cover, zones and gadgets)
-  if (t === 'pad' || t === 'teleA' || t === 'teleB' || t === 'break') { me.T[i] = 1; me.S[i] = { pad: 1, teleA: 2, teleB: 3, break: 4 }[t]; if (t === 'break') me.Z[i] = 0; return; }
+  if (t === 'pad' || t === 'teleA' || t === 'teleB' || t === 'break' || t === 'door') { me.T[i] = 1; me.S[i] = { pad: 1, teleA: 2, teleB: 3, break: 4, door: 5 }[t]; if (t === 'break' || t === 'door') me.Z[i] = 0; return; }
   if (t === 'wall' || t === 'low' || t === 'high') me.S[i] = 0;
   if (t === 'floor') me.T[i] = 1; else if (t === 'wall') { me.T[i] = 0; me.Z[i] = 0; } else if (t === 'low') { me.T[i] = 2; me.Z[i] = 0; } else if (t === 'high') { me.T[i] = 3; me.Z[i] = 0; }
   else { const z = +t.slice(1); if (me.T[i] === 1 || z === 0) me.Z[i] = z; }
@@ -8644,9 +8655,12 @@ function buildGadgets() {
   if (mapGadgets) for (const b of mapGadgets.breaks.values()) if (b.mesh) scene.remove(b.mesh);
   if (mapGadgets && mapGadgets.group) scene.remove(mapGadgets.group);
   const m = MAPS[curMap]; mapGadgets = null;
-  if (!m || !(m.pads && m.pads.length) && !(m.teles && m.teles.length) && !(m.breaks && m.breaks.length)) return;
+  if (m && !m.custom && !m.range && !m.doors) m.doors = autoDoors();
+  if (!m || !(m.pads && m.pads.length) && !(m.teles && m.teles.length) && !(m.breaks && m.breaks.length) && !(m.doors && m.doors.length)) return;
   const G = new THREE.Group(); scene.add(G);
-  mapGadgets = { pads: new Set((m.pads || []).map(([c, r]) => r * GW + c)), teles: (m.teles || []).map(([c, r, g]) => ({ c, r, g, i: r * GW + c })), breaks: new Map(), group: G, anim: [] };
+  mapGadgets = { pads: new Set((m.pads || []).map(([c, r]) => r * GW + c)), teles: (m.teles || []).map(([c, r, g]) => ({ c, r, g, i: r * GW + c })), breaks: new Map(), doors: new Map(), group: G, anim: [] };
+  doorCellsBuilding = new Set((m.doors || []).map(([c, r]) => r * GW + c));
+  for (const [c, r] of m.doors || []) { const i = r * GW + c, d = { c, r, open: false, hp: 220, ...makeDoorMesh(c, r) }; G.add(d.root); mapGadgets.doors.set(i, d); grid[i] = DOOR_H; }
   for (const [c, r] of m.pads || []) {
     const { x, z } = cc(c, r), base = AB.mesh(new THREE.CylinderGeometry(1.25, 1.35, .14, 24), gm(0x2a2f36), x, .07, z, G);
     const top = AB.mesh(new THREE.CylinderGeometry(1, 1, .03, 24), new THREE.MeshBasicMaterial({ color: 0x3cff8a, transparent: true, opacity: .8 }), x, .16, z, G);
@@ -8663,21 +8677,78 @@ function buildGadgets() {
   }
   for (const [c, r] of m.breaks || []) { const i = r * GW + c, b = { hp: 320, c, r, mesh: makeBreakMesh(c, r) }; G.add(b.mesh); mapGadgets.breaks.set(i, b); }
 }
+/* --- doors: F opens/closes, bots open them on their way, bullets can smash them; a closed door blocks movement, shots and sight --- */
+const DOOR_H = 3.05;
+let doorCellsBuilding = null; const isDoorAt = (c, r) => !!(doorCellsBuilding && doorCellsBuilding.has(r * GW + c));
+const isDoorCell = (c, r) => !!(mapGadgets && mapGadgets.doors && mapGadgets.doors.has(r * GW + c));
+const isClosedDoor = (c, r) => isDoorCell(c, r) && Math.abs(hAt(c, r) - DOOR_H) < .001;
+// built-in maps: a few doors in one-cell corridors away from spawns and sites (same on every client)
+function autoDoors() {
+  const out = [], near = (c, r, R) => { for (let dr = -R; dr <= R; dr++) for (let dc = -R; dc <= R; dc++) { const z = zoneG[(r + dr) * GW + c + dc]; if (z) return true; } return false; };
+  const wall = (c, r) => hAt(c, r) >= WALL_H, flr = (c, r) => hAt(c, r) < .5;
+  const res = new Set(); for (const v of [HOLDS, ENTRANCES]) for (const k in v || {}) for (const p of v[k] || []) res.add(p[1] * GW + p[0]);
+  const cand = [];
+  for (let r = 3; r < GH - 3; r++) for (let c = 3; c < GW - 3; c++) {
+    if (!flr(c, r) || zoneG[r * GW + c] || near(c, r, 3) || res.has(r * GW + c)) continue;
+    const ns = wall(c - 1, r) && wall(c + 1, r) && flr(c, r - 1) && flr(c, r + 1), ew = wall(c, r - 1) && wall(c, r + 1) && flr(c - 1, r) && flr(c + 1, r);
+    const h = ((c * 73856093) ^ (r * 19349663)) >>> 0;
+    if (ns || ew) cand.push({ cells: [[c, r]], c, r, h });
+    // two cells wide: a double door
+    else if (flr(c + 1, r) && wall(c - 1, r) && wall(c + 2, r) && flr(c, r - 1) && flr(c + 1, r - 1) && flr(c, r + 1) && flr(c + 1, r + 1) && !zoneG[r * GW + c + 1] && !near(c + 1, r, 3) && !res.has(r * GW + c + 1)) cand.push({ cells: [[c, r], [c + 1, r]], c, r, h });
+    else if (flr(c, r + 1) && wall(c, r - 1) && wall(c, r + 2) && flr(c - 1, r) && flr(c - 1, r + 1) && flr(c + 1, r) && flr(c + 1, r + 1) && !zoneG[(r + 1) * GW + c] && !near(c, r + 1, 3) && !res.has((r + 1) * GW + c)) cand.push({ cells: [[c, r], [c, r + 1]], c, r, h });
+  }
+  cand.sort((a, b) => a.h - b.h); const picked = [];
+  for (const k of cand) { if (picked.length >= 4) break; if (picked.every(p => Math.hypot(p.c - k.c, p.r - k.r) >= 9)) { picked.push(k); out.push(...k.cells); } }
+  return out;
+}
+function makeDoorMesh(c, r) {
+  const { x, z } = cc(c, r), alongX = hAt(c - 1, r) >= WALL_H || hAt(c + 1, r) >= WALL_H || (isDoorAt(c - 1, r) || isDoorAt(c + 1, r)); // the door spans the gap between the two walls
+  // which side has the wall (the hinge goes there); for a double door the two leaves hinge on opposite sides
+  const mir = alongX ? hAt(c - 1, r) < WALL_H : hAt(c, r + 1) < WALL_H;
+  const root = new THREE.Group(); root.position.set(x, 0, z); root.rotation.y = alongX ? 0 : Math.PI / 2;
+  const wood = new THREE.MeshLambertMaterial({ color: 0x7a4e2c }), dark = new THREE.MeshLambertMaterial({ color: 0x3b2614 }), metal = new THREE.MeshPhongMaterial({ color: 0xc9a14a, shininess: 60 });
+  const frameM = new THREE.MeshLambertMaterial({ color: 0x2b2f36 });
+  for (const sx of [-1, 1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(.14, 3.0, .24), frameM); post.position.set(sx * (CELL / 2 - .07), 1.5, 0); root.add(post); }
+  const top = new THREE.Mesh(new THREE.BoxGeometry(CELL, .22, .24), frameM); top.position.y = 3.0; root.add(top);
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(CELL, WALL_H - 3.1, .5), new THREE.MeshLambertMaterial({ color: 0x9a948a })); lintel.position.y = 3.1 + (WALL_H - 3.1) / 2; root.add(lintel);
+  const hinge = new THREE.Group(); hinge.position.set(mir ? CELL / 2 - .14 : -CELL / 2 + .14, 0, 0); root.add(hinge);
+  const slab = new THREE.Group(); if (mir) slab.scale.x = -1; hinge.add(slab);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(CELL - .28, 2.85, .1), wood); leaf.position.set((CELL - .28) / 2, 1.45, 0); leaf.castShadow = leaf.receiveShadow = true; slab.add(leaf);
+  for (const y of [.7, 2.2]) { const pnl = new THREE.Mesh(new THREE.BoxGeometry(CELL - .7, .9, .12), dark); pnl.position.set((CELL - .28) / 2, y, 0); slab.add(pnl); }
+  for (const sz of [-1, 1]) { const kn = new THREE.Mesh(new THREE.SphereGeometry(.06, 10, 8), metal); kn.position.set(CELL - .5, 1.3, sz * .09); slab.add(kn); }
+  return { root, hinge, slab, ang: 0, sign: mir ? -1 : 1 };
+}
+function toggleDoor(i, open, by) {
+  const d = mapGadgets && mapGadgets.doors && mapGadgets.doors.get(i); if (!d || d.hp <= 0) return;
+  if (open === undefined) open = !d.open; if (d.open === open) return;
+  if (!open) { const { x, z } = cc(d.c, d.r); if (entities.some(e => e.alive && Math.abs(e.x - x) < CELL / 2 + .3 && Math.abs(e.z - z) < CELL / 2 + .3)) return; } // someone is standing in the doorway
+  fx('door', i, open ? 1 : 0);
+  for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const j = (d.r + dr) * GW + d.c + dc, o = mapGadgets.doors.get(j); if (o && o.hp > 0 && o.open !== open) fx('door', j, open ? 1 : 0); } // the other leaf of a double door
+}
+function damageDoor(i, dmg) { const d = mapGadgets && mapGadgets.doors && mapGadgets.doors.get(i); if (!d || d.hp <= 0 || d.open) return; d.hp -= dmg; d.slab.position.z = rand(-.03, .03); if (d.hp <= 0) fx('door', i, 2); }
+function doorTick(dt) { if (!mapGadgets || !mapGadgets.doors) return; for (const d of mapGadgets.doors.values()) { const tgt = d.open ? -Math.PI / 2 * .95 * d.sign : 0; d.ang += (tgt - d.ang) * Math.min(1, dt * 9); d.hinge.rotation.y = d.ang; } }
+function doorInFront(p) { // the door you're looking at, within reach
+  const f = fwd(p); for (let t = .3; t <= 2.6; t += .25) { const c = cellOf(p.x + f.x * t), r = cellOf(p.z + f.z * t); if (isDoorCell(c, r)) return r * GW + c; if (hAt(c, r) >= WALL_H) break; }
+  const c0 = cellOf(p.x), r0 = cellOf(p.z); for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (isDoorCell(c0 + dc, r0 + dr)) { const { x, z } = cc(c0 + dc, r0 + dr); if (Math.hypot(x - p.x, z - p.z) < 2.6) return (r0 + dr) * GW + c0 + dc; }
+  return -1;
+}
+function restoreDoors() { if (!mapGadgets || !mapGadgets.doors) return; for (const [i, d] of mapGadgets.doors) { d.hp = 220; d.open = false; d.ang = 0; d.slab.visible = true; d.slab.position.z = 0; grid[i] = DOOR_H; } }
 function makeBreakMesh(c, r) { // wooden barricade: planks with metal bands
   const g = new THREE.Group(), { x, z } = cc(c, r), wood = new THREE.MeshLambertMaterial({ color: 0xb58a5a }), dark = new THREE.MeshLambertMaterial({ color: 0x5e4128 });
   for (let k = 0; k < 5; k++) { const p = new THREE.Mesh(new THREE.BoxGeometry(CELL - .12, .6, CELL - .12), k % 2 ? wood : new THREE.MeshLambertMaterial({ color: 0xa47a4c })); p.position.y = .32 + k * .63; p.castShadow = p.receiveShadow = true; g.add(p); }
   for (const y of [.9, 2.4]) { const b = new THREE.Mesh(new THREE.BoxGeometry(CELL - .06, .12, CELL - .06), dark); b.position.y = y; g.add(b); }
   g.position.set(x, 0, z); return g;
 }
-function restoreBreakables() { if (!mapGadgets) return; for (const [i, b] of mapGadgets.breaks) { b.hp = 320; b.mesh.visible = true; b.mesh.scale.set(1, 1, 1); grid[i] = BREAK_H; } }
+function restoreBreakables() { restoreDoors(); if (!mapGadgets) return; for (const [i, b] of mapGadgets.breaks) { b.hp = 320; b.mesh.visible = true; b.mesh.scale.set(1, 1, 1); grid[i] = BREAK_H; } }
 // damage a breakable cell (host decides; clients ask the host)
 function damageBreak(i, dmg) {
+  if (mapGadgets && mapGadgets.doors && mapGadgets.doors.has(i)) { if (net.role === 'client') netSend({ t: 'bw', i, d: Math.min(300, dmg) }); else damageDoor(i, dmg); return; }
   const b = mapGadgets && mapGadgets.breaks.get(i); if (!b || !b.mesh.visible) return;
   if (net.role === 'client') { netSend({ t: 'bw', i, d: Math.min(300, dmg) }); return; }
   b.hp -= dmg; b.mesh.position.x = cc(b.c, b.r).x + rand(-.04, .04);
   if (b.hp <= 0) fx('brk', i);
 }
-function hitBreakAt(x, y, z, dx, dz, dmg) { if (!mapGadgets || !mapGadgets.breaks.size) return; const i = cellOf(z + dz * .1) * GW + cellOf(x + dx * .1); if (mapGadgets.breaks.has(i)) damageBreak(i, dmg); }
+function hitBreakAt(x, y, z, dx, dz, dmg) { if (!mapGadgets || (!mapGadgets.breaks.size && !(mapGadgets.doors && mapGadgets.doors.size))) return; const i = cellOf(z + dz * .1) * GW + cellOf(x + dx * .1); if (mapGadgets.breaks.has(i)) damageBreak(i, dmg); }
 function gadgetTick(e, dt) { // after movement: launch pads and teleporters
   if (!mapGadgets || !e.alive) return;
   const i = cellOf(e.z) * GW + cellOf(e.x);
