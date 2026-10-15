@@ -710,6 +710,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #cmdWheel{position:fixed;left:50%;top:50%;width:360px;height:360px;margin:-180px 0 0 -180px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(47,224,182,.35)}
 #cmdWheel .cw{position:absolute;width:96px;height:64px;margin:-32px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
 #cmdWheel .cw b{font-size:22px;line-height:1.1}#cmdWheel .cw.on{color:#2fe0b6;transform:scale(1.2)}
+#voiceTag{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:46;pointer-events:none;background:rgba(10,16,22,.85);border-left:3px solid #ffd34d;padding:7px 14px;font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1;opacity:0;transition:opacity .2s;max-width:80vw}
+#voiceTag.on,#voiceTag.ok,#voiceTag.bad{opacity:1}#voiceTag.ok{border-color:var(--teal)}#voiceTag.ok b{color:var(--teal)}#voiceTag.bad{border-color:var(--red)}#voiceTag span{color:#9aa6b2;font-size:12px;margin-left:6px}
 #sprayWheel{position:fixed;left:50%;top:50%;width:380px;height:380px;margin:-190px 0 0 -190px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(255,211,77,.35)}
 #sprayWheel .cw{position:absolute;width:92px;height:84px;margin:-42px 0 0 -46px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 11px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s;text-align:center}
 #sprayWheel .cw img{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 3px #000)}#sprayWheel .cw.on{color:#ffd34d;transform:scale(1.25)}
@@ -1218,6 +1220,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="emoteWheel" class="hidden"></div>
 <div id="cmdWheel" class="hidden"></div>
 <div id="sprayWheel" class="hidden"></div>
+<div id="voiceTag"></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
   <div id="rpTop"><div id="rpTag">REPLAY</div><div id="rpScore"></div><button class="btn" id="rpExit">✕ Exit replay</button></div>
@@ -1271,7 +1274,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, botReact: 50, botAim: 50, botHead: 50, botAggr: 50,
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50,
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -1286,6 +1289,7 @@ const BIND_DEFS = [
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
   ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'], ['cmd', 'Team command wheel (hold)', 'KeyV'],
+  ['voice', 'Voice command (hold and speak)', 'KeyN'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -6231,6 +6235,7 @@ document.addEventListener('keydown', e => {
   if (act === 'emote') { openEmoteWheel(); return; }
   if (act === 'cmd') { openCmdWheel(); return; }
   if (act === 'spray') { openSprayWheel(); return; }
+  if (act === 'voice') { startVoice(); return; }
   if (act === 'crouch') crouchOn = !crouchOn;
   switch (act) {
     case 'prim': switchSlot(1); break;
@@ -6247,7 +6252,7 @@ document.addEventListener('keydown', e => {
     case 'ult': if ((player.bladeMag > 0 || player.odT > 0 || (player.tdfInst && player.tdfInst.mag > 0)) && player.slot !== 'X') switchSlot('X'); else castAbility(player, 'X'); break;
   }
 });
-document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'emote') closeEmoteWheel(); if (actionOf(e.code) === 'cmd') closeCmdWheel(); if (actionOf(e.code) === 'spray') closeSprayWheel(); if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
+document.addEventListener('keyup', e => { keys[e.code] = false; if (actionOf(e.code) === 'emote') closeEmoteWheel(); if (actionOf(e.code) === 'cmd') closeCmdWheel(); if (actionOf(e.code) === 'spray') closeSprayWheel(); if (actionOf(e.code) === 'voice') stopVoice(); if (actionOf(e.code) === 'board') { boardOpen = false; $('board').classList.add('hidden'); } });
 window.addEventListener('blur', () => { Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; });
 window.addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight); camera.aspect = vmCam.aspect = lobbyCam.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); lobbyCam.updateProjectionMatrix();
@@ -8133,6 +8138,43 @@ function moveCmdWheel(dx, dy) {
   document.querySelectorAll('#cmdWheel .cw').forEach((el, i) => el.classList.toggle('on', i === W.sel));
 }
 function closeCmdWheel() { const W = cmdWheel; if (!W) return; cmdWheel = null; $('cmdWheel').classList.add('hidden'); if (W.sel >= 0) teamCommand(player, W.list[W.sel][0]); }
+/* --- voice commands: hold the voice key, say an order, the bot teammates follow it (browser speech recognition) --- */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const VOICE_CMDS = [ // site orders first, so "A 가" is not read as "가자"
+  ['go1', /(^|[\s.,!])(a|에이|에이스|a\s*site|site\s*a)($|[\s.,!]|로|사이트|쪽|가)/i],
+  ['go2', /(^|[\s.,!])(b|비|bee|b\s*site|site\s*b)($|[\s.,!]|로|사이트|쪽|가)/i],
+  ['go5', /(^|[\s.,!])(c|씨|see|c\s*site|site\s*c)($|[\s.,!]|로|사이트|쪽|가)/i],
+  ['follow', /(따라|팔로우|나랑|같이\s*가|follow|come with|with me)/i],
+  ['back', /(후퇴|빠져|빼|물러|fall\s*back|retreat|back\s*off)/i],
+  ['save', /(세이브|아껴|돈\s*모|save|eco)/i],
+  ['hold', /(기다|멈춰|대기|정지|홀드|있어|hold|wait|stop|stay)/i],
+  ['push', /(밀어|돌격|러시|들어가|가자|고고|push|rush|go\s*go|attack|charge)/i],
+];
+let voice = null;
+function parseVoice(txt) { const t = ' ' + String(txt).trim() + ' '; for (const [c, re] of VOICE_CMDS) if (re.test(t)) return c; return null; }
+function voiceTag(html, cls) { const el = $('voiceTag'); el.innerHTML = html; el.className = cls || ''; clearTimeout(el._t); }
+function startVoice() {
+  if (voice || !player || !player.alive || game.state !== 'playing') return;
+  if (!SpeechRec) { toast('Voice commands need Chrome or Edge'); SND.deny(); return; }
+  if (DM() || RANGE() || DUEL()) { toast('No bot teammates in this mode'); return; }
+  const rec = new SpeechRec(); rec.lang = settings.voiceLang || 'ko-KR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 3;
+  voice = { rec, txt: '', done: false };
+  rec.onresult = ev => { let txt = '', alts = []; for (const r of ev.results) { txt += r[0].transcript; if (r.isFinal) for (const a of r) alts.push(a.transcript); } voice && (voice.txt = txt, voice.alts = alts); voiceTag(`🎙 <b>${esc(txt)}</b>`, 'on'); };
+  rec.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') toast('Allow the microphone to use voice commands'); else if (ev.error !== 'no-speech' && ev.error !== 'aborted') toast('Voice error: ' + ev.error); };
+  rec.onend = () => finishVoice();
+  try { rec.start(); } catch (e) { voice = null; return; }
+  voiceTag('🎙 Listening… <span>say "A 가", "따라와", "밀어", "기다려", "후퇴", "세이브"</span>', 'on'); sndTone(880, .06, .08, 'sine');
+}
+function stopVoice() { if (voice) try { voice.rec.stop(); } catch (e) { } }
+function finishVoice() {
+  const V = voice; if (!V) return; voice = null;
+  const cands = [V.txt, ...(V.alts || [])].filter(Boolean); let cmd = null; for (const t of cands) if ((cmd = parseVoice(t))) break;
+  if (cmd && cmd === 'go5' && !SITE_IDS.includes(5)) cmd = null;
+  const el = $('voiceTag');
+  if (cmd && player && player.alive && game.state === 'playing') { const C = COMMANDS.find(c => c[0] === cmd); voiceTag(`🎙 ${esc(V.txt)} → <b>${C[2]} ${C[1]}</b>`, 'ok'); teamCommand(player, cmd); sndTone(1175, .08, .1, 'sine'); }
+  else voiceTag(V.txt ? `🎙 ${esc(V.txt)} → <b>?</b> <span>not an order</span>` : '🎙 <span>didn\'t catch that</span>', 'bad');
+  el._t = setTimeout(() => { el.className = ''; }, 2200);
+}
 function teamCommand(from, cmd) {
   if (net.role === 'client' && from === player) { netSend({ t: 'tcmd', c: cmd }); toast('Command sent: ' + (COMMANDS.find(c => c[0] === cmd) || ['', cmd])[1]); return; }
   const mates = allyBots(from.team); if (!mates.length) { toastTo(from, 'No bot teammates alive'); return; }
@@ -8684,6 +8726,7 @@ const SET_PAGES = {
     ['showMinimap', 'Show minimap', 'toggle'],
     ['botChat', 'Bot chat messages', 'toggle'],
     ['allyAI', 'Your bot teammates', 'seg', [['smart', 'Smart (play with you)'], ['normal', 'Same as enemies']]],
+    ['voiceLang', 'Voice command language (hold N)', 'seg', [['ko-KR', 'Korean'], ['en-US', 'English']]],
     ['intro', 'Map fly-over at the start of a match', 'toggle'],
     ['ceremony', 'Victory ceremony after a win', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
