@@ -1613,7 +1613,7 @@ AGENTS.push(
     ab: { C: { name: 'Stealth Drone', cost: 300, max: 1, free: 0, type: 'drone', desc: 'Fly a stealthy drone forward to scout.' },
           Q: { name: 'Special Delivery', cost: 200, max: 1, free: 0, type: 'relay', desc: 'A sticky grenade that bounces once and concusses enemies where it lands.' },
           E: { name: 'Guided Salvo', cost: 150, max: 2, free: 1, type: 'salvo', desc: 'Open the targeting map: mark a spot per charge, press E again to launch. Each missile strikes its mark a moment later.' },
-          X: { name: 'Armageddon', ult: 8, type: 'armageddon', desc: 'Open the targeting map and pick a spot: waves of explosions sweep a long strip through it (along the line from you).' } } },
+          X: { name: 'Armageddon', ult: 8, type: 'armageddon', desc: 'Open the targeting map: click to set where the strike STARTS, then aim and click again to set its direction. The strip lights up red, then 4 waves of missiles carpet-bomb it.' } } },
   { id: 'waylay', name: 'Waylay', role: 'Duelist', color: '#ff7ab0', glyph: 'WL', desc: 'A Thai duelist who moves at the speed of light.',
     ab: { C: { name: 'Saturate', cost: 200, max: 2, free: 0, type: 'saturate', desc: 'Throw a burst of light that HINDERS every enemy inside: slowed and their vision blurs.' },
           Q: { name: 'Lightspeed', cost: 250, max: 1, free: 0, type: 'lightspeed', desc: 'Dash twice in a row at the speed of light in the way you move.' },
@@ -4291,13 +4291,22 @@ const ABIL = {
     timedFx.push({ t: 1.5, update() { }, end() { explodeAt(p.x, 0, p.z, e, 70, 35, 4.2, 0xe0b050, 'Guided Salvo'); } });
     return true;
   },
-  armageddon(e, ab, target) {
-    let dx, dz; if (target) { dx = target.x - e.x; dz = target.z - e.z; } else { const f = fwd(e); dx = f.x; dz = f.z; } const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-    const cx = target ? target.x : e.x + dx * 20, cz = target ? target.z : e.z + dz * 20;
-    for (let wave = 0; wave < 4; wave++) for (let i = 0; i < 9; i++) { const t = -16 + i * 4, px = cx + dx * t + (wave % 2 ? -dz : dz) * 1.5, pz = cz + dz * t + (wave % 2 ? dx : -dx) * 1.5; if (px < 1 || pz < 1 || px > MAPW - 1 || pz > MAPH - 1 || hAtPos(px, pz) > 4) continue;
-      if (wave === 0) fx('parts', px, .3, pz, 6, 0xff5040, 1, 1.4); timedFx.push({ t: 1.4 + wave * .9 + i * .1, update() { }, end() { explodeAt(px, 0, pz, e, 70, 35, 3.6, 0xff7a2a, 'Armageddon'); } }); }
+  armageddon(e, ab, target) { // Tejo: 4 waves of missiles march down a 34m strip, from the start point toward the chosen direction
+    let sx, sz, dx, dz;
+    if (target && target.ex !== undefined) { sx = target.x; sz = target.z; dx = target.ex - sx; dz = target.ez - sz; }
+    else { const f = fwd(e), p = target || aimPoint(e, 30); dx = f.x; dz = f.z; sx = p.x - dx * 6; sz = p.z - dz * 6; }
+    const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; const L = 34, from = { x: e.x - dx * 25, z: e.z - dz * 25 };
+    fx('armaPath', sx, sz, dx, dz, L);
+    for (let wave = 0; wave < 4; wave++) for (let i = 0; i < 9; i++) {
+      const t = i * L / 8, side = (wave % 2 ? 1 : -1) * 1.6 + rand(-.6, .6), px = sx + dx * t - dz * side, pz = sz + dz * t + dx * side;
+      if (px < 1 || pz < 1 || px > MAPW - 1 || pz > MAPH - 1 || hAtPos(px, pz) > 4) continue;
+      const when = 1.6 + wave * .8 + i * .12;
+      timedFx.push({ t: when - .75, update() { }, end() { fx('missile', px, pz, .75, from.x + rand(-6, 6), from.z + rand(-6, 6)); } });
+      timedFx.push({ t: when, update() { }, end() { explodeAt(px, 0, pz, e, 70, 35, 3.6, 0xff7a2a, 'Armageddon'); fx('scorch', px, pz); } });
+    }
     return true;
   },
+
   saturate(e) { const p = spawnProj(Object.assign(throwFrom(e, 18, 2), { color: 0xff7ab0, owner: e, size: .2 })); p.onLand = () => { fx('parts', p.x, p.y + .5, p.z, 40, 0xff7ab0, 4, .6); fx('pulse', p.x, p.y + 1, p.z, 4.5); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 4.5) { o.slowT = Math.max(o.slowT, 4); o.nearT = Math.max(o.nearT, 1.2); toastTo(o, 'Hindered by Saturate!'); } }; return true; },
   lightspeed(e) { doDash(e); timedFx.push({ t: .32, update() { }, end() { if (e.alive) doDash(e); } }); return true; },
   refract(e) { e.refract = { x: e.x, z: e.z, t: 8 }; fx('parts', e.x, e.y + .3, e.z, 25, 0xff7ab0, 2, .8); toastTo(e, 'Beacon left — press E again to snap back'); return true; },
@@ -7524,6 +7533,15 @@ const FX = {
     lfxAdd(g, dur, k => { const t = k * dur, up = Math.min(1, t / .5), down = t > dur - .6 ? Math.max(.01, (dur - t) / .6) : 1; disc.material.opacity = Math.min(1, t * 3) * down; for (const sp of spikes) { sp.scale.y = Math.max(.01, up * down); sp.position.y = sp.geometry.parameters.height / 2 * sp.scale.y; } });
     sndNoise(.8, 3000, 1, .4, x, z, 'highpass');
   },
+  armaPath(sx, sz, dx, dz, L) { // Tejo: the strike strip lights up red before the missiles arrive
+    const g = new THREE.Group(), m = addMat(0xff3a2a, .5), len = L + 3, strip = new THREE.Mesh(new THREE.PlaneGeometry(6.4, len), m); strip.rotation.x = -Math.PI / 2; g.add(strip);
+    const em = addMat(0xffd36a, .9); for (const sd of [-3.2, 3.2]) { const e2 = new THREE.Mesh(new THREE.PlaneGeometry(.12, len), em); e2.rotation.x = -Math.PI / 2; e2.position.x = sd; g.add(e2); }
+    for (let i = 0; i < 5; i++) { const ch = new THREE.Mesh(new THREE.RingGeometry(.9, 1.15, 3), em); ch.rotation.set(-Math.PI / 2, 0, Math.PI / 2); ch.position.y = .01; ch.position.z = -len / 2 + 3 + i * (len - 6) / 4; g.add(ch); }
+    g.position.set(sx + dx * L / 2, .07, sz + dz * L / 2); g.rotation.y = Math.atan2(-dx, -dz);
+    lfxAdd(g, 5.4, (k, dt, f) => { m.opacity = (.3 + Math.sin(f.t * 10) * .15) * (k > .85 ? (1 - k) / .15 : 1); em.opacity = m.opacity * 1.8; });
+    sndTone(880, .15, .15, 'square', 880); sndTone(880, .15, .15, 'square', 880, undefined, undefined, .3); sndTone(880, .15, .15, 'square', 880, undefined, undefined, .6);
+  },
+  scorch(x, z) { const m = new THREE.Mesh(new THREE.CircleGeometry(rand(1.3, 1.9), 14), new THREE.MeshBasicMaterial({ color: 0x1a1210, transparent: true, opacity: .55, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, .03 + Math.random() * .01, z); lfxAdd(m, 8, k => { m.material.opacity = .55 * (k > .7 ? (1 - k) / .3 : 1); }); },
   tmark(x, z, t) { // Tejo: red target marker on the ground until the missile lands
     const g = new THREE.Group(), m = addMat(0xff3a3a, .9);
     for (const rr of [1.6, 3.2, 4.2]) { const ring = new THREE.Mesh(new THREE.RingGeometry(rr - .06, rr, 48), m); ring.rotation.x = -Math.PI / 2; g.add(ring); }
@@ -10975,7 +10993,7 @@ function tryStartPlace(e, ab, key) {
   const kind = placeKind(e, ab); if (!kind) return false;
   if (key === 'X' ? e.ult < ab.ult : e.charges[key] <= 0) return false; // normal "not ready" feedback
   cancelPlace(); closeBrimMap();
-  if (kind === 'map') { openBrimMap({ key, theme: ab.type === 'fts' || abOwner(e, ab) === 'astra' ? 'purple' : abOwner(e, ab) === 'clove' ? 'pink' : 'orange', radius: ab.type === 'fts' ? 1.6 : ab.type === 'skySmoke' ? (ab.r || 4.6) : ({ gwell: 6, nova: 4.8, divide: 1, salvo: 4.2, armageddon: 3 })[ab.type] || 5.5, label: ab.name.toUpperCase(), multi: ab.type === 'skySmoke' || ab.type === 'salvo' ? e.charges[key] : 0, line: ab.type === 'divide', astral: abOwner(e, ab) === 'astra' }); return true; }
+  if (kind === 'map') { openBrimMap({ key, theme: ab.type === 'fts' || abOwner(e, ab) === 'astra' ? 'purple' : abOwner(e, ab) === 'clove' ? 'pink' : 'orange', radius: ab.type === 'fts' ? 1.6 : ab.type === 'skySmoke' ? (ab.r || 4.6) : ({ gwell: 6, nova: 4.8, divide: 1, salvo: 4.2, armageddon: 3 })[ab.type] || 5.5, label: ab.name.toUpperCase(), multi: ab.type === 'skySmoke' || ab.type === 'salvo' ? e.charges[key] : 0, line: ab.type === 'divide', astral: abOwner(e, ab) === 'astra', path: ab.type === 'armageddon' ? 34 : 0, gold: abOwner(e, ab) === 'tejo' }); return true; }
   const P = aimMode = { key, ab, kind, t: 0, prev0: true, prev2: true, ready: false, power: 0, bounces: 1, rot: 0, push: 0, meshes: [] };
   const add = m => { scene.add(m); P.meshes.push(m); return m; };
   const tm = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, side: THREE.DoubleSide });
@@ -11169,8 +11187,8 @@ function shadeScreen(t, label) { shadeT = shadeMax = t; $('shadeOv').classList.r
 let brimMap = null; // { x, z } cursor in world units while the tactical map is open
 const brimCv = document.createElement('canvas');
 function openBrimMap(o = {}) {
-  const p = player; brimMap = { line: o.line, astral: o.astral, x: p.x, z: p.z, open: 0, key: o.key || 'X', theme: o.theme || 'orange', radius: o.radius || 5.5, label: o.label || 'ORBITAL STRIKE', multi: o.multi || 0, marks: [] };
-  $('brimOv').style.filter = brimMap.theme === 'purple' ? 'hue-rotate(230deg) saturate(1.25)' : brimMap.theme === 'pink' ? 'hue-rotate(295deg) saturate(1.1)' : '';
+  const p = player; brimMap = { line: o.line, astral: o.astral, path: o.path || 0, start: null, gold: o.gold, x: p.x, z: p.z, open: 0, key: o.key || 'X', theme: o.theme || 'orange', radius: o.radius || 5.5, label: o.label || 'ORBITAL STRIKE', multi: o.multi || 0, marks: [] };
+  $('brimOv').style.filter = brimMap.gold ? 'hue-rotate(18deg) saturate(1.4) brightness(1.08)' : brimMap.theme === 'purple' ? 'hue-rotate(230deg) saturate(1.25)' : brimMap.theme === 'pink' ? 'hue-rotate(295deg) saturate(1.1)' : '';
   // orange holographic copy of the map
   const K = 6; brimCv.width = GW * K; brimCv.height = GH * K; const x = brimCv.getContext('2d');
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
@@ -11201,7 +11219,10 @@ function deployBrimMap() {
   sndTone(260, .3, .2, 'sawtooth', 120);
 }
 function confirmBrimMap() {
-  const t = { x: brimMap.x, y: 0, z: brimMap.z }, key = brimMap.key; closeBrimMap();
+  if (brimMap.path && !brimMap.start) { brimMap.start = { x: brimMap.x, z: brimMap.z }; sndTone(800, .08, .12, 'triangle', 1200); toast('Start set — now aim the direction and click again'); return; } // Tejo: 1st click = start, 2nd = direction
+  let t = { x: brimMap.x, y: 0, z: brimMap.z }; const key = brimMap.key;
+  if (brimMap.path) { const S = brimMap.start; let dx = t.x - S.x, dz = t.z - S.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; t = { x: S.x, y: 0, z: S.z, ex: S.x + dx * brimMap.path, ez: S.z + dz * brimMap.path }; }
+  closeBrimMap();
   if (net.role === 'client') { clientCast(key, t); return; }
   castAbility(player, key, t);
 }
@@ -11226,6 +11247,11 @@ function drawBrimMap(dt) {
   const px = ox + player.x * K, py = oy + player.z * K; x.strokeStyle = '#fff6d8'; x.lineWidth = 2; x.beginPath(); x.moveTo(px, py); x.lineTo(px - Math.sin(player.yaw) * 16, py - Math.cos(player.yaw) * 16); x.stroke();
   // strike reticle (orbital radius 5.5 m)
   const tx = ox + brimMap.x * K, ty = oy + brimMap.z * K, rr = brimMap.radius * K, pulse = 1 + Math.sin(game.time * 8) * .05;
+  if (brimMap.path) { const S = brimMap.start || { x: brimMap.x, z: brimMap.z }, sx = ox + S.x * K, sy = oy + S.z * K; let ddx = tx - sx, ddy = ty - sy; const dl = Math.hypot(ddx, ddy); if (brimMap.start && dl > 2) { ddx /= dl; ddy /= dl; } else { ddx = -Math.sin(player.yaw); ddy = -Math.cos(player.yaw); }
+    const L = brimMap.path * K, wv = 3.2 * K; x.save(); x.shadowColor = '#ffd36a'; x.shadowBlur = 14; x.fillStyle = 'rgba(255,90,60,.28)'; x.strokeStyle = 'rgba(255,215,110,.95)'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(sx - ddy * wv, sy + ddx * wv); x.lineTo(sx + ddx * L - ddy * wv, sy + ddy * L + ddx * wv); x.lineTo(sx + ddx * L + ddy * wv, sy + ddy * L - ddx * wv); x.lineTo(sx + ddy * wv, sy - ddx * wv); x.closePath(); x.fill(); x.stroke();
+    for (let i = 1; i <= 4; i++) { const q = i / 4.6; x.beginPath(); x.moveTo(sx + ddx * L * q - ddy * wv, sy + ddy * L * q + ddx * wv); x.lineTo(sx + ddx * L * q + ddy * wv, sy + ddy * L * q - ddx * wv); x.stroke(); }
+    x.fillStyle = '#ffe9a8'; x.beginPath(); x.arc(sx, sy, 6, 0, 7); x.fill(); x.font = '600 13px Oswald, sans-serif'; x.textAlign = 'center'; x.fillText(brimMap.start ? 'CLICK TO SET DIRECTION' : 'CLICK TO SET START', sx, sy - 14); x.restore(); }
   if (brimMap.line) { let ldx = -(ty - py), ldy = tx - px; const ll = Math.hypot(ldx, ldy) || 1; ldx /= ll; ldy /= ll; const L = R * 3; x.save(); x.shadowColor = '#d07bff'; x.shadowBlur = 18; x.strokeStyle = 'rgba(230,170,255,.95)'; x.lineWidth = 6; x.beginPath(); x.moveTo(tx - ldx * L, ty - ldy * L); x.lineTo(tx + ldx * L, ty + ldy * L); x.stroke(); x.restore(); }
   x.strokeStyle = '#ffe14a'; x.lineWidth = 3; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.stroke();
   x.fillStyle = 'rgba(255,60,40,.25)'; x.beginPath(); x.arc(tx, ty, rr * pulse, 0, 7); x.fill();
@@ -12365,7 +12391,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 94;
+const BUILD = 95;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
