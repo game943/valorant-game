@@ -722,6 +722,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #cmdWheel{position:fixed;left:50%;top:50%;width:360px;height:360px;margin:-180px 0 0 -180px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(47,224,182,.35)}
 #cmdWheel .cw{position:absolute;width:96px;height:64px;margin:-32px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
 #cmdWheel .cw b{font-size:22px;line-height:1.1}#cmdWheel .cw.on{color:#2fe0b6;transform:scale(1.2)}
+.coach{margin:10px 0;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:left}
+.coHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.coGrade{font:700 26px Oswald,sans-serif;width:38px;text-align:center;border:2px solid;line-height:1.2}
+.coGrade.gS{color:#ffd34d}.coGrade.gA{color:#2fe0b6}.coGrade.gB{color:#4fa3ff}.coGrade.gC{color:#c9d0d6}.coGrade.gD{color:#ff4655}
+.coGood{font-size:12px;color:var(--teal);margin-bottom:6px;line-height:1.5}.coTips{display:flex;flex-direction:column;gap:6px}
+.coTip{display:flex;gap:10px;align-items:flex-start;background:rgba(0,0,0,.25);padding:7px 9px}.coTip i{font-style:normal;font-size:18px}.coTip b{display:block;font-size:13px;color:#ffd34d}.coTip span{font-size:12px;color:#c9d0d6;line-height:1.45}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -4677,6 +4682,7 @@ function playerFire() {
   if (inst.mag <= 0) { startReload(p); if (p.reloadT <= 0) SND.deny(); p.fireCD = .2; return; }
   const rate = w.rate * (p.empressT > 0 ? 1.25 : 1) * (p.stimT > 0 ? 1.1 : 1);
   p.fireCD = 1 / rate;
+  if (!RANGE() && game.phase === 'live') { matchStats.shots++; if (Math.hypot(p.vx, p.vz) > 3 && p.onGround && !p.crouch) matchStats.moveShots++; }
   if (inst.key === 'blades') { p.bladeMag--; } else inst.mag--;
   if (inst.key === 'headhunter') { p.charges[keyOfType(p, 'hh') || 'Q'] = inst.mag; refreshAbilHud(); if (net.role === 'client') netSend({ t: 'hhs' }); }
   if (game.time - p.lastShot > Math.max(.32, 1.6 / rate)) p.shotIdx = 0;
@@ -5584,7 +5590,8 @@ function finishMatch() {
   { const L = profile.life = profile.life || { agents: {}, maps: {} }; const ag = L.agents[p.agent] = L.agents[p.agent] || { m: 0, w: 0, k: 0, d: 0 }, mp = L.maps[game.mapId] = L.maps[game.mapId] || { m: 0, w: 0 };
     ag.m++; ag.w += won ? 1 : 0; ag.k += p.kills; ag.d += p.deaths; mp.m++; mp.w += won ? 1 : 0; }
   profile.matches = profile.matches.slice(0, 50); saveProfile(); refreshVP();
-  $('overStats').innerHTML = matchStatsHTML() + rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
+  const coach = !RANGE() && !DM() && !game.spectate ? coachReport(won) : null; if (coach && profile.matches[0]) { profile.matches[0].coach = coach; saveProfile(); }
+  $('overStats').innerHTML = matchStatsHTML() + coachHTML(coach) + rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
     <div class="stat"><span>Agent</span><b>${AGENT[p.agent].name}</b></div>
     <div class="stat"><span>K / D / A</span><b class="os">${p.kills} / ${p.deaths} / ${p.assists}</b></div>
     <div class="stat"><span>K/D Ratio</span><b class="os">${(p.kills / Math.max(1, p.deaths)).toFixed(2)}</b></div>
@@ -6194,6 +6201,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
+    coachTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6584,6 +6592,58 @@ function speakLine(text, agentId, queue) {
     if (ttsVoices.length) u.voice = ttsVoices[h % ttsVoices.length];
     if (!queue) speechSynthesis.cancel(); speechSynthesis.speak(u);
   } catch (e) { }
+}
+/* --- AI coach: watches how you play (crosshair height, moving shots, lone deaths, utility…) and gives tips after the match --- */
+let coachClock = 0;
+function coachTick(dt) {
+  const MS = matchStats, p = player; if (!p || RANGE() || DM() || game.spectate || p.spectator) return;
+  if (MS.coachRound !== game.round) { MS.coachRound = game.round; MS.abil0 = MS.abil; MS.seen = new Set(); }
+  if (MS.wasAlive && !p.alive && game.phase !== 'buy') { // you just died: how?
+    MS.deaths++; if (p.reloadT > 0) MS.reloading++;
+    if (MS.abil === MS.abil0) MS.noUtil++;
+    if (!entities.some(e => e !== p && e.alive && e.team === p.team && Math.hypot(e.x - p.x, e.z - p.z) < 15)) MS.alone++;
+  }
+  MS.wasAlive = p.alive;
+  if (!p.alive || game.phase !== 'live' || (coachClock -= dt) > 0) return; coachClock = .1;
+  // crosshair placement: where was your aim the moment each enemy came into view?
+  for (const e of entities) {
+    if (!e.alive || !isEnemy(e, p) || MS.seen.has(e.id) || !canSee(p, e, .3)) continue; MS.seen.add(e.id);
+    const dx = e.x - p.x, dz = e.z - p.z, d = Math.hypot(dx, dz); if (d < 4) continue;
+    const hy = eyeY(e) + .1 - eyeY(p), v = (Math.atan2(hy, d) - p.pitch) * 57.3, h = Math.abs(angDiff(p.yaw, Math.atan2(-dx, -dz))) * 57.3;
+    MS.xV.push(v); MS.xH.push(h);
+  }
+}
+function coachReport(won) {
+  const MS = matchStats, p = player, R = Math.max(1, game.round), avg = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
+  const acc = MS.shots ? MS.hits / MS.shots : 0, hsp = MS.hits ? MS.hs / MS.hits : 0, mv = MS.shots ? MS.moveShots / MS.shots : 0, adr = MS.dmg / R;
+  const xv = avg(MS.xV), xh = avg(MS.xH), kd = p.kills / Math.max(1, p.deaths), upr = MS.abil / R, D = Math.max(1, MS.deaths);
+  const tips = [], good = [];
+  if (MS.xV.length >= 4 && xv > 5) tips.push(['🎯', 'Crosshair too low', `When enemies appeared, your aim was ${xv.toFixed(0)}° below their heads on average. Keep it at head height while you walk.`]);
+  else if (MS.xV.length >= 4 && Math.abs(xv) < 3) good.push(`Great crosshair height (${Math.abs(xv).toFixed(1)}° off the head on average)`);
+  if (MS.xH.length >= 4 && xh > 25) tips.push(['👀', 'Aim where enemies come from', `Enemies showed up ${xh.toFixed(0)}° away from your crosshair. Pre-aim corners and doorways before you clear them.`]);
+  if (MS.shots >= 30 && mv > .35) tips.push(['🛑', 'Stop before you shoot', `${Math.round(mv * 100)}% of your shots were fired while running — they spread a lot. Tap the opposite move key to stop, then shoot.`]);
+  else if (MS.shots >= 30 && mv < .15) good.push('You stop before shooting — clean counter-strafing');
+  if (MS.deaths >= 4 && MS.alone / D > .5) tips.push(['🤝', 'Play closer to your team', `${MS.alone} of your ${MS.deaths} deaths happened with no teammate nearby, so nobody could trade you.`]);
+  if (MS.deaths >= 4 && MS.noUtil / D > .6) tips.push(['💨', 'Use your abilities first', `You died ${MS.noUtil} times without using an ability that round. Flash, smoke or scout before you peek.`]);
+  if (MS.reloading >= 2) tips.push(['🔄', 'Reload in safe spots', `You died ${MS.reloading} times while reloading. Reload behind cover, or switch to your sidearm.`]);
+  if (MS.fd >= 3 && MS.fd > MS.fk * 2) tips.push(['⚔', 'Too many first deaths', `You died first in ${MS.fd} rounds. Let a duelist or utility go in first, then trade.`]);
+  else if (MS.fk >= 3 && MS.fk >= MS.fd) good.push(`Strong opening duels (${MS.fk} first kills)`);
+  if (MS.hits >= 15 && hsp < .12) tips.push(['🧠', 'Aim for the head', `Only ${Math.round(hsp * 100)}% of your hits were headshots. Head damage is about 3× body damage.`]);
+  else if (MS.hits >= 15 && hsp > .28) good.push(`Sharp headshots (${Math.round(hsp * 100)}% of hits)`);
+  if (MS.shots >= 40 && acc < .15) tips.push(['🔫', 'Shorter bursts', `Your accuracy was ${Math.round(acc * 100)}%. Spray less — tap or burst 2–4 bullets at range.`]);
+  if (R >= 6 && upr < .5) tips.push(['🧰', 'Buy and use more utility', `You used ${upr.toFixed(1)} abilities per round. Most rounds you should use 2 or more.`]);
+  if (adr >= 150) good.push(`Big damage output (${Math.round(adr)} per round)`);
+  if (kd >= 1.5) good.push(`Excellent K/D (${kd.toFixed(2)})`);
+  const score = clamp(adr / 1.6 + kd * 18 + hsp * 40 + (won ? 8 : 0) - tips.length * 3, 0, 120);
+  const grade = score > 95 ? 'S' : score > 78 ? 'A' : score > 60 ? 'B' : score > 42 ? 'C' : 'D';
+  if (!tips.length) tips.push(['✨', 'Keep it up', 'No big habits to fix this match — try a harder bot difficulty.']);
+  return { grade, tips: tips.slice(0, 3), good: good.slice(0, 3) };
+}
+function coachHTML(c) {
+  if (!c) return '';
+  return `<div class="coach"><div class="coHead"><span class="ol">AI COACH</span><b class="coGrade g${c.grade}">${c.grade}</b></div>
+    ${c.good.length ? `<div class="coGood">${c.good.map(g => `<div>✓ ${esc(g)}</div>`).join('')}</div>` : ''}
+    <div class="coTips">${c.tips.map(([ic, t, d]) => `<div class="coTip"><i>${ic}</i><div><b>${esc(t)}</b><span>${esc(d)}</span></div></div>`).join('')}</div></div>`;
 }
 /* --- agent banter: teammates whose agents know each other trade a line or two in the buy phase --- */
 const BANTER = [
@@ -9944,7 +10004,8 @@ const MISSION_POOL = [
   { id: 'r20', type: 'range', n: 20, vp: 200, txt: 'Hit 20+ targets in a Range shooting test' },
 ];
 const LEVEL_VP = 500, RANGE_TESTS_PER_DAY = 5;
-const newMatchStats = () => ({ hs: 0, abil: 0, hits: 0, dmg: 0, fk: 0, fd: 0, rounds: [], lastRound: 1, k0: 0, d0: 0 });
+const newMatchStats = () => ({ hs: 0, abil: 0, hits: 0, dmg: 0, fk: 0, fd: 0, rounds: [], lastRound: 1, k0: 0, d0: 0,
+  shots: 0, moveShots: 0, deaths: 0, alone: 0, noUtil: 0, reloading: 0, xV: [], xH: [], coachRound: -1, abil0: 0, wasAlive: true, seen: new Set() });
 let matchStats = newMatchStats();
 function ensureMissions() {
   const d = today();
@@ -10587,6 +10648,7 @@ function renderCareer() {
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
   html += statsDashHTML();
+  { const lc = profile.matches.find(x => x.coach); if (lc) html += `<div class="collCat">COACH NOTES · last match (${esc(MAPS[lc.map] ? MAPS[lc.map].name : lc.map)}, ${lc.won ? 'win' : 'loss'})</div>` + coachHTML(lc.coach); }
   html += '<div class="collCat">RECENT MATCHES</div>';
   html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[x.mode] || 'COMPETITIVE'}${x.place ? ' · #' + x.place : ''}${x.rr !== undefined ? ` · <b style="color:${x.rr > 0 ? 'var(--teal)' : 'var(--red)'}">${x.rr > 0 ? '+' : ''}${x.rr} RR</b>` : ''}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
