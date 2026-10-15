@@ -792,6 +792,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #bigMapCv{display:block;cursor:crosshair;image-rendering:auto}
 #doorHint{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:30;pointer-events:none;font:600 14px Oswald,sans-serif;letter-spacing:1px;color:#ece8e1;background:rgba(10,16,22,.65);padding:4px 12px}
 #doorHint b{background:#ece8e1;color:#111;padding:0 6px;margin-right:6px}
+#ghostHud{position:fixed;top:84px;left:50%;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:10px;background:rgba(10,16,22,.75);padding:5px 12px;font:600 13px Oswald,sans-serif;letter-spacing:1px;pointer-events:none}
+#ghostHud b{font-size:18px;color:#fff}#ghostHud i{width:180px;height:6px;background:linear-gradient(90deg,#2fe0b6 var(--p),#b07aff var(--p));display:block}#ghostHud span:last-of-type{color:#c9a8ff}
+#ghostHud em{font-style:normal;min-width:48px;text-align:right}#ghostHud em.up{color:var(--teal)}#ghostHud em.dn{color:#ff8a8a}
+#ghostX{position:fixed;z-index:29;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid rgba(176,122,255,.85);border-radius:50%;box-shadow:0 0 10px rgba(176,122,255,.7);pointer-events:none}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -1323,6 +1327,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
 <div id="banter"></div>
+<div id="ghostHud" class="hidden"></div><div id="ghostX" class="hidden"></div>
 <div id="doorHint" class="hidden"></div>
 <div id="bigMap" class="hidden"><div class="bmBox"><div class="bmHead"><b>MAP</b><span>Click: ping · Right-click: enemy here · Drag: draw (your team sees it) · M / Esc: close</span>
   <span class="bmCols"><button data-bmc="#ffd34d" class="on" style="background:#ffd34d"></button><button data-bmc="#2fe0b6" style="background:#2fe0b6"></button><button data-bmc="#ff4655" style="background:#ff4655"></button><button data-bmc="#ffffff" style="background:#fff"></button><button id="bmClear">Clear mine</button></span></div>
@@ -11124,7 +11129,10 @@ function startAim(mode) {
   aimT = { mode, kind: M.kind || mode, M, t: M.dur, score: 0, hits: 0, shots: 0, onT: 0, orbs: [], c: { x: p.x + fx0 * 11 * far, y: ey + .2, z: p.z + fz0 * 11 * far }, rgt: { x: -fz0, z: fx0 }, fw: { x: fx0, z: fz0 }, eye: { x: p.x, y: ey, z: p.z }, ph: Math.random() * 6, prevM: true };
   if (aimT.kind === 'reaction') { aimT.rx = { i: 0, wait: rand(1.4, 3.6), green: false, times: [], early: 0 }; reactOv('wait'); }
   for (let i = 0; i < M.n; i++) aimSpawn();
-  banner(M.name.toUpperCase(), M.desc, '', 1.8); sndTone(520, .15, .15, 'triangle', 780);
+  // ghost of your best run: its crosshair path and score race you
+  aimT.key = M.daily ? 'daily' + M.daily : mode; aimT.yaw0 = p.yaw; aimT.pitch0 = p.pitch; aimT.rec = []; aimT.el = 0; aimT.recT = 0;
+  aimT.ghost = aimT.kind !== 'reaction' && profile.aimGhost && profile.aimGhost[aimT.key] || null; $('ghostHud').classList.toggle('hidden', !aimT.ghost); $('ghostX').classList.toggle('hidden', !aimT.ghost);
+  banner(M.name.toUpperCase(), M.desc + (aimT.ghost ? ` · race your ghost (${aimT.ghost.s})` : ''), '', 1.8); sndTone(520, .15, .15, 'triangle', 780);
 }
 function aimSpawn() {
   const A = aimT, M = A.M; let x, y, z, ok = false;
@@ -11168,7 +11176,7 @@ function aimTick(dt) {
     }
     return;
   }
-  A.t -= dt;
+  A.t -= dt; ghostTick(A, dt);
   if (A.kind === 'track') {
     const o = A.orbs[0]; A.ph += dt * (A.M.moveMul || 1);
     const u = Math.sin(A.ph * 1.3) * 3.4 + Math.sin(A.ph * 2.9) * .9, v = Math.sin(A.ph * 1.7 + 1) * 1.1;
@@ -11184,9 +11192,20 @@ function aimTick(dt) {
   if (A.kind === 'reflex') for (const o of A.orbs.slice()) if (game.time - o.born > A.M.life) { aimRemove(o); aimSpawn(); A.shots++; sndTone(240, .08, .08, 'sine'); if (A.M.oneMiss) { endAim(false); return; } }
   if (A.t <= 0) endAim(false);
 }
+function ghostTick(A, dt) {
+  A.el += dt; A.recT -= dt;
+  if (A.recT <= 0) { A.recT = .05; A.rec.push(+A.el.toFixed(2), A.score, +angDiff(A.yaw0, player.yaw).toFixed(3), +(player.pitch - A.pitch0).toFixed(3)); }
+  const G = A.ghost; if (!G) return;
+  // find the ghost's sample at this moment
+  const R = G.rec; let i = 0; while (i + 4 < R.length && R[i + 4] <= A.el) i += 4;
+  const gs = R[i + 1], gy = A.yaw0 - R[i + 2], gp = A.pitch0 + R[i + 3], diff = A.score - gs;
+  $('ghostHud').innerHTML = `<span>YOU <b>${A.score}</b></span><i style="--p:${clamp(.5 + diff / Math.max(400, G.s * .3), 0, 1) * 100}%"></i><span>GHOST <b>${gs}</b></span><em class="${diff >= 0 ? 'up' : 'dn'}">${diff >= 0 ? '+' : ''}${diff}</em>`;
+  const p = player, ey = eyeY(p), cp = Math.cos(gp); _v3.set(p.x - Math.sin(gy) * cp * 20, ey + Math.sin(gp) * 20, p.z - Math.cos(gy) * cp * 20).project(camera);
+  const el = $('ghostX'), vis = _v3.z < 1; el.style.display = vis ? '' : 'none'; if (vis) { el.style.left = ((_v3.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - _v3.y) / 2 * innerHeight) + 'px'; }
+}
 const AIM_ON_MAT = new THREE.MeshPhongMaterial({ color: 0xffe14a, emissive: 0x8a6a00, shininess: 90 });
 function endAim(silent) {
-  const A = aimT; if (!A) return; aimT = null; reactOv(null);
+  const A = aimT; if (!A) return; aimT = null; reactOv(null); $('ghostHud').classList.add('hidden'); $('ghostX').classList.add('hidden');
   for (const o of A.orbs) scene.remove(o.mesh);
   if (!silent) {
     const acc = A.kind === 'reaction' ? 100 : A.kind === 'track' ? Math.round(A.onT / Math.max(.01, A.shots) * 100) : A.shots ? Math.round(A.hits / A.shots * 100) : 0;
@@ -11202,6 +11221,11 @@ function endAim(silent) {
     }
     saveProfile();
     const isBest = prevTop === null || better(A.score, prevTop), unit = A.kind === 'reaction' ? ' ms' : ' POINTS';
+    if (A.kind !== 'reaction') {
+      if (A.ghost) extra += A.score > A.ghost.s ? ` · 👻 you beat your ghost by ${A.score - A.ghost.s}!` : ` · 👻 the ghost wins by ${A.ghost.s - A.score}`;
+      if (isBest && A.rec.length) { profile.aimGhost = profile.aimGhost || {}; profile.aimGhost[key] = { s: A.score, rec: A.rec.slice(0, 4 * 1400) };
+        for (const k in profile.aimGhost) if (/^daily/.test(k) && k !== key) delete profile.aimGhost[k]; saveProfile(); }
+    }
     banner(`${A.score}${unit}`, `${A.M.name}${A.kind === 'reaction' ? (A.rx.early ? ` · ${A.rx.early} early click${A.rx.early > 1 ? 's' : ''} (+50 ms each)` : '') : ' · accuracy ' + acc + '%'}${isBest ? ' · NEW BEST!' : ' · best ' + prevTop + (A.kind === 'reaction' ? ' ms' : '')}${extra}`, '', 4.5);
     if (isBest) SND.kill();
   }
