@@ -299,6 +299,10 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .pvKeys{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font:500 13px 'Noto Sans KR',sans-serif;color:#cfd6dc;background:rgba(10,16,22,.65);padding:8px 14px;max-width:92vw}
 .pvKeys b{color:#fff;font-family:Oswald,sans-serif;letter-spacing:1px}
 #pvBack{position:absolute;top:16px;left:16px;pointer-events:auto;width:auto;margin:0}
+#cereTag{position:fixed;top:12vh;left:50%;transform:translateX(-50%);z-index:40;text-align:center;pointer-events:none;animation:cereIn .7s ease-out}
+#cereTag b{display:block;font:700 clamp(48px,8vw,110px) Oswald,sans-serif;letter-spacing:.25em;color:#2fe0b6;text-shadow:0 4px 24px rgba(0,0,0,.6),0 0 30px rgba(47,224,182,.5)}
+#cereTag span{font:500 12px 'Noto Sans KR',sans-serif;letter-spacing:2px;color:#cfd6dc;opacity:.7}
+@keyframes cereIn{from{opacity:0;transform:translate(-50%,-20px) scale(1.15)}}
 .wsCols{display:flex;gap:8px}.wsCols label{flex:1}
 .wsPair{display:flex;gap:4px}.wsPair select{flex:1;min-width:0}.wsPair .btn{width:auto;margin:0;padding:4px 10px}
 .wsBtns{display:flex;gap:8px;margin-top:6px}.wsBtns .btn{margin:0;flex:1;width:auto;padding:10px 8px}
@@ -1033,6 +1037,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="pvCross"></div><div class="pvClick" id="pvClick">Click to look around</div>
   <div class="pvKeys"><span><b>WASD</b> move</span><span><b>Mouse</b> look</span><span><b>Space</b> jump / up</span><span><b>Ctrl</b> down</span><span><b>F</b> walk ↔ fly</span><span><b>Shift</b> fast</span><span><b>Esc</b> back</span></div>
   <button class="btn" id="pvBack">◀ BACK TO EDITOR</button></div>
+<div id="cereTag" class="hidden"><b>VICTORY</b><span>click to skip</span></div>
 <div id="menuToast"></div>
 <div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
 <div id="updateBar" class="hidden"><span id="updTxt">A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
@@ -1257,7 +1262,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, botReact: 50, botAim: 50, botHead: 50, botAggr: 50,
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, botReact: 50, botAim: 50, botHead: 50, botAggr: 50,
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -5560,7 +5565,50 @@ function finishMatch() {
   setTimeout(showUpdateBar, 2500);
   $('btnReplay').classList.toggle('hidden', !(REC && REC.entsRef === entities && REC.frames.length >= 10));
   { const ok = REC && REC.entsRef === entities && REC.frames.length >= 10; REC && (REC.hl = null); const n = ok ? findHighlights().length : 0; $('btnHighlights').classList.toggle('hidden', !n); $('btnHighlights').textContent = `★ Highlights (${n})`; }
-  if (!RANGE()) setTimeout(() => { if (game.state === 'over') startMvp(winTeam); }, 600);
+  if (!RANGE() && won && !DM() && !game.spectate && settings.ceremony !== false) startCeremony(winTeam, () => { if (game.state === 'over') startMvp(winTeam); });
+  else if (!RANGE()) setTimeout(() => { if (game.state === 'over') startMvp(winTeam); }, 600);
+}
+/* --- victory ceremony: the winning team lines up and celebrates under fireworks before the results --- */
+let cere = null;
+function startCeremony(winTeam, done) {
+  const team = entities.filter(e => e.team === winTeam && !e.dummy).slice(0, 5); if (!team.length) { done(); return; }
+  const lead0 = team.find(e => e.isPlayer) || team[0], free = (x, z) => hAt(Math.floor(x / CELL), Math.floor(z / CELL)) < .5;
+  // gather in the most open spot near the leader so the camera has room
+  let spot = [lead0.x, lead0.z], bestS = -1e9; const lc = Math.floor(lead0.x / CELL), lr = Math.floor(lead0.z / CELL);
+  for (let r = lr - 8; r <= lr + 8; r++) for (let c = lc - 8; c <= lc + 8; c++) { if (hAt(c, r) >= .5) continue; let n = 0; for (let dr = -3; dr <= 3; dr++) for (let dc = -3; dc <= 3; dc++) if (hAt(c + dc, r + dr) < .5) n++; const sc = n - Math.hypot(c - lc, r - lr) * .6; if (sc > bestS) { bestS = sc; spot = [(c + .5) * CELL, (r + .5) * CELL]; } }
+  const lead = { x: spot[0], z: spot[1] };
+  // a straight line through the leader, along whichever axis has the most room
+  let ax = 1, az = 0, best = -1;
+  for (const [dx, dz] of [[1, 0], [0, 1], [.7, .7], [.7, -.7]]) { let n = 0; for (let k = -3; k <= 3; k++) if (free(lead.x + dx * k * 1.4, lead.z + dz * k * 1.4)) n++; if (n > best) { best = n; ax = dx; az = dz; } }
+  const order = [lead, ...team.filter(e => e !== lead)], slot = i => { const k = i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2); let x = lead.x + ax * k * 1.4, z = lead.z + az * k * 1.4; if (!free(x, z)) { x = lead.x + ax * k * .5; z = lead.z + az * k * .5; } return [x, z]; };
+  const nx = -az, nz = ax, room = sd => { let d = 0; while (d < 7 && free(lead.x + nx * sd * (d + .5), lead.z + nz * sd * (d + .5))) d += .5; return d; };
+  const r1 = room(1), r2 = room(-1), side = r1 >= r2 ? 1 : -1, camMax = clamp(Math.max(r1, r2) - .5, 2.4, 6.4); // camera goes on the side with the most open floor
+  const faceYaw = Math.atan2(-nx * side, -nz * side); // characters face -z at rotation 0
+  const members = order.map((e, i) => { const m = e.isPlayer ? playerBody() : e.mesh; if (!m) return null; const [x, z] = slot(i); m.visible = true; addPosePivot(m); if (m.userData.marker) m.userData.marker.visible = false;
+    return { e, m, x, z, y: 0, em: [3, 1, 2, 3, 4][i % 5], ph: i * .37 }; }).filter(Boolean);
+  vmRoot.visible = false; barrierGroup.visible = false; $('over').classList.add('hidden'); $('cereTag').classList.remove('hidden');
+  cere = { t: 0, members, lead, nx: nx * side, nz: nz * side, ax, az, faceYaw, done, fw: 0, camMax };
+  sndTone(392, .3, .2, 'triangle', 523); sndTone(523, .5, .18, 'triangle', 784, undefined, undefined, .25); sndTone(784, .9, .16, 'sine', 1046, undefined, undefined, .55);
+}
+function endCeremony() {
+  if (!cere) return; const C = cere; cere = null; vmRoot.visible = true; hidePlayerBody(); $('cereTag').classList.add('hidden');
+  if (game.state === 'over') { $('over').classList.remove('hidden'); C.done(); }
+}
+function updateCeremony(dt) {
+  const C = cere; C.t += dt; const t = C.t;
+  for (const M of C.members) { M.m.position.set(M.x, M.y, M.z); M.m.rotation.set(0, C.faceYaw, 0); if (t > .4 + M.ph * .5) emotePose(M.m, M.em, t - M.ph); }
+  // fireworks: a rocket climbs, then bursts into coloured sparks
+  C.fw -= dt;
+  if (C.fw <= 0 && t < 5.2) {
+    C.fw = rand(.18, .4); const k = rand(-5, 5), bx = C.lead.x + C.ax * k - C.nx * rand(2, 7), bz = C.lead.z + C.az * k - C.nz * rand(2, 7), by = rand(7, 12), col = pick([0xff4655, 0xffd34d, 0x2fe0b6, 0x4fa3ff, 0xff4fd8, 0xffffff]);
+    spawnParticles(bx, by, bz, 46, col, 7, 1.1); spawnParticles(bx, by, bz, 18, 0xffffff, 3, .5); worldFlash(bx, by, bz, 7, col, .2);
+    sndNoise(.35, 900 + Math.random() * 600, .8, .22); setTimeout(() => sndNoise(.6, 4000, .5, .06), 120);
+  }
+  updateParticles(dt);
+  // camera: starts close on the line, pulls back and drifts sideways
+  const cx = C.lead.x + C.ax * Math.sin(t * .35) * 1.2, cz = C.lead.z + C.az * Math.sin(t * .35) * 1.2, d = Math.min(C.camMax, 2.4) + Math.min(1, t / 2.5) * (C.camMax - Math.min(C.camMax, 2.4));
+  camera.position.set(cx + C.nx * d, 1.5 + Math.min(1, t / 2.5) * .9, cz + C.nz * d); camera.lookAt(C.lead.x, 1.25, C.lead.z);
+  if (t > 6) endCeremony();
 }
 function updateRound(dt) {
   if (game.phase === 'buy') { game.phaseT -= dt; if (game.phaseT <= 0) startLive(); }
@@ -6087,6 +6135,7 @@ function loop(now) {
   } else if (game.state === 'replay') {
     updateReplay(dt);
   } else {
+    if (cere) { updateCeremony(dt); render(); return; }
     // menu background camera orbit
     const t = now / 1000 * .08;
     camera.position.set(MAPW / 2 + Math.cos(t) * 60, 45, MAPH / 2 + Math.sin(t) * 50); camera.lookAt(MAPW / 2, 0, MAPH / 2);
@@ -8578,6 +8627,8 @@ document.addEventListener('mousemove', e => { if (game.state === 'menu') { lobby
 let selectedAgent = profile.fav, curTab = 'home', playMode = 'comp', previewAgent = profile.fav;
 const tick = () => { if (AC && settings.menuSfx) sndTone(1300, .03, .05, 'triangle'); };
 document.addEventListener('mousedown', () => initAudio(), { capture: true });
+document.addEventListener('mousedown', () => { if (cere && cere.t > .6) endCeremony(); });
+document.addEventListener('keydown', e => { if (cere && cere.t > .6 && ['Escape', 'Space', 'Enter'].includes(e.code)) endCeremony(); });
 function segBind(id, fn) { $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b.dataset.v); tick(); }); }
 function segSet(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v))); }
 segBind('diffSeg', v => { settings.diff = v; saveSettings(); syncSettingCtl('diff'); if (net.role === 'host') partyChanged(); });
@@ -8596,6 +8647,7 @@ const SET_PAGES = {
     ['showMinimap', 'Show minimap', 'toggle'],
     ['botChat', 'Bot chat messages', 'toggle'],
     ['allyAI', 'Your bot teammates', 'seg', [['smart', 'Smart (play with you)'], ['normal', 'Same as enemies']]],
+    ['ceremony', 'Victory ceremony after a win', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
     ['botReact', 'Custom bots · reaction speed', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
     ['botAim', 'Custom bots · aim and tracking', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
@@ -10530,6 +10582,7 @@ $('btnLock').onclick = () => {
 $('btnFF').onclick = () => { playerStartFF(); };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
+  if (cere) { cere = null; vmRoot.visible = true; hidePlayerBody(); $("cereTag").classList.add("hidden"); }
   stopSpectate(); $('gameChat').innerHTML = ''; game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
   game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); cancelPlace(); reynaCast = 0; shadeT = 0; $('shadeOv').classList.add('hidden');
   $('rangeHud').classList.add('hidden'); $('rangeMenu').classList.add('hidden');
