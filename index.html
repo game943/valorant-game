@@ -885,6 +885,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14px}
 #mobileNote{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:12px;opacity:.5;z-index:35}
 @media (max-width:820px){.selWrap,.setGrid{grid-template-columns:1fr}#navTabs button{padding:0 8px;font-size:12px}.brand,.navRight{width:auto}.news{display:none}.tiles{grid-template-columns:repeat(3,1fr)}#shopCols{grid-template-columns:repeat(2,1fr);max-height:70vh;overflow:auto}}
+#trModal .trPanel{width:min(980px,96vw);max-width:none}
+#trStage{position:relative;height:min(62vh,560px);border-radius:10px;overflow:hidden;cursor:grab;touch-action:none}
+#trCv{width:100%;height:100%;display:block}
 </style>
 </head>
 <body>
@@ -999,7 +1002,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </section>
 
   <section class="tab hidden" id="tab-career">
-    <div class="tabPanel"><div class="pHead"><h2>CAREER</h2><span class="ol">Match history is saved in this browser</span></div><div id="careerBox"></div></div>
+    <div class="tabPanel"><div class="pHead"><h2>CAREER</h2><span class="ol">Match history is saved in this browser</span></div><button class="btn" id="btnTrophy" style="width:auto;padding:7px 14px;margin:0 0 10px">🏆 Trophy room</button><div id="careerBox"></div></div>
   </section>
 
   <section class="tab hidden" id="tab-collection">
@@ -1041,7 +1044,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="panel gvPanel">
     <div class="pHead"><div><div class="ol" id="gvSub"></div><h2 id="gvName">WEAPON</h2></div><button class="iconBtn" id="gvClose">✕</button></div>
     <div class="gvStage" id="gvStage"><canvas id="gvCv"></canvas><div class="gvHint">Drag to rotate · scroll to zoom</div></div>
-    <div class="gvBar"><label>Skin<select id="gvSkin"></select></label><label>Attachment<select id="gvAtt"></select></label>
+    <div class="gvBar"><label>Skin<select id="gvSkin"></select></label><label>Attachment<select id="gvAtt"></select></label><label>Barrel<select id="gvBar"></select></label><label>Stock<select id="gvStk"></select></label>
       <label>Engraving<span class="gvEng"><input id="gvEng" maxlength="14" placeholder="your text" spellcheck="false" autocomplete="off"><select id="gvEngS"><option value="gold">Gold</option><option value="silver">Silver</option><option value="neon">Neon</option><option value="red">Red</option></select></span></label>
       <button class="btn" id="gvInspect">🔄 Inspect</button><button class="btn" id="gvReload">🔃 Reload</button><button class="btn" id="gvFire">💥 Fire</button><button class="btn" id="gvReset">⟲</button></div>
   </div>
@@ -1160,6 +1163,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="cereTag" class="hidden"><b>VICTORY</b><span>click to skip</span></div>
 <div id="crateModal" class="screen hidden"></div>
 <div id="cardModal" class="screen hidden"></div>
+<div id="trModal" class="screen hidden"><div class="panel trPanel"><div class="pHead"><h2>TROPHY ROOM</h2><span class="ol">drag to look around · scroll to zoom</span><button class="iconBtn" id="trClose">✕</button></div>
+  <div id="trStage"><canvas id="trCv"></canvas><div id="trTip" class="hidden"></div></div></div></div>
 <div id="bfModal" class="screen hidden"><div class="panel bfPanel"><div class="pHead"><h2>BOT FRIENDS</h2><button class="iconBtn" id="bfClose">✕</button></div>
   <div class="note" style="margin:0 0 10px">Make your own bot teammates: their name, agent, personality and what they say. Switch on up to 4 to fill your team instead of random bots.</div>
   <div id="bfList"></div>
@@ -3101,6 +3106,21 @@ const ATTACH = {
   laser: { name: 'Laser sight', icon: '🔴', desc: '−30% hip-fire and moving spread · a red beam shows where you point' },
   grip: { name: 'Vertical grip', icon: '✊', desc: '−22% recoil and spray spread · 5% slower movement holding it' },
 };
+/* --- gun assembly: barrel + stock parts (look and stats) --- */
+const PARTS = {
+  barrel: { std: { name: 'Standard barrel', desc: 'Balanced' }, long: { name: 'Long barrel', desc: '−15% spread · +6% damage at range · 4% slower movement' }, short: { name: 'Short barrel', desc: '+4% movement · +15% spread' } },
+  stock: { std: { name: 'Standard stock', desc: 'Balanced' }, heavy: { name: 'Heavy stock', desc: '−18% recoil · 3% slower movement' }, light: { name: 'Skeleton stock', desc: '+3% movement · +15% recoil' } },
+};
+const partOf = (e, k, slot) => { const v = e && e.isPlayer && canAttach(k) && profile.parts && profile.parts[k] && profile.parts[k][slot]; return PARTS[slot][v] ? v : 'std'; };
+function partMods(e, k) { const b = partOf(e, k, 'barrel'), s = partOf(e, k, 'stock'); return { spread: b === 'long' ? .85 : b === 'short' ? 1.15 : 1, far: b === 'long' ? 1.06 : 1, recoil: s === 'heavy' ? .82 : s === 'light' ? 1.15 : 1, speed: (b === 'long' ? .96 : b === 'short' ? 1.04 : 1) * (s === 'heavy' ? .97 : s === 'light' ? 1.03 : 1) }; }
+function addPartMesh(gun, key) {
+  const b = partOf({ isPlayer: true }, key, 'barrel'), s = partOf({ isPlayer: true }, key, 'stock'); if (b === 'std' && s === 'std') return;
+  const mz = gun.userData.muzzleZ || -.6, M = new THREE.MeshLambertMaterial({ color: 0x24282e });
+  if (b === 'long') { const o = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .16, 10), M); o.rotation.x = Math.PI / 2; o.position.set(0, .02, mz - .08); gun.add(o); const r = new THREE.Mesh(new THREE.CylinderGeometry(.024, .024, .03, 10), new THREE.MeshLambertMaterial({ color: 0x8a9099 })); r.rotation.x = Math.PI / 2; r.position.set(0, .02, mz - .15); gun.add(r); gun.userData.muzzleZ = mz - .16; }
+  else if (b === 'short') { const r = new THREE.Mesh(new THREE.CylinderGeometry(.028, .02, .05, 8), new THREE.MeshLambertMaterial({ color: 0xff6a3a })); r.rotation.x = Math.PI / 2; r.position.set(0, .02, mz + .01); gun.add(r); }
+  if (s === 'heavy') { const o = new THREE.Mesh(new THREE.BoxGeometry(.06, .13, .2), M); o.position.set(0, -.04, .26); gun.add(o); }
+  else if (s === 'light') { for (const y of [.01, -.08]) { const o = new THREE.Mesh(new THREE.BoxGeometry(.018, .018, .22), new THREE.MeshLambertMaterial({ color: 0x3dd6c0 })); o.position.set(0, y, .25); gun.add(o); } const pd = new THREE.Mesh(new THREE.BoxGeometry(.04, .11, .02), M); pd.position.set(0, -.035, .36); gun.add(pd); }
+}
 const canAttach = k => WEAPONS[k] && WEAPONS[k].price !== undefined && WEAPONS[k].mag > 0 && WEAPONS[k].cat !== 'Ultimate';
 const attOf = (e, k) => e && e.isPlayer && canAttach(k) && profile.attach && ATTACH[profile.attach[k]] ? profile.attach[k] : 'none';
 const magOf = (e, k) => { const m = WEAPONS[k].mag, a = attOf(e, k); return a === 'ext' ? Math.ceil(m * 1.3) : a === 'quick' ? Math.max(1, Math.ceil(m * .75)) : m; };
@@ -3312,6 +3332,7 @@ function playerKillFx(n, head, skinId, victim) {
   const kb = $('killBanner'), enemiesLeft = entities.some(e => e.alive && player && isEnemy(e, player));
   kb.style.setProperty('--kc', css);
   const isAce = n >= 5 || (!enemiesLeft && n >= 3 && !DM());
+  if (isAce && !RANGE()) trophyAdd('ace');
   kb.querySelector('.kbTxt').textContent = isAce ? 'ACE' : KILL_NAMES[n] || '';
   if (isAce && !DM() && !RANGE() && !aceCine && entities.filter(e => player && isEnemy(e, player)).length >= 3) setTimeout(startAceCine, 250);
   kb.querySelector('.kbSub').textContent = (head ? 'HEADSHOT · ' : '') + (tierHi ? S.line.name.toUpperCase() + ' KILL' : n + (n === 1 ? ' KILL' : ' KILLS'));
@@ -4821,7 +4842,7 @@ function equipView() {
     const mz = gun.userData.muzzleZ, ch = masteryCharm(w.key); if (ch) { ch.position.set(-.045, -.035, mz * .22); ch.scale.setScalar(1.8); gun.add(ch); gun.userData.charm = ch; }
     const ct = masteryCounter(w.key); if (ct) { ct.position.set(-.042, .012, mz * .42); ct.rotation.y = -Math.PI / 2; gun.add(ct); }
   }
-  if (!knife) addAttachMesh(gun, attOf(player, w.key));
+  if (!knife) { if (canAttach(w.key)) addPartMesh(gun, w.key); addAttachMesh(gun, attOf(player, w.key)); }
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: (SKINS[skinOf(player, w)] && SKINS[skinOf(player, w)].line.flash != null && skinLv(skinOf(player, w)) >= 2) ? SKINS[skinOf(player, w)].line.flash : 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
@@ -4876,11 +4897,12 @@ function playerFire() {
   if (crouched) spread *= .55;
   const att = attOf(p, inst.key);
   if (att === 'laser' && adsK < .5) spread *= .7;
+  const PM = partMods(p, inst.key); spread *= PM.spread;
   if (att === 'grip' && w.auto) spread -= Math.min(p.shotIdx, 10) * w.spread * .6 * (1 - .8 * steady) * .22;
   const climbK = 1 - .8 * steady;                           // crouch + ADS keeps the spray almost flat
   const climb = p.shotIdx >= 3 ? Math.min(p.recoil, .04) * climbK : 0;
   const yawWob = p.shotIdx > 9 ? Math.sin(p.shotIdx * .8) * Math.min(p.recoil, .04) * .4 * climbK : 0;
-  p.recoil += w.recoil * .6 * (crouched ? .5 : 1) * (1 - .3 * adsK) * (att === 'grip' ? .78 : 1); p.shotIdx++;
+  p.recoil += w.recoil * .6 * (crouched ? .5 : 1) * (1 - .3 * adsK) * (att === 'grip' ? .78 : 1) * PM.recoil; p.shotIdx++;
   const ox = p.x, oy = eyeY(p), oz = p.z;
   // tracer starts where the gun actually is: at the hip, or centered under the crosshair when aiming
   const muz = new THREE.Vector3(.16 * (1 - adsK * .9), -.14 + adsK * .07, MUZZLE_Z[w.model]).applyMatrix4(camera.matrixWorld);
@@ -4895,7 +4917,7 @@ function playerFire() {
     if (k < 3) spawnTracer(muz.x, muz.y, muz.z, hx, hy, hz, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : skinTracer(p, inst));
     if (!tr0) tr0 = [hx, hy, hz];
     if (res.ent) {
-      const dmg = w.dmg[res.reg] * falloffMul(w, res.t) * (att === 'supp' ? .92 : 1); const wasAlive = res.ent.alive;
+      const dmg = w.dmg[res.reg] * falloffMul(w, res.t) * (att === 'supp' ? .92 : 1) * (res.t > 20 ? PM.far : 1); const wasAlive = res.ent.alive;
       dealDamage(res.ent, dmg, p, w.name, res.reg === 0);
       if (wasAlive && !res.ent.alive) killed = true;
       anyHit = true; if (res.reg === 0) anyHead = true;
@@ -4972,7 +4994,7 @@ function updatePlayer(dt) {
   let ix = 0, iz = 0; if (kd('fwd')) iz -= 1; if (kd('back')) iz += 1; if (kd('left')) ix -= 1; if (kd('right')) ix += 1;
   const w = WEAPONS[curWeapon(p).key];
   if (p.sprint && !p.crouch) { /* High Gear */ }
-  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1) * (attOf(p, curWeapon(p).key) === 'grip' ? .95 : 1);
+  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1) * (attOf(p, curWeapon(p).key) === 'grip' ? .95 : 1) * partMods(p, curWeapon(p).key).speed;
   if (p.driftT > 0) sp = (p.crouch ? 4.2 : walk ? 6 : 6.75) * 1.6; // Dimensional Drift: much faster, no gun weight, no slows
   if (shopOpen) ix = iz = 0;
   const s = Math.sin(p.yaw), c = Math.cos(p.yaw);
@@ -5769,6 +5791,7 @@ function finishMatch() {
   if (!RANGE()) passGot.push(...addAgentXp(p.agent, 100 + (won ? 150 : 0) + p.kills * 15 + matchStats.abil * 5));
   const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
+  if (won) trophyAdd('win'); if (mvp === p) trophyAdd('mvp');
   profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined,
     hs: matchStats.hs, hits: matchStats.hits, dmg: Math.round(matchStats.dmg), rounds: game.round, fk: matchStats.fk });
   { const L = profile.life = profile.life || { agents: {}, maps: {} }; const ag = L.agents[p.agent] = L.agents[p.agent] || { m: 0, w: 0, k: 0, d: 0 }, mp = L.maps[game.mapId] = L.maps[game.mapId] || { m: 0, w: 0 };
@@ -6998,6 +7021,7 @@ function clutchTick(dt) {
 }
 function clutchEnd() { clutch.on = false; $('clutchFx').classList.add('hidden'); }
 function clutchWin(n) {
+  trophyAdd('clutch');
   const b = $('clutchWin'); b.innerHTML = `<b>CLUTCH!</b><span>1 vs ${n} · +${n * 25} VP</span>`; b.classList.remove('hidden', 'show'); void b.offsetWidth; b.classList.add('show');
   setTimeout(() => b.classList.add('hidden'), 2800); profile.vp += n * 25; saveProfile(); matchStats.clutches = (matchStats.clutches || 0) + 1;
   sndTone(523, .2, .2, 'triangle', 784); sndTone(784, .3, .2, 'triangle', 1046, undefined, undefined, .15); sndTone(1046, .6, .2, 'sine', 1568, undefined, undefined, .3);
@@ -10118,6 +10142,76 @@ function openSkinPicker(key) {
   $('skinPicker').classList.remove('hidden');
 }
 /* --- 3D weapon viewer: rotate, zoom, inspect, reload and fire any gun with any skin --- */
+/* --- 3D trophy room: everything you earned on pedestals --- */
+function trophyAdd(k) { profile.troph = profile.troph || {}; profile.troph[k] = (profile.troph[k] || 0) + 1; saveProfile(); }
+const tr = { on: false };
+function trLabel(text, sub, color) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 80; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(10,14,20,.75)'; x.fillRect(0, 0, 256, 80); x.fillStyle = color || '#fff'; x.font = '700 30px Oswald, sans-serif'; x.textAlign = 'center'; x.fillText(text, 128, 34, 240);
+  x.fillStyle = '#b8c2cc'; x.font = '22px Oswald, sans-serif'; x.fillText(sub, 128, 66, 240);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthWrite: false })); sp.scale.set(.9, .28, 1); return sp;
+}
+function trophyList() {
+  const T = profile.troph || {}, tier = (n, a, b, c) => n >= c ? [0xffd34d, 'Gold'] : n >= b ? [0xd8dee6, 'Silver'] : n >= a ? [0xc8803a, 'Bronze'] : [0x30343a, 'Locked'];
+  const L = [];
+  const add = (kind, name, n, a, b, c, unit) => { const [col, t] = tier(n, a, b, c); L.push({ kind, name, col, lock: !n, sub: n ? `${n} ${unit} · ${t}` : `Locked · get ${a}` }); };
+  add('cup', 'Victories', T.win || 0, 1, 10, 50, 'wins'); add('star', 'Aces', T.ace || 0, 1, 5, 20, 'aces');
+  add('heart', 'Clutches', T.clutch || 0, 1, 10, 30, 'clutches'); add('crown', 'MVP', T.mvp || 0, 1, 10, 40, 'MVPs');
+  for (const h of (profile.seasonHist || []).slice(0, 4)) { const r = rankOf(h.peak != null ? h.peak : h.rr || 0); L.push({ kind: 'gem', name: `Season ${h.s}`, col: new THREE.Color(r.color).getHex(), sub: 'Peak ' + r.name }); }
+  const ws = Object.keys(profile.mastery || {}).filter(k => WEAPONS[k] && masteryLevel(k) >= 1).sort((a, b) => masteryKills(b) - masteryKills(a)).slice(0, 6);
+  for (const k of ws) L.push({ kind: 'gun', key: k, name: wName(k) + ' mastery', col: 0xffd34d, sub: `Level ${masteryLevel(k)} · ${masteryKills(k)} kills` });
+  return L;
+}
+function trophyMesh(t) {
+  const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: t.col, metalness: t.lock ? .1 : .45, roughness: t.lock ? .9 : .35, emissive: t.lock ? 0 : t.col, emissiveIntensity: .18 });
+  const add = (geo, y, rx) => { const o = new THREE.Mesh(geo, m); o.position.y = y; if (rx) o.rotation.x = rx; g.add(o); return o; };
+  if (t.kind === 'cup') { add(new THREE.CylinderGeometry(.13, .16, .05, 20), .025); add(new THREE.CylinderGeometry(.03, .03, .16, 12), .13); add(new THREE.CylinderGeometry(.19, .07, .26, 24, 1, true), .34); for (const sx of [-1, 1]) { const h = add(new THREE.TorusGeometry(.07, .015, 8, 16, Math.PI), .36); h.position.x = sx * .19; h.rotation.z = sx * -Math.PI / 2; } m.side = THREE.DoubleSide; }
+  else if (t.kind === 'star') { const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const r = i % 2 ? .1 : .24, a = i / 10 * Math.PI * 2 + Math.PI / 2; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); } const o = add(new THREE.ExtrudeGeometry(sh, { depth: .06, bevelEnabled: true, bevelSize: .015, bevelThickness: .015 }), .3); o.position.z = -.03; add(new THREE.CylinderGeometry(.1, .12, .05, 16), .025); }
+  else if (t.kind === 'heart') { const sh = new THREE.Shape(); sh.moveTo(0, -.2); sh.bezierCurveTo(-.3, .02, -.14, .24, 0, .1); sh.bezierCurveTo(.14, .24, .3, .02, 0, -.2); const o = add(new THREE.ExtrudeGeometry(sh, { depth: .07, bevelEnabled: true, bevelSize: .015, bevelThickness: .015 }), .32); o.position.z = -.035; add(new THREE.CylinderGeometry(.1, .12, .05, 16), .025); }
+  else if (t.kind === 'crown') { add(new THREE.CylinderGeometry(.17, .15, .1, 24, 1, true), .12); m.side = THREE.DoubleSide; for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2, o = add(new THREE.ConeGeometry(.04, .13, 8), .22); o.position.x = Math.cos(a) * .16; o.position.z = Math.sin(a) * .16; const b = add(new THREE.SphereGeometry(.022, 8, 6), .29); b.position.x = o.position.x; b.position.z = o.position.z; } }
+  else if (t.kind === 'gem') { m.transparent = true; m.opacity = .9; m.metalness = .3; m.emissiveIntensity = .3; add(new THREE.OctahedronGeometry(.17), .3).scale.y = 1.4; }
+  else if (t.kind === 'gun') { const gn = buildGun(t.key, null, profile.equip[t.key] || 0); const b = new THREE.Box3().setFromObject(gn), sz = b.getSize(new THREE.Vector3()); gn.position.sub(b.getCenter(new THREE.Vector3())); const w = new THREE.Group(); w.add(gn); w.scale.setScalar(Math.min(1.2, .85 / Math.max(.2, sz.x, sz.y, sz.z))); w.rotation.y = Math.PI / 2; w.position.y = .3; g.add(w); }
+  return g;
+}
+function openTrophyRoom() {
+  $('trModal').classList.remove('hidden'); tr.on = true;
+  if (!tr.r) {
+    tr.r = new THREE.WebGLRenderer({ canvas: $('trCv'), antialias: true }); tr.r.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    tr.cam = new THREE.PerspectiveCamera(50, 2, .05, 60); tr.ry = 0; tr.rx = .18; tr.zoom = 1;
+    const st = $('trStage');
+    st.addEventListener('pointerdown', e => { tr.drag = [e.clientX, e.clientY]; st.setPointerCapture(e.pointerId); });
+    st.addEventListener('pointermove', e => { if (!tr.drag) return; tr.ry -= (e.clientX - tr.drag[0]) * .006; tr.rx = clamp(tr.rx + (e.clientY - tr.drag[1]) * .004, -.1, .6); tr.drag = [e.clientX, e.clientY]; });
+    st.addEventListener('pointerup', () => tr.drag = null);
+    st.addEventListener('wheel', e => { e.preventDefault(); tr.zoom = clamp(tr.zoom * (e.deltaY > 0 ? 1.1 : .9), .45, 1.4); }, { passive: false });
+  }
+  const sc = tr.sc = new THREE.Scene(); sc.background = new THREE.Color(0x10141b); sc.fog = new THREE.Fog(0x10141b, 8, 18);
+  sc.add(new THREE.HemisphereLight(0xcfe0ff, 0x3a3038, 1.1)); { const d = new THREE.DirectionalLight(0xffffff, .6); d.position.set(1, 4, 2); sc.add(d); }
+  const L = trophyList(), N = L.length, R = Math.max(2.2, N * .32);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(R + 3, 48), new THREE.MeshStandardMaterial({ color: 0x1c222c, roughness: .55, metalness: .3 })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(R + 2.5, R + 2.5, 5, 48, 1, true), new THREE.MeshStandardMaterial({ color: 0x232a36, side: THREE.BackSide, roughness: .9 })); wall.position.y = 2.5; sc.add(wall);
+  const rug = new THREE.Mesh(new THREE.RingGeometry(.4, 1.1, 40), new THREE.MeshStandardMaterial({ color: 0xff4655, roughness: .9 })); rug.rotation.x = -Math.PI / 2; rug.position.y = .005; sc.add(rug);
+  tr.items = [];
+  L.forEach((t, i) => {
+    const a = i / N * Math.PI * 2, x = Math.sin(a) * R, z = -Math.cos(a) * R;
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(.32, .36, 1, 24), new THREE.MeshStandardMaterial({ color: 0x2c3442, roughness: .4, metalness: .4 })); ped.position.set(x, .5, z); sc.add(ped);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.33, .012, 6, 32), new THREE.MeshBasicMaterial({ color: t.lock ? 0x444a52 : 0xff4655 })); ring.rotation.x = Math.PI / 2; ring.position.set(x, 1.0, z); sc.add(ring);
+    const m = trophyMesh(t); m.position.set(x, 1.0, z); sc.add(m); if (t.kind === 'gun') { m.rotation.y = -a; m.userData.still = 1; }
+    if (!t.lock) { const sp = new THREE.SpotLight(0xfff4dc, 1.2, 4, .5, .6); sp.position.set(x * .8, 3.2, z * .8); sp.target = m; sc.add(sp, sp.target); }
+    const lb = trLabel(t.name, t.sub, t.lock ? '#7a828c' : '#' + new THREE.Color(t.col).getHexString()); lb.position.set(x, 1.85, z); sc.add(lb);
+    tr.items.push(m);
+  });
+  if (!N) { const lb = trLabel('No trophies yet', 'play matches to earn them'); lb.position.set(0, 1.4, -2); sc.add(lb); }
+  tr.last = performance.now(); requestAnimationFrame(trTick);
+}
+function trTick(now) {
+  if (!tr.on) return; requestAnimationFrame(trTick);
+  const dt = Math.min(.05, (now - tr.last) / 1000); tr.last = now; const cv = $('trCv'), W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
+  if (cv.width !== Math.round(W * tr.r.getPixelRatio())) { tr.r.setSize(W, H, false); tr.cam.aspect = W / H; tr.cam.updateProjectionMatrix(); }
+  if (!tr.drag) tr.ry += dt * .08;
+  for (const m of tr.items) if (!m.userData.still) m.rotation.y += dt * .6;
+  const k = tr.zoom * 1.6; tr.cam.position.set(Math.sin(tr.ry) * k, 1.5 + tr.rx * 2, Math.cos(tr.ry) * k); const d = 3; tr.cam.lookAt(-Math.sin(tr.ry) * d, 1.1, -Math.cos(tr.ry) * d);
+  tr.r.render(tr.sc, tr.cam);
+}
 const gv = { on: false };
 function openGunViewer(key, skinId) {
   if (!WEAPONS[key]) return;
@@ -10139,6 +10233,8 @@ function openGunViewer(key, skinId) {
     const engSave = () => { profile.engrave = profile.engrave || {}; const t = $('gvEng').value.trim().slice(0, 14); if (t) profile.engrave[gv.key] = { t, s: $('gvEngS').value }; else delete profile.engrave[gv.key]; saveProfile(); gvBuild(); refreshLobbyGuns(); };
     $('gvEng').addEventListener('keydown', e => e.stopPropagation()); $('gvEng').oninput = () => { clearTimeout(gv.engT); gv.engT = setTimeout(engSave, 350); }; $('gvEngS').onchange = engSave;
     $('gvSkin').onchange = () => { gv.skin = $('gvSkin').value === '0' ? 0 : $('gvSkin').value; gvBuild(); };
+    const partSave = () => { profile.parts = profile.parts || {}; const P = { barrel: $('gvBar').value, stock: $('gvStk').value }; if (P.barrel === 'std' && P.stock === 'std') delete profile.parts[gv.key]; else profile.parts[gv.key] = P; saveProfile(); gvBuild(); refreshLobbyGuns(); };
+    $('gvBar').onchange = partSave; $('gvStk').onchange = partSave;
     $('gvAtt').onchange = () => { profile.attach = profile.attach || {}; if ($('gvAtt').value === 'none') delete profile.attach[gv.key]; else profile.attach[gv.key] = $('gvAtt').value; saveProfile(); gvBuild(); if (curTab === 'collection') renderCollection(); };
   }
   gv.key = key; gv.skin = skinId === undefined ? profile.equip[key] || 0 : skinId; gv.ry = -Math.PI / 2; gv.rx = .12; gv.zoom = 1; gv.anim = { kind: 'intro', t: 0 };
@@ -10148,6 +10244,7 @@ function openGunViewer(key, skinId) {
   $('gvSkin').value = String(gv.skin || 0);
   $('gvAtt').innerHTML = canAttach(key) ? Object.entries(ATTACH).map(([a, A]) => `<option value="${a}">${A.icon} ${A.name}</option>`).join('') : '<option value="none">—</option>';
   $('gvAtt').value = attOf({ isPlayer: true }, key); $('gvAtt').disabled = !canAttach(key);
+  for (const [id, slot] of [['gvBar', 'barrel'], ['gvStk', 'stock']]) { $(id).innerHTML = Object.entries(PARTS[slot]).map(([v, P]) => `<option value="${v}" title="${P.desc}">${P.name}</option>`).join(''); $(id).value = partOf({ isPlayer: true }, key, slot); $(id).disabled = !canAttach(key); }
   { const E = profile.engrave && profile.engrave[key]; $('gvEng').value = E ? E.t : ''; $('gvEngS').value = E ? E.s : 'gold'; }
   $('gunViewer').classList.remove('hidden'); gv.on = true; gvBuild(); tick();
   if (!gv.loopOn) { gv.loopOn = true; let last = performance.now(); const loop = now => { if (!gv.on) { gv.loopOn = false; return; } requestAnimationFrame(loop); gvTick(Math.min(.05, (now - last) / 1000), now / 1000); last = now; }; requestAnimationFrame(loop); }
@@ -10155,7 +10252,7 @@ function openGunViewer(key, skinId) {
 function closeGunViewer() { gv.on = false; $('gunViewer').classList.add('hidden'); }
 function gvBuild() {
   if (gv.gun) gv.pivot.remove(gv.gun);
-  const key = gv.key, g = buildGun(key, null, gv.skin || 0); addEngraving(g, key); addAttachMesh(g, attOf({ isPlayer: true }, key));
+  const key = gv.key, g = buildGun(key, null, gv.skin || 0); addEngraving(g, key); if (canAttach(key)) addPartMesh(g, key); addAttachMesh(g, attOf({ isPlayer: true }, key));
   const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
   g.position.sub(c); const wrap = new THREE.Group(); wrap.add(g); gv.pivot.add(wrap); gv.gun = wrap; gv.inner = g; gv.size = Math.max(size.x, size.y, size.z) || .8;
   // a spare magazine for the reload animation
@@ -11824,6 +11921,7 @@ $('btnCreateParty').onclick = () => { initAudio(); createParty(); };
 const toggleFind = () => { initAudio(); if (net.searching) cancelSearch(); else { $('partyPanel').classList.remove('hidden'); $('partyBtn').classList.add('open'); findPublicMatch(); } tick(); };
 $('btnFind').onclick = toggleFind; $('btnFind2').onclick = toggleFind;
 $('btnJoin').onclick = () => { initAudio(); joinParty($('joinCode').value); };
+$('btnTrophy').onclick = () => { tick(); openTrophyRoom(); }; $('trClose').onclick = () => { $('trModal').classList.add('hidden'); tr.on = false; };
 $('btnBotFriends').onclick = () => { tick(); openBotFriends(); }; $('bfClose').onclick = () => $('bfModal').classList.add('hidden'); $('bfSave').onclick = bfSave; $('bfNew').onclick = () => bfFill(null);
 ['bfName', 'bfL1', 'bfL2', 'bfL3'].forEach(id => $(id).addEventListener('keydown', e => e.stopPropagation()));
 $('btnVoice').onclick = () => { initAudio(); vc.on ? leaveVoice() : joinVoice(); };
@@ -11856,7 +11954,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 87;
+const BUILD = 88;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
