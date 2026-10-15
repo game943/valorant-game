@@ -740,6 +740,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .coGrade.gS{color:#ffd34d}.coGrade.gA{color:#2fe0b6}.coGrade.gB{color:#4fa3ff}.coGrade.gC{color:#c9d0d6}.coGrade.gD{color:#ff4655}
 .coGood{font-size:12px;color:var(--teal);margin-bottom:6px;line-height:1.5}.coTips{display:flex;flex-direction:column;gap:6px}
 .coTip{display:flex;gap:10px;align-items:flex-start;background:rgba(0,0,0,.25);padding:7px 9px}.coTip i{font-style:normal;font-size:18px}.coTip b{display:block;font-size:13px;color:#ffd34d}.coTip span{font-size:12px;color:#c9d0d6;line-height:1.45}
+#luAim{position:fixed;z-index:34;pointer-events:none;transform:translate(-50%,-50%)}#luAim i{display:block;width:18px;height:18px;border:2px solid #ffd34d;transform:rotate(45deg);box-shadow:0 0 10px #ffd34d;margin:0 auto}
+#luAim span{position:absolute;left:50%;top:22px;transform:translateX(-50%);white-space:nowrap;font:600 12px Oswald,sans-serif;letter-spacing:1px;color:#ffd34d;background:rgba(0,0,0,.55);padding:2px 7px}
+#luAim.ok i{border-color:#2fe0b6;box-shadow:0 0 14px #2fe0b6;background:rgba(47,224,182,.35)}#luAim.ok span{color:#2fe0b6}
+.luRow{display:flex;gap:10px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}.luRow b{font:600 12px Oswald,sans-serif;letter-spacing:1px;width:80px}.luRow span{flex:1;color:#c9d0d6}
+.luRow button{background:none;border:0;color:#ff8a8a;cursor:pointer}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -1265,6 +1270,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
 <div id="banter"></div>
+<div id="luAim" class="hidden"><i></i><span></span></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
   <div id="rpTop"><div id="rpTag">REPLAY</div><div id="rpScore"></div><button class="btn" id="rpExit">✕ Exit replay</button></div>
@@ -1318,7 +1324,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -1333,7 +1339,7 @@ const BIND_DEFS = [
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
   ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'], ['cmd', 'Team command wheel (hold)', 'KeyV'],
-  ['voice', 'Voice command (hold and speak)', 'KeyN'],
+  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -4382,6 +4388,7 @@ function notDeadYet(e) {
   return true;
 }
 function castAbility(e, key, target) {
+  if (e.isPlayer && ['C', 'Q', 'E', 'X'].includes(key)) e.lastCast = { key, t: game.time, x: e.x, z: e.z, yaw: e.yaw, pitch: e.pitch, crouch: !!e.crouch, air: !e.onGround };
   if (DM()) { if (e.isPlayer) { toast('Abilities are off in Deathmatch — just shoot!'); SND.deny(); } return false; }
   if (CUSTOM() && !customRules().abil) { if (e.isPlayer) { toast('Abilities are off in this custom game'); SND.deny(); } return false; }
   if (pilot && e === player) { endPilot(pilot.kind === 'tiger' ? 'leap' : 'exit'); return false; }
@@ -5349,7 +5356,7 @@ function setupMatch(agentId, humans = []) {
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0, introShown: false, banterUsed: [] }); banterRound = -1;
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
-  game.state = 'playing'; game.paused = false;
+  game.state = 'playing'; game.paused = false; setTimeout(buildLineupMarkers, 0);
   buildAbilHud();
   nextRound();
 }
@@ -6215,7 +6222,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt);
+    coachTick(dt); lineupTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6285,6 +6292,7 @@ document.addEventListener('keydown', e => {
   if (act === 'cmd') { openCmdWheel(); return; }
   if (act === 'spray') { openSprayWheel(); return; }
   if (act === 'voice') { startVoice(); return; }
+  if (act === 'lineup') { saveLineup(); return; }
   if (act === 'crouch') crouchOn = !crouchOn;
   switch (act) {
     case 'prim': switchSlot(1); break;
@@ -6606,6 +6614,46 @@ function speakLine(text, agentId, queue) {
     if (ttsVoices.length) u.voice = ttsVoices[h % ttsVoices.length];
     if (!queue) speechSynthesis.cancel(); speechSynthesis.speak(u);
   } catch (e) { }
+}
+/* --- ability lineups: throw a utility, press L to save where you stood and aimed; later a marker and an aim guide show it --- */
+const lineupGroup = new THREE.Group(); scene.add(lineupGroup);
+const lineupsFor = (map, agent) => ((profile.lineups || {})[map] || []).filter(l => !agent || l.agent === agent);
+function saveLineup() {
+  const p = player; if (!p || !p.alive || !game.mapId || game.spectate) return;
+  const c = p.lastCast && game.time - p.lastCast.t < 10 ? p.lastCast : { key: 'Q', x: p.x, z: p.z, yaw: p.yaw, pitch: p.pitch, crouch: !!p.crouch, air: false };
+  const ab = AGENT[p.agent].ab[c.key], zone = zoneG[Math.floor(c.z / CELL) * GW + Math.floor(c.x / CELL)], where = { 1: 'A', 2: 'B', 5: 'C', 3: 'Attacker spawn', 4: 'Defender spawn' }[zone] || 'Mid';
+  profile.lineups = profile.lineups || {}; const L = profile.lineups[game.mapId] = profile.lineups[game.mapId] || [];
+  if (L.length >= 40) L.shift();
+  L.push({ id: Date.now().toString(36), agent: p.agent, key: c.key, x: r2(c.x), z: r2(c.z), yaw: +c.yaw.toFixed(4), pitch: +c.pitch.toFixed(4), crouch: c.crouch, jump: c.air, label: `${ab ? ab.name : c.key} · from ${where}` });
+  saveProfile(); buildLineupMarkers(); SND.buy();
+  toast(`Lineup saved: ${ab ? ab.name : c.key} (${c.key}) from ${where}${p.lastCast && c === p.lastCast ? ' — the spot of your last throw' : ''}`);
+}
+function buildLineupMarkers() {
+  while (lineupGroup.children.length) lineupGroup.remove(lineupGroup.children[0]);
+  if (!player || !settings.lineups || !game.mapId) return;
+  for (const l of lineupsFor(game.mapId, player.agent)) {
+    const g = new THREE.Group(), col = AGENT[l.agent].color;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.42, .55, 32), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .75, depthWrite: false, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = .03; g.add(ring);
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(.12, .35, 12), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .8 }));
+    arrow.rotation.x = Math.PI / 2; arrow.rotation.z = 0; const d = .75; arrow.position.set(-Math.sin(l.yaw) * d, .05, -Math.cos(l.yaw) * d); arrow.rotation.set(-Math.PI / 2, 0, -l.yaw + Math.PI, 'YXZ'); g.add(arrow);
+    g.position.set(l.x, 0, l.z); g.userData.lu = l; lineupGroup.add(g);
+  }
+}
+function lineupTick(dt) {
+  const el = $('luAim'); if (!player || !player.alive || !settings.lineups || !lineupGroup.children.length) { el.classList.add('hidden'); return; }
+  let best = null, bd = 1e9; for (const g of lineupGroup.children) { const d = Math.hypot(g.position.x - player.x, g.position.z - player.z); g.visible = d < 30; g.children[0].material.opacity = .45 + Math.sin(game.time * 4) * .25; if (d < bd) { bd = d; best = g; } }
+  if (!best || bd > .8) { el.classList.add('hidden'); return; }
+  const l = best.userData.lu, ey = eyeY(player), cp = Math.cos(l.pitch);
+  _v3.set(player.x - Math.sin(l.yaw) * cp * 20, ey + Math.sin(l.pitch) * 20, player.z - Math.cos(l.yaw) * cp * 20).project(camera);
+  const off = Math.hypot(angDiff(player.yaw, l.yaw), player.pitch - l.pitch) * 57.3, on = off < 1.2;
+  el.classList.remove('hidden'); el.classList.toggle('ok', on);
+  el.style.left = ((_v3.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - _v3.y) / 2 * innerHeight) + 'px';
+  el.querySelector('span').textContent = `${l.key} · ${l.label}${l.crouch ? ' · crouch' : ''}${l.jump ? ' · jump-throw' : ''}${on ? ' · ✓ THROW NOW' : ''}`;
+}
+function lineupListHTML(agent) {
+  const rows = []; for (const [map, L] of Object.entries(profile.lineups || {})) for (const l of L) if (l.agent === agent) rows.push(`<div class="luRow"><b>${esc(MAPS[map] ? MAPS[map].name : map)}</b><span>${esc(l.key)} · ${esc(l.label)}${l.crouch ? ' · crouch' : ''}</span><button data-ludel="${map}|${l.id}" title="Delete">✕</button></div>`);
+  return `<div class="amBox"><div class="ol">SAVED LINEUPS · throw an ability in a match, then press ${keyName(settings.binds.lineup)} to save that spot</div>${rows.length ? rows.join('') : '<div class="ol" style="margin-top:6px">No lineups for this agent yet.</div>'}</div>`;
 }
 /* --- AI coach: watches how you play (crosshair height, moving shots, lone deaths, utility…) and gives tips after the match --- */
 let coachClock = 0;
@@ -7252,7 +7300,7 @@ function clientSetupMatch(d) {
   if (!player) { onHostLost(); return; }
   Object.assign(game, { introShown: false, mode: MODES.includes(d.mode) ? d.mode : 'comp', target: d.target | 0 || 13, half: d.half | 0 || 12, round: 0, score: [0, 0], history: [], time: 0, phase: 'buy', phaseT: 0, ot: false });
   game.spike = { state: 'none', mesh: makeSpikeMesh(), beepT: 0, timer: 0, defuseProg: 0 }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
-  game.state = 'playing'; game.paused = false; shopOpen = false; deathCam = 0;
+  game.state = 'playing'; game.paused = false; setTimeout(buildLineupMarkers, 0); shopOpen = false; deathCam = 0;
   ['select', 'menu', 'matchFound', 'over', 'pause'].forEach(id => $(id).classList.add('hidden')); $('hud').classList.remove('hidden');
   $('killIcons').innerHTML = ''; $('deathInfo').classList.add('hidden');
   buildAbilHud(); equipView(); refreshAbilHud(); lockPointer();
@@ -8976,6 +9024,7 @@ const SET_PAGES = {
     ['voiceLang', 'Voice command language (hold N)', 'seg', [['ko-KR', 'Korean'], ['en-US', 'English']]],
     ['intro', 'Map fly-over at the start of a match', 'toggle'],
     ['banter', 'Agent banter in the buy phase', 'toggle'],
+    ['lineups', 'Show saved ability lineups in matches', 'toggle'],
     ['ceremony', 'Victory ceremony after a win', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
     ['botReact', 'Custom bots · reaction speed', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
@@ -9651,7 +9700,7 @@ function setupDM() {
   Object.assign(game, { round: 1, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: 'atk', side: ['atk', 'def'], time: 0, phase: 'live', phaseT: DM_TIME, target: DM_TARGET });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   barrierGroup.visible = false; clearEffects(); clearDrops();
-  game.state = 'playing'; game.paused = false;
+  game.state = 'playing'; game.paused = false; setTimeout(buildLineupMarkers, 0);
   player.dmGun = player.dmGun || 'vandal';
   for (const e of entities) { e.credits = 9000; dmRespawn(e); }
   $('sideTag').textContent = '◆ DEATHMATCH'; $('sideTag').style.color = '#f5d76e';
@@ -10244,7 +10293,7 @@ function setupRange() {
   Object.assign(game, { round: 1, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: 'atk', side: ['atk', 'def'], time: 0, phase: 'live', phaseT: 0 });
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   barrierGroup.visible = false; clearEffects(); clearDrops();
-  game.state = 'playing'; game.paused = false; rangeMenuOpen = false;
+  game.state = 'playing'; game.paused = false; setTimeout(buildLineupMarkers, 0); rangeMenuOpen = false;
   resetRangeStats(); rs.test = null;
   rangeRespawnPlayer(); layoutDummies();
   buildAbilHud(); equipView();
@@ -10735,9 +10784,10 @@ function renderAgentTab() {
   $('agGrid2').innerHTML = AGENTS.map(a => agentCard(a, a.id === previewAgent)).join('');
   $('agGrid2').querySelectorAll('.agent').forEach(d => d.onclick = () => { previewAgent = d.dataset.id; setLobbyAgent(0, previewAgent); renderAgentTab(); tick(); });
   const a = AGENT[previewAgent], fav = previewAgent === profile.fav;
-  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}${masteryPanelHTML(a.id)}
+  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}${masteryPanelHTML(a.id)}${lineupListHTML(a.id)}
     <button class="favBtn ${fav ? 'on' : ''}" id="favBtn">${fav ? '★ FAVORITE AGENT' : '☆ SET AS FAVORITE'}</button>${a.custom ? '<button class="favBtn" id="editAgentBtn" style="margin-left:8px;border-color:#ff4fd8;color:#ff4fd8">✎ EDIT AGENT</button>' : ''}`;
   if (a.custom) $('editAgentBtn').onclick = () => { tick(); openAgentMaker(a.id); };
+  document.querySelectorAll('[data-ludel]').forEach(b => b.onclick = () => { const [m, id] = b.dataset.ludel.split('|'); profile.lineups[m] = (profile.lineups[m] || []).filter(l => l.id !== id); saveProfile(); renderAgentTab(); });
   $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); net.partySig = ''; buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); netProfileChanged(); };
 }
 
