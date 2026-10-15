@@ -1057,6 +1057,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
         <label>Name<input type="text" id="meName" maxlength="18" spellcheck="false" autocomplete="off"></label>
         <label>Look (theme)<select id="meTheme"></select></label>
         <label>Template<select id="meTpl"></select></label>
+        <div style="display:flex;gap:6px;align-items:stretch"><button class="btn" id="meRandom" style="margin:0;flex:1;width:auto;padding:8px 10px;font-size:14px;white-space:nowrap">🎲 Random map</button><select id="meRandSites" style="flex:0 0 84px;width:84px;padding:4px"><option value="2">2 sites</option><option value="3">3 sites</option></select></div>
         <button class="btn" id="meSave">💾 Save</button>
         <button class="btn" id="mePreview">🧊 3D preview</button>
         <button class="btn primary" id="mePlay">▶ Save &amp; play</button>
@@ -8448,6 +8449,43 @@ function openMapEditor(id) {
   meList(); $('meCode').value = ''; $('meMsg').textContent = '';
   $('mapEditor').classList.remove('hidden'); meCheck(); meDraw();
 }
+/* --- random map generator: spawns, sites, a mid room, lanes between them, side rooms and cover; retried until playable --- */
+function genRandomMap(sites = 2, seed = Date.now()) {
+  let sd = (seed >>> 0) % 2147483646 + 1; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647, ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const T = new Uint8Array(GW * GH), Z = new Uint8Array(GW * GH), S = new Uint8Array(GW * GH);
+    const carve = (c0, r0, c1, r1) => { for (let r = Math.max(2, Math.min(r0, r1)); r <= Math.min(GH - 3, Math.max(r0, r1)); r++) for (let c = Math.max(2, Math.min(c0, c1)); c <= Math.min(GW - 3, Math.max(c0, c1)); c++) T[r * GW + c] = 1; };
+    const zone = (R, z) => { for (let r = R[1]; r <= R[3]; r++) for (let c = R[0]; c <= R[2]; c++) if (T[r * GW + c] === 1) Z[r * GW + c] = z; };
+    const ctr = R => [Math.round((R[0] + R[2]) / 2), Math.round((R[1] + R[3]) / 2)];
+    // a 3-wide corridor from a to b, bending once (horizontal first or vertical first)
+    const lane = (a, b, hFirst = rnd() < .5) => { const [ax, ay] = a, [bx, by] = b; if (hFirst) { carve(ax, ay - 1, bx, ay + 1); carve(bx - 1, ay, bx + 1, by); } else { carve(ax - 1, ay, ax + 1, by); carve(ax, by - 1, bx, by + 1); } };
+    const room = (c, r, w, h) => [c, r, c + w - 1, r + h - 1];
+    const def = room(ri(18, 20), 3, ri(9, 11), 4), atk = room(ri(18, 20), GH - 7, ri(9, 11), 4), mid = room(ri(19, 21), ri(17, 19), ri(6, 8), ri(5, 6));
+    const siteRects = sites === 3 ? [room(ri(3, 5), ri(8, 11), ri(8, 10), ri(7, 9)), room(ri(36, 38), ri(8, 11), ri(8, 9), ri(7, 9)), room(ri(19, 21), ri(9, 10), ri(7, 9), ri(5, 6))]
+      : [room(ri(3, 6), ri(8, 12), ri(9, 11), ri(8, 10)), room(ri(33, 36), ri(8, 12), ri(9, 10), ri(8, 10))];
+    for (const R of [atk, def, mid, ...siteRects]) carve(...R);
+    const [A, B, C] = siteRects;
+    // attackers: a long lane to each outer site and one up the middle
+    lane([ctr(atk)[0] - 3, ctr(atk)[1]], [ctr(A)[0], A[3]], true); lane([ctr(atk)[0] + 3, ctr(atk)[1]], [ctr(B)[0], B[3]], true);
+    lane(ctr(atk), ctr(mid), false);
+    // mid connects to the sites (the "mid control" routes); defenders rotate between sites behind them
+    lane(ctr(mid), [A[2], ctr(A)[1] + ri(-2, 2)], true); lane(ctr(mid), [B[0], ctr(B)[1] + ri(-2, 2)], true);
+    lane(ctr(def), [ctr(A)[0], A[1]], true); lane(ctr(def), [ctr(B)[0], B[1]], true);
+    if (C) { lane(ctr(def), ctr(C), false); lane(ctr(mid), ctr(C), false); }
+    else if (rnd() < .6) lane(ctr(def), ctr(mid), false);
+    // side rooms hanging off the lanes
+    for (let k = 0, n = ri(1, 3); k < n; k++) { const R = room(ri(4, GW - 12), ri(18, GH - 12), ri(4, 6), ri(3, 5)); carve(...R); lane(ctr(R), ctr(rnd() < .5 ? mid : pick(siteRects)), rnd() < .5); }
+    // cover: crate stacks (2x2) and low walls inside the sites and mid, never on the room edge
+    for (const R of [...siteRects, mid]) for (let k = 0, n = ri(2, 4); k < n; k++) {
+      const c = ri(R[0] + 2, R[2] - 3), r = ri(R[1] + 2, R[3] - 3); if (c < R[0] || r < R[1]) continue;
+      if (rnd() < .6) { for (const [dc, dr] of [[0, 0], [1, 0], [0, 1], [1, 1]]) if (T[(r + dr) * GW + c + dc] === 1) T[(r + dr) * GW + c + dc] = 3; }
+      else { const len = ri(2, 3), hz = rnd() < .5; for (let q = 0; q < len; q++) { const i = (r + (hz ? 0 : q)) * GW + c + (hz ? q : 0); if (T[i] === 1) T[i] = 2; } }
+    }
+    zone(atk, 3); zone(def, 4); siteRects.forEach((R, k) => zone(R, [1, 2, 5][k]));
+    const D = deriveMap(T, Z, S); if (!D.errors.length) return { T, Z, S, seed };
+  }
+  return null;
+}
 function meTemplate(k) {
   if (k === 'blank') { const T = new Uint8Array(GW * GH), Z = new Uint8Array(GW * GH); for (let r = 2; r < GH - 2; r++) for (let c = 2; c < GW - 2; c++) T[r * GW + c] = 1; Object.assign(me, { T, Z }); }
   else if (MAPS[k]) Object.assign(me, decodeCells(encodeCells(...Object.values(mapToCells(MAPS[k])))));
@@ -8584,6 +8622,9 @@ function updatePreview(dt) {
   cv.addEventListener('mousemove', ev => { if (!me) return; me.hover = meCellAt(ev); me.hoverRight = (ev.buttons & 2) === 2; if (!me.down) { meDraw(); return; } if (me.rect) { me.rect.b = meCellAt(ev); meDraw(); } else mePaint(ev); });
   cv.addEventListener('mouseleave', () => { if (me) { me.hover = null; meDraw(); } });
   document.addEventListener('mouseup', () => { if (!me || !me.down) return; me.down = false; if (me.rect) { const [c0, r0, c1, r1] = meRectCells(); for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) mePaintCell(c, r, me.erase); me.rect = null; } meCheck(); });
+  $('meRandom').onclick = () => { if (!me) return; const g = genRandomMap(+$('meRandSites').value, Date.now()); if (!g) { $('meMsg').textContent = 'Could not make a map — try again'; return; } meSnapshot(); me.T = g.T; me.Z = g.Z; me.S = g.S; me.rec = null;
+    $('meName').value = pick(['Dust', 'Echo', 'Iron', 'Neon', 'Frost', 'Ember', 'Rift', 'Hollow', 'Solar', 'Viper']) + ' ' + pick(['Yard', 'Point', 'Works', 'Depot', 'Ridge', 'Gate', 'Docks', 'Peak']); $('meTheme').value = pick(ME_THEMES().map(t => t[0]));
+    meCheck(); SND.buy(); $('meMsg').textContent = 'Random map made — tweak it, 3D preview it, then save'; $('meMsg').style.color = 'var(--teal)'; tick(); };
   $('meTpl').onchange = () => { if (!me || !$('meTpl').value) return; meSnapshot(); meTemplate($('meTpl').value); if ($('meTpl').value !== 'blank') $('meTheme').value = $('meTpl').value; $('meTpl').value = ''; meCheck(); tick(); };
   $('meUndo').onclick = () => { if (!me || !me.undo.length) return; const [T, Z, S] = me.undo.pop(); me.T = T; me.Z = Z; me.S = S; meCheck(); };
   $('meSave').onclick = () => meSave(false); $('mePlay').onclick = () => meSave(true);
