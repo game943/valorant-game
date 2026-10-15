@@ -499,6 +499,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 /* agent select */
 #select{background:linear-gradient(120deg,#0f1923 0%,#18222d 60%,#2a1a22 100%);flex-direction:column}
 #select h1{font-family:Oswald;letter-spacing:6px;font-size:40px;margin-bottom:6px}
+#select #agentGrid{grid-template-columns:repeat(5,1fr);gap:6px}#select #agentGrid .agent{height:74px}#select #agentGrid .agent .nm{font-size:17px;left:9px;bottom:8px}
 #select .hint{opacity:.6;font-size:13px;margin-bottom:20px}
 .selWrap{display:grid;grid-template-columns:1fr 1fr;gap:28px;width:min(1150px,94vw)}
 #agentGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-content:start}
@@ -1576,6 +1577,46 @@ AGENTS.push(
           Q: { name: 'Wingman', cost: 300, max: 1, free: 0, type: 'wingman', desc: 'Send Wingman forward: he hunts the nearest enemy and unleashes a concussive blast at them.' },
           E: { name: 'Dizzy', cost: 0, max: 1, free: 1, type: 'flash', life: .7, model: 'dizzy', desc: 'Send Dizzy soaring forward through the air; she charges and blinds every enemy in her line of sight.' },
           X: { name: 'Thrash', ult: 8, type: 'thrash', desc: 'Link with Thrash and steer her through enemy territory in first person. LEFT click (or X) to lunge and explode, detaining every enemy in a small radius.' } } },
+  { id: 'breach', name: 'Breach', role: 'Initiator', color: '#d9772b', glyph: 'BC', desc: 'A bionic Swede who fires powerful blasts through walls to clear the way.',
+    ab: { C: { name: 'Aftershock', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'frag', zr: 3.4, zt: 2.5, dps: 60, color: 0xd9772b, desc: 'Throw a fusion charge that bursts several times after a short delay, heavily damaging anyone caught inside.' },
+          Q: { name: 'Flashpoint', cost: 250, max: 2, free: 0, type: 'flash', life: .7, desc: 'Fire a blinding charge that bursts a moment later, blinding everyone who looks at it.' },
+          E: { name: 'Fault Line', cost: 0, max: 1, free: 1, type: 'faultline', desc: 'Send a seismic blast along the ground in the way you look — straight THROUGH walls — that concusses every enemy on its line.' },
+          X: { name: 'Rolling Thunder', ult: 8, type: 'thunder', desc: 'A huge cascading quake in a wide cone in front of you: every enemy in it is knocked up and concussed.' } } },
+  { id: 'astra', name: 'Astra', role: 'Controller', color: '#a259ff', glyph: 'AS', desc: 'A Ghanaian astral controller who shapes the battlefield with the power of the stars.',
+    ab: { C: { name: 'Gravity Well', cost: 150, max: 1, free: 0, type: 'gwell', desc: 'Put down a star that pulls in: enemies inside are slowed, then it bursts and leaves them VULNERABLE.' },
+          Q: { name: 'Nova Pulse', cost: 150, max: 2, free: 0, type: 'nova', desc: 'Put down a star that charges for a moment and then concusses every enemy around it.' },
+          E: { name: 'Nebula', cost: 150, max: 2, free: 1, type: 'skySmoke', range: 60, r: 4.4, dur: 15, color: 0x7a4fd0, desc: 'Turn the spot you look at into a cosmic smoke. (1 free per round)' },
+          X: { name: 'Cosmic Divide', ult: 7, type: 'divide', desc: 'Slice the map in two with an endless astral wall along where you look: nothing can be seen through it.' } } },
+  { id: 'harbor', name: 'Harbor', role: 'Controller', color: '#2ab8c8', glyph: 'HB', desc: 'An Indian controller who bends water with an ancient artifact.',
+    ab: { C: { name: 'Cascade', cost: 150, max: 1, free: 0, type: 'cascade', desc: 'Send a short wave of water forward: it blocks sight and slows anyone who walks through.' },
+          Q: { name: 'Cove', cost: 300, max: 1, free: 0, type: 'smokeSmall', range: 24, r: 3.6, dur: 12, color: 0x2ab8c8, desc: 'Throw a sphere of water that becomes a smoke where it lands.' },
+          E: { name: 'High Tide', cost: 0, max: 1, free: 1, type: 'tide', desc: 'Raise a long wall of water along the way you look. It blocks sight and slows enemies inside.' },
+          X: { name: 'Reckoning', ult: 7, type: 'reckoning', desc: 'Flood the area in front of you: geysers burst under every enemy there and concuss them.' } } },
+  { id: 'deadlock', name: 'Deadlock', role: 'Sentinel', color: '#c9d3dc', glyph: 'DL', desc: 'A Norwegian operative who locks down the field with cutting-edge nanowire.',
+    ab: { C: { name: 'GravNet', cost: 200, max: 1, free: 0, type: 'gravnet', desc: 'Throw a grenade that pins down every enemy it catches: heavily slowed for a few seconds.' },
+          Q: { name: 'Sonic Sensor', cost: 200, max: 1, free: 0, type: 'alarm', desc: 'Place a sensor that goes off when an enemy comes close, leaving them vulnerable.' },
+          E: { name: 'Barrier Mesh', cost: 0, max: 1, free: 1, type: 'wall', desc: 'Preview the barrier, right click to rotate it, left click to build. Destructible.' },
+          X: { name: 'Annihilation', ult: 7, type: 'annihil', desc: 'Fire a nanowire pulse: the first enemy it catches is cocooned (DETAINED), revealed and hurt.' } } },
+  { id: 'iso', name: 'Iso', role: 'Duelist', color: '#8a5cff', glyph: 'IS', desc: 'A Chinese fixer who turns every fight into a one-on-one.',
+    ab: { C: { name: 'Contingency', cost: 200, max: 1, free: 0, type: 'wall', desc: 'Preview a wall of energy, right click to rotate, left click to build it.' },
+          Q: { name: 'Undercut', cost: 200, max: 2, free: 0, type: 'undercut', desc: 'Fire a bolt THROUGH walls along where you look: every enemy it passes becomes VULNERABLE.' },
+          E: { name: 'Double Tap', cost: 0, max: 1, free: 1, type: 'dtap', desc: 'Raise an energy shield for 12s that completely blocks the next hit you take.' },
+          X: { name: 'Kill Contract', ult: 7, type: 'contract', desc: 'Mark the enemy you are aiming at (or the closest one): they are revealed and vulnerable, and you get a shield.' } } },
+  { id: 'vyse', name: 'Vyse', role: 'Sentinel', color: '#9aa6b8', glyph: 'VY', desc: 'A metal-shaping sentinel who sets cruel traps.',
+    ab: { C: { name: 'Razorvine', cost: 150, max: 1, free: 0, type: 'molly', zkind: 'frag', zr: 4, zt: 8, dps: 16, color: 0x9aa6b8, desc: 'Throw a nest of razor wire that hurts anyone moving through it.' },
+          Q: { name: 'Shear', cost: 200, max: 1, free: 0, type: 'wall', desc: 'Preview a metal wall, right click to rotate, left click to raise it.' },
+          E: { name: 'Arc Rose', cost: 0, max: 1, free: 1, type: 'flash', life: .6, desc: 'A metal rose that bursts and blinds everyone looking at it.' },
+          X: { name: 'Steel Garden', ult: 8, type: 'garden', desc: 'Metal thorns burst out around you: enemies within 30m have their PRIMARY weapons jammed for 8s (sidearms still work).' } } },
+  { id: 'tejo', name: 'Tejo', role: 'Initiator', color: '#e0b050', glyph: 'TJ', desc: 'A Colombian veteran who flattens positions with missiles.',
+    ab: { C: { name: 'Stealth Drone', cost: 300, max: 1, free: 0, type: 'drone', desc: 'Fly a drone forward to scout.' },
+          Q: { name: 'Special Delivery', cost: 200, max: 1, free: 0, type: 'relay', desc: 'A sticky grenade that bounces once and concusses enemies where it lands.' },
+          E: { name: 'Guided Salvo', cost: 150, max: 2, free: 1, type: 'salvo', desc: 'Two missiles strike the spot you look at a moment later.' },
+          X: { name: 'Armageddon', ult: 8, type: 'armageddon', desc: 'A long carpet of explosions marches forward in front of you.' } } },
+  { id: 'waylay', name: 'Waylay', role: 'Duelist', color: '#ff7ab0', glyph: 'WL', desc: 'A Thai duelist who moves at the speed of light.',
+    ab: { C: { name: 'Saturate', cost: 200, max: 2, free: 0, type: 'slow', desc: 'Throw a burst of light that slows everyone inside it.' },
+          Q: { name: 'Lightspeed', cost: 250, max: 1, free: 0, type: 'dash', desc: 'Get ready, then dash in the way you move.' },
+          E: { name: 'Refract', cost: 0, max: 1, free: 1, type: 'refract', desc: 'Leave a beacon where you stand. Press E again within 8s to snap back to it.' },
+          X: { name: 'Convergent Paths', ult: 8, type: 'converge', desc: 'Fire a beam of light forward that slows and nearsights every enemy on it, and get a big burst of speed.' } } },
 );
 const AGENT = {}; AGENTS.forEach(a => AGENT[a.id] = a);
 const BASE_AGENTS = AGENTS.slice(), BASE_AGENT = { ...AGENT };
@@ -2756,6 +2797,14 @@ const LOOKS = {
   viper: { skin: 0xecd0bb, hair: 0x141414, style: 'short', top: 0x1b1d22, top2: 0x3fbf7a, pants: 0x15161a, eye: 0x2a2a2a, gear: ['respirator'] },
   chamber: { skin: 0xd8b49a, hair: 0x1a1612, style: 'short', top: 0x23283a, top2: 0xd9b46a, pants: 0x1d2130, eye: 0x2a2a2a, gear: ['glasses', 'shoulderPads'] },
   clove: { skin: 0xecd0bb, hair: 0x1d1a2a, style: 'spiky', tip: 0xf08cc8, top: 0x2a2438, top2: 0xf08cc8, pants: 0x211d2b, eye: 0xf08cc8, glow: true, gear: ['scarf'] },
+  breach: { skin: 0xe9c6a8, hair: 0xb04a1a, style: 'short', top: 0x4a4038, top2: 0xd9772b, pants: 0x2d2a26, eye: 0x3a3a3a, gear: ['beard', 'shoulderPads'] },
+  astra: { skin: 0x5a3a2a, hair: 0x1a1018, style: 'twin', tip: 0xffd36a, top: 0x2a1a44, top2: 0xa259ff, pants: 0x1e1630, eye: 0xd6b8ff, glow: true, gear: ['sash'] },
+  harbor: { skin: 0x8a5a3c, hair: 0x15110e, style: 'short', top: 0x1c4048, top2: 0x2ab8c8, pants: 0x22303a, eye: 0x2ab8c8, glow: true, gear: ['beard', 'scarf'] },
+  deadlock: { skin: 0xf3dccb, hair: 0xe8e4dc, style: 'short', top: 0xdfe4ea, top2: 0x5a6878, pants: 0x3a4250, eye: 0x6fb0ff, gear: ['shoulderPads'] },
+  iso: { skin: 0xf0d4bc, hair: 0x15131a, style: 'spiky', tip: 0x8a5cff, top: 0x1d1a26, top2: 0x8a5cff, pants: 0x18161e, eye: 0x8a5cff, glow: true, gear: ['eyePiece'] },
+  vyse: { skin: 0xe8d0c0, hair: 0xb8c0cc, style: 'long', top: 0x2a2e36, top2: 0x9aa6b8, pants: 0x22252c, eye: 0xc0ccda, gear: ['cloak'] },
+  tejo: { skin: 0xb07a52, hair: 0x6a6a6a, style: 'short', top: 0x4a4a3a, top2: 0xe0b050, pants: 0x34342c, eye: 0x3a2a1a, gear: ['beard', 'backpack'] },
+  waylay: { skin: 0xd8a888, hair: 0xff7ab0, style: 'bun', top: 0xf2eef4, top2: 0xff7ab0, pants: 0x2a2632, eye: 0xff7ab0, glow: true, gear: ['glasses'] },
   gekko: { skin: 0xc49a7c, hair: 0x15130f, style: 'short', top: 0x3b2f5e, top2: 0xb6f03a, pants: 0x2a2a33, eye: 0x2a2a2a, gear: ['hood'] },
 };
 // matte cloth / skin materials for characters (cached per colour + shininess)
@@ -3306,6 +3355,7 @@ function applyDamage(t, dmg, src, label, head) {
   if ((t.isPlayer || t.remote) && src && src.alive && src.team !== t.team && settings.allyAI !== 'normal' && !DM()) for (const b of bots) if (b.alive && b.team === t.team && !(b.target && b.targetVisible) && Math.hypot(b.x - t.x, b.z - t.z) < 32 && !(b.helpT > game.time)) { b.helpT = game.time + 4; b.investigate = { x: src.x, z: src.z, t: game.time - 1.1 }; b.tradeT = game.time; }
   if (game.phase === 'buy' && src && src !== t && isEnemy(src, t)) return; // nobody can be hurt before the round starts
   if (t.driftT > 0) return;
+  if (t.isoSh > 0 && src && src !== t && isEnemy(src, t)) { t.isoSh = 0; t.isoShT = 0; fx('parts', t.x, t.y + 1.2, t.z, 25, 0x8a5cff, 4, .4); toastTo(t, 'Shield blocked a hit!'); return; }
   if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
   if (src && src !== t && isEnemy(src, t)) src.dmgDealt = (src.dmgDealt || 0) + Math.min(dmg, t.hp + t.armor);
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
@@ -3964,6 +4014,15 @@ function throwFrom(e, speed, up = 0) { const f = fwd(e); return { x: e.x + f.x *
 function lobTo(e, tx, ty, tz, T = .9, g = 14) { const sx = e.x, sy = eyeY(e), sz = e.z; return { x: sx, y: sy, z: sz, vx: (tx - sx) / T, vy: (ty - sy + .5 * g * T * T) / T, vz: (tz - sz) / T, g }; }
 
 // explosion with falloff: full damage close to the center, less at the edge
+// helpers for the line / area abilities (Breach, Astra, Harbor, Iso, Waylay ...)
+function concuss(o, t, label) { o.slowT = Math.max(o.slowT, t); o.nearT = Math.max(o.nearT, Math.min(t, 2.2)); toastTo(o, `Concussed by ${label}!`); }
+function concussArea(e, x, z, r, t, label, thru) { fx('pulse', x, 1, z, r); fx('parts', x, 1, z, 30, ORB_COLOR[e.agent] || 0xffffff, 4, .5); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - x, o.z - z) < r && (thru || los(x, 1.2, z, o.x, o.y + 1, o.z, true))) concuss(o, t, label); }
+function lineHit(e, x, z, dx, dz, len, w, fn) { for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t >= 0 && t <= len && Math.abs(px * dz - pz * dx) < w) fn(o, t); } }
+function lineFx(x, z, dx, dz, len, color, y = .3) { for (let t = 1.5; t <= len; t += 2.2) { const px = x + dx * t, pz = z + dz * t; if (px > 0 && pz > 0 && px < MAPW && pz < MAPH) fx('parts', px, y, pz, 4, color, 2, .5); } }
+function waterLine(e, from, to, dur) {
+  const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
+  for (let t = from; t <= to; t += 2.6) { const x = e.x + dx * t, z = e.z + dz * t; if (x < 1 || z < 1 || x > MAPW - 1 || z > MAPH - 1 || hAtPos(x, z) > 4) break; makeSmoke(x, z, 1.7, dur, 0x2a98b8, e); makeZone({ x, z, r: 1.8, kind: 'slow', t: dur, owner: e }); }
+}
 function explodeAt(x, y, z, owner, dmgIn, dmgOut, r, color, label) {
   fx('boom', x, y, z, color);
   if (mapGadgets) for (const [i, b] of mapGadgets.breaks) if (b.mesh.visible && Math.hypot(cc(b.c, b.r).x - x, cc(b.c, b.r).z - z) < r + 1.5) damageBreak(i, dmgIn * 1.5);
@@ -4023,6 +4082,71 @@ function damageWall(w, dmg) {
 }
 
 const ABIL = {
+  faultline(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z; lineFx(x, z, dx, dz, 22, 0xd9772b);
+    timedFx.push({ t: .7, update() { }, end() { lineHit(e, x, z, dx, dz, 22, 1.8, o => concuss(o, 3.5, 'Fault Line')); lineFx(x, z, dx, dz, 22, 0xffb070); } }); return true;
+  },
+  thunder(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z;
+    for (let a = -.5; a <= .5; a += .25) lineFx(x, z, dx * Math.cos(a) - dz * Math.sin(a), dz * Math.cos(a) + dx * Math.sin(a), 30, 0xd9772b);
+    timedFx.push({ t: .8, update() { }, end() { for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t < 0 || t > 30 || Math.abs(px * dz - pz * dx) > 2 + t * .55) continue; concuss(o, 5, 'Rolling Thunder'); o.vy = 7; o.onGround = false; fx('parts', o.x, o.y + .5, o.z, 15, 0xd9772b, 4, .6); } } }); return true;
+  },
+  gwell(e) {
+    const p = aimPoint(e, 35); fx('parts', p.x, 1, p.z, 30, 0xa259ff, 2, .8); let k = 0;
+    timedFx.push({ t: 2.2, update(dt) { if ((k += dt) > .25) { k = 0; fx('pulse', p.x, 1, p.z, 5); } for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5.5) o.slowT = Math.max(o.slowT, .5); },
+      end() { fx('parts', p.x, 1, p.z, 50, 0xd6b8ff, 6, .6); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5.5) { o.vulnT = Math.max(o.vulnT || 0, 4); toastTo(o, 'VULNERABLE — Gravity Well!'); } } }); return true;
+  },
+  nova(e) { const p = aimPoint(e, 35); fx('parts', p.x, 1, p.z, 25, 0xa259ff, 2, .6); timedFx.push({ t: 1, update() { }, end() { concussArea(e, p.x, p.z, 4.8, 3.5, 'Nova Pulse'); } }); return true; },
+  divide(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l;
+    for (let t = -60; t <= 60; t += 3.2) { const x = e.x + dx * (t + 4), z = e.z + dz * (t + 4); if (x > 1 && z > 1 && x < MAPW - 1 && z < MAPH - 1 && hAtPos(x, z) < 4) makeSmoke(x, z, 2.1, 20, 0x8a4fff, e); }
+    return true;
+  },
+  cascade(e) { waterLine(e, 4, 15, 6); return true; },
+  tide(e) { waterLine(e, 3, 32, 12); return true; },
+  reckoning(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z, hit = [];
+    for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t > 0 && t < 30 && Math.abs(px * dz - pz * dx) < 4 + t * .4) hit.push(o); }
+    for (const o of hit) { fx('parts', o.x, .2, o.z, 25, 0x2ab8c8, 2, 1); const ox = o.x, oz = o.z; timedFx.push({ t: 1, update() { }, end() { fx('parts', ox, .5, oz, 50, 0x7fe8ff, 7, .7); concussArea(e, ox, oz, 3, 4, 'Reckoning', true); } }); }
+    if (!hit.length) toastTo(e, 'No enemies in front — Reckoning washed over nothing');
+    return true;
+  },
+  gravnet(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2.5), { color: 0xc9d3dc, owner: e, model: 'grenade' })); p.onLand = () => { fx('parts', p.x, p.y + .5, p.z, 40, 0xc9d3dc, 5, .6); fx('pulse', p.x, p.y + 1, p.z, 5); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5) { o.slowT = Math.max(o.slowT, 5); toastTo(o, 'Caught in a GravNet — slowed!'); } }; return true; },
+  annihil(e) {
+    const f = fwd(e), p = spawnProj({ x: e.x + f.x * .8, y: eyeY(e) - .2, z: e.z + f.z * .8, vx: f.x * 22, vy: 0, vz: f.z * 22, g: 0, life: 2.2, color: 0xc9d3dc, owner: e, land: false, bounce: 0, size: .35 });
+    p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 1.6) { o.detainT = 7; o.revealedT = Math.max(o.revealedT, 7); applyDamage(o, 40, e, 'Annihilation'); toastTo(o, 'COCOONED by Annihilation!'); fx('parts', o.x, o.y + 1, o.z, 50, 0xffffff, 4, .8); p.life = 0; return; } };
+    return true;
+  },
+  undercut(e) { const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l; lineFx(e.x, e.z, dx, dz, 28, 0x8a5cff, 1.2); lineHit(e, e.x, e.z, dx, dz, 28, 1.5, o => { o.vulnT = Math.max(o.vulnT || 0, 4); toastTo(o, 'VULNERABLE — Undercut!'); }); return true; },
+  dtap(e) { e.isoSh = 1; e.isoShT = 12; fx('parts', e.x, e.y + 1, e.z, 30, 0x8a5cff, 2, .6); toastTo(e, 'Shield up — it blocks the next hit'); return true; },
+  contract(e) {
+    const f = fwd(e); let best = null, bs = -1;
+    for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const dx = o.x - e.x, dz = o.z - e.z, d = Math.hypot(dx, dz); if (d > 50) continue; const sc = (dx * f.x + dz * f.z) / (d || 1) * 2 - d / 50; if (sc > bs) { bs = sc; best = o; } }
+    if (!best) { toastTo(e, 'No enemy nearby to put a contract on'); return false; }
+    best.revealedT = Math.max(best.revealedT, 10); best.vulnT = Math.max(best.vulnT || 0, 6); toastTo(best, `${e.name} put a KILL CONTRACT on you!`); toastTo(e, `Contract on ${best.name}`);
+    e.isoSh = 1; e.isoShT = 10; fx('parts', best.x, best.y + 1, best.z, 40, 0x8a5cff, 3, .8); return true;
+  },
+  garden(e) {
+    fx('parts', e.x, e.y + .5, e.z, 80, 0x9aa6b8, 9, .8); fx('pulse', e.x, e.y + 1, e.z, 30); let n = 0;
+    for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 30) { o.jamT = 8; n++; toastTo(o, 'Steel Garden — your primary weapon is JAMMED! Use your sidearm'); }
+    toastTo(e, n ? `Jammed ${n} enem${n > 1 ? 'ies' : 'y'}` : 'No enemies in range'); return true;
+  },
+  salvo(e) {
+    const p = aimPoint(e, 50); fx('parts', p.x, .3, p.z, 20, 0xff5040, 1.5, 1.2);
+    for (const d of [1.1, 1.5]) timedFx.push({ t: d, update() { }, end() { explodeAt(p.x + rand(-1, 1), p.y, p.z + rand(-1, 1), e, 70, 35, 4.2, 0xe0b050, 'Guided Salvo'); } });
+    return true;
+  },
+  armageddon(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z;
+    for (let i = 0; i < 9; i++) { const t = 6 + i * 4.2; for (const s2 of [-2.5, 2.5]) { const px = x + dx * t - dz * s2, pz = z + dz * t + dx * s2; if (px < 1 || pz < 1 || px > MAPW - 1 || pz > MAPH - 1) continue; timedFx.push({ t: .8 + i * .3, update() { }, end() { explodeAt(px, 0, pz, e, 75, 40, 3.8, 0xff7a2a, 'Armageddon'); } }); } }
+    return true;
+  },
+  refract(e) { e.refract = { x: e.x, z: e.z, t: 8 }; fx('parts', e.x, e.y + .3, e.z, 25, 0xff7ab0, 2, .8); toastTo(e, 'Beacon left — press E again to snap back'); return true; },
+  converge(e) {
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l; lineFx(e.x, e.z, dx, dz, 35, 0xff7ab0, 1.4);
+    lineHit(e, e.x, e.z, dx, dz, 35, 2.2, o => { o.slowT = Math.max(o.slowT, 6); o.nearT = Math.max(o.nearT, 2); toastTo(o, 'Hit by Convergent Paths — slowed!'); });
+    e.stimT = Math.max(e.stimT || 0, 10); return true;
+  },
   smokeSmall(e, ab) { const p = aimPoint(e, ab.range || 18); makeSmoke(p.x, p.z, ab.r || 3.4, ab.dur || 7, ab.color || 0xdbe8f5, e); return true; },
   skySmoke(e, ab, target) {
     const p = target ? { x: clamp(target.x, 2, MAPW - 2), z: clamp(target.z, 2, MAPH - 2) } : aimPoint(e, ab.range || 70);
@@ -4410,7 +4534,7 @@ const ABIL = {
   empress(e) { if (e.isPlayer) { reynaCast = 1.1; sndTone(220, .9, .25, 'sawtooth', 660); sndTone(880, .6, .12, 'sine', 330, undefined, undefined, .2); } e.empressT = 30; spawnParticles(e.x, e.y + 1.5, e.z, 30, 0xc25bff, 3, .7); return true; },
 };
 // abilities that would hurt, reveal or teleport during the buy phase are held until the round starts
-const BUY_BLOCKED = new Set(['molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit', 'tdf', 'meddle', 'wingman', 'thrash']);
+const BUY_BLOCKED = new Set(['faultline', 'thunder', 'gwell', 'nova', 'reckoning', 'gravnet', 'annihil', 'undercut', 'contract', 'garden', 'salvo', 'armageddon', 'converge', 'molly', 'shock', 'orbital', 'fury', 'revive', 'blades', 'step', 'fts', 'boombot', 'paint', 'rocket', 'trailblazer', 'seekers', 'neural', 'lockdown', 'paranoia', 'pit', 'tdf', 'meddle', 'wingman', 'thrash']);
 // HUD time gauge for steerable abilities and timed ultimates: it fills up, and the ability ends when it is full
 const GAUGE_DEF = { flash: { steer: 2.4 }, trailblazer: { steer: 4, auto: 3, release: 'pop' }, thrash: { steer: 5, auto: 4, release: 'pop' }, drone: { steer: 5, auto: 5, release: 'free' }, blaze: { steer: 2, auto: 1.3, release: 'free' } };
 let gauge = null;
@@ -4489,7 +4613,7 @@ function neonTick(e, dt) {
   e.slideCD = Math.max(0, (e.slideCD || 0) - dt);
 }
 // Thrown / launched abilities: first press readies them (time gauge), second press or LEFT click uses them
-const READY_TYPES = new Set(['dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay', 'tmark', 'meddle', 'wingman', 'thrash']);
+const READY_TYPES = new Set(['faultline', 'gwell', 'nova', 'gravnet', 'undercut', 'salvo', 'dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay', 'tmark', 'meddle', 'wingman', 'thrash']);
 // Raze's Showstopper: X equips the launcher (no ult spent yet), X again puts it away, left click fires
 function armRocket(e, ab) {
   if (e.rocketArmed) { e.rocketArmed = false; sndTone(300, .08, .1, 'triangle', 200); return false; }
@@ -4589,6 +4713,7 @@ function castAbility(e, key, target) {
   if (!target && readyGate(e, ab, key)) return false;
   if (ab.type === 'dash' && e.tailwindT > 0) { doDash(e); if (e.isPlayer && gauge && gauge.tailwind) gauge = null; return true; }
   if (ab.type === 'gatecrash' && e.gate && projectiles.includes(e.gate)) { const g = e.gate; e.gate = null; g.life = 0; fx('parts', e.x, e.y + 1, e.z, 25, 0x5f7cff, 3, .5); if (e.isPlayer) shadeScreen(.35, ''); teleportTo(e, { x: g.x, z: g.z }); return true; }
+  if (ab.type === 'refract' && e.refract && e.refract.t > 0) { const r = e.refract; e.refract = null; fx('parts', e.x, e.y + 1, e.z, 30, 0xff7ab0, 3, .5); teleportTo(e, { x: r.x, z: r.z }); return true; }
   if (ab.type === 'drift' && e.driftT > 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) equipView(); return true; }
   if (e.suppT > 0) { toastTo(e, 'Suppressed — you cannot use abilities'); if (e.isPlayer) SND.deny(); return false; }
   if (e.driftT > 0) { toastTo(e, 'You are drifting — press X to come back first'); return false; }
@@ -4758,7 +4883,7 @@ function clearEffects() {
 /* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
-  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt);
+  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt); e.jamT = Math.max(0, (e.jamT || 0) - dt); if (e.isoShT > 0 && (e.isoShT -= dt) <= 0) e.isoSh = 0; if (e.refract && (e.refract.t -= dt) <= 0) e.refract = null;
   if (e.driftT > 0) { e.driftT -= dt; if (e.driftT <= 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) { equipView(); toast('Back from the drift'); } } }
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
@@ -4868,6 +4993,7 @@ function equipTime(key) {
 function playerFire() {
   const p = player, inst = curWeapon(p), w = WEAPONS[inst.key];
   if (p.fireCD > 0 || p.reloadT > 0 || p.plantHold > 0 || p.detainT > 0 || p.driftT > 0) return;
+  if (p.jamT > 0 && inst === p.primary) { if (!triggerHeld) { toast('JAMMED — switch to your sidearm (2)'); SND.deny(); } p.fireCD = .3; return; }
   if (RANGE() && w.model !== 'knife') rs.shots++;
   if (inst.key === 'blades') { throwBlades(p, false); return; }
   if (w.model === 'knife') { // melee
@@ -5156,10 +5282,11 @@ function botPerceive(b) {
       b.reactT = (D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0)) * ((PERSONAS[b.persona] || {}).react || 1) * (allyBoost(b) ? .78 : 1) * (best.isPlayer && adaptHot(best) ? .85 : 1); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
-      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout', 'wingman', 'meddle'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
+      if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout', 'wingman', 'meddle', 'faultline', 'undercut', 'salvo', 'nova', 'gravnet'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
       if (b.ult >= ag.ab.X.ult) {
         const ut = ag.ab.X.type;
-        if (['empress', 'neural', 'seekers', 'pit', 'lockdown', 'overdrive', 'nullcmd', 'tdf'].includes(ut)) castAbility(b, 'X');
+        if (['empress', 'neural', 'seekers', 'pit', 'lockdown', 'overdrive', 'nullcmd', 'tdf', 'garden'].includes(ut)) castAbility(b, 'X');
+        else if (['thunder', 'reckoning', 'annihil', 'contract', 'armageddon', 'converge'].includes(ut)) { b.yaw = ty; castAbility(b, 'X'); }
         else if (ut === 'thrash') { b.yaw = ty; castAbility(b, 'X'); }
         else if (ut === 'nightfall') { b.yaw = ty; castAbility(b, 'X'); }
         else if (ut === 'rocket') { b.yaw = ty; b.pitch = Math.atan2(best.y + 1 - eyeY(b), bd); castAbility(b, 'X'); }
@@ -5179,6 +5306,7 @@ function botPerceive(b) {
 function botShoot(b, t) {
   const inst = curWeapon(b), w = WEAPONS[inst.key], D = DIFF[botDiff()];
   if (b.reloadT > 0 || b.fireCD > 0 || b.detainT > 0 || b.driftT > 0 || game.phase === 'buy') return;
+  if (b.jamT > 0 && inst === b.primary) { b.slot = b.secondary ? 2 : 3; b.fireCD = .4; return; }
   if (w.model === 'knife') {
     if (Math.hypot(t.x - b.x, t.z - b.z) < 2.2) { b.fireCD = .55; applyDamage(t, 50, b, 'Knife'); SND.shot('knife', b.x, b.z); }
     return;
@@ -5569,7 +5697,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = magOf(e, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(e, w.key); }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, jamT: 0, isoSh: 0, isoShT: 0, refract: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
     if (e.spectator) { e.alive = false; e.hp = 0; }
@@ -6881,6 +7009,9 @@ function doSpray(pick) {
   if (net.role === 'client') netSend({ t: 'spray', a }); else fx('spray', ...a);
 }
 const VOICE = { // [what your own side hears, what the other team hears] when the ultimate goes off
+  breach: ['Off your feet!', 'Earthquake incoming — get off the ground!'], astra: ['Divide! Use it!', 'The stars split the map!'], harbor: ['Let the tides rise!', 'A flood is coming!'],
+  deadlock: ['Nobody escapes my net.', 'Watch out for the nanowire!'], iso: ['Contract. Accepted.', 'Iso marked someone!'], vyse: ['Let them wither.', 'Your guns are about to jam!'],
+  tejo: ['Clearing the area!', 'Missiles incoming — run!'], waylay: ['Faster than light!', 'Light beam incoming!'],
   jett: ["Clear the way — I'm going in!", "Wind's picking up... watch your heads."], phoenix: ['Time to light it up!', "Feel that heat? Something's burning."],
   sage: ["Your fight isn't over yet.", "They're bringing someone back!"], sova: ['Nowhere left to hide.', 'The hunter has us in his sights!'],
   brim: ['Danger close — calling it in!', 'Orbital strike incoming, move!'], reyna: ['They will all fall.', 'The empress is hungry — careful.'],
@@ -6893,7 +7024,7 @@ const VOICE = { // [what your own side hears, what the other team hears] when th
   gekko: ['Thrash, sic \'em!', 'Some creature is crawling at us!'],
 };
 // spoken voice lines: the browser's speech synthesis with a pitch / speed per agent
-const VOICE_TONE = { jett: [1.35, 1.1], phoenix: [1.05, 1.08], sage: [1.2, .95], sova: [.8, .95], brim: [.6, .9], reyna: [1.15, .92], omen: [.45, .82], raze: [1.3, 1.15], killjoy: [1.4, 1.1], cypher: [.75, .95],
+const VOICE_TONE = { breach: [.6, .95], astra: [1.05, .95], harbor: [.8, .95], deadlock: [1.1, 1], iso: [.85, 1], vyse: [1.15, .92], tejo: [.55, .9], waylay: [1.4, 1.2], jett: [1.35, 1.1], phoenix: [1.05, 1.08], sage: [1.2, .95], sova: [.8, .95], brim: [.6, .9], reyna: [1.15, .92], omen: [.45, .82], raze: [1.3, 1.15], killjoy: [1.4, 1.1], cypher: [.75, .95],
   skye: [1.2, 1], viper: [.95, .88], neon: [1.45, 1.25], yoru: [.9, 1.05], kayo: [.5, .9], fade: [.95, .9], chamber: [.85, .95], clove: [1.3, 1.1], gekko: [1.1, 1.15] };
 let ttsVoices = [];
 try { const load = () => { ttsVoices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); }; load(); speechSynthesis.onvoiceschanged = load; } catch (e) { }
@@ -7721,7 +7852,7 @@ function entSnap(e) {
   return { i: e.id, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), vx: r2(e.vx), vz: r2(e.vz),
     hp: Math.ceil(e.hp), ar: Math.ceil(e.armor), al: e.alive ? 1 : 0, cr: e.crouch ? 1 : 0, sl: e.slot, p: invRec(e.primary, e), s: invRec(e.secondary, e), bm: e.bladeMag,
     cd: e.credits, u: e.ult, ch: [e.charges.C, e.charges.Q, e.charges.E], k: e.kills, d: e.deaths, a: e.assists, rk: e.roundKills,
-    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), su: r2(e.suppT || 0), df: r2(e.driftT || 0), od: r2(e.odT || 0), hl: r2(e.healT || 0), hc: e.healCap || 100, fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
+    dn: r2(e.detainT || 0), vu: r2(e.vulnT || 0), su: r2(e.suppT || 0), jm: r2(e.jamT || 0), df: r2(e.driftT || 0), od: r2(e.odT || 0), hl: r2(e.healT || 0), hc: e.healCap || 100, fl: r2(e.flashT), ns: r2(e.nearT), sw: r2(e.slowT), st: r2(e.stimT), rv: r2(e.revealedT), dm: r2(e.dismissT), em: r2(e.empressT), rb: r2(e.ribT || 0), vf: viperState(e) || undefined, so: r2(e.soulT),
     hs: e.hasSpike ? 1 : 0, mo: e.emote || 0, ph: r2(e.plantHold || 0), tp: e.tpSeq || 0, iv: e.invSeq || 0, kb: e.killedBy === undefined ? -1 : e.killedBy, kl: e.killLabel || '', sp: e.spottedT > game.time ? 1 : 0 };
 }
 function buildSnap() {
@@ -7899,7 +8030,7 @@ function applySnap(s) {
   if (shopOpen && ph !== 'buy') closeShop();
   for (const r of s.e || []) {
     const e = entities[r.i]; if (!e) continue;
-    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, suppT: r.su || 0, driftT: r.df || 0, healT: r.hl || 0, healCap: r.hc || 100, odT: e.isPlayer && e.odT > 0 && !(r.od > 0) ? e.odT : (r.od || 0), flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
+    Object.assign(e, { hp: r.hp, armor: r.ar, credits: r.cd, ult: r.u, kills: r.k, deaths: r.d, assists: r.a, roundKills: r.rk, detainT: r.dn || 0, vulnT: r.vu || 0, suppT: r.su || 0, jamT: r.jm || 0, driftT: r.df || 0, healT: r.hl || 0, healCap: r.hc || 100, odT: e.isPlayer && e.odT > 0 && !(r.od > 0) ? e.odT : (r.od || 0), flashT: r.fl, nearT: r.ns, slowT: r.sw, stimT: r.st, revealedT: r.rv, dismissT: r.dm, empressT: r.em, ribT: r.rb || 0, fuel: r.vf ? r.vf[0] : e.fuel, vState: r.vf ? { c: r.vf[1], w: r.vf[2] } : e.vState, soulT: r.so, hasSpike: !!r.hs, plantHold: r.ph });
     if (Array.isArray(r.ch)) e.charges = { C: r.ch[0], Q: r.ch[1], E: r.ch[2] };
     if (e === player) {
       if (r.tp !== e.tpSeq) { Object.assign(e, { x: r.x, y: r.y, z: r.z, yaw: r.yw, pitch: 0, vx: 0, vz: 0, vy: 0, dashT: 0, tpSeq: r.tp, spawnPt: { x: r.x, z: r.z } }); }
@@ -10709,7 +10840,7 @@ function makeOrbHand(color) {
   g.userData.orb = orb; g.scale.setScalar(.5); g.position.set(.2, -.2, -.45); g.rotation.set(.35, -.25, .15);
   return g;
 }
-const ORB_COLOR = { yoru: 0x5f7cff, kayo: 0x6fd6ff, fade: 0x9b7bd6, neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b, chamber: 0xd9b46a, clove: 0xf08cc8, gekko: 0xb6f03a };
+const ORB_COLOR = { breach: 0xd9772b, astra: 0xa259ff, harbor: 0x2ab8c8, deadlock: 0xc9d3dc, iso: 0x8a5cff, vyse: 0x9aa6b8, tejo: 0xe0b050, waylay: 0xff7ab0, yoru: 0x5f7cff, kayo: 0x6fd6ff, fade: 0x9b7bd6, neon: 0x46b6ff, omen: 0x7b6bff, sage: 0x5fe6c8, viper: 0x5fd35a, brim: 0xff8a2a, phoenix: 0xff8a3d, jett: 0xbfeaff, reyna: 0xc25bff, raze: 0xf0a03a, killjoy: 0xffe14a, cypher: 0xe8e2c8, skye: 0x9be86b, chamber: 0xd9b46a, clove: 0xf08cc8, gekko: 0xb6f03a };
 /* --- Viper: fuel, toggling the screen and the cloud --- */
 function setSmokeOff(s, off) { s.off = off; if (s.mesh) s.mesh.visible = !off; if (!off) s.grow = .2; }
 function toggleViper(e, which) {
@@ -11954,7 +12085,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 88;
+const BUILD = 89;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
