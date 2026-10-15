@@ -745,6 +745,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #luAim.ok i{border-color:#2fe0b6;box-shadow:0 0 14px #2fe0b6;background:rgba(47,224,182,.35)}#luAim.ok span{color:#2fe0b6}
 .luRow{display:flex;gap:10px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}.luRow b{font:600 12px Oswald,sans-serif;letter-spacing:1px;width:80px}.luRow span{flex:1;color:#c9d0d6}
 .luRow button{background:none;border:0;color:#ff8a8a;cursor:pointer}
+#vcSpeak{position:fixed;left:20px;bottom:230px;z-index:36;pointer-events:none;display:flex;flex-direction:column;gap:3px;font:600 13px 'Noto Sans KR',sans-serif}
+#vcSpeak div{background:rgba(10,16,22,.8);border-left:3px solid var(--teal);padding:3px 10px;color:#ece8e1}
+.vcMe{opacity:.25;font-size:18px;flex:0 0 auto!important}.vcMe.on{opacity:1;filter:drop-shadow(0 0 6px var(--teal))}#btnVoice.on{background:rgba(47,224,182,.18);border-color:var(--teal)}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -880,6 +883,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="ppRow ppCodeRow"><span class="ol">CODE</span><b id="ppCode" class="os">-----</b><button class="ppBtn" id="btnCopyCode">COPY</button></div>
       <div id="ppChat"></div>
       <input type="text" id="chatIn" maxlength="140" placeholder="Message your party…" spellcheck="false" autocomplete="off">
+      <div class="ppRow"><button class="ppBtn" id="btnVoice">🎙 JOIN VOICE</button><span id="vcMe" class="vcMe">🎙</span></div><div id="vcInfo" class="ol" style="text-transform:none;letter-spacing:0;margin-top:4px"></div>
       <button class="ppBtn danger" id="btnLeave">LEAVE PARTY</button>
     </div>
     <div id="ppStatus"></div>
@@ -1270,6 +1274,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
 <div id="banter"></div>
+<div id="vcSpeak" class="hidden"></div>
 <div id="luAim" class="hidden"><i></i><span></span></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
@@ -1324,7 +1329,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -1339,7 +1344,7 @@ const BIND_DEFS = [
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
   ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'], ['cmd', 'Team command wheel (hold)', 'KeyV'],
-  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'],
+  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'], ['talk', 'Party voice: push to talk (hold)', 'KeyU'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -6383,7 +6388,8 @@ const peerOpts = relay => Object.assign({ debug: 0, config: { iceServers: iceSer
 function makePeer(id, relay) {
   if (NET_LOCAL) return new LocalPeer(id);
   if (typeof Peer === 'undefined') throw new Error('PeerJS not loaded');
-  return id ? new Peer(id, peerOpts(relay)) : new Peer(peerOpts(relay));
+  const pr = id ? new Peer(id, peerOpts(relay)) : new Peer(peerOpts(relay));
+  pr.on('call', call => onVoiceCall(call)); return pr;
 }
 // plain-language explanations for PeerJS error types
 /* --- network test: can we reach the game server, and which connection types work here? --- */
@@ -6876,7 +6882,68 @@ function animateNetChar(e, dt) {
 function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
 function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host', sk: { ...profile.equip }, ...clanNet() }; }
 function setPartyStatus(m) { $('ppStatus').textContent = m || ''; }
+/* --- party voice chat: WebRTC audio between party members (push-to-talk or open mic; in a match you only hear your own team) --- */
+const vc = { on: false, stream: null, calls: {}, audio: {}, talking: false, meters: {} };
+const vcSupported = () => !NET_LOCAL && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+function vcSetMic(on) { vc.talking = on; if (vc.stream) vc.stream.getAudioTracks().forEach(t => t.enabled = on); const el = $('vcMe'); if (el) el.classList.toggle('on', on && vc.on); }
+async function joinVoice() {
+  if (vc.on) return; if (net.role === 'off') { toastMenu('Join a party first'); return; }
+  if (!vcSupported()) { toastMenu('Voice chat needs a browser with microphone support'); return; }
+  try { vc.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  catch (e) { toastMenu('Allow the microphone to use voice chat'); return; }
+  vc.on = true; vcSetMic(settings.voiceMode === 'open');
+  for (const m of net.members) if (m.id !== net.myId) vcCall(m.id);
+  refreshVoiceUI(); toastMenu(settings.voiceMode === 'open' ? 'Voice on — open mic' : `Voice on — hold ${keyName(settings.binds.talk)} to talk`);
+}
+function leaveVoice() {
+  for (const id in vc.calls) try { vc.calls[id].close(); } catch (e) { } vc.calls = {};
+  for (const id in vc.audio) { vc.audio[id].remove(); } vc.audio = {}; vc.meters = {};
+  if (vc.stream) vc.stream.getTracks().forEach(t => t.stop()); vc.stream = null; vc.on = false; refreshVoiceUI();
+}
+function vcCall(id) {
+  if (!net.peer || !net.peer.call || id === net.myId) return;
+  if (vc.calls[id]) try { vc.calls[id].close(); } catch (e) { }
+  try { const call = net.peer.call(id, vc.stream || vcSilent()); vcWire(call, id); } catch (e) { }
+}
+// a silent track so people who only listen can still receive audio
+function vcSilent() { if (!AC) initAudio(); const d = AC.createMediaStreamDestination(); return d.stream; }
+function onVoiceCall(call) {
+  if (net.role === 'off' || !net.members.some(m => m.id === call.peer)) { try { call.close(); } catch (e) { } return; }
+  if (vc.calls[call.peer]) try { vc.calls[call.peer].close(); } catch (e) { }
+  try { call.answer(vc.stream || vcSilent()); vcWire(call, call.peer); } catch (e) { }
+}
+function vcWire(call, id) {
+  vc.calls[id] = call;
+  call.on('stream', st => {
+    let a = vc.audio[id]; if (!a) { a = document.createElement('audio'); a.autoplay = true; a.playsInline = true; document.body.appendChild(a); vc.audio[id] = a; }
+    a.srcObject = st; a.volume = clamp(settings.voiceVol ?? .9, 0, 1); a.play && a.play().catch(() => { });
+    try { if (!AC) initAudio(); const an = AC.createAnalyser(); an.fftSize = 256; AC.createMediaStreamSource(st).connect(an); vc.meters[id] = { an, buf: new Uint8Array(an.fftSize), lvl: 0 }; } catch (e) { }
+    refreshVoiceUI();
+  });
+  call.on('close', () => { if (vc.calls[id] === call) { delete vc.calls[id]; if (vc.audio[id]) { vc.audio[id].remove(); delete vc.audio[id]; } delete vc.meters[id]; refreshVoiceUI(); } });
+  call.on('error', () => { });
+}
+// who is speaking + team-only audio during a match
+const vcTeamOf = id => { if (game.state !== 'playing' || !player) return null; const e = entities.find(x => x && (x.remote === id || x.peerId === id)); return e ? e.team : null; };
+function voiceTick() {
+  if (!Object.keys(vc.audio).length && !vc.on) return;
+  const speaking = [];
+  for (const id in vc.audio) {
+    const t = vcTeamOf(id), mute = t !== null && t !== player.team; vc.audio[id].muted = mute;
+    const M = vc.meters[id]; if (M) { M.an.getByteTimeDomainData(M.buf); let sum = 0; for (const v of M.buf) sum += Math.abs(v - 128); M.lvl = M.lvl * .7 + (sum / M.buf.length) * .3; if (M.lvl > 2.2 && !mute) speaking.push(id); }
+  }
+  const el = $('vcSpeak'); const names = speaking.map(id => (net.members.find(m => m.id === id) || {}).name || 'Friend');
+  if (vc.on && vc.talking) names.unshift('You');
+  el.innerHTML = names.map(n => `<div>🔊 ${esc(n)}</div>`).join(''); el.classList.toggle('hidden', !names.length);
+}
+function vcSyncMembers() { if (!vc.on) return; for (const m of net.members) if (m.id !== net.myId && !vc.calls[m.id]) vcCall(m.id); }
+function refreshVoiceUI() {
+  const b = $('btnVoice'); if (!b) return;
+  b.textContent = vc.on ? '🔇 LEAVE VOICE' : '🎙 JOIN VOICE'; b.classList.toggle('on', vc.on);
+  $('vcInfo').textContent = vc.on ? (settings.voiceMode === 'open' ? 'Open mic' : `Hold ${keyName(settings.binds.talk)} to talk`) + ` · ${Object.keys(vc.audio).length} connected` : Object.keys(vc.audio).length ? `${Object.keys(vc.audio).length} friend(s) talking — join to answer` : '';
+}
 function resetNet() {
+  if (typeof leaveVoice === 'function' && (vc.on || Object.keys(vc.calls).length)) leaveVoice();
   const peer = net.peer;
   Object.assign(net, { role: 'off', peer: null, code: null, myId: null, conns: {}, host: null, members: [], picks: {}, phase: 'lobby', ents: {}, public: false, searching: false, autoAt: 0, selAt: 0 });
   try { if (peer) peer.destroy(); } catch (e) { }
@@ -7053,6 +7120,7 @@ function partyChanged() {
   refreshPartyUI();
 }
 function refreshPartyUI() {
+  setTimeout(() => { vcSyncMembers(); refreshVoiceUI(); }, 600);
   renderPartyPanel(); updatePlayLock();
   const sig = JSON.stringify((net.role === 'off' ? [] : net.members).map(m => [m.id, m.name, m.fav, m.host])) + profile.fav + profile.name;
   if (sig !== net.partySig) { net.partySig = sig; if (game.state === 'menu') buildParty(); }
@@ -7293,7 +7361,7 @@ function clientSetupMatch(d) {
   for (const r of d.roster || []) {
     if (r.def && typeof r.def === 'object' && /^cu[a-z0-9]{3,14}$/.test(String(r.agent)) && (!AGENT[r.agent] || AGENT[r.agent].custom)) { try { registerCustomAgent(Object.assign({}, r.def, { id: r.agent })); } catch (e) { } }
     const e = makeEntity({ id: r.id | 0, name: cleanName(r.name), team: r.team ? 1 : 0, agent: AGENT[r.agent] ? r.agent : 'jett', isPlayer: r.peer === net.myId });
-    e.secondary = mkWeapon('classic'); e.slot = 2; e.tpSeq = -1; e.invSeq = -1;
+    e.secondary = mkWeapon('classic'); e.slot = 2; e.tpSeq = -1; e.invSeq = -1; e.peerId = r.peer || null;
     if (e.isPlayer) { player = e; e.skins = { ...profile.equip }; } else { e.mesh = makeCharacter(AGENT[e.agent]); if (r.peer) addNameTag(e); }
     entities[e.id] = e;
   }
@@ -9084,6 +9152,9 @@ const SET_PAGES = {
     ['menuSfx', 'Menu click sounds', 'toggle'],
     ['tts', 'Spoken ultimate voice lines (text-to-speech)', 'toggle'],
     ['ttsVol', 'Voice line volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
+    ['sub', 'PARTY VOICE CHAT'],
+    ['voiceMode', 'Microphone', 'seg', [['ptt', 'Push to talk (U)'], ['open', 'Open mic']]],
+    ['voiceVol', 'Friends\' voice volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
     ['sub', 'LOBBY'],
     ['menuMusic', 'Menu music', 'seg', Object.entries(MUSIC).map(([k, M]) => [k, M.name])],
     ['musicVol', 'Music volume', 'range', 0, 1, .05, v => Math.round(v * 100)],
@@ -9109,6 +9180,8 @@ function applySetting(k) {
   else if (k === 'vol') { $('vol2').value = v; if (master) master.gain.value = v; }
   else if (k === 'shadows') applyShadows();
   else if (k === 'lobbyTheme') applyLobbyTheme(v);
+  else if (k === 'voiceMode') { if (vc.on) vcSetMic(v === 'open'); refreshVoiceUI(); }
+  else if (k === 'voiceVol') for (const id in vc.audio) vc.audio[id].volume = v;
   else if (k === 'menuMusic') restartMusic();
   else if (k === 'musicVol') setMusicVol();
   else if (k === 'fov') { BASE_FOV = v; camera.fov = v; camera.updateProjectionMatrix(); }
@@ -11091,6 +11164,13 @@ $('btnCreateParty').onclick = () => { initAudio(); createParty(); };
 const toggleFind = () => { initAudio(); if (net.searching) cancelSearch(); else { $('partyPanel').classList.remove('hidden'); $('partyBtn').classList.add('open'); findPublicMatch(); } tick(); };
 $('btnFind').onclick = toggleFind; $('btnFind2').onclick = toggleFind;
 $('btnJoin').onclick = () => { initAudio(); joinParty($('joinCode').value); };
+$('btnVoice').onclick = () => { initAudio(); vc.on ? leaveVoice() : joinVoice(); };
+// push to talk works in the menu and in matches (but not while typing)
+const isTyping = () => { const ae = document.activeElement; return !!ae && /INPUT|TEXTAREA/.test(ae.tagName) && !['checkbox', 'range', 'color'].includes(ae.type) && ae.offsetParent !== null; };
+document.addEventListener('keydown', e => { if (vc.on && settings.voiceMode !== 'open' && e.code === settings.binds.talk && !e.repeat && !isTyping()) vcSetMic(true); });
+document.addEventListener('keyup', e => { if (vc.on && settings.voiceMode !== 'open' && e.code === settings.binds.talk) vcSetMic(false); });
+window.addEventListener('blur', () => { if (vc.on && settings.voiceMode !== 'open') vcSetMic(false); });
+setInterval(voiceTick, 120);
 $('netRelay').checked = !!settings.netRelay; $('netRelay').onchange = () => { settings.netRelay = $('netRelay').checked; saveSettings(); };
 for (const k of ['turnUrl', 'turnUser', 'turnPass']) { const el = $(k); el.value = settings[k] || ''; el.addEventListener('keydown', e => e.stopPropagation()); el.onchange = () => { settings[k] = el.value.trim(); saveSettings(); }; }
 $('btnNetTest').onclick = () => { tick(); testNetwork(); };
@@ -11114,7 +11194,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 85;
+const BUILD = 86;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
