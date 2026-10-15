@@ -386,6 +386,8 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .btn.small{width:auto;margin:0;padding:6px 14px;font-size:13px}
 .mode.range{border-color:rgba(47,224,182,.5)}
 .mode.range .t{color:var(--teal)}
+.cdPanel{width:min(960px,96vw)}.cdImg{width:100%;display:block;border:1px solid rgba(255,255,255,.1)}.cdBtns{display:flex;gap:8px;margin-top:10px}.cdBtns .btn{width:auto;margin:0;text-decoration:none;display:inline-flex;align-items:center}
+.cdOpen{width:auto!important;margin:0 0 12px!important}
 .crateBan{display:flex;align-items:center;gap:14px;padding:10px 14px;margin:10px 0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}.crateBan.ready{background:linear-gradient(90deg,rgba(255,211,77,.18),rgba(255,70,85,.08));border-color:#ffd34d}
 .crateBan b{display:block;font:700 16px Oswald,sans-serif;letter-spacing:2px}.crateBan span{font-size:12px;color:#c9d0d6}.crateBan .btn{margin:0;width:auto;padding:9px 18px}.crIcon{font-size:34px}.crateBan.ready .crIcon{animation:crWob 1.4s ease-in-out infinite}
 @keyframes crWob{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}}
@@ -1129,6 +1131,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="introCine" class="hidden"></div>
 <div id="cereTag" class="hidden"><b>VICTORY</b><span>click to skip</span></div>
 <div id="crateModal" class="screen hidden"></div>
+<div id="cardModal" class="screen hidden"></div>
 <div id="menuToast"></div>
 <div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
 <div id="updateBar" class="hidden"><span id="updTxt">A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
@@ -7677,6 +7680,55 @@ saveProfile();
 const levelOf = xp => Math.floor(xp / 1000) + 1;
 Object.assign(settings, store.get('vs_settings', {}));
 const saveSettings = () => store.set('vs_settings', settings);
+/* --- profile card: a 1200x630 picture of you, your rank and your stats to save or share --- */
+function charPortrait(agentId, skin) {
+  const W = 420, H = 600, r = gunIcon.r || (gunIcon.r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true }));
+  r.setSize(W, H); r.setClearColor(0, 0); r.clear();
+  const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x404050, .9)); const dl = new THREE.DirectionalLight(0xffffff, .8); dl.position.set(2, 3, 4); sc.add(dl);
+  const rim = new THREE.DirectionalLight(new THREE.Color(AGENT[agentId].color), 1.2); rim.position.set(-3, 2, -2); sc.add(rim);
+  const g = makeCharacter(AGENT[agentId]); scene.remove(g); g.userData.marker.visible = false; (g.userData.outlines || []).forEach(o => o.visible = false);
+  const gun = buildGun('vandal', AGENT[agentId].color, skin); gun.scale.setScalar(CHAR_GUN_SCALE); g.userData.gunHolder.add(gun);
+  g.rotation.y = Math.PI - .45; sc.add(g);
+  const cam = new THREE.PerspectiveCamera(30, W / H, .1, 50); cam.position.set(0, 1.25, 5.2); cam.lookAt(0, 1.05, 0); r.render(sc, cam);
+  return r.domElement.toDataURL();
+}
+const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+async function makeProfileCard() {
+  const W = 1200, H = 630, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const ag = AGENT[profile.fav] || AGENTS[0], col = ag.color, M = profile.matches, wins = M.filter(m => m.won).length, K = M.reduce((a, m) => a + m.k, 0), D = M.reduce((a, m) => a + m.d, 0);
+  const hs = M.reduce((a, m) => a + (m.hs || 0), 0), hits = M.reduce((a, m) => a + (m.hits || 0), 0), r = rankState(), un = r.placed < PLACEMENTS, R = rankOf(r.rr);
+  const topAg = (() => { const L = (profile.life && profile.life.agents) || {}; const k = Object.keys(L).sort((a, b) => L[b].m - L[a].m)[0]; return AGENT[k] ? AGENT[k].name : ag.name; })();
+  const topGun = Object.keys(profile.mastery || {}).sort((a, b) => masteryKills(b) - masteryKills(a))[0];
+  // background
+  const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0f1923'); bg.addColorStop(.55, '#16222e'); bg.addColorStop(1, col); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  x.globalAlpha = .07; x.fillStyle = '#fff'; x.font = '900 520px "Noto Sans KR", sans-serif'; x.fillText(ag.glyph, 640, 560); x.globalAlpha = 1;
+  x.fillStyle = col; x.beginPath(); x.moveTo(0, 0); x.lineTo(14, 0); x.lineTo(14, H); x.lineTo(0, H); x.fill();
+  x.fillStyle = 'rgba(255,70,85,.9)'; x.beginPath(); x.moveTo(W - 300, 0); x.lineTo(W - 250, 0); x.lineTo(W - 560, H); x.lineTo(W - 610, H); x.fill();
+  const por = await loadImg(charPortrait(ag.id, profile.equip.vandal)); if (por) x.drawImage(por, W - 470, 20, 420, 600);
+  // name block
+  x.textBaseline = 'alphabetic'; x.fillStyle = '#ff4655'; x.font = '700 20px Oswald, sans-serif'; x.fillText('VALOR STRIKE · PLAYER CARD', 50, 64);
+  let nx = 50; if (profile.clan) { x.font = '700 30px Oswald, sans-serif'; x.fillStyle = profile.clan.c; const t = `${profile.clan.l} [${profile.clan.t}] `; x.fillText(t, nx, 120); nx += x.measureText(t).width; }
+  x.fillStyle = '#ece8e1'; x.font = '700 64px Oswald, "Noto Sans KR", sans-serif'; x.fillText(profile.name, 50, 182, 640);
+  x.fillStyle = '#ffd34d'; x.font = '600 24px Oswald, sans-serif'; x.fillText((profile.title ? '“' + profile.title + '”  ·  ' : '') + 'LEVEL ' + levelOf(profile.xp), 50, 222);
+  // rank
+  const ri = await loadImg(rankIcon(r.rr, un)); if (ri) x.drawImage(ri, 46, 250, 110, 110);
+  x.fillStyle = un ? '#8a96a3' : R.color; x.font = '700 40px Oswald, sans-serif'; x.fillText(un ? 'UNRANKED' : R.name.toUpperCase(), 172, 300);
+  x.fillStyle = '#9aa6b2'; x.font = '500 20px Oswald, sans-serif'; x.fillText(un ? `${PLACEMENTS - r.placed} placement matches left` : `${R.inDiv} RR · peak ${rankOf(r.peak).name} · Season ${seasonNo()}`, 172, 334);
+  // stats tiles
+  const tiles = [['MATCHES', M.length], ['WIN %', M.length ? Math.round(wins / M.length * 100) + '%' : '—'], ['K/D', M.length ? (K / Math.max(1, D)).toFixed(2) : '—'], ['HEADSHOT', hits ? Math.round(hs / hits * 100) + '%' : '—'], ['MAIN', topAg], ['BEST GUN', topGun ? WEAPONS[topGun].name : '—']];
+  tiles.forEach(([l, v], i) => { const tx = 50 + (i % 3) * 215, ty = 390 + Math.floor(i / 3) * 110; x.fillStyle = 'rgba(255,255,255,.06)'; x.fillRect(tx, ty, 200, 96); x.fillStyle = col; x.fillRect(tx, ty, 4, 96);
+    x.fillStyle = '#9aa6b2'; x.font = '600 16px Oswald, sans-serif'; x.fillText(l, tx + 18, ty + 32); x.fillStyle = '#ece8e1'; x.font = '700 34px Oswald, "Noto Sans KR", sans-serif'; x.fillText(String(v), tx + 18, ty + 76, 170); });
+  x.fillStyle = 'rgba(236,232,225,.5)'; x.font = '500 15px Oswald, sans-serif'; x.fillText(`${profile.friendCode || ''} · ${new Date().toLocaleDateString()}`, 50, H - 18);
+  return c;
+}
+async function openProfileCard() {
+  const m = $('cardModal'); m.innerHTML = '<div class="panel cdPanel"><div class="ol">Drawing your card…</div></div>'; m.classList.remove('hidden');
+  const c = await makeProfileCard(), url = c.toDataURL('image/png');
+  m.innerHTML = `<div class="panel cdPanel"><div class="pHead"><h2>PLAYER CARD</h2><button class="iconBtn" id="cdClose">✕</button></div><img src="${url}" class="cdImg" alt="Player card">
+    <div class="cdBtns"><a class="btn primary" download="valor-strike-card.png" href="${url}">⬇ Save image</a><button class="btn" id="cdCopy">📋 Copy image</button></div></div>`;
+  $('cdClose').onclick = () => m.classList.add('hidden');
+  $('cdCopy').onclick = () => c.toBlob(async b => { try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); toastMenu('Card copied — paste it anywhere'); } catch (e) { toastMenu('Copy is not allowed here — use Save image'); } });
+}
 /* --- clans: name, tag, colour and logo; the tag shows next to your name for you and your party; clan codes let friends join --- */
 const CLAN_LOGOS = ['🐺', '🦅', '🐉', '🔥', '⚡', '💀', '👑', '🌙', '⭐', '🛡', '🗡', '🐍', '🦊', '🐯', '🎯', '💎'];
 const CLAN_COLS = ['#ff4655', '#2fe0b6', '#ffd34d', '#4fa3ff', '#b07aff', '#ff8a3d', '#ff4fd8', '#7dff3a', '#ece8e1'];
@@ -11059,13 +11111,13 @@ function renderCareer() {
   const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
-  html = clanCardHTML() + html + seasonCardHTML();
+  html = '<button class="btn cdOpen" id="btnCard">🪪 MAKE MY PLAYER CARD</button>' + clanCardHTML() + html + seasonCardHTML();
   html += statsDashHTML();
   { const lc = profile.matches.find(x => x.coach); if (lc) html += `<div class="collCat">COACH NOTES · last match (${esc(MAPS[lc.map] ? MAPS[lc.map].name : lc.map)}, ${lc.won ? 'win' : 'loss'})</div>` + coachHTML(lc.coach); }
   html += '<div class="collCat">RECENT MATCHES</div>';
   html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[x.mode] || 'COMPETITIVE'}${x.place ? ' · #' + x.place : ''}${x.rr !== undefined ? ` · <b style="color:${x.rr > 0 ? 'var(--teal)' : 'var(--red)'}">${x.rr > 0 ? '+' : ''}${x.rr} RR</b>` : ''}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
-  $('careerBox').innerHTML = html; wireClanCard();
+  $('careerBox').innerHTML = html; wireClanCard(); $('btnCard').onclick = () => { tick(); openProfileCard(); };
 }
 
 /* stats dashboard (career tab): form, K/D and headshot trends, agents, maps, weapons */
