@@ -336,7 +336,12 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .skmFoot .btn{width:auto;margin:0;padding:10px 22px}
 .skmFoot .btn:disabled{opacity:.55;cursor:default}
 .skpPanel{width:min(900px,94vw);max-height:86vh;overflow:auto}
-.wcard.pick{cursor:pointer;transition:.12s}
+.wcard.pick{cursor:pointer;transition:.12s;position:relative}
+.gv3d{position:absolute;right:8px;top:36px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);color:#ece8e1;font:600 11px Oswald,sans-serif;letter-spacing:1px;padding:3px 7px;cursor:pointer}.gv3d:hover{border-color:var(--teal);color:var(--teal)}
+.gvPanel{width:min(900px,96vw)}.gvStage{position:relative;height:min(52vh,420px);background:radial-gradient(ellipse at 50% 45%,#2e3c4b 0%,#121a22 70%);border:1px solid rgba(255,255,255,.08);cursor:grab}
+.gvStage:active{cursor:grabbing}.gvStage canvas{width:100%;height:100%;display:block}.gvHint{position:absolute;left:10px;bottom:8px;font-size:11px;color:#7d8790}
+.gvBar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:10px}.gvBar label{display:flex;flex-direction:column;gap:3px;font:600 10px Oswald,sans-serif;letter-spacing:2px;color:#9aa6b2}
+.gvBar select{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:7px 8px;font:500 13px 'Noto Sans KR',sans-serif;max-width:240px}.gvBar .btn{width:auto;margin:0;padding:8px 12px}
 .attRow{display:flex;align-items:center;gap:3px;margin-top:8px}.attRow .ol{margin-right:auto;font-size:10px}
 .attB{width:28px;height:24px;background:#26313d;border:1px solid transparent;color:#c9d0d6;cursor:pointer;font-size:12px;padding:0}.attB.on{border-color:var(--teal);background:rgba(47,224,182,.15)}
 .attTxt{font-size:11px;color:#9aa6b2;min-height:14px;margin-top:3px;line-height:1.35}.attTxt b{color:var(--teal)}
@@ -908,7 +913,15 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="pHead"><div><div class="ol" id="skmTier">PREMIUM EDITION</div><h2 id="skmName">Skin</h2></div><button class="iconBtn" id="skmClose">✕</button></div>
     <div class="skmStage"><img id="skmImg" alt=""></div>
     <div id="skmLv" class="skmLv hidden"></div>
-    <div class="skmFoot"><span class="note" id="skmNote" style="margin:0"></span><button class="btn" id="skmWish" style="width:auto;margin:0 8px 0 auto">☆ WISH</button><button class="btn primary" id="skmBuy">BUY</button></div>
+    <div class="skmFoot"><span class="note" id="skmNote" style="margin:0"></span><button class="btn" id="skmView" style="width:auto;margin:0 0 0 auto">🔍 3D</button><button class="btn" id="skmWish" style="width:auto;margin:0 8px 0 8px">☆ WISH</button><button class="btn primary" id="skmBuy">BUY</button></div>
+  </div>
+</div>
+<div id="gunViewer" class="screen hidden">
+  <div class="panel gvPanel">
+    <div class="pHead"><div><div class="ol" id="gvSub"></div><h2 id="gvName">WEAPON</h2></div><button class="iconBtn" id="gvClose">✕</button></div>
+    <div class="gvStage" id="gvStage"><canvas id="gvCv"></canvas><div class="gvHint">Drag to rotate · scroll to zoom</div></div>
+    <div class="gvBar"><label>Skin<select id="gvSkin"></select></label><label>Attachment<select id="gvAtt"></select></label>
+      <button class="btn" id="gvInspect">🔄 Inspect</button><button class="btn" id="gvReload">🔃 Reload</button><button class="btn" id="gvFire">💥 Fire</button><button class="btn" id="gvReset">⟲</button></div>
   </div>
 </div>
 <div id="skinPicker" class="screen hidden">
@@ -8927,6 +8940,7 @@ function openSkinModal(id, price) {
   wb.onclick = () => { toggleWish(id); wl(); if (curTab === 'store') renderStore(); };
   $('skmBuy').onclick = () => { if (own) { profile.equip[S.key] = id; saveProfile(); netProfileChanged(); SND.buy(); closeSkinModal(); refreshLobbyGuns(); if (curTab === 'collection') renderCollection(); else renderStore(); } else buySkins([id], price, S.name); };
   $('skmNote').textContent = own ? 'You own this skin.' : profile.vp < price ? `You have ${profile.vp.toLocaleString()} VP — ${(price - profile.vp).toLocaleString()} more needed.` : `You have ${profile.vp.toLocaleString()} VP.`;
+  $('skmView').onclick = () => openGunViewer(S.key, id);
   renderSkinLevels(id); $('skinModal').classList.remove('hidden'); tick();
 }
 function renderSkinLevels(id) {
@@ -8964,6 +8978,77 @@ function openSkinPicker(key) {
     saveProfile(); netProfileChanged(); tick(); openSkinPicker(key); renderCollection(); refreshLobbyGuns();
   });
   $('skinPicker').classList.remove('hidden');
+}
+/* --- 3D weapon viewer: rotate, zoom, inspect, reload and fire any gun with any skin --- */
+const gv = { on: false };
+function openGunViewer(key, skinId) {
+  if (!WEAPONS[key]) return;
+  if (!gv.r) {
+    gv.r = new THREE.WebGLRenderer({ canvas: $('gvCv'), antialias: true, alpha: true }); gv.r.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    gv.sc = new THREE.Scene(); gv.cam = new THREE.PerspectiveCamera(30, 2, .01, 50);
+    gv.sc.add(new THREE.HemisphereLight(0xe8f0ff, 0x2a2228, .85)); const k = new THREE.DirectionalLight(0xffffff, .9); k.position.set(2, 3, 2); gv.sc.add(k);
+    const rim = new THREE.DirectionalLight(0x9fd8ff, .5); rim.position.set(-2, 1, -2); gv.sc.add(rim);
+    gv.pivot = new THREE.Group(); gv.sc.add(gv.pivot); gv.fx = [];
+    const st = $('gvStage');
+    st.addEventListener('pointerdown', e => { gv.drag = [e.clientX, e.clientY]; st.setPointerCapture(e.pointerId); });
+    st.addEventListener('pointermove', e => { if (!gv.drag) return; gv.ry += (e.clientX - gv.drag[0]) * .01; gv.rx = clamp(gv.rx + (e.clientY - gv.drag[1]) * .01, -1.2, 1.2); gv.drag = [e.clientX, e.clientY]; gv.anim = null; });
+    st.addEventListener('pointerup', () => { gv.drag = null; });
+    st.addEventListener('wheel', e => { e.preventDefault(); gv.zoom = clamp(gv.zoom * (e.deltaY > 0 ? 1.1 : .9), .45, 2.2); }, { passive: false });
+    $('gvClose').onclick = closeGunViewer; $('gvReset').onclick = () => { gv.ry = -Math.PI / 2; gv.rx = .12; gv.zoom = 1; };
+    $('gvInspect').onclick = () => { gv.anim = { kind: 'inspect', t: 0 }; };
+    $('gvReload').onclick = () => { gv.anim = { kind: 'reload', t: 0 }; SND.reload(); };
+    $('gvFire').onclick = gvFire;
+    $('gvSkin').onchange = () => { gv.skin = $('gvSkin').value === '0' ? 0 : $('gvSkin').value; gvBuild(); };
+    $('gvAtt').onchange = () => { profile.attach = profile.attach || {}; if ($('gvAtt').value === 'none') delete profile.attach[gv.key]; else profile.attach[gv.key] = $('gvAtt').value; saveProfile(); gvBuild(); if (curTab === 'collection') renderCollection(); };
+  }
+  gv.key = key; gv.skin = skinId === undefined ? profile.equip[key] || 0 : skinId; gv.ry = -Math.PI / 2; gv.rx = .12; gv.zoom = 1; gv.anim = { kind: 'intro', t: 0 };
+  const ids = [0, ...SKIN_IDS.filter(id => SKINS[id].key === key), ...profile.customSkins.filter(c => c.key === key).map(c => c.id + ':' + c.key)].filter(id => !id || SKINS[id]);
+  if (gv.skin && !ids.includes(gv.skin)) ids.push(gv.skin);
+  $('gvSkin').innerHTML = ids.map(id => `<option value="${id}">${id ? esc(SKINS[id].name) + (owns(id) ? (upgradable(id) ? ' · Lv ' + skinLv(id) : '') : ' · preview') : 'Standard'}</option>`).join('');
+  $('gvSkin').value = String(gv.skin || 0);
+  $('gvAtt').innerHTML = canAttach(key) ? Object.entries(ATTACH).map(([a, A]) => `<option value="${a}">${A.icon} ${A.name}</option>`).join('') : '<option value="none">—</option>';
+  $('gvAtt').value = attOf({ isPlayer: true }, key); $('gvAtt').disabled = !canAttach(key);
+  $('gunViewer').classList.remove('hidden'); gv.on = true; gvBuild(); tick();
+  if (!gv.loopOn) { gv.loopOn = true; let last = performance.now(); const loop = now => { if (!gv.on) { gv.loopOn = false; return; } requestAnimationFrame(loop); gvTick(Math.min(.05, (now - last) / 1000), now / 1000); last = now; }; requestAnimationFrame(loop); }
+}
+function closeGunViewer() { gv.on = false; $('gunViewer').classList.add('hidden'); }
+function gvBuild() {
+  if (gv.gun) gv.pivot.remove(gv.gun);
+  const key = gv.key, g = buildGun(key, null, gv.skin || 0); addAttachMesh(g, attOf({ isPlayer: true }, key));
+  const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+  g.position.sub(c); const wrap = new THREE.Group(); wrap.add(g); gv.pivot.add(wrap); gv.gun = wrap; gv.inner = g; gv.size = Math.max(size.x, size.y, size.z) || .8;
+  // a spare magazine for the reload animation
+  if (WEAPONS[key].reload) { const long = WEAPONS[key].model !== 'pistol'; gv.mag = new THREE.Mesh(new THREE.BoxGeometry(long ? .045 : .04, long ? .16 : .11, long ? .07 : .045), new THREE.MeshLambertMaterial({ color: 0x23272d })); gv.magHome = new THREE.Vector3(0, long ? -.13 : -.12, long ? (g.userData.muzzleZ || -.6) * .33 : -.01).sub(c); gv.mag.visible = false; wrap.add(gv.mag); } else gv.mag = null;
+  const S = gv.skin && SKINS[gv.skin], T = S && TIERS[S.tier];
+  $('gvName').textContent = S ? S.name : WEAPONS[key].name; $('gvSub').textContent = (T ? T.name + ' edition' : 'Standard') + ' · ' + WEAPONS[key].cat; $('gvSub').style.color = T ? T.color : '';
+}
+function gvFire() {
+  if (!gv.gun) return; const w = WEAPONS[gv.key], att = attOf({ isPlayer: true }, gv.key), mz = (gv.inner.userData.muzzleZ || -.6);
+  const tip = new THREE.Vector3(0, .02, mz - .02).applyMatrix4(gv.inner.matrixWorld), dir = new THREE.Vector3(0, 0, -1).transformDirection(gv.inner.matrixWorld);
+  const S = gv.skin && SKINS[gv.skin], lv = gv.skin ? skinLv(gv.skin) : 0, tc = S && S.line.tracer != null && lv >= 2 ? S.line.tracer : 0xfff2b0, fc = S && S.line.flash != null && lv >= 2 ? S.line.flash : 0xffcf6a;
+  if (att !== 'supp') { const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: fc, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); f.position.copy(tip); f.scale.setScalar(.35); gv.sc.add(f); gv.fx.push({ o: f, t: .06 }); }
+  const tr = new THREE.Line(new THREE.BufferGeometry().setFromPoints([tip, tip.clone().addScaledVector(dir, 6)]), new THREE.LineBasicMaterial({ color: tc, transparent: true, opacity: .9 })); gv.sc.add(tr); gv.fx.push({ o: tr, t: .12 });
+  gv.kick = 1; SND.shot(w.model, undefined, undefined, att === 'supp' ? .3 : 1);
+}
+function gvTick(dt, t) {
+  const r = gv.r, cv = $('gvCv'), W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
+  if (cv.width !== Math.round(W * r.getPixelRatio()) || cv.height !== Math.round(H * r.getPixelRatio())) { r.setSize(W, H, false); gv.cam.aspect = W / H; gv.cam.updateProjectionMatrix(); }
+  const A = gv.anim, sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); }; let ry = gv.ry, rx = gv.rx, rz = 0, py = 0;
+  if (A) {
+    A.t += dt;
+    if (A.kind === 'intro') { ry += (1 - sm(A.t / .9)) * 1.6; if (A.t > .9) gv.anim = null; }
+    else if (A.kind === 'inspect') { ry += sm(A.t / 2.4) * Math.PI * 2; rz = Math.sin(sm(A.t / 2.4) * Math.PI) * .5; if (A.t > 2.4) gv.anim = null; }
+    else if (A.kind === 'reload') {
+      const f = A.t / 1.6; rz = Math.sin(sm(f) * Math.PI) * .45; py = -Math.sin(sm(f) * Math.PI) * .03;
+      if (gv.mag) { let y = 0; if (f < .15) y = 0; else if (f < .4) y = -.35 * sm((f - .15) / .25); else if (f < .55) y = -.4; else if (f < .85) y = -.32 + .32 * sm((f - .55) / .3); gv.mag.visible = f > .12 && f < .9; gv.mag.position.copy(gv.magHome); gv.mag.position.y += y; }
+      if (f >= 1) { gv.anim = null; if (gv.mag) gv.mag.visible = false; }
+    }
+  }
+  gv.kick = Math.max(0, (gv.kick || 0) - dt * 8);
+  gv.pivot.rotation.set(rx, ry, rz); gv.pivot.position.y = py; gv.inner.position.z = (gv.inner.position.z) ; gv.gun.position.z = gv.kick * .05;
+  const d = gv.size * 1.65 * gv.zoom; gv.cam.position.set(0, d * .12, d); gv.cam.lookAt(0, 0, 0);
+  for (let i = gv.fx.length - 1; i >= 0; i--) { const f = gv.fx[i]; f.t -= dt; if (f.t <= 0) { gv.sc.remove(f.o); gv.fx.splice(i, 1); } }
+  r.render(gv.sc, gv.cam);
 }
 /* --- Skin Workshop: paint your own skin for any weapon --- */
 const WS_PATTERNS = [['solid', 'Solid'], ['stripes', 'Stripes'], ['camo', 'Camo'], ['marble', 'Marble'], ['hex', 'Hex'], ['circuit', 'Circuit'], ['flame', 'Flame'], ['grad', 'Gradient'], ['stars', 'Galaxy'], ['tiger', 'Tiger'], ['dots', 'Dots'], ['carbon', 'Carbon'], ['zigzag', 'Zigzag'], ['splat', 'Paint splat']];
@@ -10382,12 +10467,13 @@ function renderCollection() {
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
   const wheelIds = wheelSprays();
   const sprayHTML = `<div class="collCat">SPRAYS · tap ${keyName(settings.binds.spray)} in a match to spray · hold it for the spray wheel (◎ = on the wheel, up to 8)</div><div class="sprayGrid"><div class="sprayCard add" id="collNewSpray"><b>+</b>CREATE SPRAY</div>${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !/^(ag|am)_/.test(id)).sort((a, b) => !!SPRAYS[b].custom - !!SPRAYS[a].custom).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}${SPRAYS[id].custom ? `<button class="scEd" data-sedit="${id}" title="Edit">✎</button>` : ''}${own ? `<button class="scWh${wheelIds.includes(id) ? ' on' : ''}" data-swheel="${id}" title="Show on the spray wheel">◎</button>` : ''}</div>`; }).join('')}</div>`;
-  $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
+  $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><button class="gv3d" data-gv="${k}" title="Look at it in 3D">🔍 3D</button><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     ${(() => { const lv = masteryLevel(k), n = masteryKills(k), nx = MASTERY[lv + 1]; return `<div class="mast"><span class="ml">MASTERY ${lv + 1} · ${MASTERY[lv][1]}</span><div class="b"><div style="width:${nx ? Math.min(100, (n - MASTERY[lv][0]) / (nx[0] - MASTERY[lv][0]) * 100) : 100}%"></div></div><span class="ol">${n} kills${nx ? ' · next: ' + nx[2] + ' at ' + nx[0] : ' · MAX'}</span></div>`; })()}
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
     ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}
     ${canAttach(k) ? `<div class="attRow"><span class="ol">ATTACHMENT</span>${Object.entries(ATTACH).map(([a, A]) => `<button class="attB${attOf(player || { isPlayer: true }, k) === a ? ' on' : ''}" data-att="${a}" data-k="${k}" title="${A.name}: ${A.desc}">${A.icon}</button>`).join('')}</div><div class="attTxt">${(() => { const A = ATTACH[attOf({ isPlayer: true }, k)]; return A.name === 'None' ? '' : `<b>${A.name}</b> · ${A.desc}`; })()}</div>` : ''}</div>`; }).join('')}</div>`).join('');
+  $('collBox').querySelectorAll('[data-gv]').forEach(b => b.onclick = e => { e.stopPropagation(); tick(); openGunViewer(b.dataset.gv); });
   $('collBox').querySelectorAll('.attB').forEach(b => b.onclick = e => { e.stopPropagation(); tick(); profile.attach = profile.attach || {}; if (b.dataset.att === 'none') delete profile.attach[b.dataset.k]; else profile.attach[b.dataset.k] = b.dataset.att; saveProfile(); renderCollection(); });
   $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
   $('collNewSpray').onclick = () => openSprayStudio();
