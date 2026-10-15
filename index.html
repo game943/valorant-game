@@ -1556,7 +1556,7 @@ AGENTS.push(
           X: { name: 'Dimensional Drift', ult: 7, type: 'drift', desc: 'Step into another dimension for 10s: enemies cannot see or hurt you and you move 60% faster, but you cannot shoot. Press X again to come back early.' } } },
   { id: 'kayo', name: 'KAY/O', role: 'Initiator', color: '#8fb2cf', glyph: 'KO', desc: 'A war machine built to suppress enemy abilities.',
     ab: { C: { name: 'FRAG/ment', cost: 200, max: 1, free: 0, type: 'molly', zkind: 'frag', zr: 3.6, zt: 3, dps: 40, color: 0xb8d6f0, desc: 'A grenade that sticks to the floor and pulses heavy damage.' },
-          Q: { name: 'FLASH/drive', cost: 250, max: 2, free: 0, type: 'flash', life: .8, desc: 'A flash grenade that pops after a short time.' },
+          Q: { name: 'FLASH/drive', cost: 250, max: 2, free: 0, type: 'flash', life: .8, model: 'kflash', desc: 'A flash grenade that pops after a short time.' },
           E: { name: 'ZERO/point', cost: 0, max: 1, free: 1, type: 'zeropoint', desc: 'Throw a knife that sticks to a surface and, after 1s, SUPPRESSES and reveals nearby enemies: they cannot use abilities for 8s.' },
           X: { name: 'NULL/cmd', ult: 8, type: 'nullcmd', desc: 'Overload with energy for 12s: pulses that suppress every enemy within 25 m, and you fire faster.' } } },
   { id: 'fade', name: 'Fade', role: 'Initiator', color: '#6c5a86', glyph: 'FD', desc: 'A bounty hunter who uses nightmares to seize and hunt her prey.',
@@ -3473,7 +3473,7 @@ function killEntity(t, src, label, head) {
     src.ult = Math.min(AGENT[src.agent].ab.X.ult, src.ult + 1);
     if (kit(src, 'reyna')) { src.soulT = 4; if (src.empressT > 0) src.empressT = 30; }
     if (kit(src, 'clove')) src.soulT = 4;
-    if (src.dtapT > 0) { src.isoSh = 1; src.isoShT = 12; toastTo(src, 'Double Tap — shield up!'); fx('parts', src.x, src.y + 1, src.z, 25, 0x8a5cff, 2, .5); }
+    if (src.dtapT > 0) { src.isoSh = 1; src.isoShT = 12; fx('isoShield', src.id, 12); toastTo(src, 'Double Tap — shield up!'); fx('parts', src.x, src.y + 1, src.z, 25, 0x8a5cff, 2, .5); }
     if (kit(src, 'neon')) { src.energy = Math.min(100, (src.energy ?? 100) + 50); if (src.odT > 0) src.odT = 20; }
     { const dk = keyOfType(src, 'dash'); if (dk && !RANGE()) { src.twKills = (src.twKills || 0) + 1; if (src.twKills >= 2) { src.twKills = 0; if (src.charges[dk] < 1 && !(src.tailwindT > 0)) { src.charges[dk] = 1; toastTo(src, 'Tailwind recharged (2 kills)'); } } } }
     if (src.bladeMag > 0) src.bladeMag = 5;
@@ -3722,6 +3722,39 @@ const AB = {
 };
 // 3D models for thrown / flying abilities. Each faces +z (its flight direction) and may animate.
 const PROJ_MODELS = {
+  orb(c) { // glowing ability orb: Sage's Slow Orb, Harbor's Cove, Waylay's Saturate
+    const g = new THREE.Group(), core = new THREE.Mesh(new THREE.SphereGeometry(.1, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffffff })); g.add(core);
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(.17, 16, 12), new THREE.MeshLambertMaterial({ color: c, emissive: new THREE.Color(c).multiplyScalar(.5), transparent: true, opacity: .6 })); g.add(shell);
+    const r1 = new THREE.Mesh(new THREE.TorusGeometry(.24, .012, 6, 28), new THREE.MeshBasicMaterial({ color: c })), r2 = r1.clone(); r2.rotation.x = Math.PI / 2; g.add(r1, r2, AB.glow(c, .8));
+    return { g, anim(t) { r1.rotation.y = t * 4; r2.rotation.z = t * 3; shell.scale.setScalar(1 + Math.sin(t * 12) * .06); } };
+  },
+  fragment(c) { // KAY/O's FRAG/ment: a heavy machine-grenade with a blue core and studs
+    const g = new THREE.Group(), sp = new THREE.Group(); g.add(sp); const dk = gm(0x2a2f38), lt = gm(0xc8d0da);
+    sp.add(AB.rbox(.2, .2, .2, .05, dk)); for (const [x, y, z] of [[.12, 0, 0], [-.12, 0, 0], [0, .12, 0], [0, -.12, 0], [0, 0, .12], [0, 0, -.12]]) { const k = AB.rbox(.07, .07, .07, .02, lt); k.position.set(x, y, z); sp.add(k); }
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 8), new THREE.MeshBasicMaterial({ color: 0x6fd6ff })); eye.position.z = .1; sp.add(eye); g.add(AB.glow(0x6fd6ff, .5));
+    return { g, anim(t) { sp.rotation.set(t * 5, t * 3, 0); } };
+  },
+  kflash(c) { // KAY/O's FLASH/drive: a sleek white flash grenade with a pulsing light
+    const g = new THREE.Group(), body = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .2, 12), gm(0xe8ecf0)); body.rotation.x = Math.PI / 2; g.add(body);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(.072, .012, 6, 16), new THREE.MeshBasicMaterial({ color: 0x6fd6ff })); g.add(band); const gl = AB.glow(0xffffff, .6); g.add(gl);
+    return { g, anim(t) { g.rotation.x = t * 10; gl.material.opacity = .5 + Math.sin(t * 25) * .4; } };
+  },
+  mosh(c) { // Gekko's Mosh: a round green critter that wobbles in flight
+    const g = new THREE.Group(), m = AB.lit(0x9be83a), body = new THREE.Mesh(new THREE.SphereGeometry(.16, 14, 10), m); body.scale.set(1, .8, 1.1); g.add(body);
+    for (const sx of [-.06, .06]) { const e = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); e.position.set(sx, .07, .12); g.add(e); const pu = new THREE.Mesh(new THREE.SphereGeometry(.018, 6, 4), new THREE.MeshBasicMaterial({ color: 0x111111 })); pu.position.set(sx, .07, .15); g.add(pu); }
+    const mouth = new THREE.Mesh(new THREE.TorusGeometry(.05, .012, 6, 12, Math.PI), new THREE.MeshBasicMaterial({ color: 0x2a4a10 })); mouth.position.set(0, -.02, .15); mouth.rotation.z = Math.PI; g.add(mouth);
+    return { g, anim(t) { body.scale.set(1 + Math.sin(t * 14) * .08, .8 - Math.sin(t * 14) * .06, 1.1); g.rotation.y = Math.sin(t * 6) * .4; } };
+  },
+  nanopulse(c) { // Deadlock's Annihilation pulse: spinning rings of nanowire
+    const g = new THREE.Group(); for (let i = 0; i < 3; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(.22 + i * .08, .015, 6, 28), new THREE.MeshBasicMaterial({ color: i ? 0x8fd2ff : 0xffffff })); r.rotation.y = i * 1.05; g.add(r); }
+    g.add(AB.glow(0x6ad0ff, 1.2)); return { g, anim(t) { g.children.forEach((r, i) => { if (r.isMesh) { r.rotation.x = t * (4 + i); r.rotation.z = t * (2 + i); } }); } };
+  },
+  tdrone(c) { // Tejo's Stealth Drone: a flat quad-rotor drone with a red eye
+    const g = new THREE.Group(), dk = gm(0x2c2c2a), gd = AB.lit(0xe0b050); g.add(AB.rbox(.28, .06, .2, .03, dk)); const top = AB.rbox(.16, .04, .12, .02, gd); top.position.y = .045; g.add(top);
+    const props = []; for (const [x, z] of [[-.2, -.15], [.2, -.15], [-.2, .15], [.2, .15]]) { const arm = new THREE.Mesh(new THREE.BoxGeometry(.18, .015, .02), dk); arm.position.set(x / 2, 0, z / 2); arm.rotation.y = Math.atan2(z, x); g.add(arm); const pr = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .006, 14), new THREE.MeshBasicMaterial({ color: 0xcfcfcf, transparent: true, opacity: .45 })); pr.position.set(x, .03, z); g.add(pr); props.push(pr); }
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3030 })); eye.position.set(0, 0, -.11); g.add(eye);
+    return { g, anim(t) { props.forEach(p => p.rotation.y = t * 40); g.position.y = Math.sin(t * 4) * .03; } };
+  },
   satchel(c) { // Raze's Blast Pack
     const g = new THREE.Group(), or = AB.lit(0xf08a2a), dk = gm(0x2b2b30), bl = AB.lit(0x3fa7d6), mt = gm(GC.mt);
     g.add(AB.rbox(.3, .22, .18, .05, or));
@@ -4207,13 +4240,13 @@ function damageWall(w, dmg) {
 const ABIL = {
   aftershock(e) { // fixed to the wall in front; bursts on the other side
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, p = aimPoint(e, 10), d = Math.hypot(p.x - e.x, p.z - e.z);
-    const bx = d < 9.4 ? p.x + dx * 2.6 : p.x, bz = d < 9.4 ? p.z + dz * 2.6 : p.z; fx('parts', p.x, p.y, p.z, 20, 0xd9772b, 1.5, .8);
+    const bx = d < 9.4 ? p.x + dx * 2.6 : p.x, bz = d < 9.4 ? p.z + dz * 2.6 : p.z; fx('charge', p.x, p.y, p.z, 2.2, 0xff8a2a, dx, dz);
     for (const t of [1, 1.6, 2.2]) timedFx.push({ t, update() { }, end() { fx('boom', bx, .8, bz, 0xd9772b); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - bx, o.z - bz) < 3.6) applyDamage(o, 60, e, 'Aftershock'); } });
     return true;
   },
   flashpt(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, p = aimPoint(e, 10), d = Math.hypot(p.x - e.x, p.z - e.z), k = d < 9.4 ? 2 : 0, x = p.x + f.x / l * k, z = p.z + f.z / l * k;
-    fx('parts', p.x, p.y, p.z, 15, 0xffe0a0, 1.5, .6); timedFx.push({ t: .6, update() { }, end() { popFlash(x, 1.7, z, e, 1.8, 'flash'); } }); return true;
+    fx('charge', p.x, p.y, p.z, .6, 0xfff2c0, f.x / l, f.z / l); timedFx.push({ t: .6, update() { }, end() { popFlash(x, 1.7, z, e, 1.8, 'flash'); } }); return true;
   },
   faultline(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z;
@@ -4228,13 +4261,13 @@ const ABIL = {
     return true;
   },
   gwell(e, ab, target) {
-    const p = target || aimPoint(e, 40); fx('parts', p.x, 1, p.z, 30, 0xa259ff, 2, .8); let k = 0, arm = .8;
+    const p = target || aimPoint(e, 40); fx('astraStar', p.x, p.z, 'well', 3); let k = 0, arm = .8;
     timedFx.push({ t: 3, update(dt) {
       if ((arm -= dt) > 0) return; if ((k += dt) > .3) { k = 0; fx('pulse', p.x, 1, p.z, 5.5); }
       for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const vx = p.x - o.x, vz = p.z - o.z, d = Math.hypot(vx, vz); if (d > 6 || d < .4) continue; o.slowT = Math.max(o.slowT, .4); const nx = o.x + vx / d * 3.2 * dt, nz = o.z + vz / d * 3.2 * dt; if (!blockedAt(o, nx, o.z)) o.x = nx; if (!blockedAt(o, o.x, nz)) o.z = nz; }
     }, end() { fx('parts', p.x, 1, p.z, 50, 0xd6b8ff, 6, .6); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 6) { o.vulnT = Math.max(o.vulnT || 0, 4); toastTo(o, 'VULNERABLE — Gravity Well!'); } } }); return true;
   },
-  nova(e, ab, target) { const p = target || aimPoint(e, 40); fx('parts', p.x, 1, p.z, 25, 0xa259ff, 2, .6); timedFx.push({ t: 1.1, update() { }, end() { concussArea(e, p.x, p.z, 4.8, 3.5, 'Nova Pulse', true); } }); return true; },
+  nova(e, ab, target) { const p = target || aimPoint(e, 40); fx('astraStar', p.x, p.z, 'nova', 1.2); timedFx.push({ t: 1.1, update() { }, end() { concussArea(e, p.x, p.z, 4.8, 3.5, 'Nova Pulse', true); } }); return true; },
   divide(e, ab, target) {
     let vx, vz; if (target) { vx = target.x - e.x; vz = target.z - e.z; } else { const f = fwd(e); vx = f.x; vz = f.z; } const l = Math.hypot(vx, vz) || 1; vx /= l; vz /= l; const dx = -vz, dz = vx; // the wall runs ACROSS the line of sight
     const cx = target ? target.x : e.x + vx * 12, cz = target ? target.z : e.z + vz * 12;
@@ -4244,7 +4277,7 @@ const ABIL = {
   },
   cascade(e) { waterLine(e, 1.5, 14, 5, 8, false); return true; },
   tide(e) { waterLine(e, 2, 40, 12, 13, true); return true; },
-  cove(e) { const p = spawnProj(Object.assign(throwFrom(e, 15, 3), { color: 0x2ab8c8, owner: e, size: .25 })); p.onLand = () => { makeSmoke(p.x, p.z, 3.6, 12, 0x2a98b8, e); fx('parts', p.x, 1, p.z, 40, 0x7fe8ff, 4, .6); }; return true; },
+  cove(e) { const p = spawnProj(Object.assign(throwFrom(e, 15, 3), { color: 0x2ab8c8, owner: e, size: .25, model: 'orb' })); p.onLand = () => { makeSmoke(p.x, p.z, 3.6, 12, 0x2a98b8, e); fx('parts', p.x, 1, p.z, 40, 0x7fe8ff, 4, .6); }; return true; },
   reckoning(e) { // Harbor: a huge wave rolls forward; everyone it hits is slowed for 5s
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z, L = 30, hit = new Set(); let d = 0;
     fx('wave', x, z, dx, dz, L);
@@ -4262,11 +4295,11 @@ const ABIL = {
   },
   sensor(e) { const f = fwd(e), p = aimPoint(e, 12); makeZone({ x: p.x - f.x * .5, z: p.z - f.z * .5, r: .45, kind: 'sensor', t: 999, owner: e }); return true; },
   annihil(e) {
-    const f = fwd(e), sx = e.x, sz = e.z, p = spawnProj({ x: e.x + f.x * .8, y: eyeY(e) - .2, z: e.z + f.z * .8, vx: f.x * 22, vy: 0, vz: f.z * 22, g: 0, life: 2.2, color: 0xc9d3dc, owner: e, land: false, bounce: 0, size: .35 });
+    const f = fwd(e), sx = e.x, sz = e.z, p = spawnProj({ x: e.x + f.x * .8, y: eyeY(e) - .2, z: e.z + f.z * .8, vx: f.x * 22, vy: 0, vz: f.z * 22, g: 0, life: 2.2, color: 0xc9d3dc, owner: e, land: false, bounce: 0, size: .35, model: 'nanopulse' });
     p.onUpdate = () => { for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 1.6) { p.life = 0; cocoon(e, o, sx, sz); return; } };
     return true;
   },
-  undercut(e) { const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l; lineFx(e.x, e.z, dx, dz, 28, 0x8a5cff, 1.2); lineHit(e, e.x, e.z, dx, dz, 28, 1.5, o => { o.vulnT = Math.max(o.vulnT || 0, 4); toastTo(o, 'VULNERABLE — Undercut!'); }); return true; },
+  undercut(e) { const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l; fx('beam', e.x, 1.3, e.z, dx, dz, 28, 0x8a5cff); lineHit(e, e.x, e.z, dx, dz, 28, 1.5, o => { o.vulnT = Math.max(o.vulnT || 0, 4); toastTo(o, 'VULNERABLE — Undercut!'); }); return true; },
   dtap(e) { e.dtapT = 12; fx('parts', e.x, e.y + 1, e.z, 30, 0x8a5cff, 2, .6); toastTo(e, 'Double Tap — get a kill to earn a shield'); return true; },
   contract(e) {
     const f = fwd(e); let best = null, bs = -1e9;
@@ -4307,9 +4340,9 @@ const ABIL = {
     return true;
   },
 
-  saturate(e) { const p = spawnProj(Object.assign(throwFrom(e, 18, 2), { color: 0xff7ab0, owner: e, size: .2 })); p.onLand = () => { fx('parts', p.x, p.y + .5, p.z, 40, 0xff7ab0, 4, .6); fx('pulse', p.x, p.y + 1, p.z, 4.5); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 4.5) { o.slowT = Math.max(o.slowT, 4); o.nearT = Math.max(o.nearT, 1.2); toastTo(o, 'Hindered by Saturate!'); } }; return true; },
+  saturate(e) { const p = spawnProj(Object.assign(throwFrom(e, 18, 2), { color: 0xff7ab0, owner: e, size: .2, model: 'orb' })); p.onLand = () => { fx('parts', p.x, p.y + .5, p.z, 40, 0xff7ab0, 4, .6); fx('pulse', p.x, p.y + 1, p.z, 4.5); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 4.5) { o.slowT = Math.max(o.slowT, 4); o.nearT = Math.max(o.nearT, 1.2); toastTo(o, 'Hindered by Saturate!'); } }; return true; },
   lightspeed(e) { doDash(e); timedFx.push({ t: .32, update() { }, end() { if (e.alive) doDash(e); } }); return true; },
-  refract(e) { e.refract = { x: e.x, z: e.z, t: 8 }; fx('parts', e.x, e.y + .3, e.z, 25, 0xff7ab0, 2, .8); toastTo(e, 'Beacon left — press E again to snap back'); return true; },
+  refract(e) { e.refract = { x: e.x, z: e.z, t: 8 }; fx('beacon', e.id, e.x, e.y, e.z, 8); fx('parts', e.x, e.y + .3, e.z, 25, 0xff7ab0, 2, .8); toastTo(e, 'Beacon left — press E again to snap back'); return true; },
   converge(e) { // Waylay: ready the ult, click where to fire: a lance of light that slows everything it hits for 5s
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z; fx('parts', e.x, e.y + 1.2, e.z, 40, 0xff7ab0, 2, .6);
     timedFx.push({ t: .45, update() { }, end() { fx('beam', x, 1.05, z, dx, dz, 40, 0xff7ab0);
@@ -4369,7 +4402,7 @@ const ABIL = {
       e.launchT = .7; sndTone(95, .18, .55, 'square', 40, e.x, e.z); sndNoise(.2, 900, 1, .35, e.x, e.z);
       const f = fwd(e); spawnParticles(o.x + f.x * .4, o.y + f.y * .4, o.z + f.z * .4, 8, 0x9a948a, 1.2, .5);
     }
-    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isLaunch ? 'incShell' : 'canister' }, isBrim ? { stick: true, bounces: 1, bounceH: .55, life: 4 } : {})); // Brim's shell skips once, then bursts
+    const p = spawnProj(Object.assign(o, { life: 3, color: ab.color || 0xff7a22, owner: e, model: isLaunch ? 'incShell' : ({ phoenix: 'fireball', gekko: 'mosh', kayo: 'fragment' })[abOwner(e, ab)] || 'canister' }, isBrim ? { stick: true, bounces: 1, bounceH: .55, life: 4 } : {})); // Brim's shell skips once, then bursts
     p.onLand = () => makeZone({ x: p.x, z: p.z, r: ab.zr || (isPhx ? 3.2 : 4.2), kind: ab.zkind || 'fire', t: ab.zt || (isPhx ? 4 : 7), dps: ab.dps || 60, owner: e, heal: isPhx, label: ab.name }); return true;
   },
   rib(e) {
@@ -4378,7 +4411,7 @@ const ABIL = {
     m.position.set(e.x, e.y + .6, e.z); m.rotation.x = Math.PI; scene.add(m); e.ribMesh = m; return true;
   },
   wall(e, ab, target) { const ok = sageWall(e, target), w = dynWalls[dynWalls.length - 1], tint = { deadlock: [0x7cc8ff, 0x1a4a8a], iso: [0xb48cff, 0x3a1a8a], vyse: [0xaeb8c6, 0x2a303a] }[abOwner(e, ab)]; if (ok && w && w.mesh && tint) { w.mesh.material.color.setHex(tint[0]); w.mesh.material.emissive.setHex(tint[1]); } return ok; },
-  slow(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
+  slow(e, ab) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e, model: 'orb' })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
   heal(e, ab, target) {
     if (target && target.id >= 0) { const a = entities[target.id]; if (a && a.alive && a !== e && !isEnemy(a, e) && Math.hypot(a.x - e.x, a.z - e.z) < 20) { if (a.hp >= 100) { toastTo(e, `${a.name} is already at full health`); return false; } a.healT = 4; a.healRate = 15; a.healCap = 100; fx('parts', a.x, a.y + 1, a.z, 20, 0x5fe6c8, 2, .7); toastTo(a, `${e.name} is healing you`); toastTo(e, `Healing ${a.name}`); return true; } }
     if (e.hp >= 100) { toastTo(e, 'Health is already full — nothing to heal'); if (e.isPlayer) SND.deny(); return false; } e.healT = 4; e.healRate = 15; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
@@ -4397,7 +4430,7 @@ const ABIL = {
     return true;
   },
   drone(e) {
-    const p = spawnProj(Object.assign(throwFrom(e, 9), { g: 0, life: 5, color: 0x5b86ff, owner: e, size: .2, bounce: 1, land: false, model: 'owl' }));
+    const p = spawnProj(Object.assign(throwFrom(e, 9), { g: 0, life: 5, color: 0x5b86ff, owner: e, size: .2, bounce: 1, land: false, model: kit(e, 'tejo') ? 'tdrone' : 'owl' }));
     if (e === player && net.role !== 'client') { p.life = 7; startPilot(p, 'drone'); } else guide(p, e, { turn: 2.6, release: 'free' });
     p.tick = 0; p.onUpdate = dt => { p.tick -= dt; if (p.tick <= 0) { p.tick = .5; for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 13 && los(p.x, p.y, p.z, o.x, o.y + 1.2, o.z, true)) { o.revealedT = 1.2; if (o.isPlayer) $('revealWarn').classList.remove('hidden'); } } };
     return true;
@@ -7532,6 +7565,30 @@ const FX = {
       const sp = new THREE.Mesh(new THREE.ConeGeometry(rand(.05, .11), rand(.4, .9), 5), steel); sp.position.set(px, 0, pz); sp.rotation.set(rand(-.35, .35), 0, rand(-.35, .35)); sp.scale.y = .01; g.add(sp); spikes.push(sp); }
     lfxAdd(g, dur, k => { const t = k * dur, up = Math.min(1, t / .5), down = t > dur - .6 ? Math.max(.01, (dur - t) / .6) : 1; disc.material.opacity = Math.min(1, t * 3) * down; for (const sp of spikes) { sp.scale.y = Math.max(.01, up * down); sp.position.y = sp.geometry.parameters.height / 2 * sp.scale.y; } });
     sndNoise(.8, 3000, 1, .4, x, z, 'highpass');
+  },
+  charge(x, y, z, t, color, nx, nz) { // Breach: a fusion charge stuck on the wall, blinking faster until it fires
+    const g = new THREE.Group(), body = AB.rbox(.36, .36, .14, .05, gm(0x3a3a3e)); g.add(body); const core = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .06, 16), new THREE.MeshBasicMaterial({ color })); core.rotation.x = Math.PI / 2; core.position.z = .08; g.add(core);
+    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) { const fin = AB.rbox(.08, .2, .05, .015, gm(0xe8e6e0)); fin.position.set(Math.cos(a) * .2, Math.sin(a) * .2, .02); fin.rotation.z = a; g.add(fin); }
+    const gl = AB.glow(color, 1); gl.position.z = .12; g.add(gl); g.position.set(x, y, z); g.rotation.y = Math.atan2(-nx, -nz);
+    lfxAdd(g, t, (k, dt, f) => { gl.material.opacity = Math.sin(f.t * (8 + k * 30)) > 0 ? 1 : .2; core.scale.setScalar(1 + k * .4); });
+  },
+  astraStar(x, z, kind, t) { // Astra: a star bursts out of the ground (gravity well swirls in, nova pulse charges up)
+    const g = new THREE.Group(), col = kind === 'well' ? 0xc070ff : 0xff6ad8, sh = new THREE.Shape();
+    for (let i = 0; i < 10; i++) { const r = i % 2 ? .12 : .3, a = i / 10 * Math.PI * 2 + Math.PI / 2; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+    const star = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .06, bevelEnabled: false }), new THREE.MeshBasicMaterial({ color: 0xffffff })); star.position.y = 1.2; const gl = AB.glow(col, 2.4); gl.position.y = 1.2; g.add(star, gl);
+    const rings = []; for (let i = 0; i < 3; i++) { const r = new THREE.Mesh(new THREE.RingGeometry(1.5 + i * 1.6, 1.62 + i * 1.6, 48), addMat(col, .6)); r.rotation.x = -Math.PI / 2; r.position.y = .06; g.add(r); rings.push(r); }
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(kind === 'well' ? 5.5 : 4.8, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), addMat(col, .12)); g.add(dome);
+    g.position.set(x, 0, z);
+    lfxAdd(g, t, (k, dt, f) => { star.rotation.y += dt * 4; rings.forEach((r, i) => { r.rotation.z += dt * (kind === 'well' ? 2.5 : -1) * (i + 1) * .5; r.scale.setScalar(kind === 'well' ? 1 - k * .5 : .4 + k * .6); }); dome.material.opacity = .08 + Math.sin(f.t * 10) * .04 + (k > .9 ? .3 : 0); });
+  },
+  isoShield(id, t) { // Iso: the shimmering shield earned from Double Tap
+    const e = entities[id]; if (!e) return; const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 1), new THREE.MeshBasicMaterial({ color: 0xb48cff, wireframe: true, transparent: true, opacity: .6 }));
+    lfxAdd(m, t, (k, dt, f) => { m.position.set(e.x, e.y + 1, e.z); m.rotation.y += dt; m.material.opacity = .35 + Math.sin(f.t * 6) * .15; if (f.t > .2 && (!e.alive || !(e.isoSh > 0))) f.t = f.life; });
+  },
+  beacon(id, x, y, z, t) { // Waylay: a hovering prism of light marking where Refract takes her back
+    const e = entities[id], g = new THREE.Group(), pr = new THREE.Mesh(new THREE.OctahedronGeometry(.28), new THREE.MeshLambertMaterial({ color: 0xffd0e8, emissive: 0xff5aa8, transparent: true, opacity: .9 })); pr.scale.y = 1.6; g.add(pr, AB.glow(0xff7ab0, 1.6));
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.5, .6, 32), addMat(0xff7ab0, .8)); ring.rotation.x = -Math.PI / 2; ring.position.y = -1.05; g.add(ring); g.position.set(x, y + 1.1, z);
+    lfxAdd(g, t, (k, dt, f) => { pr.rotation.y += dt * 3; g.position.y = y + 1.1 + Math.sin(f.t * 3) * .08; if (f.t > .2 && e && !e.refract) f.t = f.life; });
   },
   armaPath(sx, sz, dx, dz, L) { // Tejo: the strike strip lights up red before the missiles arrive
     const g = new THREE.Group(), m = addMat(0xff3a2a, .5), len = L + 3, strip = new THREE.Mesh(new THREE.PlaneGeometry(6.4, len), m); strip.rotation.x = -Math.PI / 2; g.add(strip);
@@ -12391,7 +12448,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 95;
+const BUILD = 96;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
