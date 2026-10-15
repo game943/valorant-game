@@ -1385,7 +1385,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, adaptBots: true, voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, adaptBots: true, keepSprays: true, inkColor: '#ff4fd8', voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -1400,7 +1400,7 @@ const BIND_DEFS = [
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
   ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'], ['cmd', 'Team command wheel (hold)', 'KeyV'],
-  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'], ['talk', 'Party voice: push to talk (hold)', 'KeyU'], ['bigmap', 'Big map (draw & ping)', 'KeyM'],
+  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'], ['talk', 'Party voice: push to talk (hold)', 'KeyU'], ['bigmap', 'Big map (draw & ping)', 'KeyM'], ['draw', 'Draw on walls (hold)', 'KeyK'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -5459,7 +5459,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
 function setupMatch(agentId, humans = []) {
   game.firstKillRound = 0;
   ffVote = null; renderFF(null); game.ffUsed = {}; game.suddenDeath = false;
-  clearSprays();
+  clearSprays(); clearInk();
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
   loadMap(game.mapId);
   // clean up previous match
@@ -5507,7 +5507,7 @@ function sidesForRound(r) {
   return (r - 2 * H) % 2 === 1 ? s0 : flip(s0); // overtime: swap every round
 }
 function nextRound() {
-  game.round++; restoreBreakables(); clearSprays();
+  game.round++; restoreBreakables(); if (!settings.keepSprays) clearSprays();
   const r = game.round, H = game.half;
   const prevSide = game.side[0];
   game.side[0] = sidesForRound(r); game.side[1] = game.side[0] === 'atk' ? 'def' : 'atk';
@@ -6440,7 +6440,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint();
+    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint(); inkTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6745,6 +6745,34 @@ const sprayTex = id => SPRAYS[id] && SPRAYS[id].data ? dataTex(SPRAYS[id].data) 
 const sprayGroup = new THREE.Group(); scene.add(sprayGroup);
 const sprayOf = {}, pings = [];
 const SPRAYS_PER_PLAYER = 12; // sprays stay up until the round ends; past this many, a player's oldest one goes
+/* --- wall drawing: hold K and move your crosshair over a wall or the floor to paint; everyone sees it --- */
+const INK_MAX = 6000, inkGeo = new THREE.CircleGeometry(.05, 10), inkMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3 });
+const inkMesh = new THREE.InstancedMesh(inkGeo, inkMat, INK_MAX); inkMesh.count = 0; inkMesh.frustumCulled = false; scene.add(inkMesh);
+inkMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(INK_MAX * 3).fill(1), 3); // must exist before the first render
+let inkNext = 0, inkLast = null, inkPend = [], inkFlushT = 0; const _im = new THREE.Matrix4(), _iq = new THREE.Quaternion(), _iz = new THREE.Vector3(0, 0, 1), _in = new THREE.Vector3(), _ic = new THREE.Color();
+function inkDot(x, y, z, nx, ny, nz, col) {
+  _in.set(nx, ny, nz); _iq.setFromUnitVectors(_iz, _in); _im.compose(new THREE.Vector3(x + nx * .012, y + ny * .012, z + nz * .012), _iq, new THREE.Vector3(1, 1, 1));
+  inkMesh.setMatrixAt(inkNext, _im); inkMesh.setColorAt(inkNext, _ic.set(col)); inkNext = (inkNext + 1) % INK_MAX; inkMesh.count = Math.min(INK_MAX, inkMesh.count + 1);
+  inkMesh.instanceMatrix.needsUpdate = true; if (inkMesh.instanceColor) inkMesh.instanceColor.needsUpdate = true;
+}
+function clearInk() { inkMesh.count = 0; inkNext = 0; inkLast = null; inkPend = []; }
+function inkTick(dt) {
+  const p = player; if (!p) return;
+  const on = p.alive && kd('draw') && !shopOpen && !bigMap && game.state === 'playing';
+  if (on) {
+    const f = fwd(p), oy = eyeY(p), t = rayGrid(p.x, oy, p.z, f.x, f.y, f.z, 10);
+    if (t < 10) { const h = [p.x + f.x * t, oy + f.y * t, p.z + f.z * t, RH.nx, RH.ny, RH.nz];
+      // fill the gap since the last dot so strokes stay solid
+      if (inkLast && Math.hypot(h[0] - inkLast[0], h[1] - inkLast[1], h[2] - inkLast[2]) < 1.2 && inkLast[3] === h[3] && inkLast[4] === h[4]) { const d = Math.hypot(h[0] - inkLast[0], h[1] - inkLast[1], h[2] - inkLast[2]), n = Math.min(30, Math.floor(d / .04)); for (let k = 1; k <= n; k++) { const q = k / (n + 1); inkPend.push(...[0, 1, 2].map(j => inkLast[j] + (h[j] - inkLast[j]) * q), h[3], h[4], h[5]); } }
+      if (!inkLast || Math.hypot(h[0] - inkLast[0], h[1] - inkLast[1], h[2] - inkLast[2]) > .02) { inkPend.push(...h); inkLast = h; }
+    } else inkLast = null;
+  } else inkLast = null;
+  if ((inkFlushT -= dt) <= 0 && inkPend.length) {
+    inkFlushT = .1; const pts = inkPend.slice(0, 600).map(v => Math.round(v * 100) / 100); inkPend = inkPend.slice(600); const col = settings.inkColor || '#ff4fd8';
+    for (let i = 0; i < pts.length; i += 6) inkDot(pts[i], pts[i + 1], pts[i + 2], pts[i + 3], pts[i + 4], pts[i + 5], col);
+    if (net.role === 'client') netSend({ t: 'ink', p: pts, c: col }); else if (net.role === 'host') netBroadcast({ t: 'fx', k: 'ink', a: [pts, col] });
+  }
+}
 function clearSprays() { while (sprayGroup.children.length) { const m = sprayGroup.children[0]; sprayGroup.remove(m); m.geometry.dispose(); m.material.dispose(); } for (const k in sprayOf) delete sprayOf[k]; }
 let pingCD = 0;
 const PING_TEX = {};
@@ -7071,6 +7099,7 @@ const FX = {
     setTimeout(() => d.remove(), 3500); sndTone(ally ? 520 : 300, .25, .1, 'sine', ally ? 780 : 200);
     speakLine(VOICE[e.agent][ally ? 0 : 1], e.agent);
   },
+  ink(pts, col) { if (!Array.isArray(pts) || pts.length > 3600) return; const c = /^#[0-9a-f]{6}$/i.test(col) ? col : '#ffffff'; for (let i = 0; i + 5 < pts.length; i += 6) { const v = pts.slice(i, i + 6).map(Number); if (v.every(isFinite)) inkDot(...v, c); } },
   mdraw(team, pts, col, who) { if (!Array.isArray(pts) || pts.length < 4 || pts.length > 240) return; strokes.push({ team, pts: pts.map(Number).filter(v => isFinite(v)), col: /^#[0-9a-f]{6}$/i.test(col) ? col : '#ffd34d', t: game.time, who: who || (player ? player.name : '') }); if (strokes.length > 30) strokes.shift(); },
   ping(team, x, y, z, kind, who, text) {
     if (!player || team !== player.team || !isFinite(x) || !isFinite(z)) return;
@@ -7577,6 +7606,7 @@ function hostGameMsg(e, d) {
     case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
     case 'ffa': castFF(e, !!d.y); break;
     case 'kudo': if (m && typeof d.to === 'string' && KUDOS.some(x => x[0] === d.k)) { if (d.to === net.myId) gotKudo(m.name, d.k); else netTo(d.to, { t: 'kudo', from: m.name, k: d.k }); } break;
+    case 'ink': if (Array.isArray(d.p) && d.p.length <= 3600) { FX.ink(d.p, String(d.c || '')); netBroadcast({ t: 'fx', k: 'ink', a: [d.p, String(d.c || '')] }, e.remote); } break;
     case 'mdraw': if (Array.isArray(d.p)) fx('mdraw', e.team, d.p.slice(0, 240), String(d.c || ''), e.name); break;
     case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) { fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); botsFollowPing(e, +d.a[1], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc'); } break;
     case 'spray': if (e.alive && Array.isArray(d.a) && (d.a.length === 9 || d.a.length === 10)) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]).slice(0, 24), +d.a[8] || 0, ...(validSprayData(d.a[9]) ? [d.a[9]] : [])); break;
@@ -7718,6 +7748,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
+  clearSprays(); clearInk();
   matchStats = newMatchStats(); $('gameChat').innerHTML = '';
   if (d.mrec && typeof d.mrec === 'object' && /^cm[a-z0-9]+$/.test(String(d.map)) && typeof d.mrec.g === 'string') { try { registerCustomMap({ id: d.map, n: String(d.mrec.n || 'Custom').slice(0, 18), th: String(d.mrec.th || 'dustwall'), g: d.mrec.g.slice(0, 20000), sp: typeof d.mrec.sp === 'string' ? d.mrec.sp.slice(0, 20000) : '' }); } catch (e) { } }
   game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
@@ -7815,7 +7846,7 @@ function applySnap(s) {
   const newRound = rd !== game.round;
   Object.assign(game, { phase: ph, phaseT: pt, score: [s0, s1], round: rd, ot: !!ot });
   game.side = [side0, side0 === 'atk' ? 'def' : 'atk'];
-  if (newRound) { restoreBreakables(); clearSprays();
+  if (newRound) { restoreBreakables(); if (!settings.keepSprays) clearSprays();
     $('killIcons').innerHTML = ''; $('revealWarn').classList.add('hidden');
     setSideTag();
     player.shotIdx = 0; player.recoil = 0; player.reloadT = 0;
@@ -9615,6 +9646,8 @@ const SET_PAGES = {
     ['intro', 'Map fly-over at the start of a match', 'toggle'],
     ['banter', 'Agent banter in the buy phase', 'toggle'],
     ['lineups', 'Show saved ability lineups in matches', 'toggle'],
+    ['keepSprays', 'Sprays stay for the whole match (off: cleared every round)', 'toggle'],
+    ['inkColor', 'Wall drawing colour (hold K)', 'color'],
     ['ceremony', 'Victory ceremony after a win', 'toggle'],
     ['adaptBots', 'Enemy bots learn your habits (sites, spots)', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
