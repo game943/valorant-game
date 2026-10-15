@@ -754,6 +754,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #clutchWin{position:fixed;top:28%;left:50%;transform:translateX(-50%);z-index:41;text-align:center;pointer-events:none}#clutchWin.show{animation:cwIn 2.8s ease-out both}
 #clutchWin b{display:block;font:700 clamp(54px,9vw,120px) Oswald,sans-serif;letter-spacing:.2em;color:#ffd34d;text-shadow:0 0 30px rgba(255,211,77,.7),0 6px 20px rgba(0,0,0,.6)}#clutchWin span{font:600 16px Oswald,sans-serif;letter-spacing:3px;color:#fff}
 @keyframes cwIn{0%{opacity:0;transform:translateX(-50%) scale(1.6)}12%{opacity:1;transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
+.eco{margin:6px 0 10px;border-left:3px solid var(--ec);background:rgba(255,255,255,.04);padding:7px 10px}
+.ecoHead{display:flex;align-items:center;gap:10px}.ecoHead b{font:700 15px Oswald,sans-serif;letter-spacing:2px;color:var(--ec);white-space:nowrap}.ecoHead span{flex:1;font-size:12px;color:#c9d0d6}
+.ecoHead .btn{margin:0;white-space:nowrap}.ecoTeam{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.ecoMate{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.25);padding:2px 8px;font-size:11px}.ecoMate.me{outline:1px solid var(--teal)}.ecoMate i{font-style:normal;color:#ffd34d}.ecoMate em{font-style:normal;color:#9aa6b2}
+.ecoAvg{margin-left:auto;font-size:11px;color:#9aa6b2}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -5753,10 +5758,46 @@ const SHOP_COLS = [
 function canShop() { return game.state === 'playing' && (game.phase === 'buy' || RANGE() || DM()) && !RUSH() && player.alive; }
 function openShop() { if (!canShop()) return; shopOpen = true; renderShop(); $('shop').classList.remove('hidden'); document.exitPointerLock && document.exitPointerLock(); }
 function closeShop() { shopOpen = false; $('shop').classList.add('hidden'); if (game.state === 'playing' && !game.paused) lockPointer(); }
+/* --- economy advice: team money at a glance, what to buy this round, and a one-click buy --- */
+function econAdvice() {
+  const p = player, mates = entities.filter(e => e.team === p.team && !e.spectator && (e.isPlayer || e.alive || game.phase === 'buy'));
+  const known = net.role !== 'client' ? mates : [p], avg = known.reduce((a, e) => a + e.credits, 0) / Math.max(1, known.length), min = Math.min(...known.map(e => e.credits));
+  const pistol = game.round === 1 || game.round === game.half + 1, streak = game.lossStreak ? game.lossStreak[p.team] : 0;
+  const lossNext = [1900, 1900, 2400, 2900][Math.min(3, streak + 1)], lastWon = game.history.length && game.history[game.history.length - 1] === p.team;
+  let kind, title, tip;
+  if (pistol) { kind = 'pistol'; title = 'PISTOL ROUND'; tip = 'Ghost or Sheriff, or light shields + your abilities. Everyone has 800.'; }
+  else if (game.round === 2 && lastWon || game.round === game.half + 2 && lastWon) { kind = 'bonus'; title = 'BONUS ROUND'; tip = 'You won the pistol round: keep your guns, add an SMG or Bulldog and light shields.'; }
+  else if (avg >= 3900) { kind = 'full'; title = 'FULL BUY'; tip = 'Rifle + heavy shields + full abilities. Rich teammates can drop guns to poor ones.'; }
+  else if (avg + lossNext >= 3900 + 400) { kind = 'save'; title = 'SAVE ROUND'; tip = `Buy little or nothing. Even if you lose you get ${lossNext} next round — enough for a full buy together.`; }
+  else if (avg >= 2000) { kind = 'half'; title = 'HALF BUY'; tip = 'Spectre or Marshal + light shields. Play together and close range.'; }
+  else { kind = 'force'; title = 'FORCE BUY'; tip = 'Saving won\'t get you a full buy next round anyway: buy what you can (Sheriff/Spectre) and fight.'; }
+  const rich = known.filter(e => !e.isPlayer && e.credits >= 5000), poor = known.filter(e => e.credits < 2900 && e !== p);
+  if (kind === 'full' && p.credits >= 5800 && poor.length) tip += ` You can afford a rifle for ${poor[0].name}.`;
+  return { kind, title, tip, avg, min, known, mates, rich };
+}
+function econHTML() {
+  if (!player || DM() || RANGE() || RUSH() || DUEL()) return '';
+  if (game.ecoKey !== game.round + ':' + player.team) { game.ecoKey = game.round + ':' + player.team; game.eco = econAdvice(); } // advice from the money you started the round with
+  const A = { ...game.eco, mates: econAdvice().mates }, col = { full: 'var(--teal)', save: '#ffd34d', half: '#4fa3ff', force: '#ff8a3d', pistol: '#c9d0d6', bonus: '#b07aff' }[A.kind];
+  const rows = A.mates.map(e => { const w = e.primary ? WEAPONS[e.primary.key].name : e.secondary ? WEAPONS[e.secondary.key].name : '—', c = net.role === 'client' && !e.isPlayer ? '?' : e.credits;
+    return `<span class="ecoMate${e.isPlayer ? ' me' : ''}"><b style="color:${AGENT[e.agent].color}">${esc(e.isPlayer ? 'You' : e.name)}</b><i>¤ ${c}</i><em>${w}</em></span>`; }).join('');
+  return `<div class="eco" style="--ec:${col}"><div class="ecoHead"><b>${A.title}</b><span>${A.tip}</span><button class="btn small" id="ecoAuto" data-kind="${A.kind}">⚡ Buy for me</button></div><div class="ecoTeam">${rows}<span class="ecoAvg">team avg ¤ ${Math.round(A.avg)}</span></div></div>`;
+}
+function autoBuy(kind) {
+  const p = player, has = k => (p.primary && p.primary.key === k) || (p.secondary && p.secondary.key === k), fav = profile.favRifle || 'vandal';
+  const plan = { full: [fav, 'heavy', 'abil'], bonus: ['spectre', 'light', 'abil'], half: ['spectre', 'light', 'abil'], force: ['sheriff', 'light', 'spectre'], save: ['abil'], pistol: ['light', 'abil'] }[kind] || [];
+  for (const it of plan) {
+    if (it === 'heavy' || it === 'light') { buyShield(it, p); continue; }
+    if (it === 'abil') { for (const k of ['C', 'Q', 'E']) { const ab = AGENT[p.agent].ab[k]; if (ab && ab.cost) for (let i = 0; i < 2; i++) if (p.credits >= ab.cost + (kind === 'save' ? 0 : 0)) buyAbility(k, p); } continue; }
+    if (!has(it) && WEAPONS[it] && p.credits >= WEAPONS[it].price && !(WEAPONS[it].slot === 1 && p.primary && WEAPONS[p.primary.key].price >= WEAPONS[it].price)) buyWeapon(it, p);
+  }
+  toast(`Auto-buy: ${kind.toUpperCase()}`); renderShop();
+}
 function renderShop() {
   const p = player, cols = $('shopCols'); cols.innerHTML = '';
   $('shopCred').textContent = p.credits;
-  $('shopPlan').innerHTML = planBarHTML();
+  $('shopPlan').innerHTML = planBarHTML() + econHTML();
+  { const ab = $('ecoAuto'); if (ab) ab.onclick = () => { autoBuy(ab.dataset.kind); }; }
   $('shopPlan').querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { if (net.role === 'client') netSend({ t: 'plan', p: b.dataset.plan }); else applyPlan(player.team, b.dataset.plan, true); game.plan = game.plan || {}; game.plan[player.team] = b.dataset.plan; tick(); renderShop(); });
   for (const [title, list] of SHOP_COLS) {
     const col = document.createElement('div'); col.className = 'col'; col.innerHTML = `<h4>${title}</h4>`;
@@ -5794,6 +5835,7 @@ function buyWeapon(k, p = player) {
   if (p.credits < w.price) { if (p.isPlayer) SND.deny(); return; }
   const slot = w.slot, prev = slot === 1 ? p.primary : p.secondary;
   p.credits -= w.price; const inst = mkWeapon(k);
+  if (p.isPlayer && (k === 'vandal' || k === 'phantom') && profile.favRifle !== k) { profile.favRifle = k; saveProfile(); }
   if (slot === 1) p.primary = inst; else p.secondary = inst;
   p.bought.push({ id: 'w:' + k, price: w.price, undo: () => { if (slot === 1) p.primary = prev; else p.secondary = prev; } });
   p.slot = slot; p.invSeq = (p.invSeq || 0) + 1;
