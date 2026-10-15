@@ -1591,7 +1591,7 @@ AGENTS.push(
     ab: { C: { name: 'Cascade', cost: 150, max: 1, free: 0, type: 'cascade', desc: 'Send a wave of water rolling forward. It blocks vision and slows everyone it passes over.' },
           Q: { name: 'Cove', cost: 300, max: 1, free: 0, type: 'cove', desc: 'Throw a sphere of water: it lands as a thick smoke wherever it falls.' },
           E: { name: 'High Tide', cost: 0, max: 1, free: 1, type: 'tide', desc: 'Raise a long wall of water that grows forward — STEER it with your mouse while it grows. Slows everyone who passes through.' },
-          X: { name: 'Reckoning', ult: 7, type: 'reckoning', desc: 'Flood a long strip of ground in front of you. Geysers strike 3 times under every enemy standing in it, concussing them.' } } },
+          X: { name: 'Reckoning', ult: 7, type: 'reckoning', desc: 'Unleash a huge wave of water that rolls 30m forward: every enemy it hits is slowed for 5 seconds.' } } },
   { id: 'deadlock', name: 'Deadlock', role: 'Sentinel', color: '#c9d3dc', glyph: 'DL', desc: 'A Norwegian operative who locks down the field with cutting-edge nanowire.',
     ab: { C: { name: 'GravNet', cost: 200, max: 1, free: 0, type: 'gravnet', desc: 'Throw a grenade that detonates on landing: every enemy caught is FORCED TO CROUCH and slowed for 6s.' },
           Q: { name: 'Sonic Sensor', cost: 200, max: 1, free: 0, type: 'sensor', desc: 'Place a sensor that listens for noise: an enemy RUNNING or SHOOTING near it sets off a concussive blast.' },
@@ -1606,7 +1606,7 @@ AGENTS.push(
     ab: { C: { name: 'Razorvine', cost: 150, max: 1, free: 0, type: 'razor', desc: 'Place a HIDDEN nest of razor wire. When an enemy walks onto it, it springs up: slowing and cutting anyone who moves inside.' },
           Q: { name: 'Shear', cost: 200, max: 1, free: 0, type: 'shear', desc: 'Place a HIDDEN wire on the floor. The first enemy to cross it raises a metal wall behind them for 6s, cutting off their escape.' },
           E: { name: 'Arc Rose', cost: 0, max: 1, free: 1, type: 'rose', desc: 'Place a metal rose on the spot you look at. Press E again at any time to make it bloom and blind everyone looking at it.' },
-          X: { name: 'Steel Garden', ult: 8, type: 'garden', desc: 'After a short wind-up, metal thorns burst out around you: enemies within 30m have their PRIMARY weapons jammed for 8s (sidearms still work).' } } },
+          X: { name: 'Steel Garden', ult: 8, type: 'garden', desc: 'After a short wind-up, a garden of metal thorns bursts out of the ground around you. Enemies within 30m get their PRIMARY weapons jammed for 8s, and anyone who stays on the thorns takes faster and faster damage until they die.' } } },
   { id: 'tejo', name: 'Tejo', role: 'Initiator', color: '#e0b050', glyph: 'TJ', desc: 'A Colombian veteran who flattens positions with guided missiles.',
     ab: { C: { name: 'Stealth Drone', cost: 300, max: 1, free: 0, type: 'drone', desc: 'Fly a stealthy drone forward to scout.' },
           Q: { name: 'Special Delivery', cost: 200, max: 1, free: 0, type: 'relay', desc: 'A sticky grenade that bounces once and concusses enemies where it lands.' },
@@ -2778,6 +2778,49 @@ function updateFace(e, dt) {
   if (ud.vuln) ud.vuln.visible = e.alive && (e.vulnT > .05 || e.suppT > .05); if (ud.vuln && ud.vuln.visible) ud.vuln.material.color.setHex(e.vulnT > .05 ? 0xffffff : 0x6fd6ff);
 }
 // what each agent looks like: skin, hair, clothes and extra gear
+/* --- local visual effects for the big abilities (run on every screen, host and clients alike) --- */
+const LFX = [];
+function lfxAdd(o, life, upd, parent = scene) { parent.add(o); const f = { o, t: 0, life, upd, parent }; LFX.push(f); return f; }
+function lfxTick(dt) {
+  for (let i = LFX.length - 1; i >= 0; i--) { const f = LFX[i]; f.t += dt; if (f.upd) f.upd(Math.min(1, f.t / f.life), dt, f); if (f.t >= f.life) { f.parent.remove(f.o); if (f.end) f.end(); LFX.splice(i, 1); } }
+}
+const addMat = (c, o = 1) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+// a flat jagged ribbon on the floor, from (x,z) along (dx,dz); returns the mesh
+function crackPath(x, z, dx, dz, len) {
+  const pts = []; let px = x, pz = z, a = Math.atan2(dz, dx); const ta = a;
+  for (let d = 0; d <= len; d += .7) { pts.push([px, pz]); a += rand(-.5, .5); a += (ta - a) * .2; px += Math.cos(a) * .7; pz += Math.sin(a) * .7; }
+  return pts;
+}
+function crackRibbon(pts, w, mat, y = .03) {
+  const pos = []; for (let i = 0; i < pts.length; i++) { const [cx, cz] = pts[i], [nx, nz] = pts[Math.min(pts.length - 1, i + 1)], [qx, qz] = pts[Math.max(0, i - 1)]; let tx = nx - qx, tz = nz - qz; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l; const ww = w * (1 - i / pts.length * .7) * (.8 + .4 * Math.abs(Math.sin(i * 1.7))); pos.push(cx - tz * ww, y, cz + tx * ww, cx + tz * ww, y, cz - tx * ww); }
+  const idx = []; for (let i = 0; i < pts.length - 1; i++) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.setDrawRange(0, 0);
+  const m = new THREE.Mesh(g, mat); m.userData.n = idx.length; return m;
+}
+// Breach: the bionic arm slams the ground in first person
+function breachArmSlam() {
+  const g = new THREE.Group(), wh = new THREE.MeshLambertMaterial({ color: 0xe8e6e0 }), gr = new THREE.MeshLambertMaterial({ color: 0x4a4a4e }), glow = new THREE.MeshBasicMaterial({ color: 0xff9a2a });
+  const fore = AB.rbox(.2, .2, .62, .05, wh); fore.position.z = .22; g.add(fore);
+  for (const x of [-.11, .11]) { const pl = AB.rbox(.03, .16, .5, .01, gr); pl.position.set(x, 0, .2); g.add(pl); }
+  for (const z of [.05, .25, .42]) { const sm = new THREE.Mesh(new THREE.BoxGeometry(.205, .02, .03), glow); sm.position.set(0, .1, z); g.add(sm); }
+  const fist = AB.rbox(.26, .22, .22, .06, wh); fist.position.z = -.16; g.add(fist);
+  for (let i = 0; i < 4; i++) { const k = AB.rbox(.055, .06, .07, .015, gr); k.position.set(-.09 + i * .06, .07, -.27); g.add(k); }
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .05, 16), glow); core.rotation.x = Math.PI / 2; core.position.set(0, .0, .55); g.add(core);
+  const pad = AB.rbox(.3, .16, .3, .06, wh); pad.position.set(0, .05, .55); g.add(pad);
+  sndTone(80, .5, .5, 'sawtooth', 300);
+  const inner = g; inner.position.z = -.3; const g2 = new THREE.Group(); g2.add(inner);
+  const ease = x => x * x * (3 - 2 * x);
+  lfxAdd(g2, 1.4, (k, dt, f) => {
+    const t = f.t; let y, z, rx;
+    if (t < .4) { const a = ease(t / .4); y = -.55 + a * .3; z = -.55 + a * .15; rx = -a * .6; }                 // wind up: fist rises and pulls back
+    else if (t < .55) { const a = ease((t - .4) / .15); y = -.25 - a * .55; z = -.4 - a * .35; rx = -.6 + a * 1.5; } // slam forward and down
+    else if (t < 1) { y = -.8; z = -.75; rx = .9; }                                                             // hold on the ground
+    else { const a = ease((t - 1) / .4); y = -.8 - a * .4; z = -.75 + a * .3; rx = .9; }                         // pull away
+    { const gun = vmRoot.userData.gun; if (gun) gun.visible = false; } g2.position.set(.2, y * .6, z * .8 - .2); g2.rotation.set(rx, -.25, .15); g2.scale.setScalar(.42);
+    if (t > .55 && t < 1.05) { const s = (1.05 - t) * .5; camera.position.x += rand(-s, s); camera.position.y += rand(-s, s) * .6; }
+    if (!f.boomed && t > .55) { f.boomed = 1; sndTone(55, .7, .7, 'sawtooth', 30); sndNoise(.6, 500, 1, .6); }
+  }, vmScene).end = () => { const gun = vmRoot.userData.gun; if (gun) gun.visible = true; };
+}
 const LOOKS = {
   jett: { skin: 0xf3d6c4, hair: 0xeef3f6, style: 'bun', top: 0xdfe9f0, top2: 0x4fa3c7, pants: 0x2f3a48, eye: 0x6fd0ff, gear: ['scarf'] },
   phoenix: { skin: 0x8a5a3c, hair: 0x241610, style: 'spiky', tip: 0xff8a3d, top: 0xf2efe9, top2: 0xff7a2a, pants: 0x2b2b30, eye: 0xffb070, gear: ['flameShoulder'] },
@@ -4052,6 +4095,10 @@ function leaveArena(e) {
   if (e.arenaWalls) { for (const w of e.arenaWalls) w.t = 0; e.arenaWalls = null; }
   if (e.alive) { Object.assign(e, { x: B.x, z: B.z, y: 0, vx: 0, vz: 0, vy: 0 }); if (e.dummy) { e.ax = B.ax; e.az = B.az; } teleported(e); fx('parts', e.x, 1, e.z, 40, 0x8a5cff, 4, .6); }
 }
+const thornTex = (() => { let t = null; return () => { if (t) return t; const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d');
+  x.lineCap = 'round'; for (let i = 0; i < 70; i++) { let px = Math.random() * 512, py = Math.random() * 512, a = Math.random() * 6.3, r = 20 + Math.random() * 40; x.strokeStyle = i % 3 ? 'rgba(220,228,240,.95)' : 'rgba(150,160,180,.9)'; x.lineWidth = 2 + Math.random() * 3; x.beginPath(); x.moveTo(px, py);
+    for (let s = 0; s < 40; s++) { a += .18 + s * .004; r *= .97; px += Math.cos(a) * r * .18; py += Math.sin(a) * r * .18; x.lineTo(px, py); } x.stroke(); }
+  t = new THREE.CanvasTexture(c); return t; }; })();
 function bloomRose(e) { const z = e.rose; if (!z) return false; e.rose = null; z.t = 0; popFlash(z.x, 1.2, z.z, e, 1.6, 'flash'); return true; }
 function cocoon(dl, o, sx, sz) {
   o.detainT = 7.5; o.revealedT = Math.max(o.revealedT, 7.5); toastTo(o, 'COCOONED! A teammate must touch you to break it'); toastTo(dl, `${o.name} is cocooned`); fx('parts', o.x, o.y + 1, o.z, 50, 0xffffff, 4, .8);
@@ -4139,8 +4186,8 @@ const ABIL = {
   },
   thunder(e) {
     const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z;
-    for (let a = -.5; a <= .5; a += .25) lineFx(x, z, dx * Math.cos(a) - dz * Math.sin(a), dz * Math.cos(a) + dx * Math.sin(a), 32, 0xd9772b);
-    for (let w = 0; w < 4; w++) timedFx.push({ t: .6 + w * .35, update() { }, end() { const r0 = w * 8, r1 = r0 + 8; for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t < r0 || t > r1 || Math.abs(px * dz - pz * dx) > 2 + t * .55) continue; concuss(o, 5, 'Rolling Thunder'); o.vy = 7; o.onGround = false; fx('parts', o.x, o.y + .5, o.z, 15, 0xd9772b, 4, .6); } } });
+    fx('breachUlt', e.id); timedFx.push({ t: .55, update() { }, end() { fx('cracks', x, z, dx, dz, 30); } });
+    for (let w = 0; w < 4; w++) timedFx.push({ t: .75 + w * .3, update() { }, end() { const r0 = w * 8, r1 = r0 + 8; for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t < r0 || t > r1 || Math.abs(px * dz - pz * dx) > 2 + t * .55) continue; concuss(o, 5, 'Rolling Thunder'); o.vy = 7; o.onGround = false; fx('parts', o.x, o.y + .5, o.z, 15, 0xd9772b, 4, .6); } } });
     return true;
   },
   gwell(e, ab, target) {
@@ -4160,13 +4207,13 @@ const ABIL = {
   cascade(e) { waterLine(e, 1.5, 14, 5, 8, false); return true; },
   tide(e) { waterLine(e, 2, 40, 12, 13, true); return true; },
   cove(e) { const p = spawnProj(Object.assign(throwFrom(e, 15, 3), { color: 0x2ab8c8, owner: e, size: .25 })); p.onLand = () => { makeSmoke(p.x, p.z, 3.6, 12, 0x2a98b8, e); fx('parts', p.x, 1, p.z, 40, 0x7fe8ff, 4, .6); }; return true; },
-  reckoning(e) {
-    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z; lineFx(x, z, dx, dz, 30, 0x2ab8c8, .2);
-    for (let s2 = -4; s2 <= 4; s2 += 4) lineFx(x - dz * s2, z + dx * s2, dx, dz, 30, 0x2a98b8, .1);
-    for (const w of [1, 2.2, 3.4]) timedFx.push({ t: w, update() { }, end() {
-      for (const o of entities) { if (!o.alive || !isEnemy(o, e)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t < 0 || t > 30 || Math.abs(px * dz - pz * dx) > 5) continue;
-        const gx = o.x, gz = o.z; fx('parts', gx, .2, gz, 20, 0x2ab8c8, 1.5, .9); timedFx.push({ t: .8, update() { }, end() { fx('parts', gx, .5, gz, 50, 0x7fe8ff, 7, .7); for (const q of entities) if (q.alive && isEnemy(q, e) && Math.hypot(q.x - gx, q.z - gz) < 2.6) concuss(q, 3.5, 'Reckoning'); } }); }
-    } }); return true;
+  reckoning(e) { // Harbor: a huge wave rolls forward; everyone it hits is slowed for 5s
+    const f = fwd(e), l = Math.hypot(f.x, f.z) || 1, dx = f.x / l, dz = f.z / l, x = e.x, z = e.z, L = 30, hit = new Set(); let d = 0;
+    fx('wave', x, z, dx, dz, L);
+    timedFx.push({ t: 1.7, update(dt) { d = Math.min(L, d + L / 1.65 * dt);
+      for (const o of entities) { if (!o.alive || !isEnemy(o, e) || hit.has(o)) continue; const px = o.x - x, pz = o.z - z, t = px * dx + pz * dz; if (t < d - 1.5 || t > d + 2.5 || Math.abs(px * dz - pz * dx) > 5.8) continue;
+        hit.add(o); o.slowT = Math.max(o.slowT, 5); o.nearT = Math.max(o.nearT, .8); fx('parts', o.x, o.y + 1, o.z, 30, 0x7fe8ff, 4, .6); toastTo(o, 'Hit by the wave — slowed for 5s!'); } }, end() { } });
+    return true;
   },
   gravnet(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2.5), { color: 0xc9d3dc, owner: e, model: 'grenade' })); p.onLand = () => { fx('parts', p.x, p.y + .5, p.z, 40, 0xc9d3dc, 5, .6); fx('pulse', p.x, p.y + 1, p.z, 5); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5 && los(p.x, p.y + .5, p.z, o.x, o.y + 1, o.z, true)) { o.netT = 6; o.slowT = Math.max(o.slowT, 6); toastTo(o, 'GravNet — you are forced to crouch!'); } }; return true; },
   sensor(e) { const f = fwd(e), p = aimPoint(e, 12); makeZone({ x: p.x - f.x * .5, z: p.z - f.z * .5, r: .45, kind: 'sensor', t: 999, owner: e }); return true; },
@@ -4191,11 +4238,13 @@ const ABIL = {
     fx('parts', e.x, e.y + .5, e.z, 40, 0x9aa6b8, 3, 1);
     timedFx.push({ t: 1, update() { }, end() { if (!e.alive) return; fx('parts', e.x, e.y + .5, e.z, 80, 0x9aa6b8, 9, .8); fx('pulse', e.x, e.y + 1, e.z, 30); let n = 0;
       for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 30) { o.jamT = 8; n++; toastTo(o, 'Steel Garden — your primary weapon is JAMMED! Use your sidearm'); }
+      const gx = e.x, gz = e.z, R = 14, inT = new Map(); fx('thorns', gx, gz, R, 9);  // thorns cover the ground: the longer you stand in them, the faster they kill
+      timedFx.push({ t: 9, update(dt) { for (const o of entities) { if (!o.alive || !isEnemy(o, e) || Math.hypot(o.x - gx, o.z - gz) > R || o.y > 1) { inT.delete(o); continue; } const ti = (inT.get(o) || 0) + dt; inT.set(o, ti); if (ti < dt * 1.5) toastTo(o, 'Steel Garden thorns — get out or die!'); applyDamage(o, (12 + 26 * ti) * dt, e, 'Steel Garden'); o.slowT = Math.max(o.slowT, .2); } }, end() { } });
       toastTo(e, n ? `Jammed ${n} enem${n > 1 ? 'ies' : 'y'}` : 'No enemies in range'); } }); return true;
   },
   salvo(e, ab, target) {
-    const p = target || aimPoint(e, 50); fx('parts', p.x, .3, p.z, 20, 0xff5040, 1.5, 1.2);
-    timedFx.push({ t: 1.3, update() { }, end() { explodeAt(p.x, 0, p.z, e, 70, 35, 4.2, 0xe0b050, 'Guided Salvo'); } });
+    const p = target || aimPoint(e, 50); fx('tmark', p.x, p.z, 1.5); fx('missile', p.x, p.z, 1.5, e.x - Math.sin(e.yaw) * -20, e.z - Math.cos(e.yaw) * -20);
+    timedFx.push({ t: 1.5, update() { }, end() { explodeAt(p.x, 0, p.z, e, 70, 35, 4.2, 0xe0b050, 'Guided Salvo'); } });
     return true;
   },
   armageddon(e, ab, target) {
@@ -4965,7 +5014,7 @@ function updateEffects(dt) {
 function clearEffects() {
   smokes.forEach(s => s.mesh && scene.remove(s.mesh)); zones.forEach(z => scene.remove(z.mesh)); dynWalls.forEach(w => scene.remove(w.mesh));
   projectiles.forEach(p => scene.remove(p.mesh)); timedFx.forEach(f => f.end());
-  smokes = []; zones = []; dynWalls = []; projectiles = []; timedFx = [];
+  smokes = []; zones = []; dynWalls = []; projectiles = []; timedFx = []; for (const f of LFX) { f.parent.remove(f.o); if (f.end) f.end(); } LFX.length = 0;
 }
 
 /* --- Shared status update --- */
@@ -6702,7 +6751,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint(); inkTick(dt);
+    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint(); inkTick(dt); lfxTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -7356,6 +7405,54 @@ function banterLine(e, text) {
   speakLine(text, e.agent, true);
 }
 const FX = {
+  breachUlt(id) { if (player && id === player.id) breachArmSlam(); },
+  cracks(x, z, dx, dz, len) { // Breach: glowing fissures racing out across the floor
+    const dark = new THREE.MeshBasicMaterial({ color: 0x1a1210, transparent: true, opacity: .85, depthWrite: false, side: THREE.DoubleSide }), hot = addMat(0xff8a1a, 1), all = [];
+    for (let i = 0; i < 16; i++) { const a = rand(-.5, .5), cdx = dx * Math.cos(a) - dz * Math.sin(a), cdz = dz * Math.cos(a) + dx * Math.sin(a), L = len * rand(.55, 1), sx = x + cdx * rand(2, 4), sz = z + cdz * rand(2, 4);
+      const P = crackPath(sx, sz, cdx, cdz, L); all.push(crackRibbon(P, .1, dark, .025), crackRibbon(P, .035, hot, .035));
+      for (let b = 0; b < 4; b++) { const ba = a + rand(-1.2, 1.2), q = P[Math.floor(P.length * rand(.3, .8))] || P[0], bdx = dx * Math.cos(ba) - dz * Math.sin(ba), bdz = dz * Math.cos(ba) + dx * Math.sin(ba), Q = crackPath(q[0], q[1], bdx, bdz, L * .3); all.push(crackRibbon(Q, .07, dark, .026), crackRibbon(Q, .025, hot, .036)); } }
+    const g = new THREE.Group(); all.forEach(m => g.add(m));
+    lfxAdd(g, 5, k => { const grow = Math.min(1, k * 5 / 1.4); for (const m of all) m.geometry.setDrawRange(0, Math.floor(m.userData.n * grow / 3) * 3); hot.opacity = k < .3 ? 1 : Math.max(0, 1 - (k - .3) / .7) * (.7 + Math.random() * .3); dark.opacity = .85 * (k < .7 ? 1 : 1 - (k - .7) / .3); });
+    for (let i = 0; i < 30; i++) spawnParticles(x + dx * rand(2, len) + rand(-3, 3), .3, z + dz * rand(2, len) + rand(-3, 3), 2, 0xffa040, 3, .8);
+  },
+  wave(x, z, dx, dz, len) { // Harbor: a tall foaming wall of water rolls forward
+    const W = 11, geo = new THREE.PlaneGeometry(W, 4, 44, 16), pa = geo.attributes.position, col = [];
+    const ph = [rand(0, 6), rand(0, 6), rand(0, 6)];
+    for (let i = 0; i < pa.count; i++) { const u = pa.getX(i), v = pa.getY(i) + 2, top = v / 4, crest = Math.sin(u * 1.3 + ph[0]) * .35 + Math.sin(u * 3.7 + ph[1]) * .18 + Math.sin(u * 8 + ph[2]) * .08;
+      pa.setY(i, v * (1 + crest * top * top)); pa.setZ(i, -Math.pow(top, 2.2) * 1.4 + Math.sin(u * 2 + v) * .08); const f = Math.min(1, Math.max(0, (top - .55) / .35) + Math.random() * .12), c = new THREE.Color(0x1e8fa6).lerp(new THREE.Color(0xf4fdff), f); col.push(c.r, c.g, c.b); }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+    const water = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x0a3040, transparent: true, opacity: .88, side: THREE.DoubleSide }));
+    const g = new THREE.Group(); g.add(water); g.rotation.y = Math.atan2(dx, dz); g.position.set(x, 0, z);
+    lfxAdd(g, 2.2, k => { const d = Math.min(1, k / .75) * len; g.position.set(x + dx * (2 + d), 0, z + dz * (2 + d)); const h = k < .1 ? k / .1 : k > .75 ? Math.max(.05, 1 - (k - .75) / .25) : 1; g.scale.set(1, h * (1 + Math.sin(k * 30) * .04), 1); water.material.opacity = .82 * Math.min(1, h * 1.3);
+      if (Math.random() < .7) spawnParticles(g.position.x + rand(-W / 2, W / 2) * Math.cos(g.rotation.y), 3.5 * h, g.position.z - rand(-W / 2, W / 2) * Math.sin(g.rotation.y), 3, 0xeafcff, 3, .5); });
+    sndNoise(1.8, 700, 1, .5, x, z);
+  },
+  thorns(x, z, r, dur) { // Vyse: the floor erupts into a garden of metal thorns
+    const tex = thornTex(), disc = new THREE.Mesh(new THREE.CircleGeometry(r, 48), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0 })); disc.rotation.x = -Math.PI / 2; disc.position.set(x, .04, z);
+    const g = new THREE.Group(); g.add(disc); const steel = new THREE.MeshLambertMaterial({ color: 0xb8c2d0, emissive: 0x202838 }), spikes = [];
+    for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * r * .95, px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d; if (hAtPos(px, pz) > .5) continue;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(rand(.05, .11), rand(.4, .9), 5), steel); sp.position.set(px, 0, pz); sp.rotation.set(rand(-.35, .35), 0, rand(-.35, .35)); sp.scale.y = .01; g.add(sp); spikes.push(sp); }
+    lfxAdd(g, dur, k => { const t = k * dur, up = Math.min(1, t / .5), down = t > dur - .6 ? Math.max(.01, (dur - t) / .6) : 1; disc.material.opacity = Math.min(1, t * 3) * down; for (const sp of spikes) { sp.scale.y = Math.max(.01, up * down); sp.position.y = sp.geometry.parameters.height / 2 * sp.scale.y; } });
+    sndNoise(.8, 3000, 1, .4, x, z, 'highpass');
+  },
+  tmark(x, z, t) { // Tejo: red target marker on the ground until the missile lands
+    const g = new THREE.Group(), m = addMat(0xff3a3a, .9);
+    for (const rr of [1.6, 3.2, 4.2]) { const ring = new THREE.Mesh(new THREE.RingGeometry(rr - .06, rr, 48), m); ring.rotation.x = -Math.PI / 2; g.add(ring); }
+    const dia = new THREE.Mesh(new THREE.RingGeometry(.45, .55, 4), m); dia.rotation.x = -Math.PI / 2; g.add(dia);
+    const sq = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.15, 4, 1), m); sq.rotation.set(-Math.PI / 2, 0, Math.PI / 4); g.add(sq);
+    for (let i = 0; i < 4; i++) { const tk = new THREE.Mesh(new THREE.PlaneGeometry(.12, .9), m); tk.rotation.x = -Math.PI / 2; tk.rotation.z = i * Math.PI / 2; tk.position.set(Math.cos(i * Math.PI / 2) * 2.4, 0, Math.sin(i * Math.PI / 2) * 2.4); g.add(tk); }
+    g.position.set(x, .06, z);
+    lfxAdd(g, t, k => { m.opacity = .55 + Math.sin(k * t * 14) * .35; g.children[0].scale.setScalar(1 + (1 - k) * .3); dia.rotation.z = k * 6; });
+  },
+  missile(x, z, t, sx, sz) { // Tejo: a missile streaks down onto the marker
+    const g = new THREE.Group(), body = new THREE.Mesh(new THREE.CylinderGeometry(.09, .12, .9, 10), new THREE.MeshLambertMaterial({ color: 0xe8e2d0 })), nose = new THREE.Mesh(new THREE.ConeGeometry(.09, .3, 10), new THREE.MeshLambertMaterial({ color: 0xc23030 }));
+    nose.position.y = .6; g.add(body, nose); for (let i = 0; i < 3; i++) { const fn = new THREE.Mesh(new THREE.BoxGeometry(.02, .25, .2), new THREE.MeshLambertMaterial({ color: 0xc23030 })); fn.rotation.y = i * Math.PI * 2 / 3; fn.position.y = -.35; g.add(fn); }
+    const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff6a2a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); fl.scale.setScalar(.9); fl.position.y = -.6; g.add(fl);
+    const from = new THREE.Vector3(sx, 40, sz), to = new THREE.Vector3(x, .3, z), dir = to.clone().sub(from).normalize();
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.clone().negate()); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const t0 = Math.max(.1, t - .7);
+    lfxAdd(g, t, (k, dt, f) => { if (f.t < t0) { g.visible = false; return; } g.visible = true; const a = Math.min(1, (f.t - t0) / (t - t0)); g.position.lerpVectors(from, to, a * a); if (Math.random() < .9) spawnParticles(g.position.x, g.position.y, g.position.z, 2, 0xff4a2a, .6, .5); });
+  },
   voice(id) {
     const e = entities[id]; if (!e || !player || !VOICE[e.agent]) return;
     const ally = !isEnemy(e, player), box = $('voiceLines'), d = document.createElement('div');
@@ -12176,7 +12273,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 91;
+const BUILD = 92;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
