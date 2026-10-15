@@ -1601,7 +1601,7 @@ AGENTS.push(
     ab: { C: { name: 'Contingency', cost: 200, max: 1, free: 0, type: 'wall', desc: 'Preview a wall of prismatic energy, right click to rotate, left click to raise it. It blocks bullets.' },
           Q: { name: 'Undercut', cost: 200, max: 2, free: 0, type: 'undercut', desc: 'Fire a molecular bolt THROUGH walls: every enemy it touches becomes VULNERABLE for 4s.' },
           E: { name: 'Double Tap', cost: 0, max: 1, free: 1, type: 'dtap', desc: 'Enter a flow state for 12s: every kill you get in it gives you a shield that completely blocks the next hit.' },
-          X: { name: 'Kill Contract', ult: 7, type: 'contract', desc: 'Pull the enemy you are aiming at into a 1v1 for 12s: while it lasts, nobody else can hurt either of you and neither of you can hurt anyone else.' } } },
+          X: { name: 'Kill Contract', ult: 7, type: 'contract', desc: 'Pull the enemy you are aiming at into a sealed arena for a 12s 1v1. Nobody else can reach either of you; the survivor is sent back where they were.' } } },
   { id: 'vyse', name: 'Vyse', role: 'Sentinel', color: '#9aa6b8', glyph: 'VY', desc: 'A metal-shaping sentinel who sets cruel, hidden traps.',
     ab: { C: { name: 'Razorvine', cost: 150, max: 1, free: 0, type: 'razor', desc: 'Place a HIDDEN nest of razor wire. When an enemy walks onto it, it springs up: slowing and cutting anyone who moves inside.' },
           Q: { name: 'Shear', cost: 200, max: 1, free: 0, type: 'shear', desc: 'Place a HIDDEN wire on the floor. The first enemy to cross it raises a metal wall behind them for 6s, cutting off their escape.' },
@@ -4032,6 +4032,26 @@ function waterLine(e, from, to, dur, speed, steer) { // a wall of water that gro
   }, end() { } });
 }
 // Deadlock's Annihilation: cocoon drags the victim back; a teammate touching it breaks it, otherwise they die
+// Iso's Kill Contract: both fighters are pulled into a floating arena high above the map for the 1v1
+let arenaN = 0;
+function isoArena(a, b) {
+  const Y = 40 + (arenaN++ % 4) * 9, cx = clamp(MAPW / 2, 16, MAPW - 16), cz = clamp(MAPH / 2, 10, MAPH - 10), walls = [];
+  const box = (x0, x1, z0, z1, y0, y1, col) => { const w = { x0, x1, z0, z1, y0, y1, hp: 1e9, t: 12.5, arena: 1 }; addWallMesh(w); w.mesh.material.color.setHex(col); w.mesh.material.emissive.setHex(0x2a1050); dynWalls.push(w); walls.push(w); };
+  box(cx - 13, cx + 13, cz - 6, cz + 6, Y - .4, Y, 0x2a1d48);                       // floor
+  box(cx - 13, cx + 13, cz - 6.5, cz - 6, Y, Y + 5, 0x8a5cff); box(cx - 13, cx + 13, cz + 6, cz + 6.5, Y, Y + 5, 0x8a5cff);
+  box(cx - 13.5, cx - 13, cz - 6.5, cz + 6.5, Y, Y + 5, 0x8a5cff); box(cx + 13, cx + 13.5, cz - 6.5, cz + 6.5, Y, Y + 5, 0x8a5cff);
+  box(cx - 1, cx + 1, cz - 2.5, cz - .5, Y, Y + 1.3, 0xb89cff); box(cx - 1, cx + 1, cz + .5, cz + 2.5, Y, Y + 1.3, 0xb89cff); // half-height cover in the middle
+  for (const [e, sx] of [[a, -9], [b, 9]]) {
+    e.arenaBack = { x: e.x, z: e.z, ax: e.ax, az: e.az }; e.arenaWalls = walls; fx('parts', e.x, e.y + 1, e.z, 40, 0x8a5cff, 4, .6);
+    Object.assign(e, { x: cx + sx, z: cz, y: Y, vx: 0, vz: 0, vy: 0, yaw: sx < 0 ? -Math.PI / 2 : Math.PI / 2, pitch: 0 }); if (e.dummy) { e.ax = e.x; e.az = e.z; }
+    if (e.path) { e.path = []; e.goal = null; } teleported(e); if (e.isPlayer) { camRig.yaw = e.yaw; camRig.pitch = 0; }
+  }
+}
+function leaveArena(e) {
+  const B = e.arenaBack; if (!B) return; e.arenaBack = null;
+  if (e.arenaWalls) { for (const w of e.arenaWalls) w.t = 0; e.arenaWalls = null; }
+  if (e.alive) { Object.assign(e, { x: B.x, z: B.z, y: 0, vx: 0, vz: 0, vy: 0 }); if (e.dummy) { e.ax = B.ax; e.az = B.az; } teleported(e); fx('parts', e.x, 1, e.z, 40, 0x8a5cff, 4, .6); }
+}
 function bloomRose(e) { const z = e.rose; if (!z) return false; e.rose = null; z.t = 0; popFlash(z.x, 1.2, z.z, e, 1.6, 'flash'); return true; }
 function cocoon(dl, o, sx, sz) {
   o.detainT = 7.5; o.revealedT = Math.max(o.revealedT, 7.5); toastTo(o, 'COCOONED! A teammate must touch you to break it'); toastTo(dl, `${o.name} is cocooned`); fx('parts', o.x, o.y + 1, o.z, 50, 0xffffff, 4, .8);
@@ -4161,7 +4181,7 @@ const ABIL = {
     const f = fwd(e); let best = null, bs = -1e9;
     for (const o of entities) { if (!o.alive || !isEnemy(o, e) || o.duelT > 0) continue; const dx = o.x - e.x, dz = o.z - e.z, d = Math.hypot(dx, dz); if (d > 50) continue; const sc = (dx * f.x + dz * f.z) / (d || 1) * 3 - d / 50; if (sc > bs) { bs = sc; best = o; } }
     if (!best) { toastTo(e, 'No enemy nearby to put a contract on'); return false; }
-    e.duelWith = best; best.duelWith = e; e.duelT = best.duelT = 12; fx('parts', best.x, best.y + 1, best.z, 40, 0x8a5cff, 3, .8); fx('parts', e.x, e.y + 1, e.z, 40, 0x8a5cff, 3, .8);
+    e.duelWith = best; best.duelWith = e; e.duelT = best.duelT = 12; isoArena(e, best); fx('parts', best.x, best.y + 1, best.z, 40, 0x8a5cff, 3, .8); fx('parts', e.x, e.y + 1, e.z, 40, 0x8a5cff, 3, .8);
     toastTo(best, `KILL CONTRACT — 1v1 with ${e.name}! Nobody else can touch you`); toastTo(e, `KILL CONTRACT — 1v1 with ${best.name}`); return true;
   },
   razor(e) { const p = aimPoint(e, 14); makeZone({ x: p.x, z: p.z, r: 4, kind: 'vine', t: 999, owner: e }); toastTo(e, 'Razorvine hidden'); return true; },
@@ -4951,7 +4971,7 @@ function clearEffects() {
 /* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
-  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt); e.jamT = Math.max(0, (e.jamT || 0) - dt); e.netT = Math.max(0, (e.netT || 0) - dt); e.dtapT = Math.max(0, (e.dtapT || 0) - dt); if (e.duelT > 0 && ((e.duelT -= dt) <= 0 || !e.duelWith || !e.duelWith.alive || !e.alive)) { e.duelT = 0; e.duelWith = null; } if (e.isoShT > 0 && (e.isoShT -= dt) <= 0) e.isoSh = 0; if (e.refract && (e.refract.t -= dt) <= 0) e.refract = null;
+  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt); e.jamT = Math.max(0, (e.jamT || 0) - dt); e.netT = Math.max(0, (e.netT || 0) - dt); e.dtapT = Math.max(0, (e.dtapT || 0) - dt); if (e.duelT > 0 && ((e.duelT -= dt) <= 0 || !e.duelWith || !e.duelWith.alive || !e.alive)) { e.duelT = 0; e.duelWith = null; } if (!(e.duelT > 0) && e.arenaBack) leaveArena(e); if (e.isoShT > 0 && (e.isoShT -= dt) <= 0) e.isoSh = 0; if (e.refract && (e.refract.t -= dt) <= 0) e.refract = null;
   if (e.driftT > 0) { e.driftT -= dt; if (e.driftT <= 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) { equipView(); toast('Back from the drift'); } } }
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
@@ -5768,7 +5788,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = magOf(e, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(e, w.key); }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, jamT: 0, isoSh: 0, isoShT: 0, refract: null, netT: 0, dtapT: 0, duelT: 0, duelWith: null, rose: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, jamT: 0, isoSh: 0, isoShT: 0, refract: null, netT: 0, dtapT: 0, duelT: 0, duelWith: null, rose: null, arenaBack: null, arenaWalls: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
     if (e.spectator) { e.alive = false; e.hp = 0; }
@@ -12156,7 +12176,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 90;
+const BUILD = 91;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
