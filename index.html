@@ -358,6 +358,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .gvPanel{width:min(900px,96vw)}.gvStage{position:relative;height:min(52vh,420px);background:radial-gradient(ellipse at 50% 45%,#2e3c4b 0%,#121a22 70%);border:1px solid rgba(255,255,255,.08);cursor:grab}
 .gvStage:active{cursor:grabbing}.gvStage canvas{width:100%;height:100%;display:block}.gvHint{position:absolute;left:10px;bottom:8px;font-size:11px;color:#7d8790}
 .gvBar{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:10px}.gvBar label{display:flex;flex-direction:column;gap:3px;font:600 10px Oswald,sans-serif;letter-spacing:2px;color:#9aa6b2}
+.gvEng{display:flex;gap:4px}.gvEng input{width:120px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:7px 8px;font:500 13px 'Noto Sans KR',sans-serif}
 .gvBar select{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:7px 8px;font:500 13px 'Noto Sans KR',sans-serif;max-width:240px}.gvBar .btn{width:auto;margin:0;padding:8px 12px}
 .attRow{display:flex;align-items:center;gap:3px;margin-top:8px}.attRow .ol{margin-right:auto;font-size:10px}
 .attB{width:28px;height:24px;background:#26313d;border:1px solid transparent;color:#c9d0d6;cursor:pointer;font-size:12px;padding:0}.attB.on{border-color:var(--teal);background:rgba(47,224,182,.15)}
@@ -1027,6 +1028,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="pHead"><div><div class="ol" id="gvSub"></div><h2 id="gvName">WEAPON</h2></div><button class="iconBtn" id="gvClose">✕</button></div>
     <div class="gvStage" id="gvStage"><canvas id="gvCv"></canvas><div class="gvHint">Drag to rotate · scroll to zoom</div></div>
     <div class="gvBar"><label>Skin<select id="gvSkin"></select></label><label>Attachment<select id="gvAtt"></select></label>
+      <label>Engraving<span class="gvEng"><input id="gvEng" maxlength="14" placeholder="your text" spellcheck="false" autocomplete="off"><select id="gvEngS"><option value="gold">Gold</option><option value="silver">Silver</option><option value="neon">Neon</option><option value="red">Red</option></select></span></label>
       <button class="btn" id="gvInspect">🔄 Inspect</button><button class="btn" id="gvReload">🔃 Reload</button><button class="btn" id="gvFire">💥 Fire</button><button class="btn" id="gvReset">⟲</button></div>
   </div>
 </div>
@@ -3087,6 +3089,24 @@ function fitMags(p) {
     w.att = a;
   }
 }
+/* --- engraving: your own text on the side of a gun (viewmodel, lobby, 3D viewer) --- */
+const ENGRAVE_STYLES = { gold: ['#ffd76a', '#7a5a10'], silver: ['#eef2f6', '#5a6470'], neon: ['#3dffe0', '#00806e'], red: ['#ff5a6a', '#701018'] };
+const engraveTexCache = {};
+function engraveTex(text, style) {
+  const k = style + '|' + text; if (engraveTexCache[k]) return engraveTexCache[k];
+  const c = document.createElement('canvas'); c.width = 512; c.height = 96; const x = c.getContext('2d'), [hi, lo] = ENGRAVE_STYLES[style] || ENGRAVE_STYLES.gold;
+  x.font = 'italic 700 64px Oswald, "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const g = x.createLinearGradient(0, 16, 0, 80); g.addColorStop(0, hi); g.addColorStop(1, lo);
+  x.shadowColor = style === 'neon' ? hi : 'rgba(0,0,0,.6)'; x.shadowBlur = style === 'neon' ? 14 : 3; x.fillStyle = g; x.fillText(text, 256, 50, 500);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return engraveTexCache[k] = t;
+}
+function addEngraving(gun, key) {
+  const E = profile.engrave && profile.engrave[key]; if (!E || !E.t) return;
+  const box = new THREE.Box3().setFromObject(gun), mz = gun.userData.muzzleZ || -.6, len = Math.min(.42, Math.abs(mz) * .55);
+  const mat = new THREE.MeshBasicMaterial({ map: engraveTex(E.t, E.s), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  if (E.s === 'neon') mat.blending = THREE.AdditiveBlending;
+  for (const side of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(len, len * 96 / 512), mat); pl.rotation.y = side * Math.PI / 2; pl.position.set(side > 0 ? box.max.x + .002 : box.min.x - .002, box.max.y - (box.max.y - box.min.y) * .26, mz * .3); gun.add(pl); }
+}
 function addAttachMesh(gun, a) {
   if (a === 'none') return; const mz = gun.userData.muzzleZ || -.6, M = c => new THREE.MeshLambertMaterial({ color: c });
   const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); gun.add(o); return o; };
@@ -4745,7 +4765,7 @@ function equipView() {
   while (vmRoot.children.length) vmRoot.remove(vmRoot.children[0]);
   const w = curWeapon(player), model = WEAPONS[w.key].model;
   const gun = buildGun(w.key, AGENT[player.agent].color, skinOf(player, w));
-  const knife = model === 'knife';
+  const knife = model === 'knife'; if (!knife && model !== 'blades') addEngraving(gun, w.key); // before the arms are added, so it sits on the gun
   const arm = new THREE.Mesh(new THREE.CylinderGeometry(.055, .062, .5, 14), cm(AGENT[player.agent].color, 8)), cuff = new THREE.Mesh(new THREE.CylinderGeometry(.064, .064, .05, 14), MAT.glove);
   let hand;
   if (knife) { // fist closed round the handle; the forearm leaves the fist so that, once tilted, the blade points up
@@ -9962,6 +9982,8 @@ function openGunViewer(key, skinId) {
     $('gvInspect').onclick = () => { gv.anim = { kind: 'inspect', t: 0 }; };
     $('gvReload').onclick = () => { gv.anim = { kind: 'reload', t: 0 }; SND.reload(); };
     $('gvFire').onclick = gvFire;
+    const engSave = () => { profile.engrave = profile.engrave || {}; const t = $('gvEng').value.trim().slice(0, 14); if (t) profile.engrave[gv.key] = { t, s: $('gvEngS').value }; else delete profile.engrave[gv.key]; saveProfile(); gvBuild(); refreshLobbyGuns(); };
+    $('gvEng').addEventListener('keydown', e => e.stopPropagation()); $('gvEng').oninput = () => { clearTimeout(gv.engT); gv.engT = setTimeout(engSave, 350); }; $('gvEngS').onchange = engSave;
     $('gvSkin').onchange = () => { gv.skin = $('gvSkin').value === '0' ? 0 : $('gvSkin').value; gvBuild(); };
     $('gvAtt').onchange = () => { profile.attach = profile.attach || {}; if ($('gvAtt').value === 'none') delete profile.attach[gv.key]; else profile.attach[gv.key] = $('gvAtt').value; saveProfile(); gvBuild(); if (curTab === 'collection') renderCollection(); };
   }
@@ -9972,13 +9994,14 @@ function openGunViewer(key, skinId) {
   $('gvSkin').value = String(gv.skin || 0);
   $('gvAtt').innerHTML = canAttach(key) ? Object.entries(ATTACH).map(([a, A]) => `<option value="${a}">${A.icon} ${A.name}</option>`).join('') : '<option value="none">—</option>';
   $('gvAtt').value = attOf({ isPlayer: true }, key); $('gvAtt').disabled = !canAttach(key);
+  { const E = profile.engrave && profile.engrave[key]; $('gvEng').value = E ? E.t : ''; $('gvEngS').value = E ? E.s : 'gold'; }
   $('gunViewer').classList.remove('hidden'); gv.on = true; gvBuild(); tick();
   if (!gv.loopOn) { gv.loopOn = true; let last = performance.now(); const loop = now => { if (!gv.on) { gv.loopOn = false; return; } requestAnimationFrame(loop); gvTick(Math.min(.05, (now - last) / 1000), now / 1000); last = now; }; requestAnimationFrame(loop); }
 }
 function closeGunViewer() { gv.on = false; $('gunViewer').classList.add('hidden'); }
 function gvBuild() {
   if (gv.gun) gv.pivot.remove(gv.gun);
-  const key = gv.key, g = buildGun(key, null, gv.skin || 0); addAttachMesh(g, attOf({ isPlayer: true }, key));
+  const key = gv.key, g = buildGun(key, null, gv.skin || 0); addEngraving(g, key); addAttachMesh(g, attOf({ isPlayer: true }, key));
   const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
   g.position.sub(c); const wrap = new THREE.Group(); wrap.add(g); gv.pivot.add(wrap); gv.gun = wrap; gv.inner = g; gv.size = Math.max(size.x, size.y, size.z) || .8;
   // a spare magazine for the reload animation
@@ -11155,7 +11178,7 @@ $('rmQuit').onclick = () => { closeRangeMenu(); toMenu(); };
 function refreshLobbyGuns() {
   refreshVP(); const c = lobbyChars[0]; if (!c) return;
   const ud = c.g.userData; if (ud.lobbyGun) ud.gunHolder.remove(ud.lobbyGun);
-  ud.lobbyGun = buildGun('vandal', AGENT[c.agent].color, profile.equip.vandal); ud.lobbyGun.scale.setScalar(CHAR_GUN_SCALE); ud.gunHolder.add(ud.lobbyGun);
+  ud.lobbyGun = buildGun('vandal', AGENT[c.agent].color, profile.equip.vandal); addEngraving(ud.lobbyGun, 'vandal'); ud.lobbyGun.scale.setScalar(CHAR_GUN_SCALE); ud.gunHolder.add(ud.lobbyGun);
 }
 function showTab(t) {
   curTab = t; tick(); previewOutfit = null;
