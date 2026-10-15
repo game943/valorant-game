@@ -229,6 +229,7 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .storeTabs button{background:#26313d;border:0;color:var(--light);font:600 14px Oswald,sans-serif;letter-spacing:2px;padding:9px 18px;cursor:pointer}
 .storeTabs button.on{background:var(--red);color:#fff}
 .storeTabs .nmBtn{background:linear-gradient(90deg,#3a1660,#6a1b5a)}
+#navTabs button[data-tab="store"]{white-space:nowrap}
 .stBadge{font-style:normal;font:700 10px Oswald,sans-serif;background:var(--red);color:#fff;padding:1px 5px;margin-left:6px;vertical-align:top;letter-spacing:1px}
 .stBadge.nm{background:linear-gradient(90deg,#8a2be2,#ff4fa3)}.stBadge.wish{background:#f5c542;color:#111}
 .wStar{color:#f5c542}.nmWish{position:absolute;bottom:8px;left:8px;background:#f5c542;color:#111;font:700 12px Oswald,sans-serif;padding:2px 7px}
@@ -755,6 +756,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #luAim{position:fixed;z-index:34;pointer-events:none;transform:translate(-50%,-50%)}#luAim i{display:block;width:18px;height:18px;border:2px solid #ffd34d;transform:rotate(45deg);box-shadow:0 0 10px #ffd34d;margin:0 auto}
 #luAim span{position:absolute;left:50%;top:22px;transform:translateX(-50%);white-space:nowrap;font:600 12px Oswald,sans-serif;letter-spacing:1px;color:#ffd34d;background:rgba(0,0,0,.55);padding:2px 7px}
 #luAim.ok i{border-color:#2fe0b6;box-shadow:0 0 14px #2fe0b6;background:rgba(47,224,182,.35)}#luAim.ok span{color:#2fe0b6}
+.ofRow{display:flex;gap:6px;flex-wrap:wrap}.ofSw{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.2);background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);cursor:pointer;position:relative;padding:0}
+.ofSw.on{border-color:#fff;box-shadow:0 0 0 2px var(--b)}.ofSw.eq::after{content:'✓';position:absolute;right:-4px;bottom:-4px;background:var(--teal);color:#111;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:16px}
+.ofSw i{font-style:normal;font-size:12px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);border-radius:50%}
 .luRow{display:flex;gap:10px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}.luRow b{font:600 12px Oswald,sans-serif;letter-spacing:1px;width:80px}.luRow span{flex:1;color:#c9d0d6}
 .luRow button{background:none;border:0;color:#ff8a8a;cursor:pointer}
 #vcSpeak{position:fixed;left:20px;bottom:230px;z-index:36;pointer-events:none;display:flex;flex-direction:column;gap:3px;font:600 13px 'Noto Sans KR',sans-serif}
@@ -2721,8 +2725,21 @@ function limbIK(S, T, l1, l2, pole) {
   const p = pole.clone().sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize();
   return { E: S.clone().add(dir.clone().multiplyScalar(a)).add(p.multiplyScalar(hh)), T };
 }
-function makeCharacter(agent) {
-  const L = LOOKS[agent.id] || { skin: 0xe0b896, hair: 0x2a2a2a, style: 'short', top: agent.color, top2: agent.color, pants: 0x2b2f38, eye: 0x2a2a2a, gear: [] };
+/* --- agent outfits: colour sets bought per agent (worn in the lobby, in matches and on your player card) --- */
+const OUTFITS = {
+  midnight: { name: 'Midnight', price: 1200, top: 0x1d2236, top2: 0x5470ff, pants: 0x12141c },
+  arctic: { name: 'Arctic', price: 1200, top: 0xe8eef5, top2: 0x7fd0ff, pants: 0x9fb3c6 },
+  crimson: { name: 'Crimson', price: 1200, top: 0x8a1020, top2: 0xff4655, pants: 0x1a1012 },
+  jungle: { name: 'Jungle', price: 1200, top: 0x4a5a2a, top2: 0xc8d06a, pants: 0x2e3520 },
+  desert: { name: 'Desert', price: 1200, top: 0xc8a878, top2: 0x7a5a30, pants: 0x6a5438 },
+  neon: { name: 'Neon', price: 1800, top: 0x14101c, top2: 0xff2bd6, pants: 0x0c0c12 },
+  royal: { name: 'Royal', price: 1800, top: 0x4a1d7a, top2: 0xffd34d, pants: 0x1c1428 },
+  gold: { name: 'Champion', price: 2400, top: 0x1a1612, top2: 0xffd34d, pants: 0x2a2219, hair: 0xffd34d },
+};
+const myOutfit = id => { const o = profile.outfit && profile.outfit[id]; return o && OUTFITS[o] && (profile.outfitsOwned || []).includes(id + ':' + o) ? o : ''; };
+function makeCharacter(agent, outfit) {
+  const L0 = LOOKS[agent.id] || { skin: 0xe0b896, hair: 0x2a2a2a, style: 'short', top: agent.color, top2: agent.color, pants: 0x2b2f38, eye: 0x2a2a2a, gear: [] };
+  const O = OUTFITS[outfit], L = O ? { ...L0, top: O.top, top2: O.top2, pants: O.pants, ...(O.hair ? { hair: O.hair } : {}) } : L0;
   const g = new THREE.Group(); g.userData.outlines = [];
   const M = c => cm(c), skin = cm(L.skin, 14), top = M(L.top), acc = new THREE.MeshLambertMaterial({ color: L.top2, emissive: new THREE.Color(L.top2).multiplyScalar(.25) });
   const pants = M(L.pants), boots = cm(0x1b1d22, 30), hairM = cm(L.hair, 22), W = L.wide || 1, dark = M(0x23262c), glove = M(0x2a2d33);
@@ -5377,7 +5394,7 @@ function setupMatch(agentId, humans = []) {
   }
   for (const h of humans) {
     const e = makeEntity({ id: entities.length, name: h.name, team: 0, agent: h.agent, remote: h.peer }); e.skins = cleanSkins(h.sk);
-    e.mesh = makeCharacter(AGENT[h.agent]); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
+    { const mm = net.members.find(m => m.id === h.peer); e.outfit = mm && mm.of ? mm.of[h.agent] || '' : ''; } e.mesh = makeCharacter(AGENT[h.agent], e.outfit); addNameTag(e); entities.push(e); net.ents[h.peer] = e;
   }
   // allies are the lobby party; swap out anyone who shares the player's agent
   const used = [agentId, ...humans.map(h => h.agent)], nAllyBots = DUEL() ? 0 : CUSTOM() ? Math.max(0, customRules().allies - humans.length) : game.spectate ? 5 : 4 - humans.length;
@@ -5388,7 +5405,7 @@ function setupMatch(agentId, humans = []) {
   for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
   for (let i = 0; i < (DUEL() ? 0 : CUSTOM() ? customRules().enemies : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
   $('gameChat').innerHTML = '';
-  for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
+  for (const b of bots) { if (!b.mesh) { b.outfit = Math.random() < .15 ? pick(Object.keys(OUTFITS)) : ''; b.mesh = makeCharacter(AGENT[b.agent], b.outfit); } b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
   if (!RANGE()) shuffle(bots.slice()).slice(0, 2).forEach((b, i) => botSay(b, 'greet', { force: i === 0, delay: 2500 + i * 1800 }));
   if (game.spectate) { player.spectator = true; player.alive = false; player.hp = 0; if (game.spike && game.spike.carrier === player) { player.hasSpike = false; giveSpike(pick(entities.filter(e => !e.spectator && sideOf(e) === 'atk'))); } }
   clutch.hist = 0; clutchEnd && clutch.on && clutchEnd();
@@ -6729,6 +6746,13 @@ function lineupTick(dt) {
   el.style.left = ((_v3.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - _v3.y) / 2 * innerHeight) + 'px';
   el.querySelector('span').textContent = `${l.key} · ${l.label}${l.crouch ? ' · crouch' : ''}${l.jump ? ' · jump-throw' : ''}${on ? ' · ✓ THROW NOW' : ''}`;
 }
+function outfitRowHTML(a) {
+  if (a.custom) return ''; const cur = myOutfit(a.id), pv = previewOutfit === null ? cur : previewOutfit, own = o => !o || (profile.outfitsOwned || []).includes(a.id + ':' + o);
+  const hex = n => '#' + n.toString(16).padStart(6, '0'), base = LOOKS[a.id] || { top: a.color, top2: a.color };
+  const sw = (o, O) => `<button class="ofSw${pv === o ? ' on' : ''}${cur === o ? ' eq' : ''}" data-of="${o}" title="${O ? O.name : 'Default'}${own(o) ? '' : ' · ' + O.price + ' VP'}" style="--a:${hex(O ? O.top : base.top)};--b:${hex(O ? O.top2 : base.top2)}">${own(o) ? '' : '<i>🔒</i>'}</button>`;
+  const O = OUTFITS[pv], act = pv === cur ? '' : own(pv) ? `<button class="btn small" id="ofAct">WEAR ${O ? O.name.toUpperCase() : 'DEFAULT'}</button>` : `<button class="btn small primary" id="ofAct">BUY ${O.name.toUpperCase()} · <b class="vpI"></b>${O.price}</button>`;
+  return `<div class="amBox"><div class="amHead"><span class="ol">OUTFIT · ${pv ? OUTFITS[pv].name : 'Default'}${pv === cur ? ' · wearing' : ' · preview'}</span></div><div class="ofRow">${sw('', null)}${Object.entries(OUTFITS).map(([o, O]) => sw(o, O)).join('')}</div>${act ? `<div style="margin-top:8px">${act}</div>` : ''}</div>`;
+}
 function lineupListHTML(agent) {
   const rows = []; for (const [map, L] of Object.entries(profile.lineups || {})) for (const l of L) if (l.agent === agent) rows.push(`<div class="luRow"><b>${esc(MAPS[map] ? MAPS[map].name : map)}</b><span>${esc(l.key)} · ${esc(l.label)}${l.crouch ? ' · crouch' : ''}</span><button data-ludel="${map}|${l.id}" title="Delete">✕</button></div>`);
   return `<div class="amBox"><div class="ol">SAVED LINEUPS · throw an ability in a match, then press ${keyName(settings.binds.lineup)} to save that spot</div>${rows.length ? rows.join('') : '<div class="ol" style="margin-top:6px">No lineups for this agent yet.</div>'}</div>`;
@@ -7686,7 +7710,7 @@ function charPortrait(agentId, skin) {
   r.setSize(W, H); r.setClearColor(0, 0); r.clear();
   const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x404050, .9)); const dl = new THREE.DirectionalLight(0xffffff, .8); dl.position.set(2, 3, 4); sc.add(dl);
   const rim = new THREE.DirectionalLight(new THREE.Color(AGENT[agentId].color), 1.2); rim.position.set(-3, 2, -2); sc.add(rim);
-  const g = makeCharacter(AGENT[agentId]); scene.remove(g); g.userData.marker.visible = false; (g.userData.outlines || []).forEach(o => o.visible = false);
+  const g = makeCharacter(AGENT[agentId], myOutfit(agentId)); scene.remove(g); g.userData.marker.visible = false; (g.userData.outlines || []).forEach(o => o.visible = false);
   const gun = buildGun('vandal', AGENT[agentId].color, skin); gun.scale.setScalar(CHAR_GUN_SCALE); g.userData.gunHolder.add(gun);
   g.rotation.y = Math.PI - .45; sc.add(g);
   const cam = new THREE.PerspectiveCamera(30, W / H, .1, 50); cam.position.set(0, 1.25, 5.2); cam.lookAt(0, 1.05, 0); r.render(sc, cam);
@@ -7735,9 +7759,10 @@ const CLAN_COLS = ['#ff4655', '#2fe0b6', '#ffd34d', '#4fa3ff', '#b07aff', '#ff8a
 const cleanTag = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
 const cleanCol = c => /^#[0-9a-f]{6}$/i.test(String(c)) ? c : '#ffd34d';
 const myClanTag = () => profile.clan ? profile.clan.t : '', myClanCol = () => profile.clan ? profile.clan.c : '';
-const clanNet = () => Object.assign({ fc: profile.friendCode }, profile.clan ? { ct: profile.clan.t, cc: profile.clan.c } : {});
+const clanNet = () => Object.assign({ fc: profile.friendCode, of: Object.fromEntries(Object.keys(profile.outfit || {}).map(a => [a, myOutfit(a)]).filter(x => x[1])) }, profile.clan ? { ct: profile.clan.t, cc: profile.clan.c } : {});
 const cleanFc = v => /^VS-[A-Z0-9]{6}$/.test(String(v)) ? String(v) : '';
-const clanIn = d => { const t = cleanTag(d && d.ct), fc = cleanFc(d && d.fc); return t ? { ct: t, cc: cleanCol(d.cc), fc } : { ct: '', cc: '', fc }; };
+const cleanOf = o => { const r = {}; if (o && typeof o === 'object') for (const a in o) if (AGENT[a] && OUTFITS[o[a]]) r[a] = o[a]; return r; };
+const clanIn = d => { const t = cleanTag(d && d.ct), fc = cleanFc(d && d.fc), of = cleanOf(d && d.of); return t ? { ct: t, cc: cleanCol(d.cc), fc, of } : { ct: '', cc: '', fc, of }; };
 const clanChip = (t, c) => t ? `<span class="ctag" style="--cc:${cleanCol(c)}">[${esc(t)}]</span> ` : '';
 const clanCode = c => 'VSCLAN1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: c.n, t: c.t, c: c.c, l: c.l }))));
 function parseClanCode(code) {
@@ -7955,17 +7980,19 @@ function renderLobbyDeck() {
 const LOBBY_SLOTS = [[0, 0], [-1.75, -1.1], [1.75, -1.1], [-3.4, -2.2], [3.4, -2.2]];
 const shadowGeo = new THREE.CircleGeometry(.55, 24), shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .45 });
 let party = [], lobbyChars = [], lobbyView = 'party', lobbyMX = 0, lobbyMY = 0;
-function makeLobbyChar(agentId, skin) {
-  const g = makeCharacter(AGENT[agentId]); scene.remove(g);
+let previewOutfit = null;
+function makeLobbyChar(agentId, skin, outfit) {
+  const g = makeCharacter(AGENT[agentId], outfit); scene.remove(g);
   g.userData.marker.visible = false;
   const gun = buildGun('vandal', AGENT[agentId].color, skin); gun.scale.setScalar(CHAR_GUN_SCALE); g.userData.gunHolder.add(gun); g.userData.lobbyGun = gun;
   const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = .015; g.add(sh);
   lobbyScene.add(g); return g;
 }
 function setLobbyAgent(i, agentId) {
-  const c = lobbyChars[i]; if (!c || c.agent === agentId) return;
+  const of = i === 0 ? (previewOutfit !== null && curTab === 'agents' ? previewOutfit : myOutfit(agentId)) : '';
+  const c = lobbyChars[i]; if (!c || (c.agent === agentId && c.of === of)) return;
   const pos = c.g.position.clone(); lobbyScene.remove(c.g);
-  c.g = makeLobbyChar(agentId, i === 0 ? profile.equip.vandal : 0); c.g.position.copy(pos); c.agent = agentId; c.pop = 1;
+  c.g = makeLobbyChar(agentId, i === 0 ? profile.equip.vandal : 0, of); c.g.position.copy(pos); c.agent = agentId; c.of = of; c.pop = 1;
   updatePlates();
 }
 function buildParty() {
@@ -7974,12 +8001,12 @@ function buildParty() {
   const used = new Set([profile.fav, ...humans.map(h => h.fav)]);
   const others = shuffle(realAgents().filter(a => !used.has(a.id)).map(a => a.id));
   party = [{ name: profile.name, agent: profile.fav, me: true, host: net.role === 'host' }];
-  humans.forEach(h => party.push({ name: h.name, agent: h.fav, human: true, host: h.host, lv: h.lv, ct: h.ct, cc: h.cc }));
+  humans.forEach(h => party.push({ name: h.name, agent: h.fav, human: true, host: h.host, lv: h.lv, ct: h.ct, cc: h.cc, of: h.of && OUTFITS[h.of[h.fav]] ? h.of[h.fav] : '' }));
   for (let i = 0; party.length < 5; i++) party.push({ name: ALLY_NAMES[i], agent: others[i % others.length], bot: true });
   party.forEach((p, i) => {
-    const g = makeLobbyChar(p.agent), [x, z] = LOBBY_SLOTS[i];
+    const of = p.me ? myOutfit(p.agent) : p.of || '', g = makeLobbyChar(p.agent, p.me ? profile.equip.vandal : 0, of), [x, z] = LOBBY_SLOTS[i];
     g.position.set(x, 0, z);
-    lobbyChars.push({ g, agent: p.agent, slot: [x, z], ph: rand(0, 6), pop: 0 });
+    lobbyChars.push({ g, agent: p.agent, slot: [x, z], ph: rand(0, 6), pop: 0, of });
   });
   updatePlates();
 }
@@ -8806,9 +8833,9 @@ function emotePose(m, k, t) {
 let emoteWheel = null, aceCine = null, tpMeshG = null, tpMeshAgent = null;
 // third-person body of the local player (only shown while emoting or during the ace cinematic)
 function playerBody() {
-  if (!tpMeshG || tpMeshAgent !== player.agent) {
+  if (!tpMeshG || tpMeshAgent !== player.agent + myOutfit(player.agent)) {
     if (tpMeshG) scene.remove(tpMeshG);
-    tpMeshG = makeCharacter(AGENT[player.agent]); tpMeshAgent = player.agent;
+    tpMeshG = makeCharacter(AGENT[player.agent], myOutfit(player.agent)); tpMeshAgent = player.agent + myOutfit(player.agent);
     tpMeshG.userData.marker.visible = false; tpMeshG.userData.outlines.forEach(o => o.visible = false); addPosePivot(tpMeshG);
   }
   return tpMeshG;
@@ -9181,7 +9208,7 @@ function addPosePivot(g) {
   ud.pivot = piv; return piv;
 }
 function mvpChar(e, x, z, scale) {
-  const g = makeCharacter(AGENT[e.agent]); scene.remove(g); g.userData.marker.visible = false; g.userData.outlines.forEach(o => o.visible = false);
+  const g = makeCharacter(AGENT[e.agent], e.isPlayer ? myOutfit(e.agent) : e.outfit || ''); scene.remove(g); g.userData.marker.visible = false; g.userData.outlines.forEach(o => o.visible = false);
   const key = (e.primary && e.primary.key) || e.mvpGun || 'vandal', inst = { key, sk: e.primary ? e.primary.sk : undefined };
   const gun = buildGun(key, AGENT[e.agent].color, skinOf(e, inst)); gun.scale.setScalar(CHAR_GUN_SCALE); g.userData.gunHolder.add(gun);
   const short = ['pistol', 'knife', 'blades'].includes(WEAPONS[key].model); g.userData.armL.visible = !short; g.userData.armLShort.visible = short;
@@ -10939,7 +10966,7 @@ function refreshLobbyGuns() {
   ud.lobbyGun = buildGun('vandal', AGENT[c.agent].color, profile.equip.vandal); ud.lobbyGun.scale.setScalar(CHAR_GUN_SCALE); ud.gunHolder.add(ud.lobbyGun);
 }
 function showTab(t) {
-  curTab = t; tick();
+  curTab = t; tick(); previewOutfit = null;
   document.querySelectorAll('#navTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   ['home', 'play', 'agents', 'career', 'collection', 'pass', 'store'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
   lobbyView = t === 'agents' ? 'solo' : (t === 'home' || t === 'play') ? 'party' : 'dim';
@@ -11096,11 +11123,15 @@ function abilityRows(a) {
 }
 function renderAgentTab() {
   $('agGrid2').innerHTML = AGENTS.map(a => agentCard(a, a.id === previewAgent)).join('');
-  $('agGrid2').querySelectorAll('.agent').forEach(d => d.onclick = () => { previewAgent = d.dataset.id; setLobbyAgent(0, previewAgent); renderAgentTab(); tick(); });
+  $('agGrid2').querySelectorAll('.agent').forEach(d => d.onclick = () => { previewAgent = d.dataset.id; previewOutfit = null; setLobbyAgent(0, previewAgent); renderAgentTab(); tick(); });
   const a = AGENT[previewAgent], fav = previewAgent === profile.fav;
-  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}${masteryPanelHTML(a.id)}${lineupListHTML(a.id)}
+  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}${outfitRowHTML(a)}${masteryPanelHTML(a.id)}${lineupListHTML(a.id)}
     <button class="favBtn ${fav ? 'on' : ''}" id="favBtn">${fav ? '★ FAVORITE AGENT' : '☆ SET AS FAVORITE'}</button>${a.custom ? '<button class="favBtn" id="editAgentBtn" style="margin-left:8px;border-color:#ff4fd8;color:#ff4fd8">✎ EDIT AGENT</button>' : ''}`;
   if (a.custom) $('editAgentBtn').onclick = () => { tick(); openAgentMaker(a.id); };
+  document.querySelectorAll('[data-of]').forEach(b => b.onclick = () => { previewOutfit = b.dataset.of; setLobbyAgent(0, previewAgent); tick(); renderAgentTab(); });
+  if ($('ofAct')) $('ofAct').onclick = () => { const a = previewAgent, o = previewOutfit, key = a + ':' + o; profile.outfitsOwned = profile.outfitsOwned || []; profile.outfit = profile.outfit || {};
+    if (o && !profile.outfitsOwned.includes(key)) { const pr = OUTFITS[o].price; if (profile.vp < pr) { SND.deny(); toastMenu(`You need ${(pr - profile.vp).toLocaleString()} more VP`); return; } profile.vp -= pr; profile.outfitsOwned.push(key); refreshVP(); }
+    if (o) profile.outfit[a] = o; else delete profile.outfit[a]; saveProfile(); SND.buy(); netProfileChanged(); buildParty(); toastMenu(o ? `${AGENT[a].name} is wearing ${OUTFITS[o].name}` : `${AGENT[a].name} back to the default outfit`); renderAgentTab(); };
   document.querySelectorAll('[data-ludel]').forEach(b => b.onclick = () => { const [m, id] = b.dataset.ludel.split('|'); profile.lineups[m] = (profile.lineups[m] || []).filter(l => l.id !== id); saveProfile(); renderAgentTab(); });
   $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); net.partySig = ''; buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); netProfileChanged(); };
 }
