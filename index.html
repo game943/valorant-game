@@ -3636,6 +3636,16 @@ function makeZone(o) {
   const disc = new THREE.Mesh(new THREE.CircleGeometry(z.r, 28), new THREE.MeshBasicMaterial({ color: colors[z.kind], transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; disc.position.y = .05; g.add(disc);
   if (z.kind === 'turret' || z.kind === 'cam' || z.kind === 'trap' || z.kind === 'nano' || z.kind === 'cage' || z.kind === 'tmark' || z.kind === 'anchor' || z.kind === 'vine' || z.kind === 'shear') disc.visible = false;
+  if (z.kind === 'stim') { // Brimstone's Stim Beacon: a planted pole with a pulsing green light and a dome
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .1, 1.1, 10), new THREE.MeshLambertMaterial({ color: 0x3a3a34 })); pole.position.y = .55; g.add(pole);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(.12, 12, 8), new THREE.MeshBasicMaterial({ color: 0x4dff88 })); lamp.position.y = 1.15; g.add(lamp);
+    for (let i = 0; i < 3; i++) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .5, 6), new THREE.MeshLambertMaterial({ color: 0xff8a2a })); const a = i / 3 * Math.PI * 2; leg.position.set(Math.cos(a) * .18, .18, Math.sin(a) * .18); leg.rotation.set(Math.sin(a) * .6, 0, -Math.cos(a) * .6); g.add(leg); }
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(z.r, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x4dff88, transparent: true, opacity: .1, depthWrite: false, side: THREE.DoubleSide })); g.add(dome); z.spin2 = lamp;
+  }
+  if (z.kind === 'slow' && z.ice !== false) { // Sage's Slow Orb / slowing fields: a carpet of frosty ice crystals
+    const ice = new THREE.MeshLambertMaterial({ color: 0xcfe6ff, emissive: 0x2a4a7a, transparent: true, opacity: .85 });
+    for (let i = 0; i < Math.round(z.r * 5); i++) { const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * z.r * .9, c = new THREE.Mesh(new THREE.OctahedronGeometry(rand(.06, .16)), ice); c.position.set(Math.cos(a) * d, .05, Math.sin(a) * d); c.scale.y = rand(1, 2.2); c.rotation.set(rand(-.4, .4), rand(0, 3), rand(-.4, .4)); g.add(c); }
+  }
   if (z.kind === 'sensor') { // Deadlock's Sonic Sensor: small grey pod with a blue listening ring
     const pod = new THREE.Mesh(new THREE.CylinderGeometry(.16, .2, .22, 12), new THREE.MeshLambertMaterial({ color: 0xd8dde4 })); pod.position.y = .11; g.add(pod);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(.17, .025, 6, 20), new THREE.MeshBasicMaterial({ color: 0x5ac8ff })); ring.rotation.x = Math.PI / 2; ring.position.y = .2; g.add(ring); disc.visible = false;
@@ -4196,7 +4206,7 @@ function waterLine(e, from, to, dur, speed, steer) { // a wall of water that gro
     if (steer && e.alive) { const g = fwd(e), gl = Math.hypot(g.x, g.z) || 1, k = Math.min(1, dt * 2.5); dx += (g.x / gl - dx) * k; dz += (g.z / gl - dz) * k; const n = Math.hypot(dx, dz) || 1; dx /= n; dz /= n; }
     const st = speed * dt; x += dx * st; z += dz * st; dist += st; acc += st;
     if (x < 1 || z < 1 || x > MAPW - 1 || z > MAPH - 1 || hAtPos(x, z) > 4) { dist = to; return; }
-    if (acc >= 2.4) { acc = 0; makeSmoke(x, z, 1.6, dur, 0x2a98b8, e); makeZone({ x, z, r: 1.8, kind: 'slow', t: dur, owner: e }); fx('parts', x, .5, z, 6, 0x7fe8ff, 3, .5); }
+    if (acc >= 2.4) { acc = 0; makeSmoke(x, z, 1.6, dur, 0x2a98b8, e); makeZone({ x, z, r: 1.8, kind: 'slow', t: dur, owner: e, ice: false }); fx('parts', x, .5, z, 6, 0x7fe8ff, 3, .5); }
   }, end() { } });
 }
 // Deadlock's Annihilation: cocoon drags the victim back; a teammate touching it breaks it, otherwise they die
@@ -4469,7 +4479,7 @@ const ABIL = {
     if (abOwner(e, ab) === 'viper') { sm.t = sm.max = 1e6; e.viperCloud = sm; } // Viper turns her cloud on and off with fuel
     return true;
   },
-  updraft(e) { e.vy = 11.5; e.onGround = false; spawnParticles(e.x, e.y, e.z, 20, 0xdff4ff, 3, .5); return true; },
+  updraft(e) { e.vy = 11.5; e.onGround = false; fx('wind', e.x, e.y, e.z, 1); return true; },
   dash(e) {
     if (!e.isPlayer && !e.remote) { doDash(e); return true; } // bots dash right away
     e.tailwindT = 7.5; fx('parts', e.x, e.y + 1, e.z, 16, 0xdff4ff, 2, .5); // readied: press again to dash
@@ -4525,8 +4535,8 @@ const ABIL = {
   wall(e, ab, target) { const ok = sageWall(e, target), w = dynWalls[dynWalls.length - 1], tint = { deadlock: [0x7cc8ff, 0x1a4a8a], iso: [0xb48cff, 0x3a1a8a], vyse: [0xaeb8c6, 0x2a303a] }[abOwner(e, ab)]; if (ok && w && w.mesh && tint) { w.mesh.material.color.setHex(tint[0]); w.mesh.material.emissive.setHex(tint[1]); } return ok; },
   slow(e, ab) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2), { color: 0x9fb3ff, owner: e, model: 'orb' })); p.onLand = () => makeZone({ x: p.x, z: p.z, r: 5, kind: 'slow', t: 7, owner: e }); return true; },
   heal(e, ab, target) {
-    if (target && target.id >= 0) { const a = entities[target.id]; if (a && a.alive && a !== e && !isEnemy(a, e) && Math.hypot(a.x - e.x, a.z - e.z) < 20) { if (a.hp >= 100) { toastTo(e, `${a.name} is already at full health`); return false; } a.healT = 4; a.healRate = 15; a.healCap = 100; fx('parts', a.x, a.y + 1, a.z, 20, 0x5fe6c8, 2, .7); toastTo(a, `${e.name} is healing you`); toastTo(e, `Healing ${a.name}`); return true; } }
-    if (e.hp >= 100) { toastTo(e, 'Health is already full — nothing to heal'); if (e.isPlayer) SND.deny(); return false; } e.healT = 4; e.healRate = 15; e.healCap = 100; spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
+    if (target && target.id >= 0) { const a = entities[target.id]; if (a && a.alive && a !== e && !isEnemy(a, e) && Math.hypot(a.x - e.x, a.z - e.z) < 20) { if (a.hp >= 100) { toastTo(e, `${a.name} is already at full health`); return false; } a.healT = 4; a.healRate = 15; a.healCap = 100; fx('healGlow', a.id, 4); fx('parts', a.x, a.y + 1, a.z, 20, 0x5fe6c8, 2, .7); toastTo(a, `${e.name} is healing you`); toastTo(e, `Healing ${a.name}`); return true; } }
+    if (e.hp >= 100) { toastTo(e, 'Health is already full — nothing to heal'); if (e.isPlayer) SND.deny(); return false; } e.healT = 4; e.healRate = 15; e.healCap = 100; fx('healGlow', e.id, 4); spawnParticles(e.x, e.y + 1, e.z, 20, 0x5fe6c8, 2, .7); return true; },
   revive(e, ab, target) {
     let best = null, bd = 60;
     if (target && target.id >= 0) { const o = entities[target.id]; if (o && !o.alive && o.team === e.team && o.deathPos && Math.hypot(o.deathPos.x - e.x, o.deathPos.z - e.z) < 20) best = o; }
@@ -4559,7 +4569,7 @@ const ABIL = {
     const pt = { x: target.x, z: target.z };
     if (Math.hypot(pt.x - e.x, pt.z - e.z) > 14) { toastTo(e, 'Too far'); return false; }
     if (game.phase === 'buy' && blockedAt(e, pt.x, pt.z)) { toastTo(e, 'Cannot leave the spawn yet'); return false; }
-    fx('parts', e.x, e.y + 1, e.z, 24, 0x7b7fe0, 2, .8); fx('parts', pt.x, 1, pt.z, 24, 0x4b3fa0, 2, .9);
+    fx('shadowPortal', e.x, e.z, 1.6); fx('shadowPortal', pt.x, pt.z, 2.2);
     if (e.isPlayer) shadeScreen(.9, '');
     timedFx.push({ t: .9, update() { }, end() { if (e.alive) teleportTo(e, pt); } });
     return true;
@@ -4742,7 +4752,7 @@ const ABIL = {
     const hurt = entities.filter(o => o.alive && !isEnemy(o, e) && Math.hypot(o.x - e.x, o.z - e.z) < 14 && o.hp < 100 && (o === e || los(e.x, eyeY(e), e.z, o.x, o.y + 1, o.z, true)));
     if (!hurt.length) { toastTo(e, 'Nobody nearby is hurt — Regrowth not used'); if (e.isPlayer) SND.deny(); return false; }
     for (const o of hurt) { o.healT = 3; o.healRate = 20; o.healCap = 100; fx('parts', o.x, o.y + 1, o.z, 18, 0x7fd36b, 2, .7); if (o !== e) toastTo(o, `${e.name} is healing you`); }
-    fx('pulse', e.x, e.y + 1, e.z, 14);
+    fx('vines', e.x, e.z, 14); for (const o of hurt) fx('healGlow', o.id, 3);
     toastTo(e, `Regrowth: healing ${hurt.length === 1 && hurt[0] === e ? 'yourself' : hurt.length + (hurt.length === 1 ? ' player' : ' players')}`);
     return true;
   },
@@ -4906,7 +4916,7 @@ function doDash(e) {
   } else { dx = e.vx; dz = e.vz; }
   let l = Math.hypot(dx, dz);
   if (l < .3) { const f = fwd(e); dx = f.x; dz = f.z; l = Math.hypot(dx, dz) || 1; }
-  e.dashX = dx / l * 44; e.dashZ = dz / l * 44; e.dashT = .17; e.tailwindT = 0;
+  e.dashX = dx / l * 44; e.dashZ = dz / l * 44; e.dashT = .17; e.tailwindT = 0; fx('wind', e.x, e.y + .6, e.z, 0);
   if (e.vy < 0) e.vy = 0;
   const x0 = e.x, z0 = e.z; let k = 0;
   timedFx.push({ t: .25, update() { if (k++ % 2 === 0) spawnParticles(e.x, e.y + 1, e.z, 8, 0xdff4ff, 1.2, .35); }, end() { } });
@@ -4917,7 +4927,7 @@ function doDash(e) {
 function toggleSprint(e) {
   if (e.sprint) { e.sprint = false; if (e.isPlayer) { equipView(); sndTone(500, .1, .1, 'triangle', 300); } return; }
   if ((e.energy ?? 100) < 8) { toastTo(e, 'Not enough energy — get kills or wait for it to recharge'); if (e.isPlayer) SND.deny(); return; }
-  e.sprint = true; if (e.isPlayer) { cancelPlace(); sndTone(300, .2, .15, 'sawtooth', 900); }
+  e.sprint = true; fx('gearTrail', e.id); if (e.isPlayer) { cancelPlace(); sndTone(300, .2, .15, 'sawtooth', 900); }
 }
 function neonTick(e, dt) {
   if (!kit(e, 'neon')) return;
@@ -7617,6 +7627,36 @@ function banterLine(e, text) {
   speakLine(text, e.agent, true);
 }
 const FX = {
+  wind(x, y, z, up) { // Jett: a gust of wind - spiralling white rings
+    const g = new THREE.Group(), rings = []; for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(.5 + i * .12, .03, 6, 28), addMat(0xe8f8ff, .7)); r.rotation.x = Math.PI / 2; g.add(r); rings.push(r); }
+    g.position.set(x, y + .2, z);
+    lfxAdd(g, .7, (k) => { rings.forEach((r, i) => { r.position.y = (up ? k * 3 : k * .6) * (1 + i * .3); r.scale.setScalar(1 + k * (1 + i * .3)); r.material.opacity = .7 * (1 - k); r.rotation.z += .2; }); });
+  },
+  shadowPortal(x, z, t) { // Omen: a pool of shadow where he leaves and where he arrives
+    const g = new THREE.Group(), disc = new THREE.Mesh(new THREE.CircleGeometry(.9, 28), new THREE.MeshBasicMaterial({ color: 0x120a24, transparent: true, opacity: .85, depthWrite: false })); disc.rotation.x = -Math.PI / 2; disc.position.y = .04; g.add(disc);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.85, 1, 32), addMat(0x7b6bff, .8)); ring.rotation.x = -Math.PI / 2; ring.position.y = .05; g.add(ring);
+    const wisps = []; for (let i = 0; i < 6; i++) { const w = new THREE.Mesh(new THREE.ConeGeometry(.09, .9, 5), new THREE.MeshBasicMaterial({ color: 0x2a1a4a, transparent: true, opacity: .8 })); const a = i / 6 * Math.PI * 2; w.position.set(Math.cos(a) * .5, .4, Math.sin(a) * .5); g.add(w); wisps.push(w); }
+    g.position.set(x, 0, z);
+    lfxAdd(g, t, (k, dt, f) => { ring.rotation.z += dt * 3; wisps.forEach((w, i) => { w.scale.y = .5 + Math.abs(Math.sin(f.t * 6 + i)) * .8; w.material.opacity = .8 * (1 - k); }); disc.material.opacity = .85 * (1 - k * k); });
+  },
+  vines(x, z, r) { // Skye: a ring of healing vines and leaves sprouting around her
+    const g = new THREE.Group(), lm = new THREE.MeshLambertMaterial({ color: 0x7fd36b, emissive: 0x1a4a10 }), parts = [];
+    for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, d = 1 + Math.random() * 1.2, v = new THREE.Mesh(new THREE.ConeGeometry(.06, .8, 5), lm); v.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); v.rotation.set(Math.sin(a) * .4, 0, -Math.cos(a) * .4); g.add(v); parts.push(v);
+      const lf = new THREE.Mesh(new THREE.CircleGeometry(.12, 6), new THREE.MeshLambertMaterial({ color: 0x9be86b, side: THREE.DoubleSide })); lf.position.set(Math.cos(a) * d, .5, Math.sin(a) * d); lf.rotation.set(-.6, a, 0); g.add(lf); parts.push(lf); }
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r - .2, r, 48), addMat(0x9be86b, .5)); ring.rotation.x = -Math.PI / 2; ring.position.y = .05; g.add(ring); g.position.set(x, 0, z);
+    lfxAdd(g, 3, (k, dt, f) => { const grow = Math.min(1, f.t * 3), shrink = k > .8 ? (1 - k) / .2 : 1; parts.forEach(p => p.scale.setScalar(Math.max(.01, grow * shrink))); ring.material.opacity = .5 * shrink; ring.rotation.z += dt; });
+  },
+  healGlow(id, t) { // Sage / Skye: soft green crosses rising around whoever is being healed
+    const e = entities[id]; if (!e) return; const g = new THREE.Group(), m = addMat(0x6affc8, .8), cr = [];
+    for (let i = 0; i < 5; i++) { const c = new THREE.Group(); c.add(new THREE.Mesh(new THREE.PlaneGeometry(.06, .2), m), new THREE.Mesh(new THREE.PlaneGeometry(.2, .06), m)); g.add(c); cr.push(c); }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.55, .02, 6, 28), m); ring.rotation.x = Math.PI / 2; g.add(ring);
+    lfxAdd(g, t, (k, dt, f) => { g.position.set(e.x, e.y, e.z); cr.forEach((c, i) => { const a = (f.t * .8 + i / 5) % 1, an = i / 5 * Math.PI * 2 + f.t; c.position.set(Math.cos(an) * .45, .3 + a * 1.8, Math.sin(an) * .45); c.lookAt(camera.position); c.scale.setScalar(1 - a * .5); }); ring.position.y = .2 + Math.sin(f.t * 3) * .4 + .5; if (f.t > .3 && (!e.alive || !(e.healT > 0))) f.t = f.life; });
+  },
+  gearTrail(id) { // Neon: electric crackle around her while High Gear runs
+    const e = entities[id]; if (!e) return; const g = new THREE.Group(), bolts = []; for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(.02, .5, .02), addMat(0x46b6ff, .9)); g.add(b); bolts.push(b); }
+    g.add(AB.glow(0x46b6ff, 1.4));
+    lfxAdd(g, 60, (k, dt, f) => { g.position.set(e.x, e.y + .9, e.z); bolts.forEach(b => { b.position.set(rand(-.4, .4), rand(-.7, .6), rand(-.4, .4)); b.rotation.set(rand(0, 3), rand(0, 3), rand(0, 3)); }); if (!e.alive || !e.sprint) f.t = f.life; });
+  },
   reviveFx(x, y, z) { // Sage: a column of jade light with spreading wings, the ally rises inside it
     const g = new THREE.Group(), pil = new THREE.Mesh(new THREE.CylinderGeometry(.9, 1.2, 14, 20, 1, true), addMat(0x7ff0d8, .55)); pil.position.y = 7; g.add(pil);
     const wings = []; for (const s of [-1, 1]) { const w = new THREE.Mesh(new THREE.CircleGeometry(1.6, 18, s > 0 ? -.2 : Math.PI - 1.2, 1.4), addMat(0xb8fff0, .6)); w.position.set(0, 1.6, 0); g.add(w); wings.push(w); }
@@ -12707,7 +12747,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 99;
+const BUILD = 100;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
