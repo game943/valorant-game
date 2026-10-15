@@ -759,6 +759,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .ecoHead .btn{margin:0;white-space:nowrap}.ecoTeam{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
 .ecoMate{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.25);padding:2px 8px;font-size:11px}.ecoMate.me{outline:1px solid var(--teal)}.ecoMate i{font-style:normal;color:#ffd34d}.ecoMate em{font-style:normal;color:#9aa6b2}
 .ecoAvg{margin-left:auto;font-size:11px;color:#9aa6b2}
+.rcRow{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:13px}.rcDot{width:8px;height:8px;border-radius:50%;background:#56616c;flex:0 0 8px}.rcDot.on{background:#2fe0b6;box-shadow:0 0 6px #2fe0b6}.rcDot.busy{background:#ffd34d}
+.rcName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rcAgo{font-size:11px;color:#7d8790}.rcInv{width:auto!important;padding:4px 10px!important;margin:0!important;font-size:11px!important}
+.rcRef{background:none;border:0;color:#9aa6b2;cursor:pointer;font-size:13px}
+.invPop{position:fixed;right:20px;top:80px;z-index:90;background:#1c2631;border:1px solid var(--teal);border-left:4px solid var(--teal);padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:14px;animation:btIn .3s ease-out;max-width:320px}
+.invBtns{display:flex;gap:8px;margin-top:10px}.invBtns .btn{margin:0;width:auto;padding:7px 14px}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -897,6 +902,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="ppRow"><button class="ppBtn" id="btnVoice">🎙 JOIN VOICE</button><span id="vcMe" class="vcMe">🎙</span></div><div id="vcInfo" class="ol" style="text-transform:none;letter-spacing:0;margin-top:4px"></div>
       <button class="ppBtn danger" id="btnLeave">LEAVE PARTY</button>
     </div>
+    <div id="ppRecent"></div>
     <div id="ppStatus"></div>
     <div class="ppNote">Share the code with friends. Up to 5 players team up against bots. The host runs the match — no account or server needed.</div>
   </div>
@@ -5628,6 +5634,7 @@ function finishMatch() {
     hs: matchStats.hs, hits: matchStats.hits, dmg: Math.round(matchStats.dmg), rounds: game.round, fk: matchStats.fk });
   { const L = profile.life = profile.life || { agents: {}, maps: {} }; const ag = L.agents[p.agent] = L.agents[p.agent] || { m: 0, w: 0, k: 0, d: 0 }, mp = L.maps[game.mapId] = L.maps[game.mapId] || { m: 0, w: 0 };
     ag.m++; ag.w += won ? 1 : 0; ag.k += p.kills; ag.d += p.deaths; mp.m++; mp.w += won ? 1 : 0; }
+  if (net.role !== 'off' && profile.recent) for (const m of net.members) { const r = profile.recent.find(x => x.fc === m.fc); if (r) { r.n = (r.n || 0) + 1; r.t = Date.now(); } }
   if (profile.clan && !RANGE()) { const st = profile.clan.st = profile.clan.st || { m: 0, w: 0, k: 0, mates: 0 }; st.m++; st.w += won ? 1 : 0; st.k += p.kills; if (net.role !== 'off' && net.members.some(m => m.id !== net.myId && m.ct === profile.clan.t)) st.mates++; }
   profile.matches = profile.matches.slice(0, 50); saveProfile(); refreshVP();
   const coach = !RANGE() && !DM() && !game.spectate ? coachReport(won) : null; if (coach && profile.matches[0]) { profile.matches[0].coach = coach; saveProfile(); }
@@ -6954,6 +6961,73 @@ function animateNetChar(e, dt) {
 function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
 function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host', sk: { ...profile.equip }, ...clanNet() }; }
 function setPartyStatus(m) { $('ppStatus').textContent = m || ''; }
+/* --- recent players + invites: everyone keeps a tiny "presence" connection named after their friend code,
+       so friends you played with can see you're online and invite you straight into their party --- */
+const presence = { peer: null, online: {}, checking: false };
+const presenceId = fc => NET_PREFIX + 'fc-' + fc.toLowerCase();
+function startPresence() {
+  if (presence.peer || (!NET_LOCAL && typeof Peer === 'undefined') || !profile.friendCode) return;
+  try { presence.peer = makePeer(presenceId(profile.friendCode)); } catch (e) { return; }
+  presence.peer.on('connection', conn => conn.on('data', d => {
+    if (!d || typeof d !== 'object') return;
+    if (d.t === 'hi') conn.send({ t: 'here', inParty: net.role !== 'off', name: profile.name });
+    else if (d.t === 'invite' && /^[A-Z0-9]{5}$/.test(String(d.code))) showInvite(cleanName(d.from), String(d.code), clanIn(d));
+  }));
+  presence.peer.on('error', e => { if (e && e.type === 'unavailable-id') { try { presence.peer.destroy(); } catch (x) { } presence.peer = null; } }); // open in another tab already
+  presence.peer.on('disconnected', () => { try { presence.peer.reconnect(); } catch (e) { } });
+}
+// say something to a friend's presence peer; resolves with their answer, or null if they're offline
+function presenceAsk(fc, msg) {
+  return new Promise(res => {
+    if (!presence.peer || presence.peer.disconnected) { res(null); return; }
+    let done = false; const fin = v => { if (done) return; done = true; try { c.close(); } catch (e) { } res(v); };
+    let c; try { c = presence.peer.connect(presenceId(fc), { reliable: true, serialization: 'json' }); } catch (e) { res(null); return; }
+    c.on('open', () => { c.send(msg); if (msg.t !== 'hi') setTimeout(() => fin(true), 400); });
+    c.on('data', d => fin(d)); c.on('error', () => fin(null)); setTimeout(() => fin(null), 6000);
+  });
+}
+function noteRecent() {
+  if (net.role === 'off') return; profile.recent = profile.recent || [];
+  let changed = false;
+  for (const m of net.members) {
+    if (m.id === net.myId || !m.fc || m.fc === profile.friendCode) continue;
+    let r = profile.recent.find(x => x.fc === m.fc); if (!r) { r = { fc: m.fc, n: 0 }; profile.recent.unshift(r); changed = true; }
+    if (r.name !== m.name || r.ct !== m.ct || Date.now() - (r.t || 0) > 60000) { Object.assign(r, { name: m.name, fav: m.fav, ct: m.ct, cc: m.cc, t: Date.now() }); changed = true; }
+  }
+  if (changed) { profile.recent.sort((a, b) => b.t - a.t); profile.recent = profile.recent.slice(0, 15); saveProfile(); }
+}
+const agoTxt = t => { const m = Math.floor((Date.now() - t) / 6e4); return m < 2 ? 'just now' : m < 60 ? m + 'm ago' : m < 1440 ? Math.floor(m / 60) + 'h ago' : Math.floor(m / 1440) + 'd ago'; };
+function renderRecent() {
+  const box = $('ppRecent'); if (!box) return; const R = (profile.recent || []).filter(r => !net.members.some(m => m.fc === r.fc));
+  if (!R.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="ppOr ol" style="margin-top:12px">RECENT PLAYERS <button class="rcRef" id="rcRef" title="Check who is online">⟳</button></div>` + R.slice(0, 8).map(r => { const on = presence.online[r.fc];
+    return `<div class="rcRow"><i class="rcDot ${on === true ? 'on' : on === 'party' ? 'busy' : ''}" title="${on === true ? 'Online' : on === 'party' ? 'In a party' : 'Offline or unknown'}"></i><span class="rcName">${clanChip(r.ct, r.cc)}${esc(r.name || r.fc)}</span><span class="rcAgo">${agoTxt(r.t || 0)}</span><button class="ppBtn rcInv" data-inv="${r.fc}">INVITE</button></div>`; }).join('');
+  $('rcRef').onclick = () => checkRecentOnline(true);
+  box.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => inviteFriend(b.dataset.inv, b));
+  if (!presence.checking && Date.now() - (presence.lastCheck || 0) > 60000) checkRecentOnline();
+}
+async function checkRecentOnline(manual) {
+  if (presence.checking && !manual) return; presence.checking = true; presence.lastCheck = Date.now(); startPresence();
+  await new Promise(r => setTimeout(r, presence.peer && presence.peer.open ? 0 : 2500));
+  await Promise.all((profile.recent || []).slice(0, 8).map(async r => { const a = await presenceAsk(r.fc, { t: 'hi' }); presence.online[r.fc] = a && a.t === 'here' ? (a.inParty ? 'party' : true) : false; }));
+  presence.checking = false; renderRecent(); if (manual) tick();
+}
+async function inviteFriend(fc, btn) {
+  startPresence(); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  if (net.role === 'off') { createParty(); for (let i = 0; i < 40 && !(net.role === 'host' && net.code); i++) await new Promise(r => setTimeout(r, 250)); }
+  if (!net.code) { if (btn) { btn.disabled = false; btn.textContent = 'INVITE'; } setPartyStatus('Could not open a party to invite into.'); return; }
+  const ok = await presenceAsk(fc, { t: 'invite', code: net.code, from: profile.name, ...clanNet() });
+  if (btn) { btn.disabled = false; btn.textContent = ok ? 'SENT ✓' : 'OFFLINE'; setTimeout(() => { btn.textContent = 'INVITE'; }, 2500); }
+  setPartyStatus(ok ? 'Invite sent — they get a pop-up to join.' : 'They seem to be offline (their game has to be open).');
+}
+function showInvite(from, code, cl) {
+  const el = document.createElement('div'); el.className = 'invPop';
+  el.innerHTML = `<div><b>${clanChip(cl.ct, cl.cc)}${esc(from)}</b> invited you to their party</div><div class="invBtns"><button class="btn primary">JOIN</button><button class="btn">IGNORE</button></div>`;
+  document.body.appendChild(el); sndTone(880, .15, .14, 'triangle', 1320); sndTone(1320, .2, .12, 'triangle', 1760, undefined, undefined, .12);
+  const [j, x] = el.querySelectorAll('button'); const close = () => el.remove(); setTimeout(close, 20000);
+  j.onclick = () => { close(); if (game.state !== 'menu') { toast('Finish or leave the match first'); return; } if (net.role !== 'off') leaveParty(); setTimeout(() => { $('partyPanel').classList.remove('hidden'); joinParty(code); }, 300); };
+  x.onclick = close;
+}
 /* --- party voice chat: WebRTC audio between party members (push-to-talk or open mic; in a match you only hear your own team) --- */
 const vc = { on: false, stream: null, calls: {}, audio: {}, talking: false, meters: {} };
 const vcSupported = () => !NET_LOCAL && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
@@ -7209,7 +7283,7 @@ function sendChat() {
   if (net.role === 'host') partyMsg(profile.name, txt); else if (net.role === 'client') netSend({ t: 'chat', m: txt });
 }
 function renderPartyPanel() {
-  const inParty = net.role !== 'off';
+  const inParty = net.role !== 'off'; noteRecent(); renderRecent();
   $('ppSolo').classList.toggle('hidden', inParty); $('ppIn').classList.toggle('hidden', !inParty);
   const mem = inParty ? net.members : [{ id: 'me', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp) }];
   $('ppCount').textContent = inParty ? `${net.members.length}/5` : 'SOLO';
@@ -7598,8 +7672,9 @@ const CLAN_COLS = ['#ff4655', '#2fe0b6', '#ffd34d', '#4fa3ff', '#b07aff', '#ff8a
 const cleanTag = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
 const cleanCol = c => /^#[0-9a-f]{6}$/i.test(String(c)) ? c : '#ffd34d';
 const myClanTag = () => profile.clan ? profile.clan.t : '', myClanCol = () => profile.clan ? profile.clan.c : '';
-const clanNet = () => profile.clan ? { ct: profile.clan.t, cc: profile.clan.c } : {};
-const clanIn = d => { const t = cleanTag(d && d.ct); return t ? { ct: t, cc: cleanCol(d.cc) } : { ct: '', cc: '' }; };
+const clanNet = () => Object.assign({ fc: profile.friendCode }, profile.clan ? { ct: profile.clan.t, cc: profile.clan.c } : {});
+const cleanFc = v => /^VS-[A-Z0-9]{6}$/.test(String(v)) ? String(v) : '';
+const clanIn = d => { const t = cleanTag(d && d.ct), fc = cleanFc(d && d.fc); return t ? { ct: t, cc: cleanCol(d.cc), fc } : { ct: '', cc: '', fc }; };
 const clanChip = (t, c) => t ? `<span class="ctag" style="--cc:${cleanCol(c)}">[${esc(t)}]</span> ` : '';
 const clanCode = c => 'VSCLAN1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: c.n, t: c.t, c: c.c, l: c.l }))));
 function parseClanCode(code) {
@@ -11265,7 +11340,7 @@ profile.customMaps = (Array.isArray(profile.customMaps) ? profile.customMaps : [
 if (settings.map && !MAPS[settings.map] && settings.map !== 'random') settings.map = 'dustwall';
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
-checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
+setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
 const BUILD = 86;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
