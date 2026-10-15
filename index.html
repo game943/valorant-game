@@ -730,6 +730,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .clBtns{display:flex;gap:6px;flex-wrap:wrap}.clBtns .btn,.clRow .btn{width:auto;margin:0;padding:7px 12px}
 .clRow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.clRow input{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:7px 9px;font:500 13px 'Noto Sans KR',sans-serif;flex:1;min-width:120px}
 .clPick{display:flex;gap:4px;flex-wrap:wrap}.clPick button{background:#1c2631;border:1px solid transparent;font-size:18px;width:32px;height:32px;cursor:pointer;padding:0}.clPick button.on{border-color:#fff}.clPick button.sw{width:24px;height:24px;border-radius:50%}
+.lbBox{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}.lbRow{display:grid;grid-template-columns:44px 30px 1fr 90px 110px 80px;align-items:center;gap:8px;padding:4px 10px;background:rgba(255,255,255,.03);font-size:13px}
+.lbRow img{width:26px;height:26px}.lbRow.me{background:rgba(47,224,182,.12);outline:1px solid var(--teal)}.lbPos{font:700 15px Oswald,sans-serif;color:#9aa6b2}.lbRow:nth-child(-n+3) .lbPos{color:#ffd34d}
+.lbName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lbName small{color:var(--teal)}.lbAg{font-size:11px}.lbRank{font:600 12px Oswald,sans-serif;letter-spacing:1px}.lbRow b{font:700 13px Oswald,sans-serif;text-align:right}
+.lbGap{text-align:center;color:#7d8790;font-size:12px;padding:3px}.lbHist{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#aab4be}.lbHist span{background:rgba(255,255,255,.04);padding:3px 8px}.lbHist b{color:#ffd34d}
+@media (max-width:700px){.lbRow{grid-template-columns:36px 24px 1fr 70px}.lbAg,.lbRank{display:none}}
 .coach{margin:10px 0;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:left}
 .coHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.coGrade{font:700 26px Oswald,sans-serif;width:38px;text-align:center;border:2px solid;line-height:1.2}
 .coGrade.gS{color:#ffd34d}.coGrade.gA{color:#2fe0b6}.coGrade.gB{color:#4fa3ff}.coGrade.gC{color:#c9d0d6}.coGrade.gD{color:#ff4655}
@@ -9570,6 +9575,46 @@ function rankResultHTML(res) {
   return `<div class="rankRes ${res.delta > 0 ? 'up' : 'down'}"><img src="${rankIcon(res.rr)}"><div style="flex:1"><div class="ol">${res.up ? 'RANK UP!' : res.down ? 'DERANKED' : 'COMPETITIVE RANK'}</div><b style="color:${R.color}">${R.name}</b>
     <div class="rrBar"><div style="width:${Math.min(100, R.inDiv)}%"></div></div><div class="ol">${R.inDiv} / 100 RR</div></div><div class="rrDelta">${res.delta > 0 ? '+' : ''}${res.delta} RR</div></div>`;
 }
+/* --- seasons: every 28 days the rank soft-resets, your peak rank pays out, and a leaderboard ranks you among other players --- */
+const SEASON_LEN = 28 * DAY, SEASON_EPOCH = Date.UTC(2026, 0, 5);
+const seasonNo = (t = Date.now()) => Math.floor((t - SEASON_EPOCH) / SEASON_LEN) + 1;
+const seasonEnd = () => SEASON_EPOCH + seasonNo() * SEASON_LEN;
+function checkSeason() {
+  const now = seasonNo(), r = rankState();
+  if (!profile.season) { profile.season = now; saveProfile(); return; }
+  if (profile.season === now) return;
+  const old = profile.season; profile.season = now; profile.seasonHist = profile.seasonHist || [];
+  if (r.placed >= PLACEMENTS) {
+    const P = rankOf(r.peak), vp = 200 + P.tier * 150, title = `S${old} ${P.name.replace(/ \d$/, '')}`;
+    profile.vp += vp; if (!profile.titles.includes(title)) profile.titles.push(title);
+    profile.seasonHist.unshift({ s: old, rr: r.rr, peak: r.peak, name: P.name, vp, title });
+    setTimeout(() => toastMenu(`Season ${old} is over — peak ${P.name}: +${vp} VP and the title "${title}". Season ${now} has started!`), 1800);
+  } else setTimeout(() => toastMenu(`Season ${now} has started — play Competitive to get ranked`), 1800);
+  Object.assign(r, { rr: Math.round(r.rr * .6), placed: r.placed >= PLACEMENTS ? PLACEMENTS - 1 : 0, pw: 0, pk: 0 }); r.peak = r.rr; // one placement match back into your rank
+  profile.seasonHist = profile.seasonHist.slice(0, 12); saveProfile(); refreshRankUI();
+}
+// a seeded field of other players whose RR climbs through the season; you slot in by your own RR
+const LB_FIRST = ['Shadow', 'Neo', 'Frost', 'Kai', 'Luna', 'Rex', 'Zed', 'Mira', 'Vex', 'Nova', 'Ash', 'Jin', 'Sora', 'Blaze', 'Echo', 'Riku', 'Yuna', 'Drift', 'Hex', 'Pyro', 'Ivy', 'Ghost', 'Taro', 'Minji', 'Hana', 'Dex', 'Orion', 'Zero', 'Kira', 'Volt'];
+const LB_LAST = ['', 'X', '99', 'TTV', 'Main', 'God', '07', 'Jr', 'Ace', 'Prime', '_kr', 'Lite', 'OP', 'Zz', '2K'];
+function leaderboard() {
+  const sn = seasonNo(), rng = seeded(sn * 7907 + 3), prog = clamp((Date.now() - (SEASON_EPOCH + (sn - 1) * SEASON_LEN)) / SEASON_LEN, .05, 1);
+  const tags = ['NW', 'EZ', 'KR1', 'ACE', 'GG', 'T1', 'ZETA', 'VS'];
+  const list = Array.from({ length: 80 }, (_, i) => { const base = 2900 * Math.pow(rng(), 2.1) + 200, day = Math.floor(Date.now() / DAY);
+    const wob = (seeded(day * 31 + i)() - .5) * 60, rr = Math.max(0, Math.round(base * (.55 + .45 * prog) + wob));
+    return { name: LB_FIRST[Math.floor(rng() * LB_FIRST.length)] + LB_LAST[Math.floor(rng() * LB_LAST.length)], rr, ct: rng() < .35 ? tags[Math.floor(rng() * tags.length)] : '', ag: realAgents()[Math.floor(rng() * realAgents().length)].id }; });
+  const r = rankState(); if (r.placed >= PLACEMENTS) list.push({ name: profile.name, rr: r.rr, me: true, ct: myClanTag(), cc: myClanCol(), ag: profile.fav });
+  return list.sort((a, b) => b.rr - a.rr);
+}
+function seasonCardHTML() {
+  const L = leaderboard(), me = L.findIndex(x => x.me), left = seasonEnd() - Date.now();
+  const row = (x, i) => { const R = rankOf(x.rr), A = AGENT[x.ag]; return `<div class="lbRow${x.me ? ' me' : ''}"><span class="lbPos">#${i + 1}</span><img src="${rankIcon(x.rr, false)}"><span class="lbName">${clanChip(x.ct, x.cc || '#9aa6b2')}${esc(x.name)}${x.me ? ' <small>(you)</small>' : ''}</span><span class="lbAg" style="color:${A ? A.color : '#9aa6b2'}">${A ? A.name : ''}</span><span class="lbRank" style="color:${R.color}">${R.name}</span><b>${x.rr} RR</b></div>`; };
+  const top = L.slice(0, 10).map(row).join(''), mine = me >= 10 ? `<div class="lbGap">⋯</div>${L.slice(Math.max(10, me - 1), me + 2).map((x, k) => row(x, Math.max(10, me - 1) + k)).join('')}` : '';
+  const H = (profile.seasonHist || []).slice(0, 4);
+  return `<div class="collCat">SEASON ${seasonNo()} · ends in ${fmtLeft(left)} · LEADERBOARD</div><div class="lbBox">${top}${mine}
+    ${me < 0 ? `<div class="lbGap">Play ${PLACEMENTS - rankState().placed} more Competitive match${PLACEMENTS - rankState().placed === 1 ? '' : 'es'} to appear on the leaderboard</div>` : ''}</div>
+    ${H.length ? `<div class="lbHist">${H.map(h => `<span><b>S${h.s}</b> peak ${esc(h.name)} · +${h.vp} VP</span>`).join('')}</div>` : ''}
+    <div class="ol" style="margin:4px 0 14px">At the end of a season your peak rank pays VP and a season title; your RR drops to 60% and one placement match puts you back.</div>`;
+}
 function rankCardHTML() {
   const r = rankState(), un = r.placed < PLACEMENTS, R = rankOf(r.rr);
   return `<div class="rankCard"><img src="${rankIcon(r.rr, un)}"><div style="flex:1"><div class="ol">COMPETITIVE RANK</div><b style="color:${un ? '#8a96a3' : R.color}">${un ? 'Unranked' : R.name}</b>
@@ -10702,7 +10747,7 @@ function renderCareer() {
   const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
-  html = clanCardHTML() + html;
+  html = clanCardHTML() + html + seasonCardHTML();
   html += statsDashHTML();
   { const lc = profile.matches.find(x => x.coach); if (lc) html += `<div class="collCat">COACH NOTES · last match (${esc(MAPS[lc.map] ? MAPS[lc.map].name : lc.map)}, ${lc.won ? 'win' : 'loss'})</div>` + coachHTML(lc.coach); }
   html += '<div class="collCat">RECENT MATCHES</div>';
@@ -11017,7 +11062,7 @@ profile.customMaps = (Array.isArray(profile.customMaps) ? profile.customMaps : [
 if (settings.map && !MAPS[settings.map] && settings.map !== 'random') settings.map = 'dustwall';
 if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
-loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
+checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
 const BUILD = 85;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
