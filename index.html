@@ -748,6 +748,12 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #vcSpeak{position:fixed;left:20px;bottom:230px;z-index:36;pointer-events:none;display:flex;flex-direction:column;gap:3px;font:600 13px 'Noto Sans KR',sans-serif}
 #vcSpeak div{background:rgba(10,16,22,.8);border-left:3px solid var(--teal);padding:3px 10px;color:#ece8e1}
 .vcMe{opacity:.25;font-size:18px;flex:0 0 auto!important}.vcMe.on{opacity:1;filter:drop-shadow(0 0 6px var(--teal))}#btnVoice.on{background:rgba(47,224,182,.18);border-color:var(--teal)}
+#clutchFx{position:fixed;inset:0;z-index:20;pointer-events:none;box-shadow:inset 0 0 110px 6px rgba(120,0,10,.55);transition:box-shadow .2s}
+#clutchFx.pulse{animation:clPulse .35s ease-out}@keyframes clPulse{0%{box-shadow:inset 0 0 150px 22px rgba(170,0,20,.65)}100%{box-shadow:inset 0 0 110px 6px rgba(120,0,10,.55)}}
+#clutchTag{position:absolute;top:96px;left:50%;transform:translateX(-50%);font:700 22px Oswald,sans-serif;letter-spacing:6px;color:#ff4655;text-shadow:0 0 12px rgba(255,70,85,.7);background:rgba(10,0,0,.45);padding:2px 16px}
+#clutchWin{position:fixed;top:28%;left:50%;transform:translateX(-50%);z-index:41;text-align:center;pointer-events:none}#clutchWin.show{animation:cwIn 2.8s ease-out both}
+#clutchWin b{display:block;font:700 clamp(54px,9vw,120px) Oswald,sans-serif;letter-spacing:.2em;color:#ffd34d;text-shadow:0 0 30px rgba(255,211,77,.7),0 6px 20px rgba(0,0,0,.6)}#clutchWin span{font:600 16px Oswald,sans-serif;letter-spacing:3px;color:#fff}
+@keyframes cwIn{0%{opacity:0;transform:translateX(-50%) scale(1.6)}12%{opacity:1;transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -1274,6 +1280,8 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
 <div id="banter"></div>
+<div id="clutchFx" class="hidden"><div id="clutchTag">1 vs 3</div></div>
+<div id="clutchWin" class="hidden"></div>
 <div id="vcSpeak" class="hidden"></div>
 <div id="luAim" class="hidden"><i></i><span></span></div>
 <div id="aceCine" class="hidden"></div>
@@ -5358,6 +5366,7 @@ function setupMatch(agentId, humans = []) {
   for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
   if (!RANGE()) shuffle(bots.slice()).slice(0, 2).forEach((b, i) => botSay(b, 'greet', { force: i === 0, delay: 2500 + i * 1800 }));
   if (game.spectate) { player.spectator = true; player.alive = false; player.hp = 0; if (game.spike && game.spike.carrier === player) { player.hasSpike = false; giveSpike(pick(entities.filter(e => !e.spectator && sideOf(e) === 'atk'))); } }
+  clutch.hist = 0; clutchEnd && clutch.on && clutchEnd();
   Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0, introShown: false, banterUsed: [] }); banterRound = -1;
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
@@ -6227,7 +6236,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt); lineupTick(dt);
+    coachTick(dt); lineupTick(dt); clutchTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6660,6 +6669,27 @@ function lineupTick(dt) {
 function lineupListHTML(agent) {
   const rows = []; for (const [map, L] of Object.entries(profile.lineups || {})) for (const l of L) if (l.agent === agent) rows.push(`<div class="luRow"><b>${esc(MAPS[map] ? MAPS[map].name : map)}</b><span>${esc(l.key)} · ${esc(l.label)}${l.crouch ? ' · crouch' : ''}</span><button data-ludel="${map}|${l.id}" title="Delete">✕</button></div>`);
   return `<div class="amBox"><div class="ol">SAVED LINEUPS · throw an ability in a match, then press ${keyName(settings.binds.lineup)} to save that spot</div>${rows.length ? rows.join('') : '<div class="ol" style="margin-top:6px">No lineups for this agent yet.</div>'}</div>`;
+}
+/* --- clutch: last one alive on your team gets a heartbeat, a dark vignette and a "1 vs N" banner; win it for CLUTCH! --- */
+const clutch = { on: false, vs: 0, beat: 0, hist: 0 };
+function clutchTick(dt) {
+  const p = player, el = $('clutchFx'); if (!p || RANGE() || DM() || DUEL() || game.spectate) { if (clutch.on) clutchEnd(); return; }
+  // round over: was it won while clutching?
+  if (game.history.length > clutch.hist) { const w = game.history[game.history.length - 1]; clutch.hist = game.history.length; if (clutch.on) { const won = w === p.team; clutchEnd(); if (won && clutch.vs >= 2) clutchWin(clutch.vs); } }
+  if (game.phase !== 'live' || !p.alive) { if (clutch.on) clutchEnd(); return; }
+  const mates = entities.filter(e => e !== p && e.team === p.team && !e.spectator), foes = entities.filter(e => e.alive && e.team !== p.team && !e.spectator).length;
+  const alone = mates.length > 0 && !mates.some(e => e.alive) && foes >= 1;
+  if (alone && !clutch.on) { clutch.on = true; clutch.vs = foes; el.classList.remove('hidden'); $('clutchTag').textContent = `1 vs ${foes}`; sndTone(220, .5, .14, 'sawtooth', 110); }
+  if (!clutch.on) return;
+  clutch.vs = Math.max(clutch.vs, foes); $('clutchTag').textContent = `1 vs ${foes}`;
+  // heartbeat speeds up as you lose health
+  clutch.beat -= dt; if (clutch.beat <= 0) { clutch.beat = .55 + p.hp / 100 * .5; sndTone(55, .12, .5, 'sine', 40); setTimeout(() => sndTone(50, .1, .35, 'sine', 38), 150); el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+}
+function clutchEnd() { clutch.on = false; $('clutchFx').classList.add('hidden'); }
+function clutchWin(n) {
+  const b = $('clutchWin'); b.innerHTML = `<b>CLUTCH!</b><span>1 vs ${n} · +${n * 25} VP</span>`; b.classList.remove('hidden', 'show'); void b.offsetWidth; b.classList.add('show');
+  setTimeout(() => b.classList.add('hidden'), 2800); profile.vp += n * 25; saveProfile(); matchStats.clutches = (matchStats.clutches || 0) + 1;
+  sndTone(523, .2, .2, 'triangle', 784); sndTone(784, .3, .2, 'triangle', 1046, undefined, undefined, .15); sndTone(1046, .6, .2, 'sine', 1568, undefined, undefined, .3);
 }
 /* --- AI coach: watches how you play (crosshair height, moving shots, lone deaths, utility…) and gives tips after the match --- */
 let coachClock = 0;
@@ -7366,6 +7396,7 @@ function clientSetupMatch(d) {
     entities[e.id] = e;
   }
   if (!player) { onHostLost(); return; }
+  clutch.hist = 0; if (clutch.on) clutchEnd();
   Object.assign(game, { introShown: false, mode: MODES.includes(d.mode) ? d.mode : 'comp', target: d.target | 0 || 13, half: d.half | 0 || 12, round: 0, score: [0, 0], history: [], time: 0, phase: 'buy', phaseT: 0, ot: false });
   game.spike = { state: 'none', mesh: makeSpikeMesh(), beepT: 0, timer: 0, defuseProg: 0 }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   game.state = 'playing'; game.paused = false; setTimeout(buildLineupMarkers, 0); shopOpen = false; deathCam = 0;
