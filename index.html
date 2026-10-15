@@ -888,6 +888,17 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 @media (max-width:820px){.selWrap,.setGrid{grid-template-columns:1fr}#navTabs button{padding:0 8px;font-size:12px}.brand,.navRight{width:auto}.news{display:none}.tiles{grid-template-columns:repeat(3,1fr)}#shopCols{grid-template-columns:repeat(2,1fr);max-height:70vh;overflow:auto}}
 #trModal .trPanel{width:min(980px,96vw);max-width:none}
 #netOv{position:fixed;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(35deg,transparent 0 46px,rgba(106,208,255,.35) 46px 49px),repeating-linear-gradient(-35deg,transparent 0 46px,rgba(106,208,255,.35) 46px 49px);box-shadow:inset 0 0 120px rgba(80,180,255,.45)}
+#abPrev{position:fixed;z-index:60;width:260px;pointer-events:none;background:rgba(10,14,20,.94);border:1px solid rgba(255,255,255,.15);box-shadow:0 8px 30px rgba(0,0,0,.5)}#abPrev canvas{display:block;width:260px;height:160px}#abPrev div{font:600 11px Inter,sans-serif;letter-spacing:2px;color:#c9d0d6;padding:6px 10px}
+#ultCut{position:absolute;left:0;top:34%;height:110px;width:440px;pointer-events:none;display:flex;align-items:center;gap:16px;padding:0 26px;background:linear-gradient(90deg,var(--uc) 0,rgba(10,14,20,.85) 55%,transparent);transform:translateX(-110%);transition:transform .25s cubic-bezier(.2,.9,.3,1.2);z-index:9}
+#ultCut.show{transform:none}#ultCut .g{font:900 54px Oswald,sans-serif;color:#fff;text-shadow:0 0 18px var(--uc);width:90px;text-align:center}#ultCut b{display:block;font:700 26px Oswald,sans-serif;letter-spacing:4px;color:#fff}#ultCut span{font:italic 600 15px Inter,sans-serif;color:#f2f2f2}#ultCut i{display:block;font:600 11px Inter,sans-serif;letter-spacing:3px;color:var(--uc);font-style:normal}
+#dmgBreak{display:flex;gap:16px;align-items:center;justify-content:center;margin-top:8px;font-size:12px;text-align:left}#dmgBreak svg{flex:none}#dmgBreak .row{margin:2px 0}#dmgBreak .row b{color:#ff4655}
+#killBanner.kbS-neon .kbTxt{font-family:Inter,sans-serif;font-weight:900;letter-spacing:10px;color:var(--kc);text-shadow:0 0 6px #fff,0 0 22px var(--kc),0 0 44px var(--kc)}#killBanner.kbS-neon .kbIcon{border-radius:50%;transform:none;border-width:4px;box-shadow:0 0 30px var(--kc),inset 0 0 20px var(--kc)}
+#killBanner.kbS-gold{--kc:#ffd36a}#killBanner.kbS-gold .kbTxt{background:linear-gradient(#fff6c8,#e0a020);-webkit-background-clip:text;color:transparent;text-shadow:none;font-size:34px}#killBanner.kbS-gold .kbIcon{border-color:#ffd36a;background:radial-gradient(circle,#ffe9a0 0,#c98a10 70%)}
+#killBanner.kbS-fire{--kc:#ff7a22}#killBanner.kbS-fire .kbTxt{color:#ffe0a0;text-shadow:0 -2px 8px #ff7a22,0 -6px 18px #ff3a00,0 2px 3px #000}#killBanner.kbS-fire .kbIcon{transform:rotate(45deg) scale(1.1);background:radial-gradient(circle,#fff0a0 0,#ff6a00 60%,transparent 72%)}
+#killBanner.kbS-minimal .kbIcon{display:none}#killBanner.kbS-minimal .kbTxt{font:600 18px Inter,sans-serif;letter-spacing:4px;text-shadow:0 1px 3px #000;border-bottom:2px solid var(--kc);padding-bottom:4px}
+.clipRow{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:8px 0 14px}.clip{background:#0d131a;border:1px solid rgba(255,255,255,.08)}.clip img{width:100%;aspect-ratio:16/9;display:block;object-fit:cover;background:#000}.clip b{display:block;font:700 14px Oswald,sans-serif;letter-spacing:2px;padding:6px 8px 0;color:#ffd36a}.clip span{display:block;font-size:11px;color:#9aa4ad;padding:2px 8px 8px}
+.wkCard{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0 14px;padding:12px;background:linear-gradient(135deg,rgba(255,70,85,.12),rgba(47,224,182,.08));border:1px solid rgba(255,255,255,.1)}.wkCard div{padding:6px}.wkCard .ol{font-size:10px}.wkCard .v{font:700 22px Oswald,sans-serif}.wkCard .d{font-size:11px}.wkCard .up{color:#2fe0b6}.wkCard .dn{color:#ff4655}
+.achGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:8px 0 14px}.ach{display:flex;gap:10px;align-items:center;padding:8px 10px;background:#0d131a;border:1px solid rgba(255,255,255,.07);opacity:.55}.ach.on{opacity:1;border-color:rgba(255,211,106,.5);background:linear-gradient(90deg,rgba(255,211,106,.12),#0d131a)}.ach i{font-style:normal;font-size:24px}.ach b{display:block;font-size:13px}.ach span{display:block;font-size:11px;color:#9aa4ad}.ach .pg{height:3px;background:rgba(255,255,255,.1);margin-top:4px}.ach .pg u{display:block;height:100%;background:#ffd36a}
 #trStage{position:relative;height:min(62vh,560px);border-radius:10px;overflow:hidden;cursor:grab;touch-action:none}
 #trCv{width:100%;height:100%;display:block}
 </style>
@@ -1166,6 +1177,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="crateModal" class="screen hidden"></div>
 <div id="cardModal" class="screen hidden"></div>
 <div id="netOv" class="hidden"></div>
+<div id="abPrev" class="hidden"><canvas id="abPrevCv" width="520" height="320"></canvas><div id="abPrevTx"></div></div>
 <div id="trModal" class="screen hidden"><div class="panel trPanel"><div class="pHead"><h2>TROPHY ROOM</h2><span class="ol">drag to look around · scroll to zoom</span><button class="iconBtn" id="trClose">✕</button></div>
   <div id="trStage"><canvas id="trCv"></canvas><div id="trTip" class="hidden"></div></div></div></div>
 <div id="bfModal" class="screen hidden"><div class="panel bfPanel"><div class="pHead"><h2>BOT FRIENDS</h2><button class="iconBtn" id="bfClose">✕</button></div>
@@ -1291,6 +1303,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div id="killIcons"></div>
   <div id="killBanner" class="hidden"><div class="kbIcon"></div><div class="kbTxt"></div><div class="kbSub"></div></div>
   <div id="deathInfo" class="hidden"></div>
+  <div id="ultCut"></div>
   <div id="bl">
     <div>
       <div id="armorNum">0</div>
@@ -1412,7 +1425,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, adaptBots: true, keepSprays: true, inkColor: '#ff4fd8', voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, adaptBots: true, keepSprays: true, killStyle: 'classic', killColor: '', inkColor: '#ff4fd8', voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -2683,6 +2696,39 @@ function skinMat(L, role, lv = SKIN_MAX_LV) {
 }
 function shimmerTick(t) { for (let i = 0; i < SHIMMER.length; i++) SHIMMER[i].emissiveIntensity = 1 + Math.sin(t * 3.2 + i) * .55; }
 // repaint a built gun with a skin line
+// every skin line gets a small 3D signature piece on the gun
+function addSkinDeco(g, line) {
+  if (!line || g.userData.deco) return; g.userData.deco = 1;
+  const b = new THREE.Box3().setFromObject(g); if (!isFinite(b.max.y)) return; const mz = g.userData.muzzleZ || -.6, top = b.max.y, sx = b.max.x;
+  const L = c => new THREE.MeshLambertMaterial({ color: c }), B = c => new THREE.MeshBasicMaterial({ color: c }), add = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); g.add(o); return o; };
+  const fin = (c, n = 3) => { for (let i = 0; i < n; i++) add(new THREE.BoxGeometry(.006, .05 + i * .012, .05), L(c), 0, top + .02 + i * .006, mz * (.3 + i * .08), 0, 0, 0); };
+  switch (line) {
+    case 'prime': fin(0xd4af37); add(new THREE.TorusGeometry(.03, .006, 6, 16), L(0xffd75e), 0, top - .02, mz * .75); break;
+    case 'glitch': for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(.02, .02, .02), B(i % 2 ? 0x15f0ff : 0xff2fa8), sx + .006, top - .03 - i * .025, mz * (.2 + i * .07)); break;
+    case 'reaver': for (let i = 0; i < 3; i++) add(new THREE.ConeGeometry(.012, .07, 4), L(0x2a1a30), 0, top + .03, mz * (.3 + i * .1), -.5); add(new THREE.SphereGeometry(.012, 8, 6), B(0xc23aff), sx + .004, top - .03, mz * .45); break;
+    case 'ion': add(new THREE.TorusGeometry(.035, .006, 6, 20), B(0xbff0ff), 0, top - .03, mz * .8); add(new THREE.BoxGeometry(.004, .012, Math.abs(mz) * .5), B(0x8fdcff), sx + .004, top - .03, mz * .5); break;
+    case 'elder': { const h = add(new THREE.ConeGeometry(.04, .12, 6), L(0xb07020), 0, top - .03, mz - .04, -Math.PI / 2); for (const s2 of [-1, 1]) add(new THREE.ConeGeometry(.012, .06, 4), L(0xe0a040), s2 * .03, top, mz + .02, -.6); add(new THREE.SphereGeometry(.01, 6, 4), B(0xff6a00), .02, top - .02, mz + .01); break; }
+    case 'oni': add(new THREE.BoxGeometry(.006, .05, .07), L(0xc02828), sx + .004, top - .04, mz * .35); for (const s2 of [-1, 1]) add(new THREE.ConeGeometry(.008, .04, 4), L(0xf0e6d0), sx + .006, top - .01, mz * .35 + s2 * .025); break;
+    case 'sing': add(new THREE.SphereGeometry(.022, 12, 10), B(0xb05aff), 0, top + .05, mz * .45); add(new THREE.TorusGeometry(.035, .004, 6, 20), B(0xe0b0ff), 0, top + .05, mz * .45, Math.PI / 2); break;
+    case 'spline': add(new THREE.BoxGeometry(.004, .03, Math.abs(mz) * .4), B(0x4aa8ff), sx + .004, top - .025, mz * .45); break;
+    case 'sakura': for (let i = 0; i < 5; i++) add(new THREE.CircleGeometry(.012, 5), new THREE.MeshBasicMaterial({ color: 0xffb8d0, side: THREE.DoubleSide }), sx + .005, top - .02 - (i % 2) * .02, mz * (.25 + i * .07), 0, Math.PI / 2); break;
+    case 'tiger': for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.005, .008, .06), L(0x1a1a1a), sx + .004, top - .02 - i * .016, mz * .35, .4); break;
+    case 'waste': add(new THREE.BoxGeometry(.008, .045, .09), L(0x8a5a30), sx + .005, top - .035, mz * .4); for (let i = 0; i < 3; i++) add(new THREE.CylinderGeometry(.005, .005, .006, 6), L(0xc0c0c0), sx + .01, top - .03, mz * .4 - .03 + i * .03, 0, 0, Math.PI / 2); break;
+    case 'rush': for (const s2 of [-1, 1]) add(new THREE.BoxGeometry(.06, .004, .05), L(0xd8dde4), s2 * .04, top + .005, mz * .25, 0, 0, s2 * -.3); break;
+    case 'sovereign': add(new THREE.TorusGeometry(.03, .007, 6, 16), L(0xffd36a), 0, top - .02, mz * .3); add(new THREE.OctahedronGeometry(.012), B(0x5ad0ff), 0, top + .015, mz * .3); break;
+    case 'glyph': for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.004, .014, .014), B(0x6af0c0), sx + .005, top - .03, mz * (.3 + i * .09), 0, 0, Math.PI / 4); break;
+    case 'kuro': add(new THREE.ConeGeometry(.015, .1, 4), L(0x14161c), 0, top + .04, mz * .4, -1.2); add(new THREE.BoxGeometry(.004, .01, .1), B(0x3a6aff), sx + .004, top - .03, mz * .4); break;
+    case 'champ': add(new THREE.CylinderGeometry(.012, .018, .03, 10), L(0xffd36a), sx + .03, top - .07, mz * .2); add(new THREE.SphereGeometry(.01, 8, 6), L(0xffd36a), sx + .03, top - .05, mz * .2); break;
+    case 'mage': for (let i = 0; i < 2; i++) add(new THREE.TorusGeometry(.018, .006, 4, 8), L(0xc89a50), sx + .006, top - .03, mz * (.3 + i * .1), 0, Math.PI / 2); break;
+    case 'reef': for (let i = 0; i < 4; i++) add(new THREE.SphereGeometry(.009, 6, 4), L(i % 2 ? 0xff8a8a : 0x5ae0d0), sx + .006, top - .02 - Math.random() * .03, mz * (.2 + i * .08)); break;
+    case 'magma': add(new THREE.BoxGeometry(.004, .03, Math.abs(mz) * .35), B(0xff5a00), sx + .004, top - .035, mz * .45, .2); break;
+    case 'aurora': add(new THREE.BoxGeometry(.004, .008, Math.abs(mz) * .55), B(0x6affc0), sx + .004, top - .02, mz * .45); break;
+    case 'arcade': for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.016, .016, .016), B([0xff4a4a, 0x4aff6a, 0x4a8aff][i]), 0, top + .015, mz * (.3 + i * .05)); break;
+    case 'jade': add(new THREE.TorusGeometry(.028, .008, 6, 14), L(0x3ab070), 0, top - .025, mz * .7); add(new THREE.SphereGeometry(.012, 8, 6), B(0xa0ffd0), 0, top - .025, mz * .7); break;
+    case 'kingdom': add(new THREE.BoxGeometry(.006, .04, .035), L(0xc8a24a), sx + .005, top - .03, mz * .35); break;
+    case 'arctic': for (let i = 0; i < 3; i++) add(new THREE.OctahedronGeometry(.014), new THREE.MeshLambertMaterial({ color: 0xd8f4ff, transparent: true, opacity: .85 }), 0, top + .015, mz * (.3 + i * .08)); break;
+  }
+}
 function applySkin(g, skinId) {
   const S = SKINS[skinId]; if (!S) return; const lv = skinLv(skinId);
   g.traverse(o => {
@@ -2691,7 +2737,7 @@ function applySkin(g, skinId) {
     if (hex === GC.glass) return;
     o.material = skinMat(S.line, ROLE_OF[hex] || 'acc', lv);
   });
-  g.userData.skin = skinId;
+  g.userData.skin = skinId; addSkinDeco(g, S.line.id);
 }
 const caHexSafe = v => Math.max(0, Math.min(0xffffff, Math.round(+v) || 0));
 // custom skin extras: kill sounds and kill effects (played only on your own screen)
@@ -3437,7 +3483,8 @@ function applyDamage(t, dmg, src, label, head) {
   if (t.driftT > 0) return;
   if (src && src !== t && (t.duelT > 0 || src.duelT > 0) && !(t.duelWith === src && src.duelWith === t)) return; // Kill Contract: a sealed 1v1
   if (t.isoSh > 0 && src && src !== t && isEnemy(src, t)) { t.isoSh = 0; t.isoShT = 0; fx('parts', t.x, t.y + 1.2, t.z, 25, 0x8a5cff, 4, .4); toastTo(t, 'Shield blocked a hit!'); return; }
-  if (t.vulnT > 0 && src && src !== t) dmg *= 2; // Killjoy's Alarmbot: vulnerable
+  if (t.vulnT > 0 && src && src !== t) dmg *= 2;
+  if (t.isPlayer && src && src !== t) { (t.hitLog = t.hitLog || []).push({ id: src.id, reg: HIT_REG ?? (head ? 0 : -1), dmg: Math.min(dmg, t.hp + t.armor), w: label }); } HIT_REG = null; // Killjoy's Alarmbot: vulnerable
   if (src && src !== t && isEnemy(src, t)) src.dmgDealt = (src.dmgDealt || 0) + Math.min(dmg, t.hp + t.armor);
   const a = Math.min(t.armor, dmg); t.armor -= a; t.hp -= (dmg - a);
   if (src && src !== t) t.damagedBy[src.id] = game.time;
@@ -3461,9 +3508,9 @@ function playerKillFx(n, head, skinId, victim) {
   if (head) sndTone(1900, .06, .12, 'square', 2400);
   const ki = document.createElement('i'); ki.style.borderColor = css; ki.style.background = css + '40'; $('killIcons').appendChild(ki);
   const kb = $('killBanner'), enemiesLeft = entities.some(e => e.alive && player && isEnemy(e, player));
-  kb.style.setProperty('--kc', css);
+  kb.className = 'kbS-' + (settings.killStyle || 'classic'); kb.style.setProperty('--kc', css);
   const isAce = n >= 5 || (!enemiesLeft && n >= 3 && !DM());
-  if (isAce && !RANGE()) trophyAdd('ace');
+  if (isAce && !RANGE()) { trophyAdd('ace'); startClip('ACE'); }
   kb.querySelector('.kbTxt').textContent = isAce ? 'ACE' : KILL_NAMES[n] || '';
   if (isAce && !DM() && !RANGE() && !aceCine && entities.filter(e => player && isEnemy(e, player)).length >= 3) setTimeout(startAceCine, 250);
   kb.querySelector('.kbSub').textContent = (head ? 'HEADSHOT · ' : '') + (tierHi ? S.line.name.toUpperCase() + ' KILL' : n + (n === 1 ? ' KILL' : ' KILLS'));
@@ -4190,6 +4237,28 @@ const thornTex = (() => { let t = null; return () => { if (t) return t; const c 
   x.lineCap = 'round'; for (let i = 0; i < 70; i++) { let px = Math.random() * 512, py = Math.random() * 512, a = Math.random() * 6.3, r = 20 + Math.random() * 40; x.strokeStyle = i % 3 ? 'rgba(220,228,240,.95)' : 'rgba(150,160,180,.9)'; x.lineWidth = 2 + Math.random() * 3; x.beginPath(); x.moveTo(px, py);
     for (let s = 0; s < 40; s++) { a += .18 + s * .004; r *= .97; px += Math.cos(a) * r * .18; py += Math.sin(a) * r * .18; x.lineTo(px, py); } x.stroke(); }
   t = new THREE.CanvasTexture(c); return t; }; })();
+/* --- easter eggs: three hidden tokens on every map; find them all for a title --- */
+let eggs = [];
+function eggsSetup() {
+  for (const e of eggs) scene.remove(e.m); eggs = []; if (!grid || !MAPS[game.mapId] || RANGE()) return;
+  let seed = 7; for (const ch of 'egg' + game.mapId) seed = (seed * 33 + ch.charCodeAt(0)) >>> 0; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const got = (profile.eggs && profile.eggs[game.mapId]) || [];
+  for (let i = 0, tries = 0; i < 3 && tries < 2000; tries++) {
+    const c = 1 + Math.floor(rnd() * (GW - 2)), r = 1 + Math.floor(rnd() * (GH - 2)); if (hAt(c, r) !== 0 || zoneG[r * GW + c] >= 3) continue;
+    const walls = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dc, dr]) => hAt(c + dc, r + dr) >= WALL_H).length; if (walls < 2) continue; // tucked into corners
+    if (!got.includes(i)) { const { x, z } = cc(c, r), g = new THREE.Group(), gem = new THREE.Mesh(new THREE.OctahedronGeometry(.18), new THREE.MeshLambertMaterial({ color: 0xffd36a, emissive: 0x7a5a10 })); g.add(gem, AB.glow(0xffd36a, .9)); g.position.set(x, .6, z); scene.add(g); eggs.push({ i, m: g, x, z }); }
+    i++;
+  }
+}
+function eggTick(dt) {
+  if (!eggs.length || !player || !player.alive) return; const t = performance.now() / 1000;
+  for (let k = eggs.length - 1; k >= 0; k--) { const e = eggs[k]; e.m.rotation.y = t * 2; e.m.position.y = .6 + Math.sin(t * 3 + e.i) * .08;
+    if (Math.hypot(player.x - e.x, player.z - e.z) < 1.3) { scene.remove(e.m); eggs.splice(k, 1); profile.eggs = profile.eggs || {}; const L = profile.eggs[game.mapId] = profile.eggs[game.mapId] || []; if (!L.includes(e.i)) L.push(e.i);
+      sndTone(1320, .2, .18, 'triangle', 1760); sndTone(1760, .3, .14, 'triangle', 2200, undefined, undefined, .1); toast(`🥚 Secret found on ${MAPS[game.mapId].name} (${L.length}/3)`);
+      const all = Object.keys(MAPS).filter(m => m !== 'range' && !MAPS[m].custom).every(m => ((profile.eggs[m] || []).length >= 3));
+      if (all && !profile.titles.includes('Explorer')) { profile.titles.push('Explorer'); profile.vp += 500; toast('🏆 Every secret found! Title "Explorer" + 500 VP'); }
+      saveProfile(); checkAchievements(); } }
+}
 function bloomRose(e) { const z = e.rose; if (!z) return false; e.rose = null; z.t = 0; popFlash(z.x, 1.2, z.z, e, 1.6, 'flash'); return true; }
 function cocoon(dl, o, sx, sz) {
   o.detainT = 7.5; o.revealedT = Math.max(o.revealedT, 7.5); fx('cocoon', o.id); toastTo(o, 'COCOONED! A teammate must touch you to break it'); toastTo(dl, `${o.name} is cocooned`); fx('parts', o.x, o.y + 1, o.z, 50, 0xffffff, 4, .8);
@@ -4253,8 +4322,30 @@ function sageWall(e, target) {
   for (const o of entities) if (o.alive && o.x > w.x0 - .4 && o.x < w.x1 + .4 && o.z > w.z0 - .4 && o.z < w.z1 + .4) o.y = w.y1 + .01;
   dynWalls.push(w); return true;
 }
+// breakable props: wooden boxes, glass panes and barrels along the walls; they shatter when shot and come back next round
+const PROP_STYLE = { 1: { c: 0xa8743a, e: 0x2a1808, op: 1, hp: 140, pc: 0xc89a5a }, 2: { c: 0xbfe8ff, e: 0x1a3a4a, op: .35, hp: 40, pc: 0xe0f6ff }, 3: { c: 0x4a6a8a, e: 0x0a1a2a, op: 1, hp: 120, pc: 0x8ab0d0 } };
+function styleProp(w) {
+  const S = PROP_STYLE[w.prop]; if (!S || !w.mesh) return; w.pc = S.pc; const m = w.mesh;
+  m.material = new THREE.MeshLambertMaterial({ color: S.c, emissive: S.e, transparent: S.op < 1, opacity: S.op }); m.scale.y = 1;
+  if (w.prop === 3) { const h = w.y1 - w.y0; m.geometry = new THREE.CylinderGeometry((w.x1 - w.x0) / 2, (w.x1 - w.x0) / 2, h, 14); }
+  if (w.prop === 1) { const ed = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0x5a3a18 })); m.add(ed); }
+}
+function spawnProps() {
+  for (let i = dynWalls.length - 1; i >= 0; i--) if (dynWalls[i].prop) { scene.remove(dynWalls[i].mesh); dynWalls.splice(i, 1); }
+  if (!grid || RANGE() || DM() || game.state !== 'playing') return; let seed = 0; for (const ch of String(game.mapId)) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  let n = 0;
+  for (let tries = 0; tries < 900 && n < 16; tries++) {
+    const c = 2 + Math.floor(rnd() * (GW - 4)), r = 2 + Math.floor(rnd() * (GH - 4)); if (hAt(c, r) !== 0 || zoneG[r * GW + c] >= 3) continue;
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dc, dr]) => hAt(c + dc, r + dr) >= WALL_H && hAt(c - dc, r - dr) === 0 && hAt(c - 2 * dc, r - 2 * dr) === 0); if (!dirs.length) continue;
+    const [dc, dr] = dirs[0], { x, z } = cc(c, r), px = x + dc * .9, pz = z + dr * .9, kind = 1 + Math.floor(rnd() * 3);
+    if (dynWalls.some(w => Math.abs((w.x0 + w.x1) / 2 - px) < 3 && Math.abs((w.z0 + w.z1) / 2 - pz) < 3)) continue;
+    const sz = kind === 2 ? [dc ? .12 : 1.6, 1.8, dr ? .12 : 1.6] : kind === 3 ? [.8, 1.1, .8] : [1, 1, 1];
+    const w = { x0: px - sz[0] / 2, x1: px + sz[0] / 2, z0: pz - sz[2] / 2, z1: pz + sz[2] / 2, y0: 0, y1: sz[1], hp: PROP_STYLE[kind].hp, t: 1e6, prop: kind };
+    addWallMesh(w); styleProp(w); dynWalls.push(w); n++;
+  }
+}
 function damageWall(w, dmg) {
-  w.hp -= dmg; spawnParticles(w.mesh.position.x, 2, w.mesh.position.z, 3, 0xbff6ff, 2, .3);
+  w.hp -= dmg; spawnParticles(w.mesh.position.x, w.prop ? 1 : 2, w.mesh.position.z, 3, w.pc || 0xbff6ff, 2, .3); if (w.prop && w.hp <= 0) { fx('parts', w.mesh.position.x, .8, w.mesh.position.z, 30, w.pc, 5, .7); if (w.prop === 2) sndNoise(.4, 6000, 1, .4, w.mesh.position.x, w.mesh.position.z, 'highpass'); else sndNoise(.3, 600, 1, .35, w.mesh.position.x, w.mesh.position.z); }
   if (w.hp <= 0) w.t = 0;
 }
 
@@ -5122,7 +5213,7 @@ function updateEffects(dt) {
 function clearEffects() {
   smokes.forEach(s => s.mesh && scene.remove(s.mesh)); zones.forEach(z => scene.remove(z.mesh)); dynWalls.forEach(w => scene.remove(w.mesh));
   projectiles.forEach(p => scene.remove(p.mesh)); timedFx.forEach(f => f.end());
-  smokes = []; zones = []; dynWalls = []; projectiles = []; timedFx = []; for (const f of LFX) { f.parent.remove(f.o); if (f.end) f.end(); } LFX.length = 0;
+  smokes = []; zones = []; dynWalls = []; projectiles = []; timedFx = []; if (net.role !== 'client') setTimeout(spawnProps, 0); for (const f of LFX) { f.parent.remove(f.o); if (f.end) f.end(); } LFX.length = 0;
 }
 
 /* --- Shared status update --- */
@@ -5289,7 +5380,7 @@ function playerFire() {
     if (!tr0) tr0 = [hx, hy, hz];
     if (res.ent) {
       const dmg = w.dmg[res.reg] * falloffMul(w, res.t) * (att === 'supp' ? .92 : 1) * (res.t > 20 ? PM.far : 1); const wasAlive = res.ent.alive;
-      dealDamage(res.ent, dmg, p, w.name, res.reg === 0);
+      HIT_REG = res.reg; dealDamage(res.ent, dmg, p, w.name, res.reg === 0);
       if (wasAlive && !res.ent.alive) killed = true;
       anyHit = true; if (res.reg === 0) anyHead = true;
       spawnParticles(hx, hy, hz, res.reg === 0 ? 10 : 5, res.reg === 0 ? 0xffe066 : 0xffffff, 2.5, .3);
@@ -5452,10 +5543,21 @@ function interact(p = player) {
   p.slot = slot; p.invSeq = (p.invSeq || 0) + 1;
   if (p.isPlayer) { equipView(); SND.reload(); }
 }
+// on death: where the killer (and everyone else) hit you
+function dmgBreakHTML(src) {
+  const L = (player.hitLog || []); if (!L.length) return '';
+  const mine = L.filter(h => src && h.id === src.id), c = [0, 0, 0]; let other = 0; mine.forEach(h => { if (h.reg >= 0) c[h.reg]++; });
+  const by = {}; L.forEach(h => { by[h.id] = (by[h.id] || 0) + h.dmg; });
+  const fill = n => n ? `rgba(255,70,85,${Math.min(1, .35 + n * .2)})` : 'rgba(255,255,255,.12)';
+  const svg = `<svg width="54" height="110" viewBox="0 0 54 110"><circle cx="27" cy="13" r="11" fill="${fill(c[0])}"/><rect x="13" y="27" width="28" height="38" rx="6" fill="${fill(c[1])}"/><rect x="4" y="29" width="8" height="30" rx="4" fill="${fill(c[1])}"/><rect x="42" y="29" width="8" height="30" rx="4" fill="${fill(c[1])}"/><rect x="14" y="67" width="11" height="40" rx="4" fill="${fill(c[2])}"/><rect x="29" y="67" width="11" height="40" rx="4" fill="${fill(c[2])}"/></svg>`;
+  const rows = Object.entries(by).sort((a, b) => b[1] - a[1]).map(([id, d]) => { const e = entities[id]; return e ? `<div class="row">${esc(e.name)} <b>${Math.round(d)}</b> dmg</div>` : ''; }).join('');
+  return `<div id="dmgBreak">${svg}<div>${src && src !== player ? `<div class="row">Head <b>${c[0]}</b> · Body <b>${c[1]}</b> · Legs <b>${c[2]}</b></div>` : ''}${rows}</div></div>`;
+}
 function onPlayerDeath(src, label) {
   player.plantHold = 0; hideProgress(); adsT = 0; deathCam = 0;
   const di = $('deathInfo'); di.classList.remove('hidden');
   di.innerHTML = src && src !== player ? `<span class="k">${src.name}</span> (${AGENT[src.agent].name}) killed you · ${label || ''}<br><small style="opacity:.6">Click: change spectate target</small>` : 'You died';
+  di.innerHTML += dmgBreakHTML(src);
   if (AGENT[player.agent].ab.X.type === 'ndy' && player.ult >= AGENT[player.agent].ab.X.ult && !DM()) di.innerHTML += '<br><b style="color:#f08cc8">Press X within 5s — NOT DEAD YET</b>';
   spectateIdx = 0;
 }
@@ -5584,7 +5686,7 @@ function botShoot(b, t) {
     if (Math.random() < pacc) {
       const r = Math.random(), reg = r < D.head * (w.pellets > 1 ? .5 : 1) ? 0 : r < D.head + .15 ? 2 : 1;
       if (!t.alive) break;
-      applyDamage(t, w.dmg[reg] * falloffMul(w, d), b, w.name, reg === 0); hit = true; if (reg === 0) head = true;
+      HIT_REG = reg; applyDamage(t, w.dmg[reg] * falloffMul(w, d), b, w.name, reg === 0); hit = true; if (reg === 0) head = true;
     }
   }
   const f = fwd(b), mx = ex + f.x * .7 + Math.cos(b.yaw) * .2, my = ey - .35, mz = ez + f.z * .7 - Math.sin(b.yaw) * .2;
@@ -5876,7 +5978,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
 function setupMatch(agentId, humans = []) {
   game.firstKillRound = 0;
   ffVote = null; renderFF(null); game.ffUsed = {}; game.suddenDeath = false;
-  clearSprays(); clearInk();
+  clearSprays(); clearInk(); setTimeout(eggsSetup, 0);
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
   loadMap(game.mapId);
   // clean up previous match
@@ -5945,7 +6047,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = magOf(e, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(e, w.key); }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, jamT: 0, isoSh: 0, isoShT: 0, refract: null, netT: 0, dtapT: 0, duelT: 0, duelWith: null, rose: null, arenaBack: null, arenaWalls: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, hitLog: [], jamT: 0, isoSh: 0, isoShT: 0, refract: null, netT: 0, dtapT: 0, duelT: 0, duelWith: null, rose: null, arenaBack: null, arenaWalls: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
     if (e.spectator) { e.alive = false; e.hp = 0; }
@@ -6167,7 +6269,7 @@ function finishMatch() {
   if (!RANGE()) passGot.push(...addAgentXp(p.agent, 100 + (won ? 150 : 0) + p.kills * 15 + matchStats.abil * 5));
   const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
-  if (won) trophyAdd('win'); if (mvp === p) trophyAdd('mvp');
+  if (won) trophyAdd('win'); if (mvp === p) trophyAdd('mvp'); setTimeout(checkAchievements, 1500);
   profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined,
     hs: matchStats.hs, hits: matchStats.hits, dmg: Math.round(matchStats.dmg), rounds: game.round, fk: matchStats.fk });
   { const L = profile.life = profile.life || { agents: {}, maps: {} }; const ag = L.agents[p.agent] = L.agents[p.agent] || { m: 0, w: 0, k: 0, d: 0 }, mp = L.maps[game.mapId] = L.maps[game.mapId] || { m: 0, w: 0 };
@@ -6810,6 +6912,7 @@ function render() {
   if (game.state === 'over' && mvpShow) { renderer.render(mvpScene, mvpCam); return; }
   renderer.render(scene, camera);
   if (vmRoot.visible && game.state === 'playing') { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
+  if (clipCap && game.state === 'playing') clipTick();
 }
 
 /* =====================================================================
@@ -6859,7 +6962,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint(); inkTick(dt); lfxTick(dt);
+    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt); doorTick(dt); doorHint(); inkTick(dt); lfxTick(dt); eggTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -7065,6 +7168,7 @@ function netTo(peerId, m) { const c = net.conns[peerId]; if (c) try { c.send(m);
 function netSnd(n) { netBroadcast({ t: 'snd', n }); }
 function toastTo(e, msg) { if (!e) return; if (e.isPlayer) toast(msg); else if (e.remote) netTo(e.remote, { t: 'toast', m: msg }); }
 function teleported(e) { e.tpSeq = (e.tpSeq || 0) + 1; e.nx = e.x; e.ny = e.y; e.nz = e.z; }
+let HIT_REG = null; // body region of the shot being resolved (0 head, 1 body, 2 legs)
 function dealDamage(t, dmg, src, label, head) {
   if (head && src === player && t !== player && !RANGE()) matchStats.hs++;
   if (src === player && t !== player && !RANGE() && t.alive && isEnemy(t, player)) { matchStats.hits++; matchStats.dmg += Math.min(dmg * (t.vulnT > 0 ? 2 : 1), t.hp + t.armor); }
@@ -7400,7 +7504,7 @@ function clutchTick(dt) {
 }
 function clutchEnd() { clutch.on = false; $('clutchFx').classList.add('hidden'); }
 function clutchWin(n) {
-  trophyAdd('clutch');
+  trophyAdd('clutch'); startClip(`CLUTCH 1v${n}`);
   const b = $('clutchWin'); b.innerHTML = `<b>CLUTCH!</b><span>1 vs ${n} · +${n * 25} VP</span>`; b.classList.remove('hidden', 'show'); void b.offsetWidth; b.classList.add('show');
   setTimeout(() => b.classList.add('hidden'), 2800); profile.vp += n * 25; saveProfile(); matchStats.clutches = (matchStats.clutches || 0) + 1;
   sndTone(523, .2, .2, 'triangle', 784); sndTone(784, .3, .2, 'triangle', 1046, undefined, undefined, .15); sndTone(1046, .6, .2, 'sine', 1568, undefined, undefined, .3);
@@ -7666,6 +7770,8 @@ const FX = {
   },
   voice(id) {
     const e = entities[id]; if (!e || !player || !VOICE[e.agent]) return;
+    { const A = AGENT[e.agent], uc = $('ultCut'), ally0 = !isEnemy(e, player); uc.style.setProperty('--uc', ally0 ? A.color : '#ff4655'); uc.innerHTML = `<div class="g">${A.glyph}</div><div><i>${ally0 ? (e === player ? 'YOUR ULTIMATE' : 'ALLY ULTIMATE') : 'ENEMY ULTIMATE'} · ${esc(A.ab.X.name.toUpperCase())}</i><b>${esc(A.name.toUpperCase())}</b><span>“${esc(VOICE[e.agent][ally0 ? 0 : 1])}”</span></div>`;
+      uc.classList.add('show'); clearTimeout(uc._t); uc._t = setTimeout(() => uc.classList.remove('show'), 2400); }
     const ally = !isEnemy(e, player), box = $('voiceLines'), d = document.createElement('div');
     d.style.setProperty('--vc', ally ? '#2fe0b6' : '#ff4655');
     d.innerHTML = `<b>${esc(AGENT[e.agent].name.toUpperCase())}</b>${esc(VOICE[e.agent][ally ? 0 : 1])}`;
@@ -8265,7 +8371,7 @@ function buildSnap() {
     e: entities.map(entSnap),
     sm: smokes.filter(s => s.mesh && !s.off).map(s => [nidOf(s), r2(s.x), r2(s.y), r2(s.z), s.r, r2(s.t), s.max, s.color]),
     zn: zones.map(z => [nidOf(z), r2(z.x), r2(z.z), z.r, z.kind, r2(z.t), r2(z.delay), z.wa || 0]),
-    wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(w.t)]),
+    wl: dynWalls.map(w => [nidOf(w), r2(w.x0), r2(w.x1), w.y0, w.y1, r2(w.z0), r2(w.z1), r2(Math.min(w.t, 999)), w.prop || 0]),
     pj: projectiles.map(p => [nidOf(p), r2(p.x), r2(p.y), r2(p.z), r2(p.vx), r2(p.vy), r2(p.vz), p.color || 0xffffff, p.size || .12, p.g, p.model || 0]),
     dr: drops.map(d => [nidOf(d), d.inst.key, r2(d.x), r2(d.z), d.inst.sk || 0]),
     ob: orbs.map(o => [r2(o.x), r2(o.z)]),
@@ -8324,7 +8430,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
-  clearSprays(); clearInk();
+  clearSprays(); clearInk(); setTimeout(eggsSetup, 0);
   matchStats = newMatchStats(); $('gameChat').innerHTML = '';
   if (d.mrec && typeof d.mrec === 'object' && /^cm[a-z0-9]+$/.test(String(d.map)) && typeof d.mrec.g === 'string') { try { registerCustomMap({ id: d.map, n: String(d.mrec.n || 'Custom').slice(0, 18), th: String(d.mrec.th || 'dustwall'), g: d.mrec.g.slice(0, 20000), sp: typeof d.mrec.sp === 'string' ? d.mrec.sp.slice(0, 20000) : '' }); } catch (e) { } }
   game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
@@ -8464,7 +8570,7 @@ function applySnap(s) {
   syncList(s.sm, smokes, r => makeSmoke(r[1], r[3], r[4], r[6], r[7], null), (o, r) => { o.t = r[5]; }, o => o.mesh && scene.remove(o.mesh));
   syncList(s.zn, zones, r => ZONE_KINDS.has(r[4]) ? makeZone({ x: r[1], z: r[2], r: r[3], kind: r[4], t: r[5], delay: r[6], wa: r[7] || 0 }) : null,
     (o, r) => { o.t = r[5]; if (r[6] < o.delay) o.delay = Math.max(r[6], .0001); if (o.kind === 'alarm' && (o.x !== r[1] || o.z !== r[2])) { o.x = r[1]; o.z = r[2]; o.mesh.position.x = o.x; o.mesh.position.z = o.z; } }, o => scene.remove(o.mesh));
-  syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1 }); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
+  syncList(s.wl, dynWalls, r => { const w = addWallMesh({ x0: r[1], x1: r[2], y0: r[3], y1: r[4], z0: r[5], z1: r[6], t: r[7], hp: 1, prop: r[8] || 0 }); styleProp(w); dynWalls.push(w); return w; }, (o, r) => { o.t = r[7]; }, o => scene.remove(o.mesh));
   syncList(s.pj, projectiles, r => spawnProj({ x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6], color: r[7], size: r[8], g: r[9], model: PROJ_MODELS[r[10]] ? r[10] : undefined }),
     (o, r) => Object.assign(o, { x: r[1], y: r[2], z: r[3], vx: r[4], vy: r[5], vz: r[6] }), o => scene.remove(o.mesh));
   syncList(s.dr, drops, r => WEAPONS[r[1]] ? dropWeapon({ key: r[1], mag: 0, reserve: 0, sk: SKINS[r[4]] ? r[4] : 0 }, r[2], r[3]) : null, () => { }, o => scene.remove(o.mesh));
@@ -10251,6 +10357,7 @@ const SET_PAGES = {
     ['banter', 'Agent banter in the buy phase', 'toggle'],
     ['lineups', 'Show saved ability lineups in matches', 'toggle'],
     ['keepSprays', 'Sprays stay for the whole match (off: cleared every round)', 'toggle'],
+    ['killStyle', 'Kill banner style', 'seg', [['classic', 'Classic'], ['neon', 'Neon'], ['gold', 'Gold'], ['fire', 'Fire'], ['minimal', 'Minimal']]],
     ['inkColor', 'Wall drawing colour (hold K)', 'color'],
     ['ceremony', 'Victory ceremony after a win', 'toggle'],
     ['adaptBots', 'Enemy bots learn your habits (sites, spots)', 'toggle'],
@@ -10675,6 +10782,22 @@ function openSkinPicker(key) {
 }
 /* --- 3D weapon viewer: rotate, zoom, inspect, reload and fire any gun with any skin --- */
 /* --- 3D trophy room: everything you earned on pedestals --- */
+/* --- auto highlights: an ace or a clutch is captured as a short flipbook and kept in Career --- */
+let clipCap = null;
+function startClip(type) { if (clipCap || RANGE() || !player) return; clipCap = { type, frames: [], next: performance.now() + 120, map: game.mapId, agent: player.agent, round: game.round }; }
+function clipTick() {
+  if (!clipCap || performance.now() < clipCap.next) return; clipCap.next = performance.now() + 200;
+  try { const c = document.createElement('canvas'); c.width = 320; c.height = 180; c.getContext('2d').drawImage(renderer.domElement, 0, 0, 320, 180); clipCap.frames.push(c.toDataURL('image/jpeg', .55)); } catch (e) { clipCap = null; return; }
+  if (clipCap.frames.length >= 8) { let L = []; try { L = JSON.parse(localStorage.getItem('vs_clips') || '[]'); } catch (e) { }
+    L.unshift({ type: clipCap.type, map: clipCap.map, agent: clipCap.agent, round: clipCap.round, date: Date.now(), frames: clipCap.frames }); L = L.slice(0, 6);
+    for (let n = L.length; n > 0; n--) { try { localStorage.setItem('vs_clips', JSON.stringify(L.slice(0, n))); break; } catch (e) { } }
+    toast(`🎬 ${clipCap.type} saved to your highlights`); clipCap = null; }
+}
+function clipsHTML() {
+  let L = []; try { L = JSON.parse(localStorage.getItem('vs_clips') || '[]'); } catch (e) { } if (!L.length) return '';
+  return '<div class="collCat">HIGHLIGHTS · saved automatically on aces and clutches</div><div class="clipRow">' + L.map((c, i) => `<div class="clip"><img data-clip="${i}" src="${c.frames[0]}"><b>${esc(c.type)}</b><span>${esc(AGENT[c.agent] ? AGENT[c.agent].name : c.agent)} · ${esc(MAPS[c.map] ? MAPS[c.map].name : c.map)} · round ${c.round} · ${new Date(c.date).toLocaleDateString()}</span></div>`).join('') + '</div>';
+}
+function wireClips() { let L = []; try { L = JSON.parse(localStorage.getItem('vs_clips') || '[]'); } catch (e) { } document.querySelectorAll('[data-clip]').forEach(img => { const c = L[+img.dataset.clip]; if (!c) return; let k = 0; clearInterval(img._iv); img._iv = setInterval(() => { if (!img.isConnected) return clearInterval(img._iv); k = (k + 1) % c.frames.length; img.src = c.frames[k]; }, 220); }); }
 function trophyAdd(k) { profile.troph = profile.troph || {}; profile.troph[k] = (profile.troph[k] || 0) + 1; saveProfile(); }
 const tr = { on: false };
 function trLabel(text, sub, color) {
@@ -11992,6 +12115,7 @@ function refreshLobbyGuns() {
   ud.lobbyGun = buildGun('vandal', AGENT[c.agent].color, profile.equip.vandal); addEngraving(ud.lobbyGun, 'vandal'); ud.lobbyGun.scale.setScalar(CHAR_GUN_SCALE); ud.gunHolder.add(ud.lobbyGun);
 }
 function showTab(t) {
+  hideAbPrev();
   curTab = t; tick(); previewOutfit = null;
   document.querySelectorAll('#navTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   ['home', 'play', 'agents', 'career', 'collection', 'pass', 'store'].forEach(k => $('tab-' + k).classList.toggle('hidden', k !== t));
@@ -12147,6 +12271,42 @@ function agentCard(a, on) {
 function abilityRows(a) {
   return ['C', 'Q', 'E', 'X'].map(k => { const ab = a.ab[k]; return `<div class="abRow"><div class="k ${k === 'X' ? 'x' : ''}">${k}</div><div><div class="t">${ab.name} <span style="opacity:.5;font-weight:400;font-size:12px">${k === 'X' ? 'Ultimate · ' + ab.ult + ' points' : (ab.free ? ab.free + ' free per round' : '') + (ab.cost ? ' · ' + ab.cost + ' credits' : '') + ' · max ' + ab.max}</span></div><div class="d">${ab.desc}</div></div></div>`; }).join('');
 }
+/* --- ability preview: hover an ability to see a little animated demo of what it does --- */
+const AB_KIND = { smoke: 'skySmoke smokeSmall divide cove tide cascade screen pit', throw: 'molly slow gravnet saturate relay satchel paint shock dormant meddle aftershock fts tdf', flash: 'flash flashpt leer blindside paranoia rose',
+  line: 'faultline undercut converge fury thunder reckoning nightfall rocket annihil blades blaze', move: 'dash updraft step gatecrash rdv lightspeed refract drift highgear fastlane overdrive',
+  heal: 'heal regrowth revive pmu stim dtap empress devour dismiss ndy rib', place: 'turret alarm trap cam tmark sensor razor shear mesh wall lockdown hh garden contract',
+  scout: 'recon drone prowler haunt seekers neural trailblazer wingman boombot seize nova gwell thrash zeropoint nullcmd orbital salvo armageddon fakeout' };
+const abKind = t => { for (const k in AB_KIND) if (AB_KIND[k].split(' ').includes(t)) return k; return 'scout'; };
+const AB_KIND_TXT = { smoke: 'BLOCKS VISION', throw: 'THROWN · LANDS AND GOES OFF', flash: 'BLINDS WHOEVER LOOKS AT IT', line: 'HITS EVERYTHING IN A LINE', move: 'MOVEMENT', heal: 'HEALS / BUFFS YOU', place: 'PLACED GADGET · HOLDS AN AREA', scout: 'FINDS / HITS ENEMIES' };
+let abPrevRaf = 0;
+function showAbPrev(row, agent, key) {
+  const ab = AGENT[agent].ab[key], kind = abKind(ab.type), col = AGENT[agent].color, box = $('abPrev'), r = row.getBoundingClientRect();
+  box.classList.remove('hidden'); box.style.left = Math.min(innerWidth - 270, r.right + 10) + 'px'; box.style.top = Math.max(8, Math.min(innerHeight - 200, r.top - 20)) + 'px';
+  $('abPrevTx').textContent = `${key} · ${ab.name.toUpperCase()} — ${AB_KIND_TXT[kind]}`;
+  const cv = $('abPrevCv'), x = cv.getContext('2d'), W = 520, H = 320, t0 = performance.now(); cancelAnimationFrame(abPrevRaf);
+  const me = [90, 200], en = [400, 150], wall = [270, 60, 18, 160];
+  const frame = now => {
+    const t = (Math.max(0, now - t0) / 1000) % 2.6, k = t / 2.6; x.clearRect(0, 0, W, H); x.fillStyle = '#16202a'; x.fillRect(0, 0, W, H);
+    x.strokeStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < W; i += 26) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, H); x.stroke(); } for (let i = 0; i < H; i += 26) { x.beginPath(); x.moveTo(0, i); x.lineTo(W, i); x.stroke(); }
+    x.fillStyle = '#3a4654'; x.fillRect(...wall);
+    const dot = (p, c, r = 14) => { x.fillStyle = c; x.beginPath(); x.arc(p[0], p[1], Math.max(.5, r), 0, 7); x.fill(); };
+    let mp = me.slice(), hit = 0;
+    x.save(); x.strokeStyle = col; x.fillStyle = col; x.lineWidth = 4;
+    if (kind === 'smoke') { const r = Math.min(1, k * 3) * 70; x.globalAlpha = .7; dot([300, 160], col, r); x.globalAlpha = 1; }
+    else if (kind === 'throw' || kind === 'flash') { const a = Math.min(1, k * 2), px = me[0] + (330 - me[0]) * a, py = me[1] - Math.sin(a * Math.PI) * 120 + (170 - me[1]) * a; if (a < 1) dot([px, py], col, 8); else { const b = (k - .5) * 2; x.globalAlpha = 1 - b; dot([330, 170], kind === 'flash' ? '#ffffff' : col, 20 + b * 90); x.globalAlpha = 1; hit = 1; } }
+    else if (kind === 'line') { const L = Math.min(1, k * 2.2) * 420; x.lineWidth = 12; x.globalAlpha = .8; x.beginPath(); x.moveTo(me[0], me[1]); x.lineTo(me[0] + L, me[1] - L * .12); x.stroke(); x.globalAlpha = 1; hit = L > 300; }
+    else if (kind === 'move') { const a = Math.min(1, k * 1.6); mp = [me[0] + a * 140, me[1] - Math.sin(a * Math.PI) * (ab.type === 'updraft' ? 110 : 30)]; x.globalAlpha = .35; for (let i = 1; i < 6; i++) dot([mp[0] - i * 14, mp[1] + i * 2], col, 12 - i); x.globalAlpha = 1; }
+    else if (kind === 'heal') { for (let i = 0; i < 5; i++) { const a = (k * 3 + i / 5) % 1; x.globalAlpha = 1 - a; x.font = '700 26px Inter'; x.fillText('+', me[0] - 30 + i * 14, me[1] - 20 - a * 70); } x.globalAlpha = .4 + Math.sin(k * 20) * .2; x.beginPath(); x.arc(me[0], me[1], 30, 0, 7); x.stroke(); x.globalAlpha = 1; }
+    else if (kind === 'place') { const a = Math.min(1, k * 3); x.fillRect(200, 210, 26 * a, 26 * a); x.globalAlpha = .25; x.beginPath(); x.arc(213, 223, 110 * Math.min(1, k * 2), 0, 7); x.fill(); x.globalAlpha = 1; hit = k > .55; }
+    else { const a = Math.min(1, k * 2.2); x.globalAlpha = .5; x.beginPath(); x.arc(me[0], me[1], a * 360, -.6, .6); x.lineTo(me[0], me[1]); x.fill(); x.globalAlpha = 1; hit = a > .85; }
+    x.restore();
+    dot(mp, col); x.fillStyle = '#fff'; x.font = '700 12px Inter'; x.textAlign = 'center'; x.fillText('YOU', mp[0], mp[1] + 30);
+    dot(en, hit ? '#ffb0b8' : '#ff4655'); x.fillStyle = '#fff'; x.fillText(hit ? 'HIT!' : 'ENEMY', en[0], en[1] + 30);
+    abPrevRaf = requestAnimationFrame(frame);
+  };
+  abPrevRaf = requestAnimationFrame(frame);
+}
+function hideAbPrev() { cancelAnimationFrame(abPrevRaf); $('abPrev').classList.add('hidden'); }
 function renderAgentTab() {
   $('agGrid2').innerHTML = AGENTS.map(a => agentCard(a, a.id === previewAgent)).join('');
   $('agGrid2').querySelectorAll('.agent').forEach(d => d.onclick = () => { previewAgent = d.dataset.id; previewOutfit = null; setLobbyAgent(0, previewAgent); renderAgentTab(); tick(); });
@@ -12159,9 +12319,61 @@ function renderAgentTab() {
     if (o && !profile.outfitsOwned.includes(key)) { const pr = OUTFITS[o].price; if (profile.vp < pr) { SND.deny(); toastMenu(`You need ${(pr - profile.vp).toLocaleString()} more VP`); return; } profile.vp -= pr; profile.outfitsOwned.push(key); refreshVP(); }
     if (o) profile.outfit[a] = o; else delete profile.outfit[a]; saveProfile(); SND.buy(); netProfileChanged(); buildParty(); toastMenu(o ? `${AGENT[a].name} is wearing ${OUTFITS[o].name}` : `${AGENT[a].name} back to the default outfit`); renderAgentTab(); };
   document.querySelectorAll('[data-ludel]').forEach(b => b.onclick = () => { const [m, id] = b.dataset.ludel.split('|'); profile.lineups[m] = (profile.lineups[m] || []).filter(l => l.id !== id); saveProfile(); renderAgentTab(); });
+  document.querySelectorAll('#agInfo2 .abRow').forEach((row, i) => { row.onmouseenter = () => showAbPrev(row, previewAgent, ['C', 'Q', 'E', 'X'][i]); row.onmouseleave = hideAbPrev; });
   $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); net.partySig = ''; buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); netProfileChanged(); };
 }
 
+/* --- weekly report --- */
+function weeklyHTML() {
+  const now = Date.now(), W = 7 * 864e5, M = profile.matches || [], cur = M.filter(m => now - m.date < W), prev = M.filter(m => now - m.date >= W && now - m.date < 2 * W);
+  if (!cur.length) return '';
+  const st = L => { const k = L.reduce((s, m) => s + m.k, 0), d = L.reduce((s, m) => s + m.d, 0), w = L.filter(m => m.won).length; return { n: L.length, wr: L.length ? w / L.length * 100 : 0, kd: k / Math.max(1, d), k }; };
+  const a = st(cur), b = st(prev), ag = {}; cur.forEach(m => ag[m.agent] = (ag[m.agent] || 0) + 1); const top = Object.entries(ag).sort((x, y) => y[1] - x[1])[0];
+  const best = cur.slice().sort((x, y) => y.k - x.k)[0], dl = (v, p, f, suf = '') => prev.length ? `<div class="d ${v >= p ? 'up' : 'dn'}">${v >= p ? '▲' : '▼'} ${f(Math.abs(v - p))}${suf} vs last week</div>` : '<div class="d">first week</div>';
+  return `<div class="collCat">WEEKLY REPORT · last 7 days</div><div class="wkCard">
+    <div><div class="ol">MATCHES</div><div class="v">${a.n}</div>${dl(a.n, b.n, x => x)}</div>
+    <div><div class="ol">WIN RATE</div><div class="v">${Math.round(a.wr)}%</div>${dl(a.wr, b.wr, x => Math.round(x), '%')}</div>
+    <div><div class="ol">K/D</div><div class="v">${a.kd.toFixed(2)}</div>${dl(a.kd, b.kd, x => x.toFixed(2))}</div>
+    <div><div class="ol">KILLS</div><div class="v">${a.k}</div>${dl(a.k, b.k, x => x)}</div>
+    <div><div class="ol">MAIN AGENT</div><div class="v" style="color:${AGENT[top[0]] ? AGENT[top[0]].color : '#fff'}">${AGENT[top[0]] ? AGENT[top[0]].name : top[0]}</div><div class="d">${top[1]} matches</div></div>
+    <div><div class="ol">BEST GAME</div><div class="v">${best.k}/${best.d}/${best.a}</div><div class="d">${esc(MAPS[best.map] ? MAPS[best.map].name : best.map)} · ${best.won ? 'win' : 'loss'}</div></div></div>`;
+}
+/* --- achievements: 50 goals, each pays VP once --- */
+function achStats() {
+  const M = profile.matches || [], T = profile.troph || {}, mk = profile.mastery || {}, L = profile.life || { agents: {}, maps: {} };
+  return { m: M.length, w: M.filter(x => x.won).length, k: M.reduce((s, x) => s + x.k, 0), a: M.reduce((s, x) => s + x.a, 0), best: Math.max(0, ...M.map(x => x.k)), flawless: M.filter(x => x.d === 0 && x.won).length,
+    mvp: T.mvp || 0, ace: T.ace || 0, clutch: T.clutch || 0, lvl: levelOf(profile.xp), agents: Object.keys(L.agents || {}).length, maps: Object.keys(L.maps || {}).length,
+    knife: mk.knife || 0, wep: Object.values(mk).filter(n => n >= 50).length, topWep: Math.max(0, ...Object.values(mk)), kudos: typeof kudosTotal === 'function' ? kudosTotal() : 0,
+    eggs: Object.values(profile.eggs || {}).reduce((s, l) => s + l.length, 0), skins: (profile.owned || []).length, sprays: (profile.sprays || []).length, mySkins: (profile.customSkins || []).length,
+    myMaps: (profile.customMaps || []).length, friends: (profile.botFriends || []).length, myAgents: (profile.customAgents || []).length, comp: M.filter(x => x.mode === 'comp').length, dm: M.filter(x => x.mode === 'dm').length,
+    titles: (profile.titles || []).length, vp: profile.vp || 0, seasons: (profile.seasonHist || []).length, outfits: (profile.outfitsOwned || []).length, clips: (() => { try { return JSON.parse(localStorage.getItem('vs_clips') || '[]').length; } catch (e) { return 0; } })() };
+}
+const ACH = [
+  ['first', '🎮', 'First Steps', 'Play your first match', 'm', 1, 50], ['m10', '🕹️', 'Regular', 'Play 10 matches', 'm', 10, 100], ['m50', '🎖️', 'Veteran', 'Play 50 matches', 'm', 50, 250], ['m200', '🏛️', 'Lifer', 'Play 200 matches', 'm', 200, 500],
+  ['w1', '✌️', 'First Blood Win', 'Win a match', 'w', 1, 50], ['w10', '🥉', 'Winner', 'Win 10 matches', 'w', 10, 150], ['w50', '🥈', 'Champion', 'Win 50 matches', 'w', 50, 300], ['w100', '🥇', 'Unstoppable', 'Win 100 matches', 'w', 100, 600],
+  ['k100', '🔫', 'Marksman', 'Get 100 kills', 'k', 100, 100], ['k500', '🎯', 'Sharpshooter', 'Get 500 kills', 'k', 500, 250], ['k2000', '💀', 'Reaper', 'Get 2000 kills', 'k', 2000, 600],
+  ['a100', '🤝', 'Team Player', 'Get 100 assists', 'a', 100, 150], ['b20', '🔥', 'On Fire', 'Get 20 kills in one match', 'best', 20, 200], ['b30', '☄️', 'One-Person Army', 'Get 30 kills in one match', 'best', 30, 400],
+  ['flaw', '🛡️', 'Untouchable', 'Win a match without dying', 'flawless', 1, 300], ['mvp1', '⭐', 'Star Player', 'Be the match MVP', 'mvp', 1, 100], ['mvp10', '🌟', 'Superstar', 'Be MVP 10 times', 'mvp', 10, 300],
+  ['ace1', '🂡', 'ACE!', 'Get an ace', 'ace', 1, 250], ['ace5', '🃏', 'Ace Collector', 'Get 5 aces', 'ace', 5, 500], ['cl1', '🫀', 'Clutch Gene', 'Win a clutch', 'clutch', 1, 150], ['cl10', '🧊', 'Ice Cold', 'Win 10 clutches', 'clutch', 10, 400],
+  ['lv10', '📈', 'Level 10', 'Reach account level 10', 'lvl', 10, 150], ['lv30', '🚀', 'Level 30', 'Reach account level 30', 'lvl', 30, 400], ['ag5', '🧑‍🤝‍🧑', 'Flexible', 'Play 5 different agents', 'agents', 5, 100], ['ag15', '🎭', 'Jack of All Trades', 'Play 15 different agents', 'agents', 15, 300],
+  ['ag27', '👑', 'Full Roster', 'Play every agent', 'agents', 27, 600], ['map3', '🗺️', 'Tourist', 'Play 3 different maps', 'maps', 3, 100], ['map6', '🧭', 'World Traveller', 'Play 6 different maps', 'maps', 6, 250],
+  ['knife5', '🔪', 'Up Close', 'Get 5 knife kills', 'knife', 5, 150], ['knife25', '🗡️', 'Blade Master', 'Get 25 knife kills', 'knife', 25, 400], ['wep3', '🛠️', 'Arsenal', 'Get 50 kills with 3 different weapons', 'wep', 3, 200],
+  ['wep200', '🏹', 'Specialist', 'Get 200 kills with one weapon', 'topWep', 200, 300], ['kud10', '👍', 'Well Liked', 'Receive 10 kudos', 'kudos', 10, 100], ['kud50', '💖', 'Fan Favourite', 'Receive 50 kudos', 'kudos', 50, 300],
+  ['egg1', '🥚', 'Curious', 'Find a hidden secret', 'eggs', 1, 100], ['egg9', '🔍', 'Treasure Hunter', 'Find 9 hidden secrets', 'eggs', 9, 300], ['skin5', '🎨', 'Collector', 'Own 5 skins', 'skins', 5, 100],
+  ['skin20', '💎', 'Hoarder', 'Own 20 skins', 'skins', 20, 300], ['spr5', '🖌️', 'Tagger', 'Own 5 sprays', 'sprays', 5, 100], ['myskin', '🧪', 'Designer', 'Make a skin in the workshop', 'mySkins', 1, 100],
+  ['mymap', '🏗️', 'Architect', 'Build a map in the editor', 'myMaps', 1, 150], ['friend', '🤖', 'Bot Whisperer', 'Make a bot friend', 'friends', 1, 50], ['myag', '🧬', 'Mad Scientist', 'Create your own agent', 'myAgents', 1, 150],
+  ['comp10', '🏆', 'Competitor', 'Play 10 competitive matches', 'comp', 10, 200], ['dm10', '💥', 'Brawler', 'Play 10 deathmatches', 'dm', 10, 150], ['title5', '🏷️', 'Decorated', 'Own 5 titles', 'titles', 5, 150],
+  ['rich', '💰', 'Rich', 'Hold 10,000 VP at once', 'vp', 10000, 300], ['season', '📅', 'Seasoned', 'Finish a season', 'seasons', 1, 200], ['fit', '👕', 'Fashionista', 'Buy an agent outfit', 'outfits', 1, 100], ['clip', '🎬', 'Highlight Reel', 'Save an auto-highlight', 'clips', 1, 100],
+];
+function checkAchievements() {
+  const S = achStats(), got = profile.ach = profile.ach || {}; let any = 0;
+  for (const [id, ic, name, , key, need, vp] of ACH) if (!got[id] && S[key] >= need) { got[id] = Date.now(); profile.vp += vp; any = 1; (game.state === 'playing' || game.state === 'over' ? toast : toastMenu)(`${ic} Achievement unlocked: ${name} · +${vp} VP`); }
+  if (any) { saveProfile(); if (typeof refreshVP === 'function') refreshVP(); }
+}
+function achHTML() {
+  const S = achStats(), got = profile.ach || {}, n = ACH.filter(a => got[a[0]]).length;
+  return `<div class="collCat">ACHIEVEMENTS · ${n} / ${ACH.length}</div><div class="achGrid">` + ACH.map(([id, ic, name, desc, key, need, vp]) => `<div class="ach ${got[id] ? 'on' : ''}"><i>${ic}</i><div style="flex:1"><b>${name}</b><span>${desc} · ${vp} VP</span>${got[id] ? '' : `<div class="pg"><u style="width:${Math.min(100, S[key] / need * 100)}%"></u></div>`}</div></div>`).join('') + '</div>';
+}
 /* career tab */
 function renderCareer() {
   const m = profile.matches, wins = m.filter(x => x.won).length;
@@ -12169,12 +12381,12 @@ function renderCareer() {
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}${tile('KUDOS', '👍 ' + kudosTotal())}</div>`;
   html = '<button class="btn cdOpen" id="btnCard">🪪 MAKE MY PLAYER CARD</button>' + clanCardHTML() + html + seasonCardHTML();
-  html += statsDashHTML();
+  checkAchievements(); html += weeklyHTML() + clipsHTML() + statsDashHTML() + achHTML();
   { const lc = profile.matches.find(x => x.coach); if (lc) html += `<div class="collCat">COACH NOTES · last match (${esc(MAPS[lc.map] ? MAPS[lc.map].name : lc.map)}, ${lc.won ? 'win' : 'loss'})</div>` + coachHTML(lc.coach); }
   html += '<div class="collCat">RECENT MATCHES</div>';
   html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[x.mode] || 'COMPETITIVE'}${x.place ? ' · #' + x.place : ''}${x.rr !== undefined ? ` · <b style="color:${x.rr > 0 ? 'var(--teal)' : 'var(--red)'}">${x.rr > 0 ? '+' : ''}${x.rr} RR</b>` : ''}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
-  $('careerBox').innerHTML = html; wireClanCard(); $('btnCard').onclick = () => { tick(); openProfileCard(); };
+  $('careerBox').innerHTML = html; wireClips(); wireClanCard(); $('btnCard').onclick = () => { tick(); openProfileCard(); };
 }
 
 /* stats dashboard (career tab): form, K/D and headshot trends, agents, maps, weapons */
@@ -12495,7 +12707,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 98;
+const BUILD = 99;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
