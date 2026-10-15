@@ -749,6 +749,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .lbName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lbName small{color:var(--teal)}.lbAg{font-size:11px}.lbRank{font:600 12px Oswald,sans-serif;letter-spacing:1px}.lbRow b{font:700 13px Oswald,sans-serif;text-align:right}
 .lbGap{text-align:center;color:#7d8790;font-size:12px;padding:3px}.lbHist{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#aab4be}.lbHist span{background:rgba(255,255,255,.04);padding:3px 8px}.lbHist b{color:#ffd34d}
 @media (max-width:700px){.lbRow{grid-template-columns:36px 24px 1fr 70px}.lbAg,.lbRank{display:none}}
+.kuRow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:13px}.kuRow>b{flex:1;font:600 13px 'Noto Sans KR',sans-serif}.kuRow span{display:flex;gap:4px}
+.kuRow button{background:#26313d;border:1px solid transparent;color:#c9d0d6;font:600 11px Oswald,sans-serif;padding:4px 8px;cursor:pointer}.kuRow button.on{border-color:#ffd34d;color:#ffd34d}.kuRow button:disabled:not(.on){opacity:.35}
+.kudoPop{position:fixed;right:20px;bottom:120px;z-index:95;background:#1c2631;border-left:4px solid #ffd34d;padding:10px 14px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.5);animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
+.kudoPop>b{font-size:22px;vertical-align:middle}.kudoPop.out{opacity:0;transform:translateX(30px)}
 .coach{margin:10px 0;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:left}
 .coHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.coGrade{font:700 26px Oswald,sans-serif;width:38px;text-align:center;border:2px solid;line-height:1.2}
 .coGrade.gS{color:#ffd34d}.coGrade.gA{color:#2fe0b6}.coGrade.gB{color:#4fa3ff}.coGrade.gC{color:#c9d0d6}.coGrade.gD{color:#ff4655}
@@ -1349,6 +1353,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div id="overTitle">VICTORY</div>
     <div id="overScore">13 : 7</div>
     <div id="overStats"></div>
+    <div id="kudosBox"></div>
     <div style="display:flex;gap:8px;margin-top:16px"><button class="btn center" id="btnReplay" style="margin:0;flex:1">▶ Watch Replay</button><button class="btn center hidden" id="btnHighlights" style="margin:0;flex:1;border-color:#ffd36a;color:#ffd36a">★ Highlights</button></div>
     <button class="btn primary center" id="btnAgain" style="margin-top:8px">Play Again</button>
     <button class="btn center" id="btnMenu">Main Menu</button>
@@ -5771,6 +5776,7 @@ function finishMatch() {
   setTimeout(showUpdateBar, 2500);
   $('btnReplay').classList.toggle('hidden', !(REC && REC.entsRef === entities && REC.frames.length >= 10));
   { const ok = REC && REC.entsRef === entities && REC.frames.length >= 10; REC && (REC.hl = null); const n = ok ? findHighlights().length : 0; $('btnHighlights').classList.toggle('hidden', !n); $('btnHighlights').textContent = `★ Highlights (${n})`; }
+  renderKudos(winTeam);
   if (!RANGE() && won && !DM() && !game.spectate && settings.ceremony !== false) startCeremony(winTeam, () => { if (game.state === 'over') startMvp(winTeam); });
   else if (!RANGE()) setTimeout(() => { if (game.state === 'over') startMvp(winTeam); }, 600);
 }
@@ -6902,6 +6908,30 @@ function adaptKill(src, t) { // you killed an enemy bot from here: remember the 
 const adaptHot = e => { const M = profile.botMem && game.mapId && profile.botMem[game.mapId]; if (!M || !adaptOn()) return false; return M.spots.some(s => s.n >= 3 && Math.hypot((s.c % GW + .5) * CELL - e.x, (Math.floor(s.c / GW) + .5) * CELL - e.z) < 4); };
 function doorHint() { const el = $('doorHint'); if (!player || !player.alive || !mapGadgets || !mapGadgets.doors || !mapGadgets.doors.size) { el.classList.add('hidden'); return; } const i = doorInFront(player), d = i >= 0 && mapGadgets.doors.get(i);
   if (!d || d.hp <= 0) { el.classList.add('hidden'); return; } el.classList.remove('hidden'); el.innerHTML = `<b>${keyName(settings.binds.use)}</b> ${d.open ? 'Close door' : 'Open door'}`; }
+/* --- kudos: after a match, give teammates a GG / MVP / Teamwork; what you receive is counted on your profile --- */
+const KUDOS = [['gg', '👍', 'GG'], ['mvp', '⭐', 'MVP'], ['team', '🤝', 'Teamwork']];
+const kudosTotal = () => { const K = profile.kudos || {}; return (K.gg || 0) + (K.mvp || 0) + (K.team || 0); };
+function gotKudo(from, k) {
+  const K = KUDOS.find(x => x[0] === k); if (!K) return; profile.kudos = profile.kudos || {}; profile.kudos[k] = (profile.kudos[k] || 0) + 1; saveProfile();
+  const el = document.createElement('div'); el.className = 'kudoPop'; el.innerHTML = `<b>${K[1]}</b> <span><b>${esc(from)}</b> gave you <b>${K[2]}</b></span>`; document.body.appendChild(el);
+  sndTone(988, .1, .12, 'triangle', 1319); setTimeout(() => el.classList.add('out'), 2400); setTimeout(() => el.remove(), 2900);
+}
+function renderKudos(winTeam) {
+  const box = $('kudosBox'); if (!player || RANGE() || DM()) { box.innerHTML = ''; return; }
+  const mates = entities.filter(e => e !== player && e.team === player.team && !e.spectator).slice(0, 4); if (!mates.length) { box.innerHTML = ''; return; }
+  const given = {};
+  box.innerHTML = `<div class="ol" style="margin:10px 0 6px">GIVE KUDOS · one per teammate</div>` + mates.map(e => `<div class="kuRow" data-k="${e.id}"><b style="color:${AGENT[e.agent].color}">${esc(e.name)}</b><span>${KUDOS.map(([k, ic, t]) => `<button data-kudo="${k}" title="${t}">${ic} ${t}</button>`).join('')}</span></div>`).join('')
+    + `<div class="ol" style="margin-top:6px">Kudos you've received: <b style="color:var(--gold)">${kudosTotal()}</b></div>`;
+  box.querySelectorAll('.kuRow').forEach(row => row.querySelectorAll('[data-kudo]').forEach(b => b.onclick = () => {
+    const id = +row.dataset.k; if (given[id]) return; given[id] = 1; const e = entities.find(x => x.id === id), k = b.dataset.kudo;
+    row.querySelectorAll('button').forEach(x => { x.disabled = true; x.classList.toggle('on', x === b); }); tick();
+    const peer = e && (e.remote || e.peerId); if (peer && net.role !== 'off') { if (net.role === 'client') netSend({ t: 'kudo', to: peer, k }); else netTo(peer, { t: 'kudo', from: profile.name, k }); }
+    else if (e && Math.random() < .6) setTimeout(() => gameChat(e.name, e.team, pick({ gg: ['ty!', 'gg wp', 'thx <3'], mvp: ['no YOU are the mvp', 'ty ty', 'just doing my job'], team: ['good teamwork!', 'ty, gg', 'we cooked'] }[k]), true), 900);
+  }));
+  // bot teammates hand out kudos too, mostly to whoever played well
+  const p = player, good = p.kills >= Math.max(1, ...mates.map(e => e.kills)) ? 'mvp' : p.kills >= p.deaths ? 'gg' : 'team';
+  const bm = mates.filter(e => !e.remote && !e.peerId); bm.forEach((b, i) => { if (Math.random() < (good === 'mvp' ? .8 : .5)) setTimeout(() => { if (game.state === 'over') gotKudo(b.name, i === 0 ? good : pick(['gg', 'team', good])); }, 1800 + i * 900); });
+}
 /* --- clutch: last one alive on your team gets a heartbeat, a dark vignette and a "1 vs N" banner; win it for CLUTCH! --- */
 const clutch = { on: false, vs: 0, beat: 0, hist: 0 };
 function clutchTick(dt) {
@@ -7545,6 +7575,7 @@ function hostGameMsg(e, d) {
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
     case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
     case 'ffa': castFF(e, !!d.y); break;
+    case 'kudo': if (m && typeof d.to === 'string' && KUDOS.some(x => x[0] === d.k)) { if (d.to === net.myId) gotKudo(m.name, d.k); else netTo(d.to, { t: 'kudo', from: m.name, k: d.k }); } break;
     case 'mdraw': if (Array.isArray(d.p)) fx('mdraw', e.team, d.p.slice(0, 240), String(d.c || ''), e.name); break;
     case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) { fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); botsFollowPing(e, +d.a[1], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc'); } break;
     case 'spray': if (e.alive && Array.isArray(d.a) && (d.a.length === 9 || d.a.length === 10)) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]).slice(0, 24), +d.a[8] || 0, ...(validSprayData(d.a[9]) ? [d.a[9]] : [])); break;
@@ -7660,6 +7691,7 @@ function clientRecv(d) {
       refreshPartyUI(); break;
     case 'deny': { const msg = String(d.m || 'Could not join.'); resetNet(); setPartyStatus(msg); break; }
     case 'chat': addChat(d.n == null ? null : cleanName(d.n), String(d.m || '')); break;
+    case 'kudo': if (KUDOS.some(x => x[0] === d.k)) gotKudo(cleanName(d.from), d.k); break;
     case 'giftin': if (typeof d.code === 'string' && d.code.length < 2000) { const err = redeemGift(d.code, true); if (err) toastMenu(err); } break;
     case 'chatlog': net.chat = (d.log || []).slice(-40).map(c => ({ n: c.n == null ? null : cleanName(c.n), m: String(c.m || '').slice(0, 140) })); renderChat(); break;
     case 'found': if (game.state === 'menu') { game.mapId = MAPS[d.map] ? d.map : 'dustwall'; net.selAt = Date.now() + 1700 + clamp(+d.sel || SELECT_TIME, 5, 120) * 1000; showMatchFound(MODES.includes(d.mode) ? d.mode : 'comp', DIFF[d.diff] ? d.diff : 'normal'); } break;
@@ -7892,7 +7924,7 @@ async function makeProfileCard() {
   const tiles = [['MATCHES', M.length], ['WIN %', M.length ? Math.round(wins / M.length * 100) + '%' : '—'], ['K/D', M.length ? (K / Math.max(1, D)).toFixed(2) : '—'], ['HEADSHOT', hits ? Math.round(hs / hits * 100) + '%' : '—'], ['MAIN', topAg], ['BEST GUN', topGun ? WEAPONS[topGun].name : '—']];
   tiles.forEach(([l, v], i) => { const tx = 50 + (i % 3) * 215, ty = 390 + Math.floor(i / 3) * 110; x.fillStyle = 'rgba(255,255,255,.06)'; x.fillRect(tx, ty, 200, 96); x.fillStyle = col; x.fillRect(tx, ty, 4, 96);
     x.fillStyle = '#9aa6b2'; x.font = '600 16px Oswald, sans-serif'; x.fillText(l, tx + 18, ty + 32); x.fillStyle = '#ece8e1'; x.font = '700 34px Oswald, "Noto Sans KR", sans-serif'; x.fillText(String(v), tx + 18, ty + 76, 170); });
-  x.fillStyle = 'rgba(236,232,225,.5)'; x.font = '500 15px Oswald, sans-serif'; x.fillText(`${profile.friendCode || ''} · ${new Date().toLocaleDateString()}`, 50, H - 18);
+  x.fillStyle = 'rgba(236,232,225,.5)'; x.font = '500 15px Oswald, sans-serif'; x.fillText(`${profile.friendCode || ''} · ${new Date().toLocaleDateString()}${kudosTotal() ? ` · 👍 ${kudosTotal()} kudos` : ''}`, 50, H - 18);
   return c;
 }
 async function openProfileCard() {
@@ -11356,7 +11388,7 @@ function renderCareer() {
   const m = profile.matches, wins = m.filter(x => x.won).length;
   const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
-  let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
+  let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}${tile('KUDOS', '👍 ' + kudosTotal())}</div>`;
   html = '<button class="btn cdOpen" id="btnCard">🪪 MAKE MY PLAYER CARD</button>' + clanCardHTML() + html + seasonCardHTML();
   html += statsDashHTML();
   { const lc = profile.matches.find(x => x.coach); if (lc) html += `<div class="collCat">COACH NOTES · last match (${esc(MAPS[lc.map] ? MAPS[lc.map].name : lc.map)}, ${lc.won ? 'win' : 'loss'})</div>` + coachHTML(lc.coach); }
