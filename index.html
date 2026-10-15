@@ -386,6 +386,16 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .btn.small{width:auto;margin:0;padding:6px 14px;font-size:13px}
 .mode.range{border-color:rgba(47,224,182,.5)}
 .mode.range .t{color:var(--teal)}
+.crateBan{display:flex;align-items:center;gap:14px;padding:10px 14px;margin:10px 0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}.crateBan.ready{background:linear-gradient(90deg,rgba(255,211,77,.18),rgba(255,70,85,.08));border-color:#ffd34d}
+.crateBan b{display:block;font:700 16px Oswald,sans-serif;letter-spacing:2px}.crateBan span{font-size:12px;color:#c9d0d6}.crateBan .btn{margin:0;width:auto;padding:9px 18px}.crIcon{font-size:34px}.crateBan.ready .crIcon{animation:crWob 1.4s ease-in-out infinite}
+@keyframes crWob{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}}
+#crateModal{background:rgba(5,8,12,.85)}.crStage{position:relative;width:420px;height:420px;display:flex;align-items:center;justify-content:center}
+.crBox{position:absolute;font-size:150px;filter:drop-shadow(0 0 30px var(--rc))}.crStage.go .crBox{animation:crShake 1.1s ease-in forwards}
+@keyframes crShake{0%{transform:scale(.6)}20%{transform:scale(1) rotate(-6deg)}35%{transform:rotate(7deg)}50%{transform:rotate(-9deg)}65%{transform:rotate(11deg) scale(1.08)}80%{transform:rotate(-12deg) scale(1.15)}99%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(2)}}
+.crPrize{opacity:0;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:20px 26px;background:radial-gradient(circle,color-mix(in srgb,var(--rc) 35%,transparent),transparent 70%)}
+.crStage.go .crPrize{animation:crPrize .6s 1.1s ease-out forwards}@keyframes crPrize{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+.crPrize img{max-width:360px;height:130px;object-fit:contain;filter:drop-shadow(0 0 18px var(--rc))}.crPrize b{font:700 26px Oswald,sans-serif;letter-spacing:2px;color:var(--rc)}.crPrize span{font-size:13px;color:#c9d0d6}.crPrize .btn{width:auto;margin-top:10px}
+.crVp{font:700 80px Oswald,sans-serif;color:#ffd34d;text-shadow:0 0 30px rgba(255,211,77,.6)}.crStage.rare .crPrize b{animation:crRare 1s 1.7s infinite alternate}@keyframes crRare{to{text-shadow:0 0 20px var(--rc)}}
 .storeTabs .giftBtn{background:linear-gradient(90deg,#6a3a10,#a8661a)}.storeTabs .giftBtn.on{background:linear-gradient(90deg,#ff9a2a,#ffd34d);color:#111}
 .gfGrid{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}.gfBox{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:14px;display:flex;flex-direction:column;gap:9px}
 .gfBox h3{font:700 18px Oswald,sans-serif;letter-spacing:3px;margin:0}.gfBox label{display:flex;flex-direction:column;gap:4px;font:600 11px Oswald,sans-serif;letter-spacing:2px;color:#9aa6b2}
@@ -1118,6 +1128,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <button class="btn" id="pvBack">◀ BACK TO EDITOR</button></div>
 <div id="introCine" class="hidden"></div>
 <div id="cereTag" class="hidden"><b>VICTORY</b><span>click to skip</span></div>
+<div id="crateModal" class="screen hidden"></div>
 <div id="menuToast"></div>
 <div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
 <div id="updateBar" class="hidden"><span id="updTxt">A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
@@ -9489,6 +9500,35 @@ function dailyOffers() {
   const day = Math.floor(Date.now() / DAY), rng = seeded(day * 7919 + profile.seed + rerollsToday() * 31337);
   return { ids: seededPick(rng, SKIN_IDS.filter(id => SKINS[id].key !== 'knife'), 4), left: (day + 1) * DAY - Date.now() };
 }
+/* --- free daily crate: one a day, random VP, spray or skin (rarely a premium one) --- */
+const crateReady = () => profile.crateDay !== Math.floor(Date.now() / DAY);
+function crateBannerHTML() {
+  const ready = crateReady(), left = (Math.floor(Date.now() / DAY) + 1) * DAY - Date.now();
+  return `<div class="crateBan${ready ? ' ready' : ''}"><div class="crIcon">🎁</div><div style="flex:1"><b>FREE DAILY CRATE</b><span>${ready ? 'A free crate is waiting — VP, sprays or a skin (1 in 20 chance of a Premium or better skin).' : `Opened today · next one in ${fmtLeft(left)}`}</span></div>
+    <button class="btn ${ready ? 'primary' : ''}" id="btnCrate" ${ready ? '' : 'disabled'}>${ready ? 'OPEN' : 'OPENED'}</button></div>`;
+}
+function rollCrate() {
+  const r = Math.random(), unowned = t => SKIN_IDS.filter(id => SKINS[id].tier === t && !owns(id) && SKINS[id].key !== 'knife');
+  const sprays = Object.keys(SPRAYS).filter(id => !profile.sprays.includes(id) && !/^(ag|am|cs)_/.test(id));
+  if (r < .05) { const L = [...unowned('premium'), ...unowned('exclusive'), ...unowned('ultra')]; if (L.length) return { k: 'skin', id: pick(L), rare: true }; }
+  if (r < .25) { const L = [...unowned('select'), ...unowned('select'), ...unowned('deluxe')]; if (L.length) return { k: 'skin', id: pick(L) }; }
+  if (r < .42 && sprays.length) return { k: 'spray', id: pick(sprays) };
+  const n = pick([50, 75, 100, 100, 150, 150, 200, 250, 300, 500]); return { k: 'vp', n, rare: n >= 500 };
+}
+function openCrate() {
+  if (!crateReady()) return; profile.crateDay = Math.floor(Date.now() / DAY);
+  const g = rollCrate();
+  if (g.k === 'skin') profile.owned.push(g.id); else if (g.k === 'spray') profile.sprays.push(g.id); else profile.vp += g.n;
+  saveProfile(); refreshVP();
+  const T = g.k === 'skin' ? TIERS[SKINS[g.id].tier] : null, col = T ? T.color : g.k === 'spray' ? '#2fe0b6' : '#ffd34d';
+  const card = g.k === 'skin' ? `<img src="${bigGunIcon(SKINS[g.id].key, g.id)}"><b>${esc(SKINS[g.id].name)}</b><span>${T.name} skin</span>`
+    : g.k === 'spray' ? `<img src="${sprayURL(g.id)}" style="height:120px"><b>${esc(SPRAYS[g.id].name)}</b><span>Spray</span>` : `<div class="crVp">+${g.n}</div><b>${g.n} VP</b><span>Valor Points</span>`;
+  const m = $('crateModal'); m.innerHTML = `<div class="crStage" style="--rc:${col}"><div class="crBox"><div class="crLid"></div><div class="crBody">🎁</div></div><div class="crPrize">${card}<button class="btn primary" id="crOk">${g.k === 'skin' ? 'EQUIP' : 'NICE'}</button></div></div>`;
+  m.classList.remove('hidden'); m.querySelector('.crStage').classList.add('go'); if (g.rare) m.querySelector('.crStage').classList.add('rare');
+  sndTone(220, .2, .12, 'square', 330); setTimeout(() => sndTone(330, .2, .12, 'square', 440), 300); setTimeout(() => sndTone(440, .2, .12, 'square', 660), 600);
+  setTimeout(() => { sndNoise(.5, 3000, .6, .2); sndTone(784, .4, .2, 'triangle', 1568); if (g.rare) sndTone(1046, .8, .18, 'sine', 2093, undefined, undefined, .2); }, 1100);
+  $('crOk').onclick = () => { if (g.k === 'skin') { profile.equip[SKINS[g.id].key] = g.id; saveProfile(); refreshLobbyGuns(); netProfileChanged(); } if (g.k === 'spray') { profile.spray = g.id; saveProfile(); } m.classList.add('hidden'); if (curTab === 'store') renderStore(); storeBadge(); };
+}
 function rerollOffers() {
   if (rerollsToday() >= 1) return;
   if (profile.vp < REROLL_VP) { SND.deny(); toastMenu(`Rerolling costs ${REROLL_VP} VP.`); return; }
@@ -9510,7 +9550,7 @@ function storeBadge() {
   const b = document.querySelector('#navTabs button[data-tab="store"]'); if (!b) return;
   const day = Math.floor(Date.now() / DAY), d = dailyOffers(), hasWish = d.ids.some(id => wished(id) && !owns(id));
   const fresh = profile.storeSeen !== day, nm = nightStatus().open;
-  b.innerHTML = 'STORE' + (hasWish ? '<i class="stBadge wish">★</i>' : fresh ? '<i class="stBadge">NEW</i>' : '') + (nm ? '<i class="stBadge nm">NM</i>' : '');
+  b.innerHTML = 'STORE' + (crateReady() ? '<i class="stBadge wish">🎁</i>' : '') + (hasWish ? '<i class="stBadge wish">★</i>' : fresh ? '<i class="stBadge">NEW</i>' : '') + (nm ? '<i class="stBadge nm">NM</i>' : '');
 }
 function featuredLine() {
   const p = Math.floor(Date.now() / (3 * DAY)), rng = seeded(p * 104729 + 17);
@@ -9545,12 +9585,13 @@ function renderStore() {
         <div class="featNote">${L.guns.length} skins · ${TIERS[L.tier].name} edition · 20% off as a bundle</div>
         <button class="btn primary" id="btnBundle" ${bp === 0 ? 'disabled' : ''}>${bp === 0 ? 'ALL OWNED' : `BUY BUNDLE · <b class="vpI"></b>${bp.toLocaleString()}`}</button></div>
         <div class="featGuns">${L.guns.map(g => `<img src="${gunIcon(g, L.id + ':' + g)}" title="${SKINS[L.id + ':' + g].name}" data-sk="${L.id}:${g}">`).join('')}</div></div>
+      ${crateBannerHTML()}
       <div class="collCat" style="display:flex;align-items:center;gap:12px">DAILY OFFERS · refresh in ${fmtLeft(d.left)}<button class="btn small" id="btnReroll" ${rr ? '' : 'disabled'} style="margin-left:auto">${rr ? `REROLL · <b class="vpI"></b>${REROLL_VP}` : 'REROLLED TODAY'}</button></div>
       <div class="skGrid">${d.ids.map(id => skinCard(id, SKINS[id].price)).join('')}</div>
       ${(profile.wish || []).length ? `<div class="collCat">WISHLIST · you'll be alerted when one shows up</div><div class="wishRow">${profile.wish.filter(id => SKINS[id]).map(id => `<img src="${gunIcon(SKINS[id].key, id)}" title="${SKINS[id].name}${owns(id) ? ' (owned)' : ''}" data-sk="${id}" class="${owns(id) ? 'own' : ''}">`).join('')}</div>` : ''}
       <div class="note">Earn VP by playing matches: +250 for a win, +100 for a loss and +10 per kill. Owned skins are equipped in the Collection tab.</div>`;
     $('btnBundle').onclick = () => buySkins(L.guns.map(g => L.id + ':' + g).filter(id => !owns(id)), bp, `${L.name} Collection`);
-    $('btnReroll').onclick = rerollOffers;
+    $('btnReroll').onclick = rerollOffers; if ($('btnCrate')) $('btnCrate').onclick = openCrate;
     box.querySelectorAll('.wishRow img').forEach(im => im.onclick = () => openSkinModal(im.dataset.sk, SKINS[im.dataset.sk].price));
     box.querySelectorAll('.featGuns img').forEach(im => im.onclick = () => openSkinModal(im.dataset.sk, SKINS[im.dataset.sk].price));
   } else if (!nightStatus().open) {
