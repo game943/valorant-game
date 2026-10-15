@@ -218,6 +218,10 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .vpI{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--light);margin-right:4px;vertical-align:-1px;position:relative}
 .vpI::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--light)}
 .storeTabs{display:flex;gap:4px}
+.skmLv{margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.skmLvRow{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}.skmL{background:#1c2631;padding:5px 7px;font-size:11px;color:#7d8790;display:flex;gap:6px;align-items:center;line-height:1.25}
+.skmL b{font:700 16px Oswald,sans-serif}.skmL.got{background:rgba(255,211,77,.14);color:#ffd34d}
+#skmUpg{width:auto;margin:4px 0 0;padding:7px 14px}
 .storeTabs button{background:#26313d;border:0;color:var(--light);font:600 14px Oswald,sans-serif;letter-spacing:2px;padding:9px 18px;cursor:pointer}
 .storeTabs button.on{background:var(--red);color:#fff}
 .storeTabs .nmBtn{background:linear-gradient(90deg,#3a1660,#6a1b5a)}
@@ -900,6 +904,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   <div class="panel skmPanel" id="skmPanel">
     <div class="pHead"><div><div class="ol" id="skmTier">PREMIUM EDITION</div><h2 id="skmName">Skin</h2></div><button class="iconBtn" id="skmClose">✕</button></div>
     <div class="skmStage"><img id="skmImg" alt=""></div>
+    <div id="skmLv" class="skmLv hidden"></div>
     <div class="skmFoot"><span class="note" id="skmNote" style="margin:0"></span><button class="btn" id="skmWish" style="width:auto;margin:0 8px 0 auto">☆ WISH</button><button class="btn primary" id="skmBuy">BUY</button></div>
   </div>
 </div>
@@ -2357,7 +2362,7 @@ function buildGunBase(key, accent) {
 const gunIconCache = {};
 const bigGunIcon = (key, skin) => gunIcon(key, skin, 480, 180);
 function gunIcon(key, skin = 0, W = 240, H = 90) {
-  const ck = key + ':' + (skin || '') + ':' + W;
+  const ck = key + ':' + (skin || '') + ':' + (skin ? skinLv(skin) : 0) + ':' + W;
   if (gunIconCache[ck] !== undefined) return gunIconCache[ck];
   try {
     const r = gunIcon.r || (gunIcon.r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })); r.setSize(W, H); r.setClearColor(0, 0); r.clear();
@@ -2444,24 +2449,33 @@ function skinTex(L) {
   return skinTexCache[L.id] = t;
 }
 const ROLE_OF = { [GC.blk]: 'body', [GC.dk]: 'body', 0x2f3640: 'body', 0x3a4656: 'body', 0x3e4a3c: 'body', [GC.olive]: 'body', [GC.tan]: 'body', [GC.wood]: 'furn', [GC.wood2]: 'furn', [GC.mt]: 'metal', [GC.lt]: 'metal', 0xcfd6de: 'metal' };
-const skinMatCache = {};
-function skinMat(L, role) {
-  const k = L.id + ':' + role; if (skinMatCache[k]) return skinMatCache[k];
-  let m;
+const skinMatCache = {}, SHIMMER = [];
+/* --- skin levels: Premium / Exclusive / Ultra skins upgrade from level 1 to 4 ---
+   L1 base colours · L2 glow, tracer and muzzle flash · L3 animated shimmer and the skin's kill banner · L4 kill effect and kill sound */
+const UPG_COST = { premium: 300, exclusive: 400, ultra: 500 }, SKIN_MAX_LV = 4;
+const LV_TXT = ['Base look', 'Glow, coloured tracers and muzzle flash', 'Animated shimmer and the skin kill banner', 'Kill effect and kill sound'];
+const upgradable = id => !!(SKINS[id] && !SKINS[id].custom && UPG_COST[SKINS[id].tier]);
+// your own copy uses its level; anything you don't own (store previews, other players) shows fully upgraded
+const skinLv = id => !upgradable(id) || !profile.owned.includes(id) ? SKIN_MAX_LV : clamp((profile.skinLv && profile.skinLv[id]) || 1, 1, SKIN_MAX_LV);
+function skinMat(L, role, lv = SKIN_MAX_LV) {
+  const k = L.id + ':' + role + ':' + lv; if (skinMatCache[k]) return skinMatCache[k];
+  const glow = lv >= 2; let m;
   if (role === 'body') m = new THREE.MeshLambertMaterial({ map: skinTex(L), color: 0xffffff });
   else if (role === 'furn') m = new THREE.MeshLambertMaterial({ color: L.furn });
-  else if (role === 'metal') m = new THREE.MeshLambertMaterial({ color: L.metal, emissive: L.mglow || 0 });
-  else m = new THREE.MeshLambertMaterial({ color: L.acc, emissive: L.glow || 0 });
+  else if (role === 'metal') m = new THREE.MeshLambertMaterial({ color: L.metal, emissive: glow ? L.mglow || 0 : 0 });
+  else m = new THREE.MeshLambertMaterial({ color: L.acc, emissive: glow ? L.glow || 0 : 0 });
+  if (lv >= 3 && m.emissive && m.emissive.getHex()) SHIMMER.push(m);
   return skinMatCache[k] = m;
 }
+function shimmerTick(t) { for (let i = 0; i < SHIMMER.length; i++) SHIMMER[i].emissiveIntensity = 1 + Math.sin(t * 3.2 + i) * .55; }
 // repaint a built gun with a skin line
 function applySkin(g, skinId) {
-  const S = SKINS[skinId]; if (!S) return;
+  const S = SKINS[skinId]; if (!S) return; const lv = skinLv(skinId);
   g.traverse(o => {
     if (!o.isMesh || !o.material.color) return;
     const hex = o.material.color.getHex();
     if (hex === GC.glass) return;
-    o.material = skinMat(S.line, ROLE_OF[hex] || 'acc');
+    o.material = skinMat(S.line, ROLE_OF[hex] || 'acc', lv);
   });
   g.userData.skin = skinId;
 }
@@ -2509,7 +2523,7 @@ function registerCustomSkin(c) {
   SKINS[sid] = { id: sid, line: L, key: c.key, name: c.name, tier: 'custom', price: 0, custom: true };
   return sid;
 }
-const skinTracer = (e, inst) => { const S = SKINS[skinOf(e, inst)]; return S && S.line.tracer != null ? S.line.tracer : 0xfff2b0; };
+const skinTracer = (e, inst) => { const id = skinOf(e, inst), S = SKINS[id]; return S && S.line.tracer != null && skinLv(id) >= 2 ? S.line.tracer : 0xfff2b0; };
 const skinOf = (e, inst) => inst ? (inst.sk !== undefined ? inst.sk : (e && e.skins && e.skins[inst.key]) || 0) : 0;
 const cleanSkins = o => { const r = {}; if (o && typeof o === 'object') for (const k in o) if (SKINS[o[k]] && SKINS[o[k]].key === k) r[k] = o[k]; return r; };
 function randomBotSkins() {
@@ -3011,9 +3025,10 @@ function applyDamage(t, dmg, src, label, head) {
 const KILL_NAMES = ['', '', 'DOUBLE KILL', 'TRIPLE KILL', 'QUADRA KILL', 'ACE'];
 function playerKillFx(n, head, skinId, victim) {
   n = Math.max(1, Math.min(6, n | 0));
-  const S = skinId && SKINS[skinId], tierHi = S && (['premium', 'exclusive', 'ultra'].includes(S.tier) || !!(KILL_FX[S.line.kfx] || KILL_SFX[S.line.sfx])), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
+  const S0 = skinId && SKINS[skinId], slv = S0 ? skinLv(skinId) : 0, S = S0 && slv >= 3 ? S0 : null, fx4 = S && slv >= 4;
+  const tierHi = S && (['premium', 'exclusive', 'ultra'].includes(S.tier) || !!(KILL_FX[S.line.kfx] || KILL_SFX[S.line.sfx])), col = tierHi ? S.line.acc : 0xff4655, css = '#' + col.toString(16).padStart(6, '0');
   const base = [0, 660, 740, 830, 990, 1180, 1320][n];
-  if (S && KILL_SFX[S.line.sfx]) KILL_SFX[S.line.sfx](n); else
+  if (fx4 && KILL_SFX[S.line.sfx]) KILL_SFX[S.line.sfx](n); else
   sndTone(base, .14, .22, 'triangle'); sndTone(base * 1.5, .2, .2, 'triangle', 0, undefined, undefined, .08);
   if (n >= 3) sndTone(base * 2, .3, .16, 'sine', 0, undefined, undefined, .16);
   if (tierHi) sndNoise(.25, 2600, 1, .12);
@@ -3027,7 +3042,7 @@ function playerKillFx(n, head, skinId, victim) {
   kb.querySelector('.kbSub').textContent = (head ? 'HEADSHOT · ' : '') + (tierHi ? S.line.name.toUpperCase() + ' KILL' : n + (n === 1 ? ' KILL' : ' KILLS'));
   kb.classList.remove('hidden', 'show'); void kb.offsetWidth; kb.classList.add('show');
   clearTimeout(kb._t); kb._t = setTimeout(() => kb.classList.add('hidden'), 950);
-  if (victim && S && (S.custom || KILL_FX[S.line.kfx])) { if (KILL_FX[S.line.kfx]) KILL_FX[S.line.kfx](victim, S.line.acc); }
+  if (victim && fx4 && (S.custom || KILL_FX[S.line.kfx])) { if (KILL_FX[S.line.kfx]) KILL_FX[S.line.kfx](victim, S.line.acc); }
   else if (victim && tierHi) { spawnParticles(victim.x, victim.y + 1.2, victim.z, 26, col, 4, .7); fx('pulse', victim.x, victim.y + 1, victim.z, 1.6); }
 }
 function killEntity(t, src, label, head) {
@@ -4529,7 +4544,7 @@ function equipView() {
     const mz = gun.userData.muzzleZ, ch = masteryCharm(w.key); if (ch) { ch.position.set(-.045, -.035, mz * .22); ch.scale.setScalar(1.8); gun.add(ch); gun.userData.charm = ch; }
     const ct = masteryCounter(w.key); if (ct) { ct.position.set(-.042, .012, mz * .42); ct.rotation.y = -Math.PI / 2; gun.add(ct); }
   }
-  const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: (SKINS[skinOf(player, w)] && SKINS[skinOf(player, w)].line.flash != null) ? SKINS[skinOf(player, w)].line.flash : 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: (SKINS[skinOf(player, w)] && SKINS[skinOf(player, w)].line.flash != null && skinLv(skinOf(player, w)) >= 2) ? SKINS[skinOf(player, w)].line.flash : 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
   let held = gun;
@@ -6004,7 +6019,7 @@ function loop(now) {
     const fps = Math.round(fpsN * 1000 / (now - fpsT)), inf = renderer.info.render;
     $('fps').innerHTML = settings.perfStats ? `${fps} FPS · ${frameMs.toFixed(1)} ms (max ${frameMax.toFixed(0)})<br>${inf.calls} draw calls · ${Math.round(inf.triangles / 1000)}k tris` : fps + ' FPS';
     fpsN = 0; fpsT = now; frameMax = 0; } }
-  simStep(dt * timeScale()); aceTick(dt);
+  simStep(dt * timeScale()); aceTick(dt); if (SHIMMER.length) shimmerTick(now / 1000);
   if (game.state === 'playing') {
     updateCamera(dt);
     updateHUD(dt);
@@ -7031,7 +7046,8 @@ const store = {
 const profile = Object.assign({ name: 'Player', fav: 'jett', xp: 0, matches: [], vp: 2500, owned: [], equip: {}, seed: Math.floor(Math.random() * 1e9), sprays: ['logo', 'gg', 'heart'], spray: 'logo', bp: { xp: 0, claimed: 0 }, contracts: {}, contract: '', titles: [], title: '' }, store.get('vs_profile', {}));
 profile.customSkins = Array.isArray(profile.customSkins) ? profile.customSkins.filter(c => c && c.id && WEAPONS[c.key] || (c && c.key === 'knife')) : [];
 profile.customSkins.forEach(registerCustomSkin);
-profile.owned = (profile.owned || []).filter(id => SKINS[id]); profile.equip = cleanSkins(profile.equip); for (const k in profile.equip) if (!profile.owned.includes(profile.equip[k])) delete profile.equip[k];
+profile.owned = (profile.owned || []).filter(id => SKINS[id]);
+if (!profile.skinLv) { profile.skinLv = {}; for (const id of profile.owned) if (upgradable(id)) profile.skinLv[id] = SKIN_MAX_LV; } profile.equip = cleanSkins(profile.equip); for (const k in profile.equip) if (!profile.owned.includes(profile.equip[k])) delete profile.equip[k];
 profile.customAgents = Array.isArray(profile.customAgents) ? profile.customAgents : []; // registered once the whole script has loaded
 if (!AGENT[profile.fav] && !/^cu/.test(profile.fav)) profile.fav = 'jett';
 const saveProfile = () => store.set('vs_profile', profile);
@@ -8868,7 +8884,20 @@ function openSkinModal(id, price) {
   wb.onclick = () => { toggleWish(id); wl(); if (curTab === 'store') renderStore(); };
   $('skmBuy').onclick = () => { if (own) { profile.equip[S.key] = id; saveProfile(); netProfileChanged(); SND.buy(); closeSkinModal(); refreshLobbyGuns(); if (curTab === 'collection') renderCollection(); else renderStore(); } else buySkins([id], price, S.name); };
   $('skmNote').textContent = own ? 'You own this skin.' : profile.vp < price ? `You have ${profile.vp.toLocaleString()} VP — ${(price - profile.vp).toLocaleString()} more needed.` : `You have ${profile.vp.toLocaleString()} VP.`;
-  $('skinModal').classList.remove('hidden'); tick();
+  renderSkinLevels(id); $('skinModal').classList.remove('hidden'); tick();
+}
+function renderSkinLevels(id) {
+  const box = $('skmLv'); if (!upgradable(id)) { box.classList.add('hidden'); return; }
+  const own = owns(id), lv = own ? skinLv(id) : 0, cost = UPG_COST[SKINS[id].tier];
+  box.classList.remove('hidden');
+  box.innerHTML = `<div class="ol">SKIN LEVELS${own ? ` · LEVEL ${lv} / ${SKIN_MAX_LV}` : ' · buy it, then upgrade with VP'}</div><div class="skmLvRow">${LV_TXT.map((t, i) => `<div class="skmL ${own && lv > i ? 'got' : ''}"><b>${i + 1}</b><span>${t}</span></div>`).join('')}</div>
+    ${own && lv < SKIN_MAX_LV ? `<button class="btn" id="skmUpg">UPGRADE TO LEVEL ${lv + 1} · <b class="vpI"></b>${cost}</button>` : own ? '<div class="note" style="margin:6px 0 0;color:var(--gold)">Fully upgraded</div>' : `<div class="note" style="margin:6px 0 0">Levels 2–4 cost ${cost} VP each. The picture shows level 4.</div>`}`;
+  if ($('skmUpg')) $('skmUpg').onclick = () => {
+    if (profile.vp < cost) { SND.deny(); toastMenu(`You need ${(cost - profile.vp).toLocaleString()} more VP`); return; }
+    profile.vp -= cost; profile.skinLv[id] = lv + 1; saveProfile(); SND.buy(); refreshVP(); refreshLobbyGuns();
+    $('skmImg').src = bigGunIcon(SKINS[id].key, id); renderSkinLevels(id); toastMenu(`${SKINS[id].name} → level ${lv + 1}: ${LV_TXT[lv]}`);
+    if (curTab === 'collection') renderCollection(); else if (curTab === 'store') renderStore();
+  };
 }
 function closeSkinModal() { $('skinModal').classList.add('hidden'); skinModalId = null; }
 $('skmClose').onclick = closeSkinModal;
