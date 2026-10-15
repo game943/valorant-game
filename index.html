@@ -780,6 +780,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .rcRef{background:none;border:0;color:#9aa6b2;cursor:pointer;font-size:13px}
 .invPop{position:fixed;right:20px;top:80px;z-index:90;background:#1c2631;border:1px solid var(--teal);border-left:4px solid var(--teal);padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:14px;animation:btIn .3s ease-out;max-width:320px}
 .invBtns{display:flex;gap:8px;margin-top:10px}.invBtns .btn{margin:0;width:auto;padding:7px 14px}
+#bigMap{position:fixed;inset:0;z-index:44;display:flex;align-items:center;justify-content:center;background:rgba(5,8,12,.55)}
+.bmBox{background:rgba(15,25,35,.92);border:1px solid rgba(255,255,255,.12);padding:10px}.bmHead{display:flex;gap:12px;align-items:center;margin-bottom:8px;font-size:12px;color:#9aa6b2;flex-wrap:wrap}
+.bmHead b{font:700 18px Oswald,sans-serif;letter-spacing:4px;color:#ece8e1}.bmCols{margin-left:auto;display:flex;gap:5px;align-items:center}.bmCols button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.bmCols button.on{border-color:#fff}#bmClear{width:auto!important;height:auto!important;border-radius:0!important;background:#26313d!important;color:#c9d0d6;font:600 11px Oswald,sans-serif;padding:3px 8px!important}
+#bigMapCv{display:block;cursor:crosshair;image-rendering:auto}
 #banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
 .btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
@@ -1309,6 +1314,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
 <div id="banter"></div>
+<div id="bigMap" class="hidden"><div class="bmBox"><div class="bmHead"><b>MAP</b><span>Click: ping · Right-click: enemy here · Drag: draw (your team sees it) · M / Esc: close</span>
+  <span class="bmCols"><button data-bmc="#ffd34d" class="on" style="background:#ffd34d"></button><button data-bmc="#2fe0b6" style="background:#2fe0b6"></button><button data-bmc="#ff4655" style="background:#ff4655"></button><button data-bmc="#ffffff" style="background:#fff"></button><button id="bmClear">Clear mine</button></span></div>
+  <canvas id="bigMapCv"></canvas></div></div>
 <div id="clutchFx" class="hidden"><div id="clutchTag">1 vs 3</div></div>
 <div id="clutchWin" class="hidden"></div>
 <div id="vcSpeak" class="hidden"></div>
@@ -1381,7 +1389,7 @@ const BIND_DEFS = [
   ['spike', 'Plant / defuse spike (hold)', 'Digit4'], ['use', 'Pick up weapon · ult orb', 'KeyF'], ['drop', 'Drop spike', 'KeyG'],
   ['shop', 'Shop', 'KeyB'], ['board', 'Scoreboard (hold)', 'Tab'], ['rangeMenu', 'Practice range menu', 'KeyH'],
   ['inspect', 'Inspect weapon', 'KeyY'], ['spray', 'Spray', 'KeyT'], ['ping', 'Ping (or middle click)', 'KeyZ'], ['emote', 'Emote wheel (hold)', 'KeyJ'], ['cmd', 'Team command wheel (hold)', 'KeyV'],
-  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'], ['talk', 'Party voice: push to talk (hold)', 'KeyU'],
+  ['voice', 'Voice command (hold and speak)', 'KeyN'], ['lineup', 'Save ability lineup', 'KeyL'], ['talk', 'Party voice: push to talk (hold)', 'KeyU'], ['bigmap', 'Big map (draw & ping)', 'KeyM'],
 ];
 const BIND_DEFAULT = Object.fromEntries(BIND_DEFS.map(d => [d[0], d[2]]));
 settings.binds = { ...BIND_DEFAULT };
@@ -6154,46 +6162,81 @@ let abilT = 0; function refreshAbilHudThrottled() { abilT -= 1; if (abilT <= 0) 
 /* --- Minimap --- */
 const mm = $('minimap'), mmx = mm.getContext('2d'), MMS = Math.min(mm.width / MAPW, mm.height / MAPH);
 const mmBase = document.createElement('canvas'); mmBase.width = mm.width; mmBase.height = mm.height;
-function drawMinimapBase() {
-  const x = mmBase.getContext('2d'); x.clearRect(0, 0, mmBase.width, mmBase.height);
+function drawMinimapBase(cv = mmBase, S = MMS) {
+  const x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height);
   for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
     const h = grid[r * GW + c], z = zoneG[r * GW + c];
     if (h >= WALL_H) continue;
     x.fillStyle = h > 0 ? '#5d6670' : z === 1 ? '#6b5640' : z === 2 ? '#3f5b6b' : z === 5 ? '#4f6b48' : z === 3 ? '#5a3d3d' : z === 4 ? '#3d4b5a' : '#4a525b';
-    x.fillRect(c * CELL * MMS, r * CELL * MMS, CELL * MMS + .5, CELL * MMS + .5);
+    x.fillRect(c * CELL * S, r * CELL * S, CELL * S + .5, CELL * S + .5);
   }
-  x.font = '900 18px Oswald, sans-serif'; x.fillStyle = 'rgba(255,255,255,.7)'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  for (const k of SITE_IDS) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(SITE_LABEL[k], (c0 + c1 + 1) / 2 * CELL * MMS, (r0 + r1 + 1) / 2 * CELL * MMS); }
-  x.font = '600 8px Inter, sans-serif'; x.fillStyle = 'rgba(255,255,255,.5)';
-  for (const [t, c, r] of MAPS[curMap].labels || []) if (!/SITE$/.test(t)) x.fillText(t, (c + .5) * CELL * MMS, (r + .5) * CELL * MMS);
+  x.font = `900 ${Math.round(18 * S / MMS)}px Oswald, sans-serif`; x.fillStyle = 'rgba(255,255,255,.7)'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (const k of SITE_IDS) { const [c0, r0, c1, r1] = SITE_RECT[k]; x.fillText(SITE_LABEL[k], (c0 + c1 + 1) / 2 * CELL * S, (r0 + r1 + 1) / 2 * CELL * S); }
+  x.font = `600 ${Math.round(8 * Math.sqrt(S / MMS) * 1.3)}px Inter, sans-serif`; x.fillStyle = 'rgba(255,255,255,.5)';
+  for (const [t, c, r] of MAPS[curMap].labels || []) if (!/SITE$/.test(t)) x.fillText(t, (c + .5) * CELL * S, (r + .5) * CELL * S);
 }
 // switch the whole world to another map (collision, meshes, barriers, minimap)
 function loadMap(id) {
   if (!MAPS[id]) id = 'dustwall';
   applyMapData(id); buildMapMeshes(); buildBarriers(); buildGadgets(); drawMinimapBase();
 }
-function drawMinimap() {
-  mmx.clearRect(0, 0, mm.width, mm.height); mmx.drawImage(mmBase, 0, 0);
-  const P = (x, z) => [x * MMS, z * MMS];
-  for (const s of smokes) if (s.mesh && !s.off) { const [x, y] = P(s.x, s.z); mmx.fillStyle = 'rgba(200,210,225,.55)'; mmx.beginPath(); mmx.arc(x, y, s.r * MMS * s.grow, 0, 7); mmx.fill(); }
-  for (const pg of pings) { const [x, y] = P(pg.x, pg.z); mmx.fillStyle = pg.kind === 'enemy' ? '#ff4655' : '#ffd34d'; mmx.globalAlpha = Math.min(1, pg.t); mmx.beginPath(); mmx.moveTo(x, y - 6); mmx.lineTo(x + 5, y); mmx.lineTo(x, y + 6); mmx.lineTo(x - 5, y); mmx.fill(); mmx.globalAlpha = 1; }
-  for (const z of zones) { if (z.owner && isEnemy(z.owner, player) && ['nano', 'cage', 'trap', 'alarm', 'cam', 'turret'].includes(z.kind)) continue; const [x, y] = P(z.x, z.z); mmx.strokeStyle = z.kind === 'fire' || z.kind === 'orbital' ? '#ff7a22' : z.kind === 'slow' ? '#7f9bff' : '#4dff88'; mmx.beginPath(); mmx.arc(x, y, z.r * MMS, 0, 7); mmx.stroke(); }
+function drawMinimap() { drawMapTo(mmx, mm.width, mm.height, MMS); if (bigMap) drawBigMap(); }
+/* --- big map (M): the whole map with your team; click to ping, right-click to mark an enemy, drag to draw — your team sees it --- */
+let bigMap = null; const strokes = [];
+function openBigMap() {
+  if (bigMap || !player || game.state !== 'playing') return;
+  const cv = $('bigMapCv'), sz = Math.min(innerHeight * .82, innerWidth * .82), S = Math.min(sz / MAPW, sz / MAPH);
+  cv.width = Math.round(MAPW * S); cv.height = Math.round(MAPH * S); bigMap = { S, draw: null, col: '#ffd34d', base: document.createElement('canvas') };
+  bigMap.base.width = cv.width; bigMap.base.height = cv.height; drawMinimapBase(bigMap.base, S); // sharp, full-size map picture
+  $('bigMap').classList.remove('hidden'); document.exitPointerLock && document.exitPointerLock(); drawBigMap();
+}
+function closeBigMap() { if (!bigMap) return; bigMap = null; $('bigMap').classList.add('hidden'); if (game.state === 'playing' && !shopOpen) lockPointer(); }
+function drawBigMap() { const cv = $('bigMapCv'); drawMapTo(cv.getContext('2d'), cv.width, cv.height, bigMap.S, bigMap.base); if (bigMap.draw && bigMap.draw.pts.length > 1) drawStroke(cv.getContext('2d'), bigMap.S, bigMap.draw.pts, bigMap.col, 1); }
+function drawStroke(c, S, pts, col, a) { c.save(); c.globalAlpha = a; c.strokeStyle = col; c.lineWidth = Math.max(2, S * .9); c.lineCap = c.lineJoin = 'round'; c.beginPath(); for (let i = 0; i < pts.length; i += 2) i ? c.lineTo(pts[i] * S, pts[i + 1] * S) : c.moveTo(pts[i] * S, pts[i + 1] * S); c.stroke();
+  // arrow head at the end
+  const n = pts.length; if (n >= 4) { const x = pts[n - 2] * S, y = pts[n - 1] * S, an = Math.atan2(pts[n - 1] - pts[n - 3], pts[n - 2] - pts[n - 4]), L = Math.max(7, S * 2.5); c.beginPath(); c.moveTo(x, y); c.lineTo(x - Math.cos(an - .5) * L, y - Math.sin(an - .5) * L); c.moveTo(x, y); c.lineTo(x - Math.cos(an + .5) * L, y - Math.sin(an + .5) * L); c.stroke(); }
+  c.restore(); }
+function drawStrokes(c, S) { const now = game.time; for (let i = strokes.length - 1; i >= 0; i--) { const st = strokes[i], age = now - st.t; if (age > 14 || age < 0) { strokes.splice(i, 1); continue; } if (player && st.team === player.team) drawStroke(c, S, st.pts, st.col, Math.min(1, (14 - age) / 3)); } }
+function mapPing(x, z, kind) {
+  const a = [player.team, r2(x), 1.2, r2(z), kind, player.name];
+  if (net.role === 'client') netSend({ t: 'ping', a }); else { fx('ping', ...a); botsFollowPing(player, x, z, kind); }
+}
+function sendStroke(pts) {
+  if (pts.length < 4) return; const flat = pts.slice(0, 120).map(v => Math.round(v * 10) / 10), col = bigMap ? bigMap.col : '#ffd34d';
+  if (net.role === 'client') netSend({ t: 'mdraw', p: flat, c: col }); else fx('mdraw', player.team, flat, col);
+}
+(function wireBigMap() {
+  const cv = $('bigMapCv'), at = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MAPW, (e.clientY - r.top) / r.height * MAPH]; };
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('mousedown', e => { if (!bigMap) return; e.stopPropagation(); const [x, z] = at(e); if (e.button === 2) { mapPing(x, z, 'enemy'); SND.buy && sndTone(900, .08, .1, 'square', 600); return; } bigMap.draw = { pts: [x, z], x0: e.clientX, y0: e.clientY, moved: false }; });
+  cv.addEventListener('mousemove', e => { const B = bigMap; if (!B || !B.draw) return; const [x, z] = at(e); if (Math.hypot(e.clientX - B.draw.x0, e.clientY - B.draw.y0) > 8) B.draw.moved = true; const P = B.draw.pts; if (Math.hypot(x - P[P.length - 2], z - P[P.length - 1]) > .8) P.push(x, z); drawBigMap(); });
+  document.addEventListener('mouseup', e => { const B = bigMap; if (!B || !B.draw) return; const D = B.draw; B.draw = null; if (D.moved) sendStroke(D.pts); else { mapPing(D.pts[0], D.pts[1], 'loc'); sndTone(1200, .06, .08, 'sine'); } });
+  document.querySelectorAll('#bigMap [data-bmc]').forEach(b => b.onclick = e => { e.stopPropagation(); if (bigMap) bigMap.col = b.dataset.bmc; document.querySelectorAll('#bigMap [data-bmc]').forEach(x => x.classList.toggle('on', x === b)); });
+  $('bmClear').onclick = e => { e.stopPropagation(); for (let i = strokes.length - 1; i >= 0; i--) if (player && strokes[i].team === player.team && strokes[i].who === player.name) strokes.splice(i, 1); if (bigMap) drawBigMap(); };
+})();
+function drawMapTo(c, W, H, S, base = mmBase) {
+  c.clearRect(0, 0, W, H); if (base === mmBase) c.drawImage(mmBase, 0, 0, mmBase.width * S / MMS, mmBase.height * S / MMS); else c.drawImage(base, 0, 0);
+  const P = (x, z) => [x * S, z * S];
+  for (const s of smokes) if (s.mesh && !s.off) { const [x, y] = P(s.x, s.z); c.fillStyle = 'rgba(200,210,225,.55)'; c.beginPath(); c.arc(x, y, s.r * S * s.grow, 0, 7); c.fill(); }
+  for (const pg of pings) { const [x, y] = P(pg.x, pg.z); c.fillStyle = pg.kind === 'enemy' ? '#ff4655' : '#ffd34d'; c.globalAlpha = Math.min(1, pg.t); c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x + 5, y); c.lineTo(x, y + 6); c.lineTo(x - 5, y); c.fill(); c.globalAlpha = 1; }
+  for (const z of zones) { if (z.owner && isEnemy(z.owner, player) && ['nano', 'cage', 'trap', 'alarm', 'cam', 'turret'].includes(z.kind)) continue; const [x, y] = P(z.x, z.z); c.strokeStyle = z.kind === 'fire' || z.kind === 'orbital' ? '#ff7a22' : z.kind === 'slow' ? '#7f9bff' : '#4dff88'; c.beginPath(); c.arc(x, y, z.r * S, 0, 7); c.stroke(); }
   const sp = game.spike;
-  if (sp && (sp.state === 'dropped' || sp.state === 'planted')) { const [x, y] = P(sp.x, sp.z); mmx.fillStyle = sp.state === 'planted' && Math.floor(game.time * 4) % 2 ? '#fff' : '#ff4655'; mmx.fillRect(x - 4, y - 4, 8, 8); }
+  if (sp && (sp.state === 'dropped' || sp.state === 'planted')) { const [x, y] = P(sp.x, sp.z); c.fillStyle = sp.state === 'planted' && Math.floor(game.time * 4) % 2 ? '#fff' : '#ff4655'; c.fillRect(x - 4, y - 4, 8, 8); }
   for (const e of entities) {
     if (e.isPlayer) continue;
     const ally = e.team === player.team;
     if (!ally && !game.spectate && !(e.alive && (e.revealedT > 0 || e.spottedT > game.time))) continue;
     const [x, y] = P(e.x, e.z);
-    if (!e.alive) { mmx.strokeStyle = ally ? '#2fe0b6' : '#ff4655'; mmx.beginPath(); mmx.moveTo(x - 3, y - 3); mmx.lineTo(x + 3, y + 3); mmx.moveTo(x + 3, y - 3); mmx.lineTo(x - 3, y + 3); mmx.stroke(); continue; }
-    mmx.fillStyle = ally ? '#2fe0b6' : '#ff4655'; mmx.beginPath(); mmx.arc(x, y, 4, 0, 7); mmx.fill();
-    if (e.hasSpike) { mmx.strokeStyle = '#ffd34d'; mmx.lineWidth = 2; mmx.stroke(); mmx.lineWidth = 1; }
+    if (!e.alive) { c.strokeStyle = ally ? '#2fe0b6' : '#ff4655'; c.beginPath(); c.moveTo(x - 3, y - 3); c.lineTo(x + 3, y + 3); c.moveTo(x + 3, y - 3); c.lineTo(x - 3, y + 3); c.stroke(); continue; }
+    c.fillStyle = ally ? '#2fe0b6' : '#ff4655'; c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill();
+    if (e.hasSpike) { c.strokeStyle = '#ffd34d'; c.lineWidth = 2; c.stroke(); c.lineWidth = 1; }
   }
+  drawStrokes(c, S);
   if (player.alive) {
     const [x, y] = P(player.x, player.z);
-    mmx.save(); mmx.translate(x, y); mmx.rotate(-player.yaw);
-    mmx.fillStyle = 'rgba(255,230,120,.18)'; mmx.beginPath(); mmx.moveTo(0, 0); mmx.arc(0, 0, 40, -Math.PI / 2 - .8, -Math.PI / 2 + .8); mmx.fill();
-    mmx.fillStyle = '#ffe066'; mmx.beginPath(); mmx.moveTo(0, -7); mmx.lineTo(5, 5); mmx.lineTo(-5, 5); mmx.closePath(); mmx.fill(); mmx.restore();
+    c.save(); c.translate(x, y); c.rotate(-player.yaw);
+    c.fillStyle = 'rgba(255,230,120,.18)'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 40, -Math.PI / 2 - .8, -Math.PI / 2 + .8); c.fill();
+    c.fillStyle = '#ffe066'; c.beginPath(); c.moveTo(0, -7); c.lineTo(5, 5); c.lineTo(-5, 5); c.closePath(); c.fill(); c.restore();
   }
 }
 function updateSpotting() {
@@ -6386,7 +6429,7 @@ function lockPointer() { const c = renderer.domElement; if (c.requestPointerLock
 const isLocked = () => document.pointerLockElement === renderer.domElement;
 document.addEventListener('pointerlockchange', () => {
   if (!isLocked() && sprayWheel) { clearTimeout(sprayWheel.t); sprayWheel = null; $('sprayWheel').classList.add('hidden'); }
-  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen) { closeBrimMap(); cancelPlace(); game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
+  if (!isLocked() && game.state === 'playing' && !shopOpen && !rangeMenuOpen && !bigMap) { closeBrimMap(); cancelPlace(); game.paused = true; $('pause').classList.remove('hidden'); Object.keys(keys).forEach(k => keys[k] = false); mouse[0] = mouse[2] = false; }
 });
 document.addEventListener('mousemove', e => {
   if (!isLocked() || game.state !== 'playing' || game.paused || !player.alive) return;
@@ -6418,6 +6461,7 @@ document.addEventListener('keydown', e => {
   if (act === 'rangeMenu' && RANGE() && !e.repeat) { if (shopOpen) closeShop(); openRangeMenu(); return; }
   if (e.code === 'Tab') e.preventDefault();
   if (act === 'board') { boardOpen = true; $('board').classList.remove('hidden'); renderBoard(); return; }
+  if (e.code === 'Escape' && bigMap) { closeBigMap(); return; }
   if (e.code === 'Escape' && shopOpen) { closeShop(); return; }
   if (act === 'shop') { shopOpen ? closeShop() : openShop(); return; }
   if ((e.code === 'F1' || e.code === 'F2') && !e.repeat) { e.preventDefault(); playerVoteFF(e.code === 'F1'); return; }
@@ -6432,6 +6476,7 @@ document.addEventListener('keydown', e => {
   if (act === 'spray') { openSprayWheel(); return; }
   if (act === 'voice') { startVoice(); return; }
   if (act === 'lineup') { saveLineup(); return; }
+  if (act === 'bigmap') { bigMap ? closeBigMap() : openBigMap(); return; }
   if (act === 'crouch') crouchOn = !crouchOn;
   switch (act) {
     case 'prim': switchSlot(1); break;
@@ -6940,6 +6985,7 @@ const FX = {
     setTimeout(() => d.remove(), 3500); sndTone(ally ? 520 : 300, .25, .1, 'sine', ally ? 780 : 200);
     speakLine(VOICE[e.agent][ally ? 0 : 1], e.agent);
   },
+  mdraw(team, pts, col, who) { if (!Array.isArray(pts) || pts.length < 4 || pts.length > 240) return; strokes.push({ team, pts: pts.map(Number).filter(v => isFinite(v)), col: /^#[0-9a-f]{6}$/i.test(col) ? col : '#ffd34d', t: game.time, who: who || (player ? player.name : '') }); if (strokes.length > 30) strokes.shift(); },
   ping(team, x, y, z, kind, who, text) {
     if (!player || team !== player.team || !isFinite(x) || !isFinite(z)) return;
     kind = kind === 'enemy' ? 'enemy' : 'loc';
@@ -7441,6 +7487,7 @@ function hostGameMsg(e, d) {
     case 'hit': { const t = entities[d.id]; if (e.alive && t && t.alive && isEnemy(e, t)) applyDamage(t, clamp(+d.dmg || 0, 0, 260), e, String(d.l || '').slice(0, 24), !!d.h); break; }
     case 'ffs': { const err = startFF(e.team, e); if (err) netTo(e.remote, { t: 'toast', m: err }); break; }
     case 'ffa': castFF(e, !!d.y); break;
+    case 'mdraw': if (Array.isArray(d.p)) fx('mdraw', e.team, d.p.slice(0, 240), String(d.c || ''), e.name); break;
     case 'ping': if (e.alive && Array.isArray(d.a) && d.a.length === 6) { fx('ping', e.team, +d.a[1], +d.a[2], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc', e.name); botsFollowPing(e, +d.a[1], +d.a[3], d.a[4] === 'enemy' ? 'enemy' : 'loc'); } break;
     case 'spray': if (e.alive && Array.isArray(d.a) && (d.a.length === 9 || d.a.length === 10)) fx('spray', e.id, +d.a[1], +d.a[2], +d.a[3], +d.a[4] || 0, +d.a[5] || 0, +d.a[6] || 0, String(d.a[7]).slice(0, 24), +d.a[8] || 0, ...(validSprayData(d.a[9]) ? [d.a[9]] : [])); break;
     case 'cast':
@@ -11460,7 +11507,7 @@ $('btnLock').onclick = () => {
 $('btnFF').onclick = () => { playerStartFF(); };
 $('btnResume').onclick = () => { $('pause').classList.add('hidden'); game.paused = false; lockPointer(); };
 function toMenu() {
-  if (intro) endIntro();
+  if (intro) endIntro(); if (bigMap) closeBigMap();
   if (cere) { cere = null; vmRoot.visible = true; hidePlayerBody(); $("cereTag").classList.add("hidden"); }
   stopSpectate(); $('gameChat').innerHTML = ''; game.mapId = null; stopMvp(); exitReplay(false); setTimeout(checkForUpdate, 300);
   game.state = 'menu'; game.paused = false; shopOpen = false; rangeMenuOpen = false; rs.test = null; closeBrimMap(); cancelPlace(); reynaCast = 0; shadeT = 0; $('shadeOv').classList.add('hidden');
