@@ -829,7 +829,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="mode range" data-mode="range"><div class="t">PRACTICE RANGE</div><div class="d">Solo · targets, aim test &amp; free gear</div></div>
     </div>
     <div class="playOpts">
-      <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button></div></div>
+      <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button><button data-v="custom" title="Set the sliders in Settings → General">Custom</button></div></div>
       <div class="optCard mapCard" id="mapCard" title="Change map"><button class="mapArrow" id="mapPrev" aria-label="Previous map">‹</button><canvas id="mapThumb" width="96" height="80"></canvas><div class="mapTxt"><div class="ol">MAP</div><div class="mapName" id="mapName">DUSTWALL</div><div class="ol" id="mapDesc" style="opacity:.6">2 SITES · MID</div></div><button class="mapArrow" id="mapNext" aria-label="Next map">›</button></div>
       <div class="optCard"><div class="ol">SPECTATE</div><button class="btn" id="btnSpectate" style="margin:4px 0 0;width:auto;padding:7px 14px">👁 Watch bots play</button></div>
       <div class="optCard"><div class="ol">MAP EDITOR</div><button class="btn" id="btnMapEditor" style="margin:4px 0 0;width:auto;padding:7px 14px">✏ Make your own map</button></div>
@@ -1229,7 +1229,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45,
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, botReact: 50, botAim: 50, botHead: 50, botAggr: 50,
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -1255,7 +1255,14 @@ const DIFF = {
   easy:   { react: 0.80, acc: 0.16, head: 0.05, turn: 3.5, fov: 0.45 },
   normal: { react: 0.55, acc: 0.26, head: 0.11, turn: 5.5, fov: 0.30 },
   hard:   { react: 0.35, acc: 0.38, head: 0.20, turn: 9,   fov: 0.15 },
+  custom: { react: 0.55, acc: 0.26, head: 0.11, turn: 5.5, fov: 0.30 }, // filled from the bot sliders in Settings
 };
+// sliders run 0-100; 50 plays like Normal
+function applyCustomDiff() {
+  const v = k => clamp((+settings[k] || 0) / 100, 0, 1), r = v('botReact'), a = v('botAim');
+  Object.assign(DIFF.custom, { react: .9 - .7 * r, acc: .12 + .28 * a, head: .02 + .18 * v('botHead'), turn: 2.5 + 6 * a, fov: .45 - .3 * r });
+}
+const botAggr = () => botDiff() === 'custom' ? clamp((+settings.botAggr || 0) / 100, 0, 1) : .5;
 
 /* ------------------------------ WEAPONS ------------------------------ */
 // dmg: [head, body, legs]
@@ -4967,7 +4974,7 @@ function botObjective(b, dt) {
     if (!b.invLooked) { b.invLooked = true; }
     const ty = Math.atan2(-(b.investigate.x - b.x), -(b.investigate.z - b.z));
     if (game.time - b.investigate.t < 1.2) { b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 6); b.vx = b.vz = 0; return; }
-    if (Math.random() < .5 || b.role === 'aggro' || game.time - (b.tradeT || -9) < 5) { setGoal(b, b.investigate.x, b.investigate.z); followPath(b, dt, spd); return; }
+    if (Math.random() < botAggr() || b.role === 'aggro' || game.time - (b.tradeT || -9) < 5) { setGoal(b, b.investigate.x, b.investigate.z); followPath(b, dt, spd); return; }
   }
   if (side === 'atk') {
     if (sp.state === 'dropped') {
@@ -5009,7 +5016,7 @@ function botObjective(b, dt) {
         const lurkGo = b.role === 'lurk' && (sp.state === 'planted' || game.phaseT < ROUND_TIME - 45 || (game.intel[b.team] && game.time - game.intel[b.team].t < 2 && game.intel[b.team].site === game.atkSite));
         if (b.role === 'lurk' && !lurkGo) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
         b.stackT = (b.stackT || 0) + dt;
-        if (b.role !== 'lurk' && !exec.go && !b.rush && stacked < Math.min(3, mates.length) && game.phaseT > ROUND_TIME - 38 && b.stackT < 12) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
+        if (b.role !== 'lurk' && !exec.go && !b.rush && stacked < Math.min(3, mates.length) && game.phaseT > ROUND_TIME - 38 && b.stackT < 4 + 16 * (1 - botAggr())) { const ty = Math.atan2(-(b.siteSpot.x - b.x), -(b.siteSpot.z - b.z)); b.yaw += angDiff(b.yaw, ty) * Math.min(1, dt * 3); b.vx = b.vz = 0; return; }
         if (b.role !== 'lurk') exec.go = true;
         if (b.role === 'lurk') { b.siteSpot = cc(...pick(SITE_CELLS[game.atkSite])); b.execSite = game.atkSite; b.role = 'atk'; b.goal = null; }
         b.stage = 1; b.checkPt = cc(...pick(HOLDS[b.execSite] || HOLDS[game.atkSite]));
@@ -5271,13 +5278,13 @@ function nextRound() {
   const defBots = bots.filter(b => sideOf(b) === 'def');
   const holdSites = shuffle(SITE_IDS.length === 3 ? [1, 2, 5, pick(SITE_IDS), 'mid'] : [1, 1, 2, 2, 'mid']);
   const anchored = new Set();
-  defBots.forEach((b, i) => { const s = holdSites[i]; b.anchor = s !== 'mid' && !anchored.has(s); anchored.add(s); b.holdSite = s === 'mid' ? 0 : s; const h = pick(HOLDS[s]); b.hold = cc(...h); const ent = s === 'mid' ? null : ENTRANCES[s][i % 2]; b.holdYaw = ent ? Math.atan2(-(cc(...ent).x - b.hold.x), -(cc(...ent).z - b.hold.z)) : Math.PI; b.rotated = false; b.role = Math.random() < (b.persona === 'hothead' ? .85 : .3) ? 'aggro' : 'hold'; });
+  defBots.forEach((b, i) => { const s = holdSites[i]; b.anchor = s !== 'mid' && !anchored.has(s); anchored.add(s); b.holdSite = s === 'mid' ? 0 : s; const h = pick(HOLDS[s]); b.hold = cc(...h); const ent = s === 'mid' ? null : ENTRANCES[s][i % 2]; b.holdYaw = ent ? Math.atan2(-(cc(...ent).x - b.hold.x), -(cc(...ent).z - b.hold.z)) : Math.PI; b.rotated = false; b.role = Math.random() < (b.persona === 'hothead' ? .85 : clamp(.6 * botAggr(), .02, .9)) ? 'aggro' : 'hold'; });
   const atkBots = bots.filter(b => sideOf(b) === 'atk'), lurkIdx = atkBots.length >= 4 && Math.random() < .5 ? atkBots.length - 1 : -1;
   game.exec = null; game.retake = null; game.seen = [{}, {}];
   atkBots.forEach((b, i) => {
     const lurk = i === lurkIdx, site = lurk ? pick(SITE_IDS.filter(q => q !== atkSite)) : atkSite;
     b.entry = cc(...ENTRANCES[site][Math.random() < .65 ? 0 : 1]); b.siteSpot = cc(...pick(SITE_CELLS[site])); b.plantSpot = cc(...pick(SITE_CELLS[atkSite]));
-    b.stage = 0; b.waitT = rand(0, 3); b.role = lurk ? 'lurk' : 'atk'; b.execSite = site; b.checkPt = null; b.stackT = 0; b.order = null;
+    b.stage = 0; b.waitT = rand(0, 3) + (.5 - botAggr()) * 16 * Math.random() * (botAggr() < .5 ? 1 : .2); b.role = lurk ? 'lurk' : 'atk'; b.execSite = site; b.checkPt = null; b.stackT = 0; b.order = null;
   });
   if (!pistol && !DUEL() && !RUSH() && !CUSTOM()) botDropForHumans();
   game.plan = {}; for (const b of bots) { b.followHuman = false; b.saveRound = -1; b.rush = false; b.planMid = null; } $('planTag').classList.add('hidden');
@@ -8508,7 +8515,11 @@ const SET_PAGES = {
     ['showMinimap', 'Show minimap', 'toggle'],
     ['botChat', 'Bot chat messages', 'toggle'],
     ['allyAI', 'Your bot teammates', 'seg', [['smart', 'Smart (play with you)'], ['normal', 'Same as enemies']]],
-    ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard']]],
+    ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
+    ['botReact', 'Custom bots · reaction speed', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
+    ['botAim', 'Custom bots · aim and tracking', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
+    ['botHead', 'Custom bots · headshot rate', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
+    ['botAggr', 'Custom bots · aggression', 'range', 0, 100, 5, v => v < 30 ? v + ' (patient)' : v > 70 ? v + ' (rushing)' : v + ''],
   ],
   crosshair: [
     ['sub', 'GENERAL'],
@@ -8603,6 +8614,7 @@ function applySetting(k) {
   else if (k === 'crouchToggle') crouchOn = false;
   else if (k === 'adsToggle') adsOn = false;
   else if (k === 'diff') { segSet('diffSeg', v); if (net.role === 'host') partyChanged(); }
+  else if (['botReact', 'botAim', 'botHead'].includes(k)) { applyCustomDiff(); if (settings.diff !== 'custom' && !applySetting.init) { settings.diff = 'custom'; syncSettingCtl('diff'); segSet('diffSeg', 'custom'); } }
   else if (k.startsWith('ch')) { buildCrosshair(); showCrosshairCode(); }
 }
 function setSetting(k, v, quiet) {
@@ -8722,7 +8734,7 @@ $('nameField').onkeydown = e => { if (e.key === 'Enter') confirmName(); if (e.ke
 $('acctBtn').onclick = () => { initAudio(); openNameModal(false); };
 // apply saved settings
 settings.binds = { ...BIND_DEFAULT, ...(settings.binds || {}) };
-renderSettings(); for (const k of ['sens', 'vol', 'fov', 'quality', 'showFps', 'showMinimap', 'diff', 'shadowRes', 'drawDist', 'brightness', 'vmFov']) applySetting(k); if (!settings.shadows) applyShadows();
+applySetting.init = true; applyCustomDiff(); renderSettings(); for (const k of ['sens', 'vol', 'fov', 'quality', 'showFps', 'showMinimap', 'diff', 'shadowRes', 'drawDist', 'brightness', 'vmFov']) applySetting(k); applySetting.init = false; if (!settings.shadows) applyShadows();
 $('nameInput').value = profile.name;
 
 function openSettings() { renderSettings(); showSetTab('general'); $('settingsModal').classList.remove('hidden'); tick(); }
