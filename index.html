@@ -73,6 +73,10 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .ppBtn.primary:hover{background:#ff5f6c}
 .ppBtn.danger{width:100%;margin-top:10px;border-color:rgba(255,70,85,.6);color:#ff8a94}
 .ppRow{display:flex;gap:8px;margin-top:10px;align-items:center}
+.ppNet{margin-top:10px;font-size:12px;color:#aab4be}.ppNet summary{cursor:pointer;font:600 12px Oswald,sans-serif;letter-spacing:1px;color:#ffd34d}.ppNet>*:not(summary){margin-top:7px}
+.ppTog{display:flex;gap:7px;align-items:flex-start;line-height:1.4;cursor:pointer}.ppTog input{margin-top:2px}
+.ppNet input[type=text]{width:100%;box-sizing:border-box;text-transform:none;letter-spacing:0;font:500 12px monospace}
+.ppTest{line-height:1.6;font-size:12px}.ppTest .ok{color:var(--teal)}.ppTest .bad{color:#ff8a8a}.ppTest .mid{color:#ffd34d}
 .ppRow input{flex:1;width:auto;text-transform:uppercase;letter-spacing:4px;font-family:Oswald,sans-serif}
 .ppCodeRow b{flex:1;font-size:24px;letter-spacing:6px;color:var(--gold)}
 #ppChat{height:120px;overflow-y:auto;margin-top:10px;background:rgba(0,0,0,.25);padding:6px 8px;font-size:12.5px;line-height:1.5;user-select:text}
@@ -834,6 +838,14 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <div class="ppOr ol">OR PLAY WITH FRIENDS</div>
       <button class="ppBtn primary" id="btnCreateParty">CREATE PARTY</button>
       <div class="ppRow"><input type="text" id="joinCode" maxlength="5" placeholder="PARTY CODE" spellcheck="false" autocomplete="off"><button class="ppBtn" id="btnJoin">JOIN</button></div>
+      <details class="ppNet" id="ppNet"><summary>🏫 School / strict Wi-Fi?</summary>
+        <label class="ppTog"><input type="checkbox" id="netRelay"> Relay mode — send everything through a relay server (turn on at school; both players should)</label>
+        <button class="ppBtn" id="btnNetTest">TEST MY NETWORK</button><div id="netTestOut" class="ppTest"></div>
+        <details><summary class="ol">Own relay server (advanced)</summary>
+          <input type="text" id="turnUrl" placeholder="turns:your.server:443?transport=tcp" spellcheck="false" autocomplete="off">
+          <div class="ppRow" style="margin-top:4px"><input type="text" id="turnUser" placeholder="username" spellcheck="false" autocomplete="off" style="text-transform:none;letter-spacing:0"><input type="text" id="turnPass" placeholder="password" spellcheck="false" autocomplete="off" style="text-transform:none;letter-spacing:0"></div>
+          <div class="ol" style="margin-top:4px;line-height:1.5;text-transform:none;letter-spacing:0">Free relay accounts: metered.ca (Open Relay) or expressturn.com — paste the TURN address, username and password here.</div></details>
+      </details>
     </div>
     <div id="ppIn" class="hidden">
       <div id="ppPubNote" class="ppPub hidden">Public lobby — random online players can join. The match starts automatically when 2+ players are here (or press START).</div>
@@ -1282,7 +1294,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50,
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -6304,19 +6316,50 @@ class LocalPeer extends Emitter {
   connect(id) { const c = new LocalConn(this, id); this.conns[id] = c; this.bc.postMessage({ k: 'connect', from: this.id, to: id }); setTimeout(() => { if (!c.open && !this.destroyed) this.emit('error', { type: 'peer-unavailable' }); }, 1500); return c; }
   destroy() { if (this.destroyed) return; Object.values(this.conns).forEach(c => c.close()); this.destroyed = true; this.bc.close(); }
 }
-const PEER_OPTS = (() => {
-  const m = location.search.match(/[?&]peerserver=([^&]+)/); if (!m) return { debug: 0 };
+const PEER_SERVER = (() => {
+  const m = location.search.match(/[?&]peerserver=([^&]+)/); if (!m) return {};
   try {
     const raw = decodeURIComponent(m[1]), u = new URL(raw.includes('://') ? raw : 'https://' + raw);
-    return { debug: 0, host: u.hostname, port: +u.port || (u.protocol === 'http:' ? 80 : 443), path: u.pathname || '/', secure: u.protocol === 'https:' };
-  } catch (e) { return { debug: 0 }; }
+    return { host: u.hostname, port: +u.port || (u.protocol === 'http:' ? 80 : 443), path: u.pathname || '/', secure: u.protocol === 'https:' };
+  } catch (e) { return {}; }
 })();
+// School / office networks usually block direct (peer-to-peer) connections. TURN relays carry the game traffic instead,
+// including over TCP/TLS on port 443, which looks like normal web browsing to most firewalls.
+function iceServers() {
+  const list = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] },
+    { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp', 'turns:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: ['turn:freestun.net:3478', 'turns:freestun.net:5350'], username: 'free', credential: 'free' }];
+  const u = String(settings.turnUrl || '').trim();
+  if (/^turns?:/.test(u)) list.unshift({ urls: u.split(/[\s,]+/).filter(Boolean), username: String(settings.turnUser || ''), credential: String(settings.turnPass || '') });
+  return list;
+}
+const peerOpts = () => Object.assign({ debug: 0, config: { iceServers: iceServers(), iceTransportPolicy: settings.netRelay ? 'relay' : 'all' } }, PEER_SERVER);
 function makePeer(id) {
   if (NET_LOCAL) return new LocalPeer(id);
   if (typeof Peer === 'undefined') throw new Error('PeerJS not loaded');
-  return id ? new Peer(id, PEER_OPTS) : new Peer(PEER_OPTS);
+  return id ? new Peer(id, peerOpts()) : new Peer(peerOpts());
 }
 // plain-language explanations for PeerJS error types
+/* --- network test: can we reach the game server, and which connection types work here? --- */
+async function testNetwork() {
+  const out = $('netTestOut'), line = (cls, t) => `<div class="${cls}">${t}</div>`; out.innerHTML = '<div class="mid">Testing… (about 8 seconds)</div>';
+  let sig = false;
+  try { const u = PEER_SERVER.host ? `${PEER_SERVER.secure ? 'https' : 'http'}://${PEER_SERVER.host}:${PEER_SERVER.port}${(PEER_SERVER.path || '/').replace(/\/$/, '')}/peerjs/id` : 'https://0.peerjs.com/peerjs/id';
+    const r = await Promise.race([fetch(u + '?ts=' + Date.now(), { cache: 'no-store' }), new Promise((_, j) => setTimeout(() => j(new Error('timeout')), 6000))]); sig = r.ok; } catch (e) { sig = false; }
+  const types = new Set();
+  try {
+    const pc = new RTCPeerConnection({ iceServers: iceServers() }); pc.createDataChannel('t');
+    pc.onicecandidate = e => { if (e.candidate) { const m = / typ (\w+)/.exec(e.candidate.candidate); if (m) types.add(m[1]); } };
+    await pc.setLocalDescription(await pc.createOffer());
+    await new Promise(r => { const t0 = Date.now(), iv = setInterval(() => { if (types.has('relay') || Date.now() - t0 > 7000 || pc.iceGatheringState === 'complete') { clearInterval(iv); r(); } }, 200); });
+    pc.close();
+  } catch (e) { }
+  const direct = types.has('srflx'), relay = types.has('relay');
+  out.innerHTML = line(sig ? 'ok' : 'bad', (sig ? '✓' : '✕') + ' Party server ' + (sig ? 'reachable' : 'blocked — parties cannot start on this network'))
+    + line(direct ? 'ok' : 'mid', (direct ? '✓' : '–') + ' Direct connection ' + (direct ? 'possible' : 'blocked here'))
+    + line(relay ? 'ok' : 'bad', (relay ? '✓' : '✕') + ' Relay ' + (relay ? 'works' : 'not reachable — try your own relay server below'))
+    + (sig && relay ? line('ok', direct ? '→ You can play. If joining fails, turn on Relay mode.' : '→ Turn on Relay mode, and ask your friend to do the same.') : sig ? '' : line('mid', '→ This network blocks the party server itself; a phone hotspot will work.'));
+}
 function netErrText(type) {
   return ({
     'network': 'Lost connection to the matchmaking server. Check your internet connection.',
@@ -6788,7 +6831,7 @@ function joinParty(code) {
     conn.on('error', () => { if (net.host === conn) onHostLost(); });
   });
   peer.on('error', err => { const type = err && err.type; if (net.role === 'off') fail(type === 'peer-unavailable' ? 'Party not found — check the code (the host must keep the game open).' : 'Could not connect. ' + netErrText(type)); });
-  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail('Could not reach the host. The party may be closed, or a strict network (school/office Wi-Fi) is blocking direct connections.'); }, 15000);
+  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail(settings.netRelay ? 'Could not reach the host, even through the relay. Ask the host to turn on Relay mode too, or use TEST MY NETWORK.' : 'Could not reach the host. On school or office Wi-Fi, open "School / strict Wi-Fi?" below and turn on Relay mode (both players).'); }, 15000);
 }
 function leaveParty() {
   if (net.role === 'host') netBroadcast({ t: 'bye' });
@@ -10760,6 +10803,9 @@ $('btnCreateParty').onclick = () => { initAudio(); createParty(); };
 const toggleFind = () => { initAudio(); if (net.searching) cancelSearch(); else { $('partyPanel').classList.remove('hidden'); $('partyBtn').classList.add('open'); findPublicMatch(); } tick(); };
 $('btnFind').onclick = toggleFind; $('btnFind2').onclick = toggleFind;
 $('btnJoin').onclick = () => { initAudio(); joinParty($('joinCode').value); };
+$('netRelay').checked = !!settings.netRelay; $('netRelay').onchange = () => { settings.netRelay = $('netRelay').checked; saveSettings(); };
+for (const k of ['turnUrl', 'turnUser', 'turnPass']) { const el = $(k); el.value = settings[k] || ''; el.addEventListener('keydown', e => e.stopPropagation()); el.onchange = () => { settings[k] = el.value.trim(); saveSettings(); }; }
+$('btnNetTest').onclick = () => { tick(); testNetwork(); };
 $('joinCode').onkeydown = e => { if (e.key === 'Enter') joinParty($('joinCode').value); };
 $('btnLeave').onclick = () => { leaveParty(); };
 $('chatIn').onkeydown = e => { if (e.key === 'Enter') sendChat(); };
@@ -10778,7 +10824,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 83;
+const BUILD = 84;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
