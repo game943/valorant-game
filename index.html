@@ -722,6 +722,14 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #cmdWheel{position:fixed;left:50%;top:50%;width:360px;height:360px;margin:-180px 0 0 -180px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(47,224,182,.35)}
 #cmdWheel .cw{position:absolute;width:96px;height:64px;margin:-32px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
 #cmdWheel .cw b{font-size:22px;line-height:1.1}#cmdWheel .cw.on{color:#2fe0b6;transform:scale(1.2)}
+.ctag{color:var(--cc);font-weight:700;letter-spacing:1px;font-family:Oswald,sans-serif}
+.clanCard{display:flex;gap:16px;align-items:center;padding:14px 16px;margin-bottom:14px;background:linear-gradient(90deg,color-mix(in srgb,var(--cc) 18%,transparent),rgba(255,255,255,.03));border:1px solid color-mix(in srgb,var(--cc) 45%,transparent);flex-wrap:wrap}
+.clLogo{font-size:46px;width:72px;height:72px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border:2px solid var(--cc)}
+.clInfo{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.clInfo h3{margin:0;font:700 24px Oswald,sans-serif;letter-spacing:2px}
+.clStats{display:flex;gap:18px;font-size:11px;color:#9aa6b2}.clStats b{display:block;font:700 18px Oswald,sans-serif;color:#ece8e1}
+.clBtns{display:flex;gap:6px;flex-wrap:wrap}.clBtns .btn,.clRow .btn{width:auto;margin:0;padding:7px 12px}
+.clRow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.clRow input{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:7px 9px;font:500 13px 'Noto Sans KR',sans-serif;flex:1;min-width:120px}
+.clPick{display:flex;gap:4px;flex-wrap:wrap}.clPick button{background:#1c2631;border:1px solid transparent;font-size:18px;width:32px;height:32px;cursor:pointer;padding:0}.clPick button.on{border-color:#fff}.clPick button.sw{width:24px;height:24px;border-radius:50%}
 .coach{margin:10px 0;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:left}
 .coHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.coGrade{font:700 26px Oswald,sans-serif;width:38px;text-align:center;border:2px solid;line-height:1.2}
 .coGrade.gS{color:#ffd34d}.coGrade.gA{color:#2fe0b6}.coGrade.gB{color:#4fa3ff}.coGrade.gC{color:#c9d0d6}.coGrade.gD{color:#ff4655}
@@ -5589,6 +5597,7 @@ function finishMatch() {
     hs: matchStats.hs, hits: matchStats.hits, dmg: Math.round(matchStats.dmg), rounds: game.round, fk: matchStats.fk });
   { const L = profile.life = profile.life || { agents: {}, maps: {} }; const ag = L.agents[p.agent] = L.agents[p.agent] || { m: 0, w: 0, k: 0, d: 0 }, mp = L.maps[game.mapId] = L.maps[game.mapId] || { m: 0, w: 0 };
     ag.m++; ag.w += won ? 1 : 0; ag.k += p.kills; ag.d += p.deaths; mp.m++; mp.w += won ? 1 : 0; }
+  if (profile.clan && !RANGE()) { const st = profile.clan.st = profile.clan.st || { m: 0, w: 0, k: 0, mates: 0 }; st.m++; st.w += won ? 1 : 0; st.k += p.kills; if (net.role !== 'off' && net.members.some(m => m.id !== net.myId && m.ct === profile.clan.t)) st.mates++; }
   profile.matches = profile.matches.slice(0, 50); saveProfile(); refreshVP();
   const coach = !RANGE() && !DM() && !game.spectate ? coachReport(won) : null; if (coach && profile.matches[0]) { profile.matches[0].coach = coach; saveProfile(); }
   $('overStats').innerHTML = matchStatsHTML() + coachHTML(coach) + rankResultHTML(rankRes) + (DM() ? `<div class="dmList">${dmOrder.slice(0, 5).map((e, i) => `<div class="${e === p ? 'me' : ''}"><span>#${i + 1}</span><b>${esc(e.name)}</b><span class="os">${e.kills} / ${e.deaths}</span></div>`).join('')}</div>` : '') + `
@@ -6812,7 +6821,7 @@ function animateNetChar(e, dt) {
    PARTY (lobby)
    ===================================================================== */
 function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 5; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
-function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host', sk: { ...profile.equip } }; }
+function selfMember() { return { id: net.myId, name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), host: net.role === 'host', sk: { ...profile.equip }, ...clanNet() }; }
 function setPartyStatus(m) { $('ppStatus').textContent = m || ''; }
 function resetNet() {
   const peer = net.peer;
@@ -6845,7 +6854,7 @@ function createParty(code, pub = false, slot = 0) {
 /* --- public matchmaking: probe every public lobby slot, join the fullest open one, otherwise open a new one --- */
 function attachHost(conn, code) {
   net.host = conn; net.role = 'client'; net.code = code; net.chat = []; net.searching = false;
-  conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip });
+  conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip, ...clanNet() });
   setPartyStatus(''); refreshPartyUI();
 }
 function findPublicMatch() {
@@ -6956,7 +6965,7 @@ function joinParty(code, relayTry) {
     net.myId = id;
     const conn = peer.connect(NET_PREFIX + code, { reliable: true, serialization: 'json' });
     net.host = conn;
-    conn.on('open', () => { net.role = 'client'; net.code = code; net.chat = []; conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip }); setPartyStatus(''); refreshPartyUI(); });
+    conn.on('open', () => { net.role = 'client'; net.code = code; net.chat = []; conn.send({ t: 'hello', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip, ...clanNet() }); setPartyStatus(''); refreshPartyUI(); });
     conn.on('data', d => { if (net.host === conn) clientRecv(d); });
     conn.on('close', () => { if (net.host === conn) onHostLost(); });
     conn.on('error', () => { if (net.host === conn) onHostLost(); });
@@ -6980,7 +6989,7 @@ function onHostLost() {
   else if (!$('select').classList.contains('hidden')) { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); showTab('home'); }
 }
 function netProfileChanged() {
-  if (net.role === 'client') netSend({ t: 'prof', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip });
+  if (net.role === 'client') netSend({ t: 'prof', name: profile.name, fav: profile.fav, lv: levelOf(profile.xp), sk: profile.equip, ...clanNet() });
   else if (net.role === 'host') partyChanged();
 }
 function partyChanged() {
@@ -7015,7 +7024,7 @@ function renderPartyPanel() {
   $('partyBtn').classList.toggle('on', inParty);
   $('ppCode').textContent = net.code || '-----';
   $('ppCount').textContent = inParty ? `${net.public ? 'PUBLIC · ' : ''}${net.members.length}/5` : net.searching ? 'SEARCHING…' : 'SOLO';
-  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; const kick = net.role === 'host' && !me ? `<button class="kick" data-kick="${esc(m.id)}" title="Remove from party">✕</button>` : ''; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${esc(m.name)}${me ? ' <small>(you)</small> <button class="edit" data-editname title="Change your name">✎</button>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span>${kick}</div>`; }).join('');
+  $('ppMembers').innerHTML = mem.map(m => { const a = AGENT[m.fav] || AGENTS[0]; const me = !inParty || m.id === net.myId; const kick = net.role === 'host' && !me ? `<button class="kick" data-kick="${esc(m.id)}" title="Remove from party">✕</button>` : ''; return `<div class="ppMem"><i style="background:${a.color}">${a.glyph}</i><span class="n">${clanChip(me ? myClanTag() : m.ct, me ? myClanCol() : m.cc)}${esc(m.name)}${me ? ' <small>(you)</small> <button class="edit" data-editname title="Change your name">✎</button>' : ''}</span>${m.host ? '<span class="crown">HOST</span>' : ''}<span class="lv">LV ${m.lv | 0}</span>${kick}</div>`; }).join('');
   $('ppMembers').querySelectorAll('[data-kick]').forEach(b => b.onclick = () => hostKick(b.dataset.kick));
   $('ppMembers').querySelectorAll('[data-editname]').forEach(b => b.onclick = () => openNameModal(false));
   $('ppPubNote').classList.toggle('hidden', !(inParty && net.public));
@@ -7043,7 +7052,7 @@ function hostRecv(conn, d) {
     if (net.members.length >= partyCap()) return deny(playMode === 'duel' ? 'That 1v1 lobby already has two players.' : 'That party is full.');
     if (net.phase !== 'lobby' || game.state !== 'menu') return deny('That party is already in a match — try again after it ends.');
     net.conns[id] = conn;
-    const m = { id, name: cleanName(d.name), fav: AGENT[d.fav] ? d.fav : 'jett', lv: Math.max(1, d.lv | 0), host: false, sk: cleanSkins(d.sk) };
+    const m = { id, name: cleanName(d.name), fav: AGENT[d.fav] ? d.fav : 'jett', lv: Math.max(1, d.lv | 0), host: false, sk: cleanSkins(d.sk), ...clanIn(d) };
     net.members.push(m);
     partyChanged(); conn.send({ t: 'chatlog', log: net.chat }); partyMsg(null, `${m.name} joined the party`);
     return;
@@ -7052,7 +7061,7 @@ function hostRecv(conn, d) {
   const m = net.members.find(x => x.id === id), e = net.ents[id];
   switch (d.t) {
     case 'gift': if (m && typeof d.code === 'string' && d.code.length < 2000) { if (d.to === net.myId) { const err = redeemGift(d.code, true); if (err) toastMenu(err); } else netTo(String(d.to), { t: 'giftin', from: m.name, code: d.code }); } break;
-    case 'prof': if (m) { m.name = cleanName(d.name); if (AGENT[d.fav]) m.fav = d.fav; m.lv = Math.max(1, d.lv | 0); m.sk = cleanSkins(d.sk); partyChanged(); } break;
+    case 'prof': if (m) { Object.assign(m, clanIn(d)); m.name = cleanName(d.name); if (AGENT[d.fav]) m.fav = d.fav; m.lv = Math.max(1, d.lv | 0); m.sk = cleanSkins(d.sk); partyChanged(); } break;
     case 'chat': if (m) partyMsg(m.name, String(d.m || '').slice(0, 140)); break;
     case 'pick': if (d.def && typeof d.def === 'object' && /^cu[a-z0-9]{3,14}$/.test(String(d.a)) && (!AGENT[d.a] || AGENT[d.a].custom)) { try { registerCustomAgent(Object.assign({}, d.def, { id: d.a })); } catch (e) { } } hostPick(id, d.a, !!d.lock); break;
     case 'bye': hostDrop(id); break;
@@ -7187,7 +7196,7 @@ function clientRecv(d) {
   if (!d || typeof d !== 'object') return;
   switch (d.t) {
     case 'party':
-      net.members = (d.members || []).slice(0, 5).map(m => ({ id: String(m.id), name: cleanName(m.name), fav: AGENT[m.fav] ? m.fav : 'jett', lv: Math.max(1, m.lv | 0), host: !!m.host }));
+      net.members = (d.members || []).slice(0, 5).map(m => ({ id: String(m.id), name: cleanName(m.name), fav: AGENT[m.fav] ? m.fav : 'jett', lv: Math.max(1, m.lv | 0), host: !!m.host, ...clanIn(m) }));
       net.phase = d.phase; net.public = !!d.pub; net.autoAt = d.auto > 0 ? Date.now() + d.auto * 1000 : 0;
       if (MODES.includes(d.mode)) { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
       if (DIFF[d.diff]) { net.hostDiff = d.diff; segSet('diffSeg', d.diff); }
@@ -7389,8 +7398,54 @@ saveProfile();
 const levelOf = xp => Math.floor(xp / 1000) + 1;
 Object.assign(settings, store.get('vs_settings', {}));
 const saveSettings = () => store.set('vs_settings', settings);
+/* --- clans: name, tag, colour and logo; the tag shows next to your name for you and your party; clan codes let friends join --- */
+const CLAN_LOGOS = ['🐺', '🦅', '🐉', '🔥', '⚡', '💀', '👑', '🌙', '⭐', '🛡', '🗡', '🐍', '🦊', '🐯', '🎯', '💎'];
+const CLAN_COLS = ['#ff4655', '#2fe0b6', '#ffd34d', '#4fa3ff', '#b07aff', '#ff8a3d', '#ff4fd8', '#7dff3a', '#ece8e1'];
+const cleanTag = t => String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+const cleanCol = c => /^#[0-9a-f]{6}$/i.test(String(c)) ? c : '#ffd34d';
+const myClanTag = () => profile.clan ? profile.clan.t : '', myClanCol = () => profile.clan ? profile.clan.c : '';
+const clanNet = () => profile.clan ? { ct: profile.clan.t, cc: profile.clan.c } : {};
+const clanIn = d => { const t = cleanTag(d && d.ct); return t ? { ct: t, cc: cleanCol(d.cc) } : { ct: '', cc: '' }; };
+const clanChip = (t, c) => t ? `<span class="ctag" style="--cc:${cleanCol(c)}">[${esc(t)}]</span> ` : '';
+const clanCode = c => 'VSCLAN1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: c.n, t: c.t, c: c.c, l: c.l }))));
+function parseClanCode(code) {
+  const m = /^VSCLAN1\.([A-Za-z0-9+/=]+)$/.exec(String(code).trim()); if (!m) return null;
+  try { const o = JSON.parse(decodeURIComponent(escape(atob(m[1])))); const t = cleanTag(o.t); if (!t || t.length < 2) return null; return { n: String(o.n || t).slice(0, 24), t, c: cleanCol(o.c), l: CLAN_LOGOS.includes(o.l) ? o.l : CLAN_LOGOS[0] }; } catch (e) { return null; }
+}
+let clanDraft = null;
+function clanCardHTML() {
+  const c = profile.clan;
+  if (c && !clanDraft) {
+    const st = c.st || { m: 0, w: 0, k: 0, mates: 0 };
+    return `<div class="clanCard" style="--cc:${c.c}"><div class="clLogo">${c.l}</div><div class="clInfo"><div class="ol">YOUR CLAN</div><h3>${esc(c.n)} <span class="ctag" style="--cc:${c.c}">[${esc(c.t)}]</span></h3>
+      <div class="clStats"><span><b>${st.m}</b>matches</span><span><b>${st.m ? Math.round(st.w / st.m * 100) : 0}%</b>wins</span><span><b>${st.k}</b>kills</span><span><b>${st.mates}</b>with clanmates</span></div></div>
+      <div class="clBtns"><button class="btn" id="clShare">Share clan code</button><button class="btn" id="clEdit">Edit</button><button class="btn" id="clLeave" style="border-color:var(--red);color:var(--red)">Leave</button></div></div>`;
+  }
+  const d = clanDraft || { n: '', t: '', c: CLAN_COLS[0], l: CLAN_LOGOS[0] };
+  return `<div class="clanCard edit" style="--cc:${d.c}"><div class="clLogo">${d.l}</div><div class="clInfo"><div class="ol">${c ? 'EDIT CLAN' : 'CREATE OR JOIN A CLAN'}</div>
+      <div class="clRow"><input id="clName" maxlength="24" placeholder="Clan name" value="${esc(d.n)}" spellcheck="false" autocomplete="off"><input id="clTag" maxlength="5" placeholder="TAG" value="${esc(d.t)}" spellcheck="false" autocomplete="off" style="width:90px;text-transform:uppercase"></div>
+      <div class="clPick">${CLAN_LOGOS.map(l => `<button data-cl="${l}" class="${l === d.l ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <div class="clPick">${CLAN_COLS.map(k => `<button data-cc="${k}" class="sw${k === d.c ? ' on' : ''}" style="background:${k}"></button>`).join('')}</div>
+      <div class="clRow"><button class="btn primary" id="clSave">${c ? 'Save' : 'Create clan'}</button>${c ? '<button class="btn" id="clCancel">Cancel</button>' : ''}<input id="clJoin" placeholder="…or paste a clan code (VSCLAN1.…)" spellcheck="false" autocomplete="off"><button class="btn" id="clJoinBtn">Join</button></div></div></div>`;
+}
+function wireClanCard() {
+  const q = id => document.getElementById(id); if (!q('clName') && !q('clShare')) return;
+  const rerender = () => renderCareer();
+  if (q('clShare')) { q('clShare').onclick = () => { const code = clanCode(profile.clan); try { navigator.clipboard.writeText(code); } catch (e) { } toastMenu('Clan code copied — friends paste it in Career to join'); };
+    q('clEdit').onclick = () => { clanDraft = { ...profile.clan }; rerender(); };
+    q('clLeave').onclick = () => { if (!confirm(`Leave ${profile.clan.n}?`)) return; profile.clan = null; saveProfile(); refreshAccount(); buildParty(); netProfileChanged(); rerender(); }; return; }
+  const d = clanDraft = clanDraft || { n: '', t: '', c: CLAN_COLS[0], l: CLAN_LOGOS[0] };
+  for (const id of ['clName', 'clTag', 'clJoin']) q(id).addEventListener('keydown', e => e.stopPropagation());
+  q('clName').oninput = () => { d.n = q('clName').value; }; q('clTag').oninput = () => { d.t = cleanTag(q('clTag').value); };
+  document.querySelectorAll('[data-cl]').forEach(b => b.onclick = () => { d.l = b.dataset.cl; tick(); rerender(); });
+  document.querySelectorAll('[data-cc]').forEach(b => b.onclick = () => { d.c = b.dataset.cc; tick(); rerender(); });
+  const done = c => { profile.clan = { ...(profile.clan || {}), ...c, st: (profile.clan && profile.clan.st) || { m: 0, w: 0, k: 0, mates: 0 } }; clanDraft = null; saveProfile(); refreshAccount(); buildParty(); netProfileChanged(); SND.buy(); rerender(); };
+  q('clSave').onclick = () => { const t = cleanTag(d.t), n = String(d.n).trim().slice(0, 24); if (t.length < 2) { toastMenu('The tag needs 2–5 letters or numbers'); return; } if (!n) { toastMenu('Give your clan a name'); return; } done({ n, t, c: d.c, l: d.l }); toastMenu(`Clan [${t}] ${n} is ready`); };
+  if (q('clCancel')) q('clCancel').onclick = () => { clanDraft = null; rerender(); };
+  q('clJoinBtn').onclick = () => { const c = parseClanCode(q('clJoin').value); if (!c) { toastMenu('That is not a clan code'); return; } profile.clan = null; done(c); toastMenu(`You joined [${c.t}] ${c.n}`); };
+}
 function refreshAccount() {
-  $('nameTag').textContent = profile.name; $('lvlNum').textContent = levelOf(profile.xp); if ($('vpNum')) $('vpNum').textContent = profile.vp.toLocaleString();
+  $('nameTag').innerHTML = clanChip(myClanTag(), myClanCol()) + esc(profile.name); $('lvlNum').textContent = levelOf(profile.xp); if ($('vpNum')) $('vpNum').textContent = profile.vp.toLocaleString();
   $('xpFill').style.width = (profile.xp % 1000) / 10 + '%';
 }
 
@@ -7587,7 +7642,7 @@ function buildParty() {
   const used = new Set([profile.fav, ...humans.map(h => h.fav)]);
   const others = shuffle(realAgents().filter(a => !used.has(a.id)).map(a => a.id));
   party = [{ name: profile.name, agent: profile.fav, me: true, host: net.role === 'host' }];
-  humans.forEach(h => party.push({ name: h.name, agent: h.fav, human: true, host: h.host, lv: h.lv }));
+  humans.forEach(h => party.push({ name: h.name, agent: h.fav, human: true, host: h.host, lv: h.lv, ct: h.ct, cc: h.cc }));
   for (let i = 0; party.length < 5; i++) party.push({ name: ALLY_NAMES[i], agent: others[i % others.length], bot: true });
   party.forEach((p, i) => {
     const g = makeLobbyChar(p.agent), [x, z] = LOBBY_SLOTS[i];
@@ -7601,7 +7656,7 @@ function updatePlates() {
     const ag = AGENT[lobbyChars[i] ? lobbyChars[i].agent : p.agent], an = ag.name.toUpperCase();
     const sub = p.me ? `${an} · LV ${levelOf(profile.xp)}` : p.human ? `${an} · LV ${p.lv}` : `BOT · ${an}`;
     const border = p.me ? '' : 'border-color:' + (p.human ? 'var(--gold)' : ag.color);
-    return `<div class="plate ${p.me ? 'me' : ''} ${p.bot ? 'bot' : ''}" id="plate${i}"><div class="pn" style="${border}">${p.host ? '<span class="crownI">♛</span> ' : ''}${esc(p.me ? profile.name : p.name)}</div><div class="pa">${sub}</div></div>`;
+    return `<div class="plate ${p.me ? 'me' : ''} ${p.bot ? 'bot' : ''}" id="plate${i}"><div class="pn" style="${border}">${p.host ? '<span class="crownI">♛</span> ' : ''}${p.me ? clanChip(myClanTag(), myClanCol()) : clanChip(p.ct, p.cc)}${esc(p.me ? profile.name : p.name)}</div><div class="pa">${sub}</div></div>`;
   }).join('');
 }
 const _v3 = new THREE.Vector3();
@@ -10647,12 +10702,13 @@ function renderCareer() {
   const K = m.reduce((s, x) => s + x.k, 0), D = m.reduce((s, x) => s + x.d, 0), A = m.reduce((s, x) => s + x.a, 0);
   const tile = (l, v) => `<div class="tile"><div class="ol">${l}</div><div class="v">${v}</div></div>`;
   let html = rankCardHTML() + `<div class="tiles">${tile('LEVEL', levelOf(profile.xp))}${tile('MATCHES', m.length)}${tile('WIN %', m.length ? Math.round(wins / m.length * 100) + '%' : '—')}${tile('K/D', m.length ? (K / Math.max(1, D)).toFixed(2) : '—')}${tile('KILLS', K)}${tile('ASSISTS', A)}</div>`;
+  html = clanCardHTML() + html;
   html += statsDashHTML();
   { const lc = profile.matches.find(x => x.coach); if (lc) html += `<div class="collCat">COACH NOTES · last match (${esc(MAPS[lc.map] ? MAPS[lc.map].name : lc.map)}, ${lc.won ? 'win' : 'loss'})</div>` + coachHTML(lc.coach); }
   html += '<div class="collCat">RECENT MATCHES</div>';
   html += m.length ? m.map(x => `<div class="mrow ${x.won ? 'w' : 'l'}"><span class="res">${x.won ? 'VICTORY' : 'DEFEAT'}</span><span class="os" style="font-size:18px">${x.score[0]} : ${x.score[1]}</span><span><b style="color:${AGENT[x.agent] ? AGENT[x.agent].color : '#fff'}">${AGENT[x.agent] ? AGENT[x.agent].name : x.agent}</b>${x.mvp ? ' <span style="color:var(--gold);font-size:12px">★ MVP</span>' : ''}</span><span class="os">${x.k} / ${x.d} / ${x.a}</span><span class="ol">${({ swift: 'SWIFTPLAY', duel: '1V1 DUEL', rush: 'SPIKE RUSH', dm: 'DEATHMATCH' })[x.mode] || 'COMPETITIVE'}${x.place ? ' · #' + x.place : ''}${x.rr !== undefined ? ` · <b style="color:${x.rr > 0 ? 'var(--teal)' : 'var(--red)'}">${x.rr > 0 ? '+' : ''}${x.rr} RR</b>` : ''}${MAPS[x.map] ? ' · ' + MAPS[x.map].name : ''}</span><span class="ol">${new Date(x.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>`).join('')
     : '<div class="empty">No matches yet — hit PLAY to start your first match.</div>';
-  $('careerBox').innerHTML = html;
+  $('careerBox').innerHTML = html; wireClanCard();
 }
 
 /* stats dashboard (career tab): form, K/D and headshot trends, agents, maps, weapons */
