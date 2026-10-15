@@ -337,6 +337,9 @@ input[type=color]{width:42px;height:26px;border:0;background:none;cursor:pointer
 .skmFoot .btn:disabled{opacity:.55;cursor:default}
 .skpPanel{width:min(900px,94vw);max-height:86vh;overflow:auto}
 .wcard.pick{cursor:pointer;transition:.12s}
+.attRow{display:flex;align-items:center;gap:3px;margin-top:8px}.attRow .ol{margin-right:auto;font-size:10px}
+.attB{width:28px;height:24px;background:#26313d;border:1px solid transparent;color:#c9d0d6;cursor:pointer;font-size:12px;padding:0}.attB.on{border-color:var(--teal);background:rgba(47,224,182,.15)}
+.attTxt{font-size:11px;color:#9aa6b2;min-height:14px;margin-top:3px;line-height:1.35}.attTxt b{color:var(--teal)}
 .mast{margin:6px 0 4px}.mast .ml{font:700 11px Oswald,sans-serif;letter-spacing:1.5px;color:#ffd36a}.mast .b{height:4px;background:rgba(255,255,255,.1);margin:3px 0}.mast .b div{height:100%;background:linear-gradient(90deg,#ffd36a,#ff8a3d)}.mast .ol{font-size:10px}
 .wcard.pick:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25)}
 .wskin{font-size:12px;font-weight:700;margin-bottom:4px}
@@ -2822,9 +2825,9 @@ function sndTone(freq, dur, vol, type = 'sine', slide = 0, x, z, delay = 0) {
   o.connect(out); o.start(t); o.stop(t + dur + .02);
 }
 const SND = {
-  shot(model, x, z) {
+  shot(model, x, z, vol = 1) {
     const cfg = { pistol: [.12, 2600, .5], smg: [.1, 2200, .45], rifle: [.18, 1700, .6], sniper: [.4, 900, .9], shotgun: [.3, 1100, .8], heavy: [.15, 1500, .55], blades: [.08, 5000, .25], knife: [.12, 4000, .2] }[model] || [.15, 1800, .5];
-    sndNoise(cfg[0], cfg[1], .7, cfg[2], x, z); if (model !== 'knife' && model !== 'blades') sndTone(140, cfg[0] * .8, cfg[2] * .6, 'triangle', 45, x, z);
+    sndNoise(cfg[0], cfg[1] * (vol < 1 ? .6 : 1), .7, cfg[2] * vol, x, z); if (model !== 'knife' && model !== 'blades') sndTone(140, cfg[0] * .8, cfg[2] * .6 * vol, 'triangle', 45, x, z);
   },
   hit() { if (settings.hitSfx) sndTone(900, .05, .15, 'square', 600); },
   head() { if (!settings.hitSfx) return; sndTone(1800, .12, .25, 'sine', 1500); sndTone(2400, .1, .12, 'sine', 0, undefined, undefined, .03); },
@@ -2870,6 +2873,41 @@ function curWeapon(e) {
   return e.primary || e.secondary || { key: 'knife', mag: 1, reserve: 0 };
 }
 const mkWeapon = key => ({ key, mag: WEAPONS[key].mag, reserve: WEAPONS[key].reserve });
+/* --- weapon attachments (yours only, picked per gun in the Collection) --- */
+const ATTACH = {
+  none: { name: 'None', icon: '—', desc: 'Standard setup' },
+  supp: { name: 'Suppressor', icon: '🔇', desc: 'Much quieter shots and no muzzle flash, enemies notice you from half as far · −8% damage' },
+  ext: { name: 'Extended mag', icon: '📦', desc: '+30% magazine · reloads 20% slower' },
+  quick: { name: 'Fast mag', icon: '⚡', desc: 'Reloads 30% faster · −25% magazine' },
+  laser: { name: 'Laser sight', icon: '🔴', desc: '−30% hip-fire and moving spread · a red beam shows where you point' },
+  grip: { name: 'Vertical grip', icon: '✊', desc: '−22% recoil and spray spread · 5% slower movement holding it' },
+};
+const canAttach = k => WEAPONS[k] && WEAPONS[k].price !== undefined && WEAPONS[k].mag > 0 && WEAPONS[k].cat !== 'Ultimate';
+const attOf = (e, k) => e && e.isPlayer && canAttach(k) && profile.attach && ATTACH[profile.attach[k]] ? profile.attach[k] : 'none';
+const magOf = (e, k) => { const m = WEAPONS[k].mag, a = attOf(e, k); return a === 'ext' ? Math.ceil(m * 1.3) : a === 'quick' ? Math.max(1, Math.ceil(m * .75)) : m; };
+// keep the player's magazines in line with their attachments (new guns, refills, swapped attachments)
+function fitMags(p) {
+  for (const w of [p.primary, p.secondary]) {
+    if (!w || !WEAPONS[w.key] || !canAttach(w.key)) continue; const a = attOf(p, w.key); if (w.att === a) continue;
+    const cap = magOf(p, w.key), base = WEAPONS[w.key].mag;
+    if (w.mag > cap) { w.reserve += w.mag - cap; w.mag = cap; }
+    else if (cap > base && w.mag >= base) { const add = Math.min(cap - w.mag, w.reserve); w.mag += add; w.reserve -= add; }
+    w.att = a;
+  }
+}
+function addAttachMesh(gun, a) {
+  if (a === 'none') return; const mz = gun.userData.muzzleZ || -.6, M = c => new THREE.MeshLambertMaterial({ color: c });
+  const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); gun.add(o); return o; };
+  if (a === 'supp') { const o = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .2, 14), M(0x1c1f24)); o.rotation.x = Math.PI / 2; o.position.set(0, .02, mz - .1); gun.add(o); gun.userData.muzzleZ = mz - .2; }
+  else if (a === 'ext') box(.045, .15, .07, 0, -.13, mz * .32, M(0x2a2f36));
+  else if (a === 'quick') { box(.05, .03, .075, 0, -.07, mz * .32, M(0xff9a2a)); }
+  else if (a === 'grip') box(.03, .1, .032, 0, -.07, mz * .62, M(0x22262c));
+  else if (a === 'laser') {
+    box(.026, .026, .07, .028, -.02, mz * .7, M(0x202428));
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.0018, .0018, 40, 6), new THREE.MeshBasicMaterial({ color: 0xff2020, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }));
+    beam.rotation.x = Math.PI / 2; beam.position.set(.028, -.02, mz * .7 - 20); gun.add(beam); gun.userData.laser = beam;
+  }
+}
 const eyeY = e => e.y + (e.crouch ? 1.15 : 1.6);
 function fwd(e) { const cp = Math.cos(e.pitch); return { x: -Math.sin(e.yaw) * cp, y: Math.sin(e.pitch), z: -Math.cos(e.yaw) * cp }; }
 const isEnemy = (a, b) => a.team !== b.team;
@@ -4492,13 +4530,13 @@ function updateStatus(e, dt) {
   if (net.role !== 'client' && sp && sp.state === 'dropped' && sideOf(e) === 'atk' && !(sp.ignore === e && game.time < sp.ignoreUntil) && Math.hypot(e.x - sp.x, e.z - sp.z) < (e.isPlayer ? 1.3 : 2.4)) giveSpike(e);
 }
 function startReload(e) {
-  const w = curWeapon(e), W0 = WEAPONS[w.key];
-  if (!W0.reload || e.reloadT > 0 || w.mag >= W0.mag || w.reserve <= 0) return;
-  e.reloadT = W0.reload * (e.empressT > 0 ? .6 : 1); if (e.isPlayer) SND.reload();
+  const w = curWeapon(e), W0 = WEAPONS[w.key], a = attOf(e, w.key);
+  if (!W0.reload || e.reloadT > 0 || w.mag >= magOf(e, w.key) || w.reserve <= 0) return;
+  e.reloadT = W0.reload * (e.empressT > 0 ? .6 : 1) * (a === 'ext' ? 1.2 : a === 'quick' ? .7 : 1); if (e.isPlayer) SND.reload();
 }
 function finishReload(e) {
   const w = curWeapon(e), W0 = WEAPONS[w.key]; if (!W0.reload) return;
-  const need = Math.min(W0.mag - w.mag, w.reserve); w.mag += need; w.reserve -= need;
+  const need = Math.min(magOf(e, w.key) - w.mag, w.reserve); w.mag += need; w.reserve -= need;
 }
 
 /* =====================================================================
@@ -4544,6 +4582,7 @@ function equipView() {
     const mz = gun.userData.muzzleZ, ch = masteryCharm(w.key); if (ch) { ch.position.set(-.045, -.035, mz * .22); ch.scale.setScalar(1.8); gun.add(ch); gun.userData.charm = ch; }
     const ct = masteryCounter(w.key); if (ct) { ct.position.set(-.042, .012, mz * .42); ct.rotation.y = -Math.PI / 2; gun.add(ct); }
   }
+  if (!knife) addAttachMesh(gun, attOf(player, w.key));
   const mf = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: (SKINS[skinOf(player, w)] && SKINS[skinOf(player, w)].line.flash != null && skinLv(skinOf(player, w)) >= 2) ? SKINS[skinOf(player, w)].line.flash : 0xffcf6a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   mf.scale.set(.35, .35, 1); mf.position.set(0, .02, gun.userData.muzzleZ - .05); mf.visible = false; gun.add(mf);
   gun.scale.setScalar(knife ? .55 : gun.userData.muzzleZ < -.85 ? .34 : gun.userData.muzzleZ < -.6 ? .37 : .4); gun.userData.muzzle = mf;
@@ -4595,10 +4634,13 @@ function playerFire() {
   spread += hs * w.move * (1 - .7 * steady) + (p.onGround ? 0 : .12);
   if (w.auto) spread += Math.min(p.shotIdx, 10) * w.spread * .6 * (1 - .8 * steady);
   if (crouched) spread *= .55;
+  const att = attOf(p, inst.key);
+  if (att === 'laser' && adsK < .5) spread *= .7;
+  if (att === 'grip' && w.auto) spread -= Math.min(p.shotIdx, 10) * w.spread * .6 * (1 - .8 * steady) * .22;
   const climbK = 1 - .8 * steady;                           // crouch + ADS keeps the spray almost flat
   const climb = p.shotIdx >= 3 ? Math.min(p.recoil, .04) * climbK : 0;
   const yawWob = p.shotIdx > 9 ? Math.sin(p.shotIdx * .8) * Math.min(p.recoil, .04) * .4 * climbK : 0;
-  p.recoil += w.recoil * .6 * (crouched ? .5 : 1) * (1 - .3 * adsK); p.shotIdx++;
+  p.recoil += w.recoil * .6 * (crouched ? .5 : 1) * (1 - .3 * adsK) * (att === 'grip' ? .78 : 1); p.shotIdx++;
   const ox = p.x, oy = eyeY(p), oz = p.z;
   // tracer starts where the gun actually is: at the hip, or centered under the crosshair when aiming
   const muz = new THREE.Vector3(.16 * (1 - adsK * .9), -.14 + adsK * .07, MUZZLE_Z[w.model]).applyMatrix4(camera.matrixWorld);
@@ -4613,7 +4655,7 @@ function playerFire() {
     if (k < 3) spawnTracer(muz.x, muz.y, muz.z, hx, hy, hz, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : skinTracer(p, inst));
     if (!tr0) tr0 = [hx, hy, hz];
     if (res.ent) {
-      const dmg = w.dmg[res.reg] * falloffMul(w, res.t); const wasAlive = res.ent.alive;
+      const dmg = w.dmg[res.reg] * falloffMul(w, res.t) * (att === 'supp' ? .92 : 1); const wasAlive = res.ent.alive;
       dealDamage(res.ent, dmg, p, w.name, res.reg === 0);
       if (wasAlive && !res.ent.alive) killed = true;
       anyHit = true; if (res.reg === 0) anyHead = true;
@@ -4625,10 +4667,10 @@ function playerFire() {
   if (anyHit) { hitMarker(anyHead); anyHead ? SND.head() : SND.hit(); }
   // effects
   vmKick = Math.min(1.5, vmKick + (w.model === 'sniper' ? 1.5 : w.model === 'shotgun' ? 1.2 : .55));
-  const g = vmRoot.userData.gun; if (g && g.userData.muzzle && inst.key !== 'blades') { g.userData.muzzle.visible = true; g.userData.muzzle.material.rotation = Math.random() * 6; setTimeout(() => { if (g.userData.muzzle) g.userData.muzzle.visible = false; }, 40); }
-  SND.shot(w.model);
-  netShot(p, muz.x, muz.y, muz.z, tr0[0], tr0[1], tr0[2], w.model, inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : skinTracer(p, inst));
-  if (net.role !== 'client') alertEnemies(p, 38);
+  const g = vmRoot.userData.gun; if (g && g.userData.muzzle && inst.key !== 'blades' && att !== 'supp') { g.userData.muzzle.visible = true; g.userData.muzzle.material.rotation = Math.random() * 6; setTimeout(() => { if (g.userData.muzzle) g.userData.muzzle.visible = false; }, 40); }
+  SND.shot(w.model, undefined, undefined, att === 'supp' ? .3 : 1);
+  netShot(p, muz.x, muz.y, muz.z, tr0[0], tr0[1], tr0[2], w.model + (att === 'supp' ? '~s' : ''), inst.key === 'blades' ? 0xa6e6ff : inst.key === 'neonbeam' ? 0x46b6ff : skinTracer(p, inst));
+  if (net.role !== 'client') alertEnemies(p, att === 'supp' ? 19 : 38);
   if (w.scope && adsT > 0) { adsT = 0; mouse[2] = false; adsOn = false; } // unscope after sniper shot
   if (inst.key === 'blades' && p.bladeMag <= 0 && !killed) { p.slot = p.primary ? 1 : 2; equipView(); }
   else if (inst.key === 'blades' && p.bladeMag <= 0 && killed) { p.bladeMag = 5; }
@@ -4670,6 +4712,7 @@ function alertEnemies(src, radius) {
 }
 function updatePlayer(dt) {
   const p = player;
+  fitMags(p); { const lg = vmRoot.userData.gun && vmRoot.userData.gun.userData.laser; if (lg) lg.visible = adsT < .5; }
   updateStatus(p, dt);
   if (!p.alive) return;
   if (pilot) { pilotStep(p, dt); return; } // body stands still while flying the drone / running as the tiger
@@ -4689,7 +4732,7 @@ function updatePlayer(dt) {
   let ix = 0, iz = 0; if (kd('fwd')) iz -= 1; if (kd('back')) iz += 1; if (kd('left')) ix -= 1; if (kd('right')) ix += 1;
   const w = WEAPONS[curWeapon(p).key];
   if (p.sprint && !p.crouch) { /* High Gear */ }
-  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1);
+  let sp = (p.sprint ? (p.odT > 0 ? 10.5 : 9.6) : p.crouch ? 2.6 : walk ? 3.8 : 6.75) * (p.sprint ? 1 : w.speedMul) * (p.slowT > 0 ? .5 : 1) * (p.stimT > 0 ? 1.1 : 1) * (p.dismissT > 0 ? 1.5 : 1) * (p.empressT > 0 ? 1.1 : 1) * (adsT > .5 && w.scope ? .75 : 1) * (attOf(p, curWeapon(p).key) === 'grip' ? .95 : 1);
   if (p.driftT > 0) sp = (p.crouch ? 4.2 : walk ? 6 : 6.75) * 1.6; // Dimensional Drift: much faster, no gun weight, no slows
   if (shopOpen) ix = iz = 0;
   const s = Math.sin(p.yaw), c = Math.cos(p.yaw);
@@ -5257,7 +5300,7 @@ function nextRound() {
     if (CUSTOM() && customRules().credits === 'max') e.credits = 9000;
     if (!e.alive) { e.primary = null; e.secondary = e.secondary || mkWeapon('classic'); e.armor = 0; }
     if (!e.secondary) e.secondary = mkWeapon('classic');
-    for (const w of [e.primary, e.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
+    for (const w of [e.primary, e.secondary]) if (w) { w.mag = magOf(e, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(e, w.key); }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
     Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
@@ -6403,7 +6446,7 @@ const FX = {
     sprayGroup.add(m); mine.push(m);
     sndNoise(.45, 3000, .6, .18, x, z);
   },
-  shot(mx, my, mz, hx, hy, hz, model, color) { if (model === 'blades') { flyKunai(mx, my, mz, hx, hy, hz, false); SND.shot('blades', mx, mz); return; } spawnTracer(mx, my, mz, hx, hy, hz, color); worldFlash(mx, my, mz, .5); SND.shot(model, mx, mz); },
+  shot(mx, my, mz, hx, hy, hz, model, color) { if (model === 'blades') { flyKunai(mx, my, mz, hx, hy, hz, false); SND.shot('blades', mx, mz); return; } const sup = String(model).endsWith('~s'); if (sup) model = String(model).slice(0, -2); spawnTracer(mx, my, mz, hx, hy, hz, color); if (!sup) worldFlash(mx, my, mz, .5); SND.shot(model, mx, mz, sup ? .3 : 1); },
   pop(x, y, z, kind) { worldFlash(x, y, z, 6, kind === 'near' ? 0xb04fff : 0xffffff, .15); SND.pop(x, z); },
   pulse(x, y, z, r) {
     const ring = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), new THREE.MeshBasicMaterial({ color: 0x4fa3ff, wireframe: true, transparent: true, opacity: .6 }));
@@ -6738,7 +6781,7 @@ function hostGameMsg(e, d) {
       if (d.iv === e.invSeq) { syncAmmo(e.primary, d.p); syncAmmo(e.secondary, d.s); }
       break;
     case 'shot':
-      if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, 38); }
+      if (e.alive && Array.isArray(d.a) && d.a.length === 9) { const a = d.a.slice(); a[8] = e.id; FX.shot(...a); netBroadcast({ t: 'fx', k: 'shot', a }, e.remote); alertEnemies(e, String(a[6]).endsWith('~s') ? 19 : 38); }
       break;
     case 'tcmd': if (e.alive && COMMANDS.some(c => c[0] === d.c)) teamCommand(e, d.c); break;
     case 'wreq': if (typeof d.k === 'string') requestWeapon(d.k, e); break;
@@ -9118,7 +9161,7 @@ function dmRespawn(e) {
   Object.assign(e, { alive: true, hp: 100, armor: 50, x: best.x, y: 0, z: best.z, vx: 0, vz: 0, vy: 0, flashT: 0, nearT: 0, slowT: 0, detainT: 0, vulnT: 0, revealedT: 0, deathPos: null, reloadT: 0, fireCD: 0, damagedBy: {}, dashT: 0, kbT: 0, deadT: 0, dmT: 0, yaw: rand(0, Math.PI * 2), pitch: 0 });
   if (!e.primary) e.primary = mkWeapon(e.isPlayer ? e.dmGun : pick(['vandal', 'phantom', 'vandal', 'phantom', 'spectre', 'bulldog', 'guardian', 'operator', 'judge', 'marshal']));
   if (!e.secondary) e.secondary = mkWeapon('classic');
-  for (const w of [e.primary, e.secondary]) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
+  for (const w of [e.primary, e.secondary]) { w.mag = magOf(e, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(e, w.key); }
   e.slot = 1; teleported(e); e.invSeq = (e.invSeq || 0) + 1;
   if (e.mesh) { e.mesh.rotation.set(0, e.yaw, 0); e.mesh.userData.gunKey = null; }
   if (!e.isPlayer) Object.assign(e, { path: [], goal: null, target: null, targetVisible: false, lastSeen: null, investigate: null });
@@ -9681,7 +9724,7 @@ function rangeTick(dt) {
   p.credits = 9000;
   const ki = $('killIcons'); while (ki.children.length > 5) ki.firstChild.remove();
   if (rangeOpts.abil) { const ag = AGENT[p.agent]; for (const k of ['C', 'Q', 'E']) p.charges[k] = ag.ab[k].max; }
-  if (rangeOpts.ammo) for (const w of [p.primary, p.secondary]) if (w) { w.mag = WEAPONS[w.key].mag; w.reserve = WEAPONS[w.key].reserve; }
+  if (rangeOpts.ammo) for (const w of [p.primary, p.secondary]) if (w) { w.mag = magOf(p, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(p, w.key); }
   if (!p.alive) { rs.respawnT += dt; if (rs.respawnT > 2.5) { rs.respawnT = 0; rangeRespawnPlayer(); } }
   aimTick(dt);
   // shooting test
@@ -10343,7 +10386,9 @@ function renderCollection() {
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     ${(() => { const lv = masteryLevel(k), n = masteryKills(k), nx = MASTERY[lv + 1]; return `<div class="mast"><span class="ml">MASTERY ${lv + 1} · ${MASTERY[lv][1]}</span><div class="b"><div style="width:${nx ? Math.min(100, (n - MASTERY[lv][0]) / (nx[0] - MASTERY[lv][0]) * 100) : 100}%"></div></div><span class="ol">${n} kills${nx ? ' · next: ' + nx[2] + ' at ' + nx[0] : ' · MAX'}</span></div>`; })()}
     <div class="ol" style="margin-top:2px">${w.dmg.join(' / ')}${w.pellets > 1 ? ' × ' + w.pellets + ' pellets' : ''}</div>
-    ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}</div>`; }).join('')}</div>`).join('');
+    ${bar('BODY DMG', w.dmg[1] * w.pellets, maxD, w.dmg[1] * w.pellets)}${bar('FIRE RATE', w.rate, maxR, w.rate + '/s')}${w.mag ? bar('MAGAZINE', w.mag, maxM, w.mag) : ''}
+    ${canAttach(k) ? `<div class="attRow"><span class="ol">ATTACHMENT</span>${Object.entries(ATTACH).map(([a, A]) => `<button class="attB${attOf(player || { isPlayer: true }, k) === a ? ' on' : ''}" data-att="${a}" data-k="${k}" title="${A.name}: ${A.desc}">${A.icon}</button>`).join('')}</div><div class="attTxt">${(() => { const A = ATTACH[attOf({ isPlayer: true }, k)]; return A.name === 'None' ? '' : `<b>${A.name}</b> · ${A.desc}`; })()}</div>` : ''}</div>`; }).join('')}</div>`).join('');
+  $('collBox').querySelectorAll('.attB').forEach(b => b.onclick = e => { e.stopPropagation(); tick(); profile.attach = profile.attach || {}; if (b.dataset.att === 'none') delete profile.attach[b.dataset.k]; else profile.attach[b.dataset.k] = b.dataset.att; saveProfile(); renderCollection(); });
   $('collBox').querySelectorAll('.wcard.pick').forEach(c => c.onclick = () => { tick(); openSkinPicker(c.dataset.k); });
   $('collNewSpray').onclick = () => openSprayStudio();
   $('collBox').querySelectorAll('[data-swheel]').forEach(b => b.onclick = e => {
