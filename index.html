@@ -455,6 +455,13 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .agent{height:96px;cursor:pointer;position:relative;overflow:hidden;border:2px solid transparent;background:#1c2631;transition:.12s}
 .agent:hover{transform:translateY(-2px)}
 .agent.on{border-color:var(--light)}
+.agent[class*=" am-"]{border-color:var(--bc);box-shadow:inset 0 0 0 1px var(--bc)}.agent.am-radiant{animation:amGlow 2s ease-in-out infinite}
+@keyframes amGlow{50%{box-shadow:inset 0 0 0 2px #fff3b0,0 0 14px #ffd34d}}
+.amPip{position:absolute;left:4px;top:4px;z-index:2;font:700 10px Oswald,sans-serif;font-style:normal;background:var(--bc);color:#111;padding:0 5px}
+.amBox{margin:14px 0;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.amHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.amLv{font:700 18px Oswald,sans-serif;color:#111;background:var(--bc);padding:0 8px}
+.amTrack{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin-top:8px}.amStep{font:500 10px Oswald,sans-serif;text-align:center;padding:4px 2px;background:#1c2631;color:#7d8790;line-height:1.3}
+.amStep span{display:block;font-size:13px;font-weight:700}.amStep.got{background:rgba(255,211,77,.18);color:#ffd34d}.amStep.next{outline:1px solid #ffd34d;color:#ece8e1}
 .agent .bg{position:absolute;inset:0;opacity:.85}
 .agent .glyph{position:absolute;right:8px;top:2px;font:900 48px 'Noto Sans KR';opacity:.35}
 .agent .nm{position:absolute;left:12px;bottom:10px;font-weight:900;font-size:22px;text-shadow:0 2px 6px rgba(0,0,0,.5)}
@@ -5454,6 +5461,7 @@ function finishMatch() {
   profile.xp += gain;
   const vpGain = (won ? 250 : 100) + p.kills * 10; profile.vp += vpGain;
   const passGot = awardPassXp(gain);
+  if (!RANGE()) passGot.push(...addAgentXp(p.agent, 100 + (won ? 150 : 0) + p.kills * 15 + matchStats.abil * 5));
   const lvUps = levelOf(profile.xp) - lvBefore, lvVp = lvUps * LEVEL_VP; profile.vp += lvVp;
   const doneMs = [...missionProgress('kills', p.kills), ...missionProgress('heads', matchStats.hs), ...missionProgress('abil', matchStats.abil), ...missionProgress('play', 1), ...missionProgress('wins', won ? 1 : 0)];
   profile.matches.unshift({ map: game.mapId, won, score: DM() ? game.score.slice() : [game.score[MY], game.score[1 - MY]], agent: p.agent, k: p.kills, d: p.deaths, a: p.assists, mode: game.mode, date: Date.now(), mvp: mvp === p, place, rr: rankRes && !rankRes.placement ? rankRes.delta : undefined,
@@ -5470,6 +5478,7 @@ function finishMatch() {
     ${lvVp ? `<div class="stat"><span>Level-up reward</span><b class="os" style="color:var(--gold)">+${lvVp} VP</b></div>` : ''}
     ${doneMs.map(m => `<div class="stat"><span>Mission complete</span><b style="color:var(--teal)">${m.txt} · +${m.vp} VP</b></div>`).join('')}
     <div class="stat"><span>XP Earned</span><b class="os" style="color:var(--gold)">+${gain}${levelOf(profile.xp) > lvBefore ? ' · LEVEL UP! → ' + levelOf(profile.xp) : ''}</b></div>
+    ${!RANGE() && AGENT[p.agent] && !AGENT[p.agent].custom ? `<div class="stat"><span>${AGENT[p.agent].name} mastery</span><b class="os">Level ${amLevel(p.agent)}${amLevel(p.agent) < AM_XP.length ? ` · ${amXp(p.agent) - AM_XP[amLevel(p.agent) - 1]} / ${AM_XP[amLevel(p.agent)] - AM_XP[amLevel(p.agent) - 1]} XP` : ' · MAX'}</b></div>` : ''}
     <div class="stat"><span>Battle Pass</span><b class="os">Tier ${bpTier()} · ${(profile.bp.xp || 0) - bpTier() * BP_TIER_XP} / ${BP_TIER_XP} XP</b></div>
     ${passGot.map(([src, what]) => `<div class="stat"><span>${esc(src)}</span><b style="color:var(--gold)">${esc(what)}</b></div>`).join('')}`;
   $('hud').classList.add('hidden'); $('over').classList.remove('hidden'); $('board').classList.add('hidden');
@@ -10038,8 +10047,41 @@ function updateQueueInfo() {
 }
 
 /* agents tab */
+/* --- agent mastery: playing an agent levels it up (1-10) and unlocks borders, VP, titles and a spray --- */
+const AM_XP = [0, 400, 1200, 2400, 4000, 6000, 8500, 11500, 15000, 19000];
+const AM_BORDERS = [null, null, ['bronze', '#c98a4a'], ['bronze', '#c98a4a'], ['bronze', '#c98a4a'], ['silver', '#cfd8e0'], ['silver', '#cfd8e0'], ['silver', '#cfd8e0'], ['gold', '#ffd34d'], ['radiant', '#fff3b0']];
+const amRewards = id => { const n = AGENT[id] ? AGENT[id].name : id; return [null, { r: 'vp', n: 100 }, { r: 'border', t: 'Bronze border' }, { r: 'vp', n: 150 }, { r: 'title', t: n + ' Adept' }, { r: 'border', t: 'Silver border' }, { r: 'vp', n: 250 }, { r: 'spray', id: 'am_' + id }, { r: 'border', t: 'Gold border' }, { r: 'title', t: n + ' Legend', border: 'Radiant border' }]; };
+const amXp = id => (profile.agentXp && profile.agentXp[id]) || 0;
+const amLevel = id => { const x = amXp(id); let l = 0; while (l + 1 < AM_XP.length && x >= AM_XP[l + 1]) l++; return l + 1; };
+const amBorder = id => AM_BORDERS[amLevel(id) - 1];
+// the mastery spray: the agent's glyph inside a gold laurel ring
+for (const a of AGENTS) SPRAYS['am_' + a.id] = { name: a.name + ' Mastery', draw(x) {
+  x.strokeStyle = '#ffd34d'; x.lineWidth = 8; x.beginPath(); x.arc(64, 64, 52, 0, 7); x.stroke();
+  x.fillStyle = '#ffd34d'; for (let i = 0; i < 14; i++) { const an = Math.PI * .65 + i / 13 * Math.PI * 1.7; x.save(); x.translate(64 + Math.cos(an) * 58, 64 + Math.sin(an) * 58); x.rotate(an + 1.2); x.beginPath(); x.ellipse(0, 0, 8, 3.5, 0, 0, 7); x.fill(); x.restore(); }
+  x.fillStyle = a.color; x.beginPath(); x.arc(64, 64, 40, 0, 7); x.fill(); x.fillStyle = '#0b0e12'; x.font = '900 44px "Noto Sans KR", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(a.glyph, 64, 67);
+} };
+function addAgentXp(id, xp) {
+  if (!AGENT[id] || AGENT[id].custom) return [];
+  profile.agentXp = profile.agentXp || {}; const l0 = amLevel(id); profile.agentXp[id] = amXp(id) + xp; const l1 = amLevel(id), got = [];
+  for (let l = l0 + 1; l <= l1; l++) { const w = amRewards(id)[l - 1]; if (!w) continue;
+    if (w.r === 'vp') { profile.vp += w.n; got.push(`+${w.n} VP`); }
+    else if (w.r === 'title') { if (!profile.titles.includes(w.t)) profile.titles.push(w.t); got.push(`Title "${w.t}"` + (w.border ? ' · ' + w.border : '')); }
+    else if (w.r === 'spray') { if (!profile.sprays.includes(w.id)) profile.sprays.push(w.id); got.push(`Spray "${SPRAYS[w.id].name}"`); }
+    else got.push(w.t); }
+  return got.length ? [[`${AGENT[id].name} mastery level ${l1}`, got.join(' · ')]] : [];
+}
+function masteryPanelHTML(id) {
+  const a = AGENT[id]; if (!a || a.custom) return '';
+  const l = amLevel(id), x = amXp(id), max = l >= AM_XP.length, need = max ? 1 : AM_XP[l] - AM_XP[l - 1], have = max ? 1 : x - AM_XP[l - 1], R = amRewards(id), B = amBorder(id);
+  const lab = w => !w ? '' : w.r === 'vp' ? w.n + ' VP' : w.r === 'spray' ? 'Spray' : w.r === 'title' ? 'Title' + (w.border ? ' + border' : '') : w.t.replace(' border', '');
+  return `<div class="amBox"><div class="amHead"><span class="ol">AGENT MASTERY</span><b class="amLv" style="--bc:${B ? B[1] : '#56616c'}">LV ${l}</b><span class="ol">${max ? 'MAX LEVEL' : `${have} / ${need} XP`}</span></div>
+    <div class="bpBar"><div style="width:${have / need * 100}%"></div></div>
+    <div class="amTrack">${R.map((w, i) => i === 0 ? '' : `<div class="amStep ${l > i ? 'got' : l === i ? 'next' : ''}" title="${esc(w.r === 'title' ? w.t : lab(w))}"><span>${i + 1}</span>${lab(w)}</div>`).join('')}</div>
+    <div class="ol" style="margin-top:4px">Earn mastery XP by playing ${esc(a.name)}: +100 per match, +150 for a win, +15 per kill, +5 per ability</div></div>`;
+}
 function agentCard(a, on) {
-  return `<div class="agent ${on ? 'on' : ''}${a.custom ? ' custom' : ''}" data-id="${a.id}"><div class="bg" style="background:linear-gradient(135deg,${a.color} 0%,${a.color}55 60%,#0f1923 100%)"></div><div class="glyph">${a.glyph}</div><div class="rl">${a.role}</div><div class="nm">${a.name}</div></div>`;
+  const B = !a.custom && amBorder(a.id);
+  return `<div class="agent ${on ? 'on' : ''}${a.custom ? ' custom' : ''}${B ? ' am-' + B[0] : ''}" data-id="${a.id}"${B ? ` style="--bc:${B[1]}"` : ''}>${B ? `<i class="amPip">${amLevel(a.id)}</i>` : ''}<div class="bg" style="background:linear-gradient(135deg,${a.color} 0%,${a.color}55 60%,#0f1923 100%)"></div><div class="glyph">${a.glyph}</div><div class="rl">${a.role}</div><div class="nm">${a.name}</div></div>`;
 }
 function abilityRows(a) {
   return ['C', 'Q', 'E', 'X'].map(k => { const ab = a.ab[k]; return `<div class="abRow"><div class="k ${k === 'X' ? 'x' : ''}">${k}</div><div><div class="t">${ab.name} <span style="opacity:.5;font-weight:400;font-size:12px">${k === 'X' ? 'Ultimate · ' + ab.ult + ' points' : (ab.free ? ab.free + ' free per round' : '') + (ab.cost ? ' · ' + ab.cost + ' credits' : '') + ' · max ' + ab.max}</span></div><div class="d">${ab.desc}</div></div></div>`; }).join('');
@@ -10048,7 +10090,7 @@ function renderAgentTab() {
   $('agGrid2').innerHTML = AGENTS.map(a => agentCard(a, a.id === previewAgent)).join('');
   $('agGrid2').querySelectorAll('.agent').forEach(d => d.onclick = () => { previewAgent = d.dataset.id; setLobbyAgent(0, previewAgent); renderAgentTab(); tick(); });
   const a = AGENT[previewAgent], fav = previewAgent === profile.fav;
-  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}
+  $('agInfo2').innerHTML = `<div class="big" style="font-weight:900;font-size:40px;color:${a.color}">${a.name.toUpperCase()}</div><div class="role" style="color:var(--red);letter-spacing:3px;font-size:13px;margin:4px 0">${a.role.toUpperCase()}</div><div style="opacity:.7;font-size:14px;margin-bottom:12px">${a.desc}</div>${abilityRows(a)}${masteryPanelHTML(a.id)}
     <button class="favBtn ${fav ? 'on' : ''}" id="favBtn">${fav ? '★ FAVORITE AGENT' : '☆ SET AS FAVORITE'}</button>${a.custom ? '<button class="favBtn" id="editAgentBtn" style="margin-left:8px;border-color:#ff4fd8;color:#ff4fd8">✎ EDIT AGENT</button>' : ''}`;
   if (a.custom) $('editAgentBtn').onclick = () => { tick(); openAgentMaker(a.id); };
   $('favBtn').onclick = () => { profile.fav = previewAgent; selectedAgent = previewAgent; saveProfile(); net.partySig = ''; buildParty(); lobbyChars[0].pop = 1; renderAgentTab(); SND.buy(); netProfileChanged(); };
@@ -10267,7 +10309,7 @@ function renderCollection() {
   const bar = (l, v, max, n) => `<div class="sbar"><span class="ol">${l}</span><div class="b"><div style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="n">${n}</span></div>`;
   const groups = [['SIDEARMS', ['classic', 'shorty', 'frenzy', 'ghost', 'sheriff']], ['SMGS', ['stinger', 'spectre']], ['SHOTGUNS', ['bucky', 'judge']], ['RIFLES', ['bulldog', 'guardian', 'phantom', 'vandal']], ['SNIPERS', ['marshal', 'outlaw', 'operator']], ['HEAVIES', ['ares', 'odin']], ['MELEE', ['knife']]];
   const wheelIds = wheelSprays();
-  const sprayHTML = `<div class="collCat">SPRAYS · tap ${keyName(settings.binds.spray)} in a match to spray · hold it for the spray wheel (◎ = on the wheel, up to 8)</div><div class="sprayGrid"><div class="sprayCard add" id="collNewSpray"><b>+</b>CREATE SPRAY</div>${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !id.startsWith('ag_')).sort((a, b) => !!SPRAYS[b].custom - !!SPRAYS[a].custom).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}${SPRAYS[id].custom ? `<button class="scEd" data-sedit="${id}" title="Edit">✎</button>` : ''}${own ? `<button class="scWh${wheelIds.includes(id) ? ' on' : ''}" data-swheel="${id}" title="Show on the spray wheel">◎</button>` : ''}</div>`; }).join('')}</div>`;
+  const sprayHTML = `<div class="collCat">SPRAYS · tap ${keyName(settings.binds.spray)} in a match to spray · hold it for the spray wheel (◎ = on the wheel, up to 8)</div><div class="sprayGrid"><div class="sprayCard add" id="collNewSpray"><b>+</b>CREATE SPRAY</div>${Object.keys(SPRAYS).filter(id => profile.sprays.includes(id) || !/^(ag|am)_/.test(id)).sort((a, b) => !!SPRAYS[b].custom - !!SPRAYS[a].custom).map(id => { const own = profile.sprays.includes(id); return `<div class="sprayCard ${own ? '' : 'lock'} ${profile.spray === id ? 'on' : ''}" data-spray="${id}"><img src="${sprayURL(id)}" alt="">${esc(SPRAYS[id].name)}${own ? '' : '<br><span class="ol">Battle Pass</span>'}${SPRAYS[id].custom ? `<button class="scEd" data-sedit="${id}" title="Edit">✎</button>` : ''}${own ? `<button class="scWh${wheelIds.includes(id) ? ' on' : ''}" data-swheel="${id}" title="Show on the spray wheel">◎</button>` : ''}</div>`; }).join('')}</div>`;
   $('collBox').innerHTML = sprayHTML + groups.map(([g, list]) => `<div class="collCat">${g}</div><div class="collGrid">${list.map(k => { const w = WEAPONS[k]; const sk = profile.equip[k] || 0, nOwn = profile.owned.filter(id => SKINS[id].key === k).length, nAll = SKIN_IDS.filter(id => SKINS[id].key === k).length; return `<div class="wcard pick" data-k="${k}"><div class="wt"><span class="wn">${w.name}</span><span class="wp">${w.price ? '¤ ' + w.price : 'FREE'}</span></div>
     <img class="wicon" src="${gunIcon(k, sk)}" alt=""><div class="wskin">${sk ? SKINS[sk].name : 'Standard'} <span class="ol">· ${nOwn}/${nAll} skins</span></div>
     ${(() => { const lv = masteryLevel(k), n = masteryKills(k), nx = MASTERY[lv + 1]; return `<div class="mast"><span class="ml">MASTERY ${lv + 1} · ${MASTERY[lv][1]}</span><div class="b"><div style="width:${nx ? Math.min(100, (n - MASTERY[lv][0]) / (nx[0] - MASTERY[lv][0]) * 100) : 100}%"></div></div><span class="ol">${n} kills${nx ? ' · next: ' + nx[2] + ' at ' + nx[0] : ' · MAX'}</span></div>`; })()}
