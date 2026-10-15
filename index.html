@@ -887,6 +887,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #mobileNote{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:12px;opacity:.5;z-index:35}
 @media (max-width:820px){.selWrap,.setGrid{grid-template-columns:1fr}#navTabs button{padding:0 8px;font-size:12px}.brand,.navRight{width:auto}.news{display:none}.tiles{grid-template-columns:repeat(3,1fr)}#shopCols{grid-template-columns:repeat(2,1fr);max-height:70vh;overflow:auto}}
 #trModal .trPanel{width:min(980px,96vw);max-width:none}
+#netOv{position:fixed;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(35deg,transparent 0 46px,rgba(106,208,255,.35) 46px 49px),repeating-linear-gradient(-35deg,transparent 0 46px,rgba(106,208,255,.35) 46px 49px);box-shadow:inset 0 0 120px rgba(80,180,255,.45)}
 #trStage{position:relative;height:min(62vh,560px);border-radius:10px;overflow:hidden;cursor:grab;touch-action:none}
 #trCv{width:100%;height:100%;display:block}
 </style>
@@ -1164,6 +1165,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="cereTag" class="hidden"><b>VICTORY</b><span>click to skip</span></div>
 <div id="crateModal" class="screen hidden"></div>
 <div id="cardModal" class="screen hidden"></div>
+<div id="netOv" class="hidden"></div>
 <div id="trModal" class="screen hidden"><div class="panel trPanel"><div class="pHead"><h2>TROPHY ROOM</h2><span class="ol">drag to look around · scroll to zoom</span><button class="iconBtn" id="trClose">✕</button></div>
   <div id="trStage"><canvas id="trCv"></canvas><div id="trTip" class="hidden"></div></div></div></div>
 <div id="bfModal" class="screen hidden"><div class="panel bfPanel"><div class="pHead"><h2>BOT FRIENDS</h2><button class="iconBtn" id="bfClose">✕</button></div>
@@ -1595,7 +1597,7 @@ AGENTS.push(
   { id: 'deadlock', name: 'Deadlock', role: 'Sentinel', color: '#c9d3dc', glyph: 'DL', desc: 'A Norwegian operative who locks down the field with cutting-edge nanowire.',
     ab: { C: { name: 'GravNet', cost: 200, max: 1, free: 0, type: 'gravnet', desc: 'Throw a grenade that detonates on landing: every enemy caught is FORCED TO CROUCH and slowed for 6s.' },
           Q: { name: 'Sonic Sensor', cost: 200, max: 1, free: 0, type: 'sensor', desc: 'Place a sensor that listens for noise: an enemy RUNNING or SHOOTING near it sets off a concussive blast.' },
-          E: { name: 'Barrier Mesh', cost: 0, max: 1, free: 1, type: 'wall', desc: 'Preview the barrier, right click to rotate it, left click to build. Destructible.' },
+          E: { name: 'Barrier Mesh', cost: 0, max: 1, free: 1, type: 'mesh', desc: 'Throw the Barrier Mesh disc: it unfolds into an X of nanowire net walls that block movement. Destructible.' },
           X: { name: 'Annihilation', ult: 7, type: 'annihil', desc: 'Fire a nanowire pulse: the first enemy hit is COCOONED and dragged back towards you. If no teammate breaks the cocoon (by touching it) within 7s, they die.' } } },
   { id: 'iso', name: 'Iso', role: 'Duelist', color: '#8a5cff', glyph: 'IS', desc: 'A Chinese fixer who turns every fight into a one-on-one.',
     ab: { C: { name: 'Contingency', cost: 200, max: 1, free: 0, type: 'wall', desc: 'Preview a wall of prismatic energy, right click to rotate, left click to raise it. It blocks bullets.' },
@@ -4126,6 +4128,10 @@ const netTex = (() => { let t = null; return () => { if (t) return t; const c = 
   for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; x.lineWidth = 2.5; x.beginPath(); x.moveTo(128, 128); x.lineTo(128 + Math.cos(a) * 126, 128 + Math.sin(a) * 126); x.stroke(); }
   for (let r = 18; r < 128; r += 18) { x.lineWidth = 1.6; x.beginPath(); for (let i = 0; i <= 9; i++) { const a = i / 9 * Math.PI * 2, rr = r * (1 + Math.sin(i * 2.3 + r) * .1); i ? x.lineTo(128 + Math.cos(a) * rr, 128 + Math.sin(a) * rr) : x.moveTo(128 + Math.cos(a) * rr, 128 + Math.sin(a) * rr); } x.stroke(); }
   t = new THREE.CanvasTexture(c); return t; }; })();
+const meshTex = (() => { let t = null; return () => { if (t) return t; const c = document.createElement('canvas'); c.width = 256; c.height = 192; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(70,150,230,.12)'; x.fillRect(0, 0, 256, 192); x.strokeStyle = 'rgba(150,220,255,.95)'; x.lineWidth = 2; x.shadowColor = '#6ad0ff'; x.shadowBlur = 5;
+  for (let i = -192; i < 256; i += 22) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 192, 192); x.stroke(); x.beginPath(); x.moveTo(i + 192, 0); x.lineTo(i, 192); x.stroke(); }
+  x.lineWidth = 5; x.strokeRect(3, 3, 250, 186); t = new THREE.CanvasTexture(c); return t; }; })();
 const thornTex = (() => { let t = null; return () => { if (t) return t; const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d');
   x.lineCap = 'round'; for (let i = 0; i < 70; i++) { let px = Math.random() * 512, py = Math.random() * 512, a = Math.random() * 6.3, r = 20 + Math.random() * 40; x.strokeStyle = i % 3 ? 'rgba(220,228,240,.95)' : 'rgba(150,160,180,.9)'; x.lineWidth = 2 + Math.random() * 3; x.beginPath(); x.moveTo(px, py);
     for (let s = 0; s < 40; s++) { a += .18 + s * .004; r *= .97; px += Math.cos(a) * r * .18; py += Math.sin(a) * r * .18; x.lineTo(px, py); } x.stroke(); }
@@ -4247,7 +4253,13 @@ const ABIL = {
         hit.add(o); o.slowT = Math.max(o.slowT, 5); o.nearT = Math.max(o.nearT, .8); fx('parts', o.x, o.y + 1, o.z, 30, 0x7fe8ff, 4, .6); toastTo(o, 'Hit by the wave — slowed for 5s!'); } }, end() { } });
     return true;
   },
-  gravnet(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2.5), { color: 0xc9d3dc, owner: e, model: 'grenade' })); p.onLand = () => { fx('netdecal', p.x, p.z, 5); fx('parts', p.x, p.y + .5, p.z, 40, 0x6ac8ff, 5, .6); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5 && los(p.x, p.y + .5, p.z, o.x, o.y + 1, o.z, true)) { o.netT = 6; o.slowT = Math.max(o.slowT, 6); toastTo(o, 'GravNet — you are forced to crouch!'); } }; return true; },
+  gravnet(e) { const p = spawnProj(Object.assign(throwFrom(e, 16, 2.5), { color: 0xc9d3dc, owner: e, model: 'grenade' })); p.onLand = () => { fx('netdecal', p.x, p.z, 5); fx('parts', p.x, p.y + .5, p.z, 40, 0x6ac8ff, 5, .6); for (const o of entities) if (o.alive && isEnemy(o, e) && Math.hypot(o.x - p.x, o.z - p.z) < 5 && los(p.x, p.y + .5, p.z, o.x, o.y + 1, o.z, true)) { o.netT = 6; o.slowT = Math.max(o.slowT, 6); fx('netted', o.id); toastTo(o, 'GravNet — you are forced to crouch!'); } }; return true; },
+  mesh(e, ab, target) { // Deadlock's Barrier Mesh: a disc that unfolds into an X of net walls
+    const f = fwd(e), p = target && typeof target.x === 'number' ? target : aimPoint(e, 9), cx = p.x, cz = p.z, A = 4, T = .35, H = 3.2, made = [];
+    for (const [x0, x1, z0, z1] of [[cx - A, cx + A, cz - T / 2, cz + T / 2], [cx - T / 2, cx + T / 2, cz - A, cz + A]]) { const w = { x0, x1, z0, z1, y0: 0, y1: H, hp: 500, t: 30, netMesh: 1 }; addWallMesh(w); dynWalls.push(w); made.push(w); }
+    fx('meshwall', cx, cz, A, H, made.map(nidOf));
+    return true;
+  },
   sensor(e) { const f = fwd(e), p = aimPoint(e, 12); makeZone({ x: p.x - f.x * .5, z: p.z - f.z * .5, r: .45, kind: 'sensor', t: 999, owner: e }); return true; },
   annihil(e) {
     const f = fwd(e), sx = e.x, sz = e.z, p = spawnProj({ x: e.x + f.x * .8, y: eyeY(e) - .2, z: e.z + f.z * .8, vx: f.x * 22, vy: 0, vz: f.z * 22, g: 0, life: 2.2, color: 0xc9d3dc, owner: e, land: false, bounce: 0, size: .35 });
@@ -4762,7 +4774,7 @@ function neonTick(e, dt) {
   e.slideCD = Math.max(0, (e.slideCD || 0) - dt);
 }
 // Thrown / launched abilities: first press readies them (time gauge), second press or LEFT click uses them
-const READY_TYPES = new Set(['converge', 'aftershock', 'flashpt', 'faultline', 'gravnet', 'undercut', 'sensor', 'razor', 'shear', 'rose', 'saturate', 'cove', 'dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay', 'tmark', 'meddle', 'wingman', 'thrash']);
+const READY_TYPES = new Set(['mesh', 'converge', 'aftershock', 'flashpt', 'faultline', 'gravnet', 'undercut', 'sensor', 'razor', 'shear', 'rose', 'saturate', 'cove', 'dormant', 'fakeout', 'blindside', 'zeropoint', 'prowler', 'seize', 'haunt', 'smokeSmall', 'molly', 'slow', 'stim', 'leer', 'paranoia', 'boombot', 'paint', 'rocket', 'alarm', 'turret', 'trap', 'cam', 'trailblazer', 'flash', 'blaze', 'seekers', 'fastlane', 'relay', 'tmark', 'meddle', 'wingman', 'thrash']);
 // Raze's Showstopper: X equips the launcher (no ult spent yet), X again puts it away, left click fires
 function armRocket(e, ab) {
   if (e.rocketArmed) { e.rocketArmed = false; sndTone(300, .08, .1, 'triangle', 200); return false; }
@@ -5053,7 +5065,7 @@ function clearEffects() {
 /* --- Shared status update --- */
 function updateStatus(e, dt) {
   e.flashT = Math.max(0, e.flashT - dt); e.nearT = Math.max(0, e.nearT - dt); e.slowT = Math.max(0, e.slowT - dt); e.stimT = Math.max(0, e.stimT - dt);
-  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt); e.jamT = Math.max(0, (e.jamT || 0) - dt); e.netT = Math.max(0, (e.netT || 0) - dt); e.dtapT = Math.max(0, (e.dtapT || 0) - dt); if (e.duelT > 0 && ((e.duelT -= dt) <= 0 || !e.duelWith || !e.duelWith.alive || !e.alive)) { e.duelT = 0; e.duelWith = null; } if (!(e.duelT > 0) && e.arenaBack) leaveArena(e); if (e.isoShT > 0 && (e.isoShT -= dt) <= 0) e.isoSh = 0; if (e.refract && (e.refract.t -= dt) <= 0) e.refract = null;
+  e.detainT = Math.max(0, (e.detainT || 0) - dt); e.vulnT = Math.max(0, (e.vulnT || 0) - dt); e.suppT = Math.max(0, (e.suppT || 0) - dt); e.jamT = Math.max(0, (e.jamT || 0) - dt); e.netT = Math.max(0, (e.netT || 0) - dt); if (e.netT > 0) { e.crouch = true; e.sprint = false; } e.dtapT = Math.max(0, (e.dtapT || 0) - dt); if (e.duelT > 0 && ((e.duelT -= dt) <= 0 || !e.duelWith || !e.duelWith.alive || !e.alive)) { e.duelT = 0; e.duelWith = null; } if (!(e.duelT > 0) && e.arenaBack) leaveArena(e); if (e.isoShT > 0 && (e.isoShT -= dt) <= 0) e.isoSh = 0; if (e.refract && (e.refract.t -= dt) <= 0) e.refract = null;
   if (e.driftT > 0) { e.driftT -= dt; if (e.driftT <= 0) { e.driftT = 0; fx('parts', e.x, e.y + 1, e.z, 30, 0x5f7cff, 3, .6); if (e.isPlayer) { equipView(); toast('Back from the drift'); } } }
   e.dismissT = Math.max(0, e.dismissT - dt); e.soulT = Math.max(0, e.soulT - dt); e.revealedT = Math.max(0, e.revealedT - dt);
   if (e.empressT > 0) e.empressT -= dt;
@@ -5691,7 +5703,7 @@ function botObjective(b, dt) {
       // sentinels set up their gadgets once per round, looking toward the entrance they hold
       if (b.placedRound !== game.round && game.phase === 'live') {
         b.placedRound = game.round; b.yaw = b.holdYaw; b.pitch = 0;
-        for (const k of ['C', 'Q', 'E']) if (['turret', 'alarm', 'trap', 'cam', 'tmark', 'sensor', 'razor', 'shear', 'rose'].includes(ag.ab[k].type) && b.charges[k] > 0) castAbility(b, k);
+        for (const k of ['C', 'Q', 'E']) if (['turret', 'alarm', 'trap', 'cam', 'tmark', 'sensor', 'razor', 'shear', 'rose', 'mesh'].includes(ag.ab[k].type) && b.charges[k] > 0) castAbility(b, k);
       }
     }
   }
@@ -5774,7 +5786,7 @@ function updateBot(b, dt) {
   const spd = Math.hypot(b.vx, b.vz);
   if (spd > 4.5 && b.onGround) { b.stepT = (b.stepT || 0) - dt; if (b.stepT <= 0) { b.stepT = .38; if (isEnemy(b, player) && Math.hypot(b.x - camera.position.x, b.z - camera.position.z) < 28) SND.step(b.x, b.z, .5); } }
   // mesh
-  m.position.set(b.x, b.y, b.z); m.rotation.set(0, b.yaw, 0);
+  m.position.set(b.x, b.y, b.z); m.rotation.set(0, b.yaw, 0); crouchPose(m, b, dt);
   const ph = game.time * 10 * (spd / 6), sw = Math.min(1, spd / 4) * .6;
   m.userData.legL.rotation.x = Math.sin(ph) * sw; m.userData.legR.rotation.x = -Math.sin(ph) * sw;
   m.visible = !(b.driftT > 0 && isEnemy(b, player));
@@ -7450,6 +7462,22 @@ const FX = {
     const m = new THREE.Mesh(new THREE.CircleGeometry(r, 40), new THREE.MeshBasicMaterial({ map: netTex(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); m.rotation.x = -Math.PI / 2; m.position.set(x, .05, z);
     lfxAdd(m, 3.5, k => { m.material.opacity = k < .1 ? k * 10 : 1 - Math.max(0, k - .6) / .4; m.scale.setScalar(.6 + Math.min(1, k * 8) * .4); });
   },
+  netted(id) { // Deadlock: a glowing net wrapped over whoever got caught
+    const e = entities[id]; if (!e) return; const g = new THREE.Mesh(new THREE.SphereGeometry(.75, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x6ad0ff, wireframe: true, transparent: true, opacity: .9 }));
+    lfxAdd(g, 6.2, (k, dt, f) => { g.position.set(e.x, e.y + .05, e.z); g.scale.set(1, e.crouch ? 1.45 : 2.1, 1); g.rotation.y += dt * .5; if (f.t > .3 && (!e.alive || !(e.netT > .05))) f.t = f.life; });
+    if (player && e === player) { const ov = $('netOv'); if (ov) { ov.classList.remove('hidden'); clearTimeout(ov._t); ov._t = setTimeout(() => ov.classList.add('hidden'), 6000); } }
+  },
+  meshwall(cx, cz, A, H, ids) { // the X-shaped nanowire net unfolding out of its disc
+    const tex = meshTex(), mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false }), g = new THREE.Group();
+    const arms = []; for (const rot of [0, Math.PI / 2]) for (const sgn of [-1, 1]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(A, H), mat); const piv = new THREE.Group(); piv.rotation.y = rot; pl.position.set(sgn * A / 2, H / 2, 0); piv.add(pl); g.add(piv); arms.push(pl); }
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(.35, .4, .25, 16), new THREE.MeshLambertMaterial({ color: 0xdfe6ee, emissive: 0x1a4a8a })); disc.position.y = .12; g.add(disc);
+    const core = new THREE.Mesh(new THREE.SphereGeometry(.16, 12, 8), new THREE.MeshBasicMaterial({ color: 0x6ad0ff })); core.position.y = .3; g.add(core);
+    g.position.set(cx, 0, cz); const walls = () => ids.map(id => dynWalls.find(w => nidOf(w) === id)).filter(Boolean);
+    for (const w of walls()) if (w.mesh) w.mesh.visible = false; // the net replaces the solid box
+    lfxAdd(g, 30, (k, dt, f) => { const u = Math.min(1, f.t / .7), e2 = u * u * (3 - 2 * u); for (const pl of arms) { pl.scale.set(e2, Math.min(1, u * 1.6), 1); pl.position.x = Math.sign(pl.position.x) * A / 2 * e2; }
+      const W = walls(); for (const w of W) if (w.mesh) w.mesh.visible = false; if (f.t > 1 && !W.length) f.t = f.life; });
+    sndTone(400, .5, .2, 'sawtooth', 1400); sndNoise(.4, 2500, 1, .3, cx, cz, 'highpass');
+  },
   sonic(x, z) { // Deadlock: sound waves burst out of the sensor
     for (let i = 0; i < 4; i++) { const ring = new THREE.Mesh(new THREE.TorusGeometry(1, .05, 6, 40), addMat(0x6ad0ff, .9)); ring.rotation.x = Math.PI / 2; ring.position.set(x, .4 + i * .25, z);
       lfxAdd(ring, .9, k => { const a = Math.max(0, k - i * .12) / (1 - i * .12); ring.scale.setScalar(.3 + a * 4.8); ring.material.opacity = (1 - a) * .9; }); }
@@ -7605,6 +7633,8 @@ function netLerp(e, dt) {
   if (dx * dx + dz * dz > 25) { e.x = e.nx; e.y = e.ny; e.z = e.nz; return; }
   const k = Math.min(1, dt * 15); e.x += dx * k; e.y += (e.ny - e.y) * k; e.z += dz * k;
 }
+// characters visibly crouch (squat down) instead of only shrinking their hitbox
+function crouchPose(m, e, dt) { const ud = m.userData; ud.crk = (ud.crk || 0) + ((e.crouch && !e.emote ? 1 : 0) - (ud.crk || 0)) * Math.min(1, dt * 12); m.scale.set(1 + ud.crk * .06, 1 - ud.crk * .27, 1 + ud.crk * .06); }
 function animateNetChar(e, dt) {
   const m = e.mesh; if (!m) return; const ud = m.userData;
   if (!e.alive) {
@@ -7615,7 +7645,7 @@ function animateNetChar(e, dt) {
   }
   e.deadT = 0;
   const spd = Math.hypot(e.vx || 0, e.vz || 0);
-  m.visible = !(e.driftT > 0 && player && isEnemy(e, player)); m.position.set(e.x, e.y, e.z); m.rotation.set(0, e.yaw, 0);
+  m.visible = !(e.driftT > 0 && player && isEnemy(e, player)); m.position.set(e.x, e.y, e.z); m.rotation.set(0, e.yaw, 0); crouchPose(m, e, dt);
   const ph = game.time * 10 * (spd / 6), sw = Math.min(1, spd / 4) * .6;
   ud.legL.rotation.x = Math.sin(ph) * sw; ud.legR.rotation.x = -Math.sin(ph) * sw;
   setCharGun(e); updateFace(e, dt);
@@ -12335,7 +12365,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 93;
+const BUILD = 94;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
