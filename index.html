@@ -753,6 +753,11 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .kuRow button{background:#26313d;border:1px solid transparent;color:#c9d0d6;font:600 11px Oswald,sans-serif;padding:4px 8px;cursor:pointer}.kuRow button.on{border-color:#ffd34d;color:#ffd34d}.kuRow button:disabled:not(.on){opacity:.35}
 .kudoPop{position:fixed;right:20px;bottom:120px;z-index:95;background:#1c2631;border-left:4px solid #ffd34d;padding:10px 14px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.5);animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
 .kudoPop>b{font-size:22px;vertical-align:middle}.kudoPop.out{opacity:0;transform:translateX(30px)}
+.bfPanel{width:min(760px,96vw);max-height:92vh;overflow:auto}.bfItem{display:flex;align-items:center;gap:10px;padding:7px 10px;background:rgba(255,255,255,.04);margin-bottom:4px}
+.bfItem i{font-style:normal;font:900 18px 'Noto Sans KR',sans-serif;width:34px;text-align:center}.bfItem .nm{flex:1}.bfItem .nm b{display:block;font-size:14px}.bfItem .nm small{color:#9aa6b2;font-size:11px}
+.bfItem button{width:auto!important;margin:0!important;padding:5px 10px!important}.bfItem .tg.on{background:var(--teal);color:#111;border-color:var(--teal)}
+.bfForm{margin-top:12px;padding:10px;border:1px dashed rgba(255,255,255,.2)}.bfRow{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.bfRow input,.bfRow select{flex:1;min-width:120px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:#fff;padding:7px 9px;font:500 13px 'Noto Sans KR',sans-serif}
+.bfRow .btn{width:auto;margin:0}
 .coach{margin:10px 0;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:left}
 .coHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}.coGrade{font:700 26px Oswald,sans-serif;width:38px;text-align:center;border:2px solid;line-height:1.2}
 .coGrade.gS{color:#ffd34d}.coGrade.gA{color:#2fe0b6}.coGrade.gB{color:#4fa3ff}.coGrade.gC{color:#c9d0d6}.coGrade.gD{color:#ff4655}
@@ -965,6 +970,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
     <div class="playOpts">
       <div class="optCard"><div class="ol">BOT DIFFICULTY</div><div class="seg" id="diffSeg"><button data-v="easy">Easy</button><button data-v="normal" class="on">Normal</button><button data-v="hard">Hard</button><button data-v="custom" title="Set the sliders in Settings → General">Custom</button></div></div>
       <div class="optCard mapCard" id="mapCard" title="Change map"><button class="mapArrow" id="mapPrev" aria-label="Previous map">‹</button><canvas id="mapThumb" width="96" height="80"></canvas><div class="mapTxt"><div class="ol">MAP</div><div class="mapName" id="mapName">DUSTWALL</div><div class="ol" id="mapDesc" style="opacity:.6">2 SITES · MID</div></div><button class="mapArrow" id="mapNext" aria-label="Next map">›</button></div>
+      <div class="optCard"><div class="ol">BOT FRIENDS</div><button class="btn" id="btnBotFriends" style="margin:4px 0 0;width:auto;padding:7px 14px">🤖 My bot friends</button></div>
       <div class="optCard"><div class="ol">SPECTATE</div><button class="btn" id="btnSpectate" style="margin:4px 0 0;width:auto;padding:7px 14px">👁 Watch bots play</button></div>
       <div class="optCard"><div class="ol">MAP EDITOR</div><button class="btn" id="btnMapEditor" style="margin:4px 0 0;width:auto;padding:7px 14px">✏ Make your own map</button></div>
     </div>
@@ -1154,6 +1160,14 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="cereTag" class="hidden"><b>VICTORY</b><span>click to skip</span></div>
 <div id="crateModal" class="screen hidden"></div>
 <div id="cardModal" class="screen hidden"></div>
+<div id="bfModal" class="screen hidden"><div class="panel bfPanel"><div class="pHead"><h2>BOT FRIENDS</h2><button class="iconBtn" id="bfClose">✕</button></div>
+  <div class="note" style="margin:0 0 10px">Make your own bot teammates: their name, agent, personality and what they say. Switch on up to 4 to fill your team instead of random bots.</div>
+  <div id="bfList"></div>
+  <div class="bfForm"><div class="ol" id="bfFormTitle">NEW BOT FRIEND</div>
+    <div class="bfRow"><input id="bfName" maxlength="14" placeholder="Name" spellcheck="false" autocomplete="off"><select id="bfAgent"></select><select id="bfPersona"></select></div>
+    <div class="bfRow"><input id="bfL1" maxlength="60" placeholder="Catchphrase 1 (e.g. ㄱㄱ 따라와)" spellcheck="false" autocomplete="off"><input id="bfL2" maxlength="60" placeholder="Catchphrase 2" spellcheck="false" autocomplete="off"><input id="bfL3" maxlength="60" placeholder="Catchphrase 3" spellcheck="false" autocomplete="off"></div>
+    <div class="bfRow"><button class="btn primary" id="bfSave">Save friend</button><button class="btn" id="bfNew">Clear</button></div></div>
+</div></div>
 <div id="menuToast"></div>
 <div id="buildTag" title="Click to check for updates">VALOR STRIKE</div>
 <div id="updateBar" class="hidden"><span id="updTxt">A newer version of VALOR STRIKE is out (<b id="updNum"></b>)</span><button id="btnUpdate">UPDATE NOW</button></div>
@@ -5492,10 +5506,11 @@ function setupMatch(agentId, humans = []) {
   const spare = shuffle(realAgents().map(a => a.id).filter(id => !used.includes(id) && !allyPool.includes(id)));
   while (allyPool.length < nAllyBots) allyPool.push(spare.pop() || pick(realAgents()).id);
   const enemyPool = shuffle(realAgents().map(a => a.id));
-  for (let i = 0; i < nAllyBots; i++) { const b = makeEntity({ id: entities.length, name: ALLY_NAMES[i], team: 0, agent: allyPool[i % allyPool.length] }); entities.push(b); bots.push(b); }
+  const F = humans.length ? [] : activeFriends();
+  for (let i = 0; i < nAllyBots; i++) { const f = F[i], ag = f && AGENT[f.agent] && !used.includes(f.agent) ? f.agent : allyPool[i % allyPool.length]; const b = makeEntity({ id: entities.length, name: f ? f.name : ALLY_NAMES[i], team: 0, agent: ag }); b.friend = f || null; entities.push(b); bots.push(b); }
   for (let i = 0; i < (DUEL() ? 0 : CUSTOM() ? customRules().enemies : 5); i++) { const b = makeEntity({ id: entities.length, name: ENEMY_NAMES[i], team: 1, agent: enemyPool[i % enemyPool.length] }); entities.push(b); bots.push(b); }
   $('gameChat').innerHTML = '';
-  for (const b of bots) { if (!b.mesh) { b.outfit = Math.random() < .15 ? pick(Object.keys(OUTFITS)) : ''; b.mesh = makeCharacter(AGENT[b.agent], b.outfit); } b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
+  for (const b of bots) { if (!b.mesh) { b.outfit = Math.random() < .15 ? pick(Object.keys(OUTFITS)) : ''; b.mesh = makeCharacter(AGENT[b.agent], b.outfit); } b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = b.friend ? b.friend.persona : pick(Object.keys(PERSONAS)); }
   if (!RANGE()) shuffle(bots.slice()).slice(0, 2).forEach((b, i) => botSay(b, 'greet', { force: i === 0, delay: 2500 + i * 1800 }));
   if (game.spectate) { player.spectator = true; player.alive = false; player.hp = 0; if (game.spike && game.spike.carrier === player) { player.hasSpike = false; giveSpike(pick(entities.filter(e => !e.spectator && sideOf(e) === 'atk'))); } }
   clutch.hist = 0; clutchEnd && clutch.on && clutchEnd();
@@ -8221,7 +8236,7 @@ function buildParty() {
   const others = shuffle(realAgents().filter(a => !used.has(a.id)).map(a => a.id));
   party = [{ name: profile.name, agent: profile.fav, me: true, host: net.role === 'host' }];
   humans.forEach(h => party.push({ name: h.name, agent: h.fav, human: true, host: h.host, lv: h.lv, ct: h.ct, cc: h.cc, of: h.of && OUTFITS[h.of[h.fav]] ? h.of[h.fav] : '' }));
-  for (let i = 0; party.length < 5; i++) party.push({ name: ALLY_NAMES[i], agent: others[i % others.length], bot: true });
+  { const F = activeFriends(); let fi = 0; for (let i = 0; party.length < 5; i++) { const f = F[fi++]; const ag = f && AGENT[f.agent] && !party.some(p => p.agent === f.agent) ? f.agent : others[i % others.length]; party.push({ name: f ? f.name : ALLY_NAMES[i], agent: ag, bot: true, friend: f || null }); } }
   party.forEach((p, i) => {
     const of = p.me ? myOutfit(p.agent) : p.of || '', g = makeLobbyChar(p.agent, p.me ? profile.equip.vandal : 0, of), [x, z] = LOBBY_SLOTS[i];
     g.position.set(x, 0, z);
@@ -8695,11 +8710,39 @@ const BOT_LINES = {
 function botLine(b, key) { const L = BOT_LINES[key]; if (!L) return null; const pool = (L[b.persona] && Math.random() < .6 ? L[b.persona] : L.any) || L.any; return pick(pool); }
 let chatCD = 0;
 // a bot says something (host / offline only); team-only lines are shown to its own team
+/* --- bot friends: your own named bots with an agent, a personality and catchphrases --- */
+const activeFriends = () => (profile.botFriends || []).filter(f => f.on).slice(0, 4);
+let bfEdit = null;
+function openBotFriends() { $('bfModal').classList.remove('hidden'); renderBotFriends(); bfFill(null); }
+function renderBotFriends() {
+  const L = profile.botFriends || [];
+  $('bfList').innerHTML = L.length ? L.map((f, i) => { const A = AGENT[f.agent]; return `<div class="bfItem"><i style="color:${A ? A.color : '#9aa6b2'}">${A ? A.glyph : '?'}</i><div class="nm"><b>${esc(f.name)}</b><small>${A ? A.name : 'Random agent'} · ${(PERSONAS[f.persona] || {}).name || 'Chill'}${f.lines.length ? ' · “' + esc(f.lines[0]) + '”' : ''}</small></div>
+    <button class="btn tg${f.on ? ' on' : ''}" data-bft="${i}">${f.on ? 'ON MY TEAM' : 'OFF'}</button><button class="btn" data-bfe="${i}">✎</button><button class="btn" data-bfd="${i}">✕</button></div>`; }).join('') : '<div class="note" style="margin:0">No bot friends yet — make one below.</div>';
+  $('bfList').querySelectorAll('[data-bft]').forEach(b => b.onclick = () => { const f = L[+b.dataset.bft]; if (!f.on && activeFriends().length >= 4) { toastMenu('Up to 4 bot friends can be on your team'); return; } f.on = !f.on; saveProfile(); buildParty(); renderBotFriends(); tick(); });
+  $('bfList').querySelectorAll('[data-bfe]').forEach(b => b.onclick = () => bfFill(+b.dataset.bfe));
+  $('bfList').querySelectorAll('[data-bfd]').forEach(b => b.onclick = () => { L.splice(+b.dataset.bfd, 1); saveProfile(); buildParty(); renderBotFriends(); bfFill(null); });
+}
+function bfFill(i) {
+  bfEdit = i; const f = i === null ? null : profile.botFriends[i];
+  $('bfFormTitle').textContent = f ? 'EDIT ' + f.name.toUpperCase() : 'NEW BOT FRIEND';
+  $('bfAgent').innerHTML = '<option value="">Random agent</option>' + realAgents().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  $('bfPersona').innerHTML = Object.entries(PERSONAS).map(([k, P]) => `<option value="${k}">${P.name}</option>`).join('');
+  $('bfName').value = f ? f.name : ''; $('bfAgent').value = f ? f.agent : ''; $('bfPersona').value = f ? f.persona : 'chill';
+  ['bfL1', 'bfL2', 'bfL3'].forEach((id, k) => $(id).value = f && f.lines[k] || '');
+}
+function bfSave() {
+  const name = cleanName($('bfName').value.trim()).slice(0, 14); if (!name) { toastMenu('Give your bot friend a name'); return; }
+  const rec = { name, agent: $('bfAgent').value, persona: PERSONAS[$('bfPersona').value] ? $('bfPersona').value : 'chill', lines: ['bfL1', 'bfL2', 'bfL3'].map(id => $(id).value.trim().slice(0, 60)).filter(Boolean) };
+  profile.botFriends = profile.botFriends || [];
+  if (bfEdit !== null && profile.botFriends[bfEdit]) Object.assign(profile.botFriends[bfEdit], rec);
+  else { if (profile.botFriends.length >= 8) { toastMenu('You can keep up to 8 bot friends'); return; } rec.on = activeFriends().length < 4; profile.botFriends.push(rec); }
+  saveProfile(); buildParty(); renderBotFriends(); bfFill(null); SND.buy(); toastMenu(`${name} is ready${rec.on ? ' and on your team' : ''}`);
+}
 function botSay(b, key, o = {}) {
   if (!b || net.role === 'client' || RANGE() || !settings.botChat) return;
   const P = PERSONAS[b.persona] || PERSONAS.chill;
   if (!o.force && (performance.now() < chatCD || Math.random() > P.chat * (o.p ?? 1))) return;
-  let txt = botLine(b, key); if (!txt) return;
+  let txt = b.friend && b.friend.lines.length && Math.random() < .45 ? pick(b.friend.lines) : botLine(b, key); if (!txt) return;
   txt = txt.replace('{name}', o.name || 'team');
   chatCD = performance.now() + 2200;
   setTimeout(() => { if (game.state === 'playing' || game.state === 'over') gameChat(b.name, b.team, txt, !o.team); }, o.delay ?? rand(500, 1600));
@@ -11781,6 +11824,8 @@ $('btnCreateParty').onclick = () => { initAudio(); createParty(); };
 const toggleFind = () => { initAudio(); if (net.searching) cancelSearch(); else { $('partyPanel').classList.remove('hidden'); $('partyBtn').classList.add('open'); findPublicMatch(); } tick(); };
 $('btnFind').onclick = toggleFind; $('btnFind2').onclick = toggleFind;
 $('btnJoin').onclick = () => { initAudio(); joinParty($('joinCode').value); };
+$('btnBotFriends').onclick = () => { tick(); openBotFriends(); }; $('bfClose').onclick = () => $('bfModal').classList.add('hidden'); $('bfSave').onclick = bfSave; $('bfNew').onclick = () => bfFill(null);
+['bfName', 'bfL1', 'bfL2', 'bfL3'].forEach(id => $(id).addEventListener('keydown', e => e.stopPropagation()));
 $('btnVoice').onclick = () => { initAudio(); vc.on ? leaveVoice() : joinVoice(); };
 // push to talk works in the menu and in matches (but not while typing)
 const isTyping = () => { const ae = document.activeElement; return !!ae && /INPUT|TEXTAREA/.test(ae.tagName) && !['checkbox', 'range', 'color'].includes(ae.type) && ae.offsetParent !== null; };
