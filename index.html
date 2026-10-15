@@ -722,6 +722,10 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 #cmdWheel{position:fixed;left:50%;top:50%;width:360px;height:360px;margin:-180px 0 0 -180px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(47,224,182,.35)}
 #cmdWheel .cw{position:absolute;width:96px;height:64px;margin:-32px 0 0 -48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px Oswald,sans-serif;letter-spacing:1px;color:#c9d0d6;transition:transform .12s,color .12s}
 #cmdWheel .cw b{font-size:22px;line-height:1.1}#cmdWheel .cw.on{color:#2fe0b6;transform:scale(1.2)}
+#banter{position:fixed;left:20px;top:42%;z-index:35;display:flex;flex-direction:column;gap:6px;pointer-events:none;max-width:min(420px,60vw)}
+.btLine{background:rgba(10,16,22,.82);border-left:3px solid #ffd34d;padding:6px 12px;display:flex;flex-direction:column;animation:btIn .3s ease-out;transition:opacity .4s,transform .4s}
+.btLine b{font:600 11px Oswald,sans-serif;letter-spacing:1px}.btLine span{font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1}.btLine.out{opacity:0;transform:translateX(-20px)}
+@keyframes btIn{from{opacity:0;transform:translateX(-30px)}}
 #voiceTag{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:46;pointer-events:none;background:rgba(10,16,22,.85);border-left:3px solid #ffd34d;padding:7px 14px;font:500 14px 'Noto Sans KR',sans-serif;color:#ece8e1;opacity:0;transition:opacity .2s;max-width:80vw}
 #voiceTag.on,#voiceTag.ok,#voiceTag.bad{opacity:1}#voiceTag.ok{border-color:var(--teal)}#voiceTag.ok b{color:var(--teal)}#voiceTag.bad{border-color:var(--red)}#voiceTag span{color:#9aa6b2;font-size:12px;margin-left:6px}
 #sprayWheel{position:fixed;left:50%;top:50%;width:380px;height:380px;margin:-190px 0 0 -190px;z-index:45;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(10,16,22,.35) 0 20%,rgba(10,16,22,.8) 21% 100%);border:2px solid rgba(255,211,77,.35)}
@@ -1242,6 +1246,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 <div id="cmdWheel" class="hidden"></div>
 <div id="sprayWheel" class="hidden"></div>
 <div id="voiceTag"></div>
+<div id="banter"></div>
 <div id="aceCine" class="hidden"></div>
 <div id="replayUI" class="hidden">
   <div id="rpTop"><div id="rpTag">REPLAY</div><div id="rpScore"></div><button class="btn" id="rpExit">✕ Exit replay</button></div>
@@ -1295,7 +1300,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -5322,7 +5327,7 @@ function setupMatch(agentId, humans = []) {
   for (const b of bots) { if (!b.mesh) b.mesh = makeCharacter(AGENT[b.agent]); b.skins = randomBotSkins(); b.path = []; b.think = 0; b.reactT = 0; b.persona = pick(Object.keys(PERSONAS)); }
   if (!RANGE()) shuffle(bots.slice()).slice(0, 2).forEach((b, i) => botSay(b, 'greet', { force: i === 0, delay: 2500 + i * 1800 }));
   if (game.spectate) { player.spectator = true; player.alive = false; player.hp = 0; if (game.spike && game.spike.carrier === player) { player.hasSpike = false; giveSpike(pick(entities.filter(e => !e.spectator && sideOf(e) === 'atk'))); } }
-  Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0, introShown: false });
+  Object.assign(game, { round: 0, score: [0, 0], lossStreak: [0, 0], intel: [null, null], ot: false, history: [], startSide: Math.random() < .5 ? 'atk' : 'def', time: 0, introShown: false, banterUsed: [] }); banterRound = -1;
   game.spike = { state: 'none', mesh: makeSpikeMesh() }; scene.add(game.spike.mesh); game.spike.mesh.visible = false;
   for (const e of entities) { e.secondary = mkWeapon('classic'); e.slot = 2; }
   game.state = 'playing'; game.paused = false;
@@ -6188,6 +6193,7 @@ function loop(now) {
     updateCamera(dt);
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
+    if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6569,15 +6575,70 @@ const VOICE_TONE = { jett: [1.35, 1.1], phoenix: [1.05, 1.08], sage: [1.2, .95],
   skye: [1.2, 1], viper: [.95, .88], neon: [1.45, 1.25], yoru: [.9, 1.05], kayo: [.5, .9], fade: [.95, .9], chamber: [.85, .95], clove: [1.3, 1.1], gekko: [1.1, 1.15] };
 let ttsVoices = [];
 try { const load = () => { ttsVoices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); }; load(); speechSynthesis.onvoiceschanged = load; } catch (e) { }
-function speakLine(text, agentId) {
+function speakLine(text, agentId, queue) {
   if (!settings.tts || !window.speechSynthesis || !text) return;
   try {
     const u = new SpeechSynthesisUtterance(String(text).replace(/[—–]/g, ',')), h = [...String(agentId)].reduce((a, c) => a + c.charCodeAt(0), 0);
     const [pitch, rate] = VOICE_TONE[agentId] || [.7 + (h % 8) * .1, .95 + (h % 3) * .07];
     u.pitch = pitch; u.rate = rate; u.volume = clamp((settings.ttsVol ?? .9) * (settings.vol ?? .6) / .6, 0, 1); u.lang = 'en-US';
     if (ttsVoices.length) u.voice = ttsVoices[h % ttsVoices.length];
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    if (!queue) speechSynthesis.cancel(); speechSynthesis.speak(u);
   } catch (e) { }
+}
+/* --- agent banter: teammates whose agents know each other trade a line or two in the buy phase --- */
+const BANTER = [
+  ['jett', 'phoenix', 'Try to keep up this time, Phoenix.', "Keep up? I'll be carrying you, mate."],
+  ['sage', 'phoenix', "Phoenix, please don't burn the whole site down.", 'No promises, Sage.'],
+  ['sova', 'cypher', 'My owl sees everything.', 'And my camera sees your owl, friend.'],
+  ['brim', 'viper', 'Viper, smokes on my call.', "I'll smoke when I'm ready, Brimstone."],
+  ['reyna', 'sage', "Don't waste your heals on the weak.", 'Everyone deserves a second chance, Reyna.'],
+  ['raze', 'killjoy', 'Killjoy! Wanna see a really big boom?', 'Please do not touch my turret again.'],
+  ['omen', 'yoru', 'You are not the only one who walks in the dark.', 'Then try to keep up, shadow.'],
+  ['neon', 'jett', 'Race you to the site!', "You'll lose, Neon. You always do."],
+  ['kayo', 'killjoy', 'Your tech is impressive, Killjoy.', "Thanks! I'll try not to suppress you."],
+  ['skye', 'sova', 'Ready to hunt, Sova?', "Always, Skye. Let's bring everyone home."],
+  ['fade', 'omen', 'I know what you fear, Omen.', 'Then you know nothing at all.'],
+  ['chamber', 'cypher', 'Cypher, mon ami, try not to spy on me.', 'Too late, Chamber. Far too late.'],
+  ['clove', 'sage', "If I die, I'm coming back anyway!", 'That is not how this works, Clove.'],
+  ['gekko', 'raze', 'Wingman says hi!', "Hi Wingman! Let's blow stuff up!"],
+  ['reyna', 'jett', 'Stay out of my kills.', 'Then get them faster, Reyna.'],
+  ['brim', 'sova', 'Sova, recon before we move.', 'Already on it, Brimstone.'],
+  ['viper', 'killjoy', 'Your gadgets are cute, Killjoy.', 'Cute AND deadly, thank you very much.'],
+  ['phoenix', 'raze', 'Fire and explosions. Best team ever.', 'Ha! Finally someone who gets it!'],
+  ['yoru', 'neon', "Don't trip over your own lightning.", "Don't trip over your own portals!"],
+  ['chamber', 'jett', 'Elegant movement, Jett. Almost as elegant as my aim.', 'Almost, huh? Watch this round.'],
+];
+const BANTER_SOLO = {
+  first: ['Alright team, let\'s start strong.', 'Pistol round. Stick together.', 'First round, nice and clean.'],
+  match: ['Match point. Focus up, everyone.', 'One more round. Finish this.'],
+  losing: ['We can turn this around.', 'Shake it off. New round, new plan.'],
+  winning: ['Keep the pressure on.', "They're tilting. Don't let up."],
+  any: ['Check your corners.', 'Trade each other, no solo peeks.', 'Save your ult for a big round.', 'Utility first, then we go.'],
+};
+let banterRound = -1;
+function maybeBanter() {
+  if (!player || RANGE() || DM() || DUEL() || game.spectate || !settings.banter) return;
+  const mates = entities.filter(e => e.team === player.team && !e.spectator && AGENT[e.agent] && !AGENT[e.agent].custom);
+  const pairs = BANTER.map(b => [b, mates.find(e => e.agent === b[0]), mates.find(e => e.agent === b[1])]).filter(x => x[1] && x[2] && x[1] !== x[2]);
+  const first = game.round === 1, delay = first && settings.intro !== false ? 6200 : 1400;
+  if (!first && Math.random() > .4) return;
+  game.banterUsed = game.banterUsed || [];
+  const fresh = pairs.filter(x => !game.banterUsed.includes(x[0][2]));
+  if (fresh.length && (first || Math.random() < .7)) {
+    const [b, a1, a2] = pick(fresh); game.banterUsed.push(b[2]);
+    setTimeout(() => banterLine(a1, b[2]), delay); setTimeout(() => banterLine(a2, b[3]), delay + 2900);
+  } else {
+    const my = game.score[player.team], th = game.score[1 - player.team], tgt = game.target || 13;
+    const key = first ? 'first' : (my === tgt - 1 || th === tgt - 1) ? 'match' : th - my >= 3 ? 'losing' : my - th >= 3 ? 'winning' : 'any';
+    const who = pick(mates.filter(e => !e.isPlayer)) || mates[0]; if (who) setTimeout(() => banterLine(who, pick(BANTER_SOLO[key])), delay);
+  }
+}
+function banterLine(e, text) {
+  if (!player || game.state !== 'playing' || game.phase !== 'buy') return;
+  const A = AGENT[e.agent], el = document.createElement('div'); el.className = 'btLine';
+  el.innerHTML = `<b style="color:${A.color}">${esc(e.isPlayer ? 'You' : e.name)} · ${A.name}</b><span>${esc(text)}</span>`;
+  $('banter').appendChild(el); setTimeout(() => el.classList.add('out'), 2600); setTimeout(() => el.remove(), 3100);
+  speakLine(text, e.agent, true);
 }
 const FX = {
   voice(id) {
@@ -8794,6 +8855,7 @@ const SET_PAGES = {
     ['allyAI', 'Your bot teammates', 'seg', [['smart', 'Smart (play with you)'], ['normal', 'Same as enemies']]],
     ['voiceLang', 'Voice command language (hold N)', 'seg', [['ko-KR', 'Korean'], ['en-US', 'English']]],
     ['intro', 'Map fly-over at the start of a match', 'toggle'],
+    ['banter', 'Agent banter in the buy phase', 'toggle'],
     ['ceremony', 'Victory ceremony after a win', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
     ['botReact', 'Custom bots · reaction speed', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
