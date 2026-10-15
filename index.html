@@ -1374,7 +1374,7 @@ const SET_DEFAULTS = {
   fov: 72, quality: 1.5, shadows: true, showFps: false,
   gfxPreset: 'high', fpsCap: 0, shadowRes: 2048, particles: 1, drawDist: 200, mapDetail: true, decals: true, brightness: 1, vmFov: 60, aa: true, perfStats: false,
   vol: 0.6, menuSfx: true, hitSfx: true, tts: true, ttsVol: .9, botChat: true, allyAI: 'smart',
-  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
+  lobbyTheme: 'classic', menuMusic: 'chill', musicVol: .45, ceremony: true, intro: true, banter: true, lineups: true, adaptBots: true, voiceMode: 'ptt', voiceVol: .9, voiceLang: 'ko-KR', botReact: 50, botAim: 50, botHead: 50, botAggr: 50, netRelay: false, turnUrl: '', turnUser: '', turnPass: '',
 };
 const settings = { ...SET_DEFAULTS };
 // match replay recording (see MATCH REPLAY)
@@ -3289,6 +3289,7 @@ function killEntity(t, src, label, head) {
   t.ult = Math.min(AGENT[t.agent].ab.X.ult, t.ult + 1);
   if (src && src !== t && isEnemy(src, t)) {
     if (game.firstKillRound !== game.round) { game.firstKillRound = game.round; if (src.isPlayer) matchStats.fk++; if (t.isPlayer) matchStats.fd++; }
+    adaptKill(src, t);
     src.kills++; src.roundKills++; src.credits = Math.min(9000, src.credits + 200);
     src.ult = Math.min(AGENT[src.agent].ab.X.ult, src.ult + 1);
     if (kit(src, 'reyna')) { src.soulT = 4; if (src.empressT > 0) src.empressT = 30; }
@@ -5080,7 +5081,7 @@ function botPerceive(b) {
   if (best) {
     if (best !== b.target) {
       const ty = Math.atan2(-(best.x - b.x), -(best.z - b.z)), ang = Math.abs(angDiff(b.yaw, ty));
-      b.reactT = (D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0)) * ((PERSONAS[b.persona] || {}).react || 1) * (allyBoost(b) ? .78 : 1); b.burst = 0;
+      b.reactT = (D.react * rand(.8, 1.3) + ang * .12 + (best.crouch ? .05 : 0)) * ((PERSONAS[b.persona] || {}).react || 1) * (allyBoost(b) ? .78 : 1) * (best.isPlayer && adaptHot(best) ? .85 : 1); b.burst = 0;
       // use flash/ult on first contact
       const ag = AGENT[b.agent];
       if (bd > 7 && Math.random() < .35) { for (const k of ['Q', 'C', 'E']) if (['flash', 'leer', 'paranoia', 'trailblazer', 'boombot', 'blindside', 'prowler', 'zeropoint', 'haunt', 'fakeout', 'wingman', 'meddle'].includes(ag.ab[k].type) && b.charges[k] > 0) { b.yaw = ty; b.pitch = 0; castAbility(b, k); b.reactT += .5; break; } }
@@ -5534,6 +5535,9 @@ function nextRound() {
   }
   const defBots = bots.filter(b => sideOf(b) === 'def');
   const holdSites = shuffle(SITE_IDS.length === 3 ? [1, 2, 5, pick(SITE_IDS), 'mid'] : [1, 1, 2, 2, 'mid']);
+  { const A = adaptPlan(); if (A) { // the defenders remember where you like to attack and lean that way
+    const mi = holdSites.indexOf('mid'); if (mi >= 0) holdSites[mi] = A.site; if (A.share > .7) { const oi = holdSites.findIndex(x => x !== A.site); if (oi >= 0) holdSites[oi] = A.site; }
+    if (Math.random() < .35) { const b = pick(bots.filter(x => sideOf(x) === 'def')); if (b) setTimeout(() => gameChat(b.name, b.team, pick([`they always go ${SITE_LABEL[A.site]}, stack it`, `${SITE_LABEL[A.site]} again probably, watch it`, `i'm playing ${SITE_LABEL[A.site]} this round, they love it there`]), true), 2500); } } }
   const anchored = new Set();
   defBots.forEach((b, i) => { const s = holdSites[i]; b.anchor = s !== 'mid' && !anchored.has(s); anchored.add(s); b.holdSite = s === 'mid' ? 0 : s; const h = pick(HOLDS[s]); b.hold = cc(...h); const ent = s === 'mid' ? null : ENTRANCES[s][i % 2]; b.holdYaw = ent ? Math.atan2(-(cc(...ent).x - b.hold.x), -(cc(...ent).z - b.hold.z)) : Math.PI; b.rotated = false; b.role = Math.random() < (b.persona === 'hothead' ? .85 : clamp(.6 * botAggr(), .02, .9)) ? 'aggro' : 'hold'; });
   const atkBots = bots.filter(b => sideOf(b) === 'atk'), lurkIdx = atkBots.length >= 4 && Math.random() < .5 ? atkBots.length - 1 : -1;
@@ -6404,7 +6408,7 @@ function loop(now) {
     if (!game.introShown && game.round >= 1 && player && !RANGE() && !game.spectate && !rp) { game.introShown = true; if (settings.intro !== false) startIntro(); }
     if (intro) { updateIntro(dt); vmRoot.visible = false; }
     if (game.round !== banterRound && game.phase === 'buy' && player) { banterRound = game.round; maybeBanter(); }
-    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt);
+    coachTick(dt); lineupTick(dt); clutchTick(dt); updateCasings(dt); adaptTick(dt);
     updateHUD(dt);
     drawMinimap();
   } else if (game.state === 'menu') {
@@ -6847,6 +6851,30 @@ function lineupListHTML(agent) {
   const rows = []; for (const [map, L] of Object.entries(profile.lineups || {})) for (const l of L) if (l.agent === agent) rows.push(`<div class="luRow"><b>${esc(MAPS[map] ? MAPS[map].name : map)}</b><span>${esc(l.key)} · ${esc(l.label)}${l.crouch ? ' · crouch' : ''}</span><button data-ludel="${map}|${l.id}" title="Delete">✕</button></div>`);
   return `<div class="amBox"><div class="ol">SAVED LINEUPS · throw an ability in a match, then press ${keyName(settings.binds.lineup)} to save that spot</div>${rows.length ? rows.join('') : '<div class="ol" style="margin-top:6px">No lineups for this agent yet.</div>'}</div>`;
 }
+/* --- adaptive bots: the enemy bots remember (per map) which site you attack and where you get your kills from --- */
+const adaptMem = () => { if (!game.mapId) return null; profile.botMem = profile.botMem || {}; return profile.botMem[game.mapId] = profile.botMem[game.mapId] || { atk: {}, spots: [] }; };
+const adaptOn = () => settings.adaptBots !== false && player && !RANGE() && !DM() && !DUEL() && !CUSTOM() && net.role !== 'client' && !game.spectate;
+function adaptPlan() {
+  if (!adaptOn() || sideOf(player) !== 'atk') return null; const M = adaptMem(), tot = Object.values(M.atk).reduce((a, b) => a + b, 0); if (tot < 3) return null;
+  const site = +Object.keys(M.atk).sort((a, b) => M.atk[b] - M.atk[a])[0], share = M.atk[site] / tot;
+  return SITE_IDS.includes(site) && share > .5 && Math.random() < share + .1 ? { site, share } : null;
+}
+function adaptTick(dt) {
+  if (!adaptOn() || game.phase !== 'live' || !player.alive) return; const M = adaptMem();
+  if (sideOf(player) === 'atk' && game.adaptSeen !== game.round) { const z = zoneG[Math.floor(player.z / CELL) * GW + Math.floor(player.x / CELL)]; if (SITE_IDS.includes(z)) { game.adaptSeen = game.round; M.atk[z] = (M.atk[z] || 0) * .9 + 1; saveProfile(); } }
+  // now and then an idle enemy bot goes to check one of your favourite spots
+  if ((game.adaptT = (game.adaptT || 0) - dt) > 0 || !M.spots.length) return; game.adaptT = 3;
+  const hot = M.spots.filter(s => s.n >= 2); if (!hot.length) return;
+  const b = pick(bots.filter(x => x.alive && isEnemy(x, player) && !x.target && !x.investigate && !x.hasSpike)); if (!b || Math.random() > .3) return;
+  const sp = hot.sort((a, c) => c.n - a.n)[Math.floor(Math.random() * Math.min(3, hot.length))], x = (sp.c % GW + .5) * CELL, z = (Math.floor(sp.c / GW) + .5) * CELL;
+  if (Math.hypot(b.x - x, b.z - z) < 30) b.investigate = { x, z, t: game.time - 1.1 };
+}
+function adaptKill(src, t) { // you killed an enemy bot from here: remember the spot
+  if (!adaptOn() || !src.isPlayer || !isEnemy(t, src)) return; const M = adaptMem(), c = Math.floor(src.z / CELL) * GW + Math.floor(src.x / CELL);
+  let sp = M.spots.find(s => Math.abs(s.c % GW - c % GW) <= 1 && Math.abs(Math.floor(s.c / GW) - Math.floor(c / GW)) <= 1); if (!sp) { sp = { c, n: 0 }; M.spots.push(sp); }
+  sp.n++; M.spots.sort((a, b) => b.n - a.n); M.spots = M.spots.slice(0, 24);
+}
+const adaptHot = e => { const M = profile.botMem && game.mapId && profile.botMem[game.mapId]; if (!M || !adaptOn()) return false; return M.spots.some(s => s.n >= 3 && Math.hypot((s.c % GW + .5) * CELL - e.x, (Math.floor(s.c / GW) + .5) * CELL - e.z) < 4); };
 /* --- clutch: last one alive on your team gets a heartbeat, a dark vignette and a "1 vs N" banner; win it for CLUTCH! --- */
 const clutch = { on: false, vs: 0, beat: 0, hist: 0 };
 function clutchTick(dt) {
@@ -9424,6 +9452,7 @@ const SET_PAGES = {
     ['banter', 'Agent banter in the buy phase', 'toggle'],
     ['lineups', 'Show saved ability lineups in matches', 'toggle'],
     ['ceremony', 'Victory ceremony after a win', 'toggle'],
+    ['adaptBots', 'Enemy bots learn your habits (sites, spots)', 'toggle'],
     ['diff', 'Bot difficulty', 'seg', [['easy', 'Easy'], ['normal', 'Normal'], ['hard', 'Hard'], ['custom', 'Custom']]],
     ['botReact', 'Custom bots · reaction speed', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
     ['botAim', 'Custom bots · aim and tracking', 'range', 0, 100, 5, v => v + (v === 50 ? ' (normal)' : '')],
