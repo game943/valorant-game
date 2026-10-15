@@ -839,12 +839,13 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
       <button class="ppBtn primary" id="btnCreateParty">CREATE PARTY</button>
       <div class="ppRow"><input type="text" id="joinCode" maxlength="5" placeholder="PARTY CODE" spellcheck="false" autocomplete="off"><button class="ppBtn" id="btnJoin">JOIN</button></div>
       <details class="ppNet" id="ppNet"><summary>🏫 School / strict Wi-Fi?</summary>
-        <label class="ppTog"><input type="checkbox" id="netRelay"> Relay mode — send everything through a relay server (turn on at school; both players should)</label>
+        <div class="ol" style="text-transform:none;letter-spacing:0;line-height:1.5">Nothing to set up: if a direct connection is blocked, the game switches to a relay by itself.</div>
+        <label class="ppTog"><input type="checkbox" id="netRelay"> Always use the relay (only if joining still fails)</label>
         <button class="ppBtn" id="btnNetTest">TEST MY NETWORK</button><div id="netTestOut" class="ppTest"></div>
         <details><summary class="ol">Own relay server (advanced)</summary>
           <input type="text" id="turnUrl" placeholder="turns:your.server:443?transport=tcp" spellcheck="false" autocomplete="off">
           <div class="ppRow" style="margin-top:4px"><input type="text" id="turnUser" placeholder="username" spellcheck="false" autocomplete="off" style="text-transform:none;letter-spacing:0"><input type="text" id="turnPass" placeholder="password" spellcheck="false" autocomplete="off" style="text-transform:none;letter-spacing:0"></div>
-          <div class="ol" style="margin-top:4px;line-height:1.5;text-transform:none;letter-spacing:0">Free relay accounts: metered.ca (Open Relay) or expressturn.com — paste the TURN address, username and password here.</div></details>
+          <div class="ol" style="margin-top:4px;line-height:1.5;text-transform:none;letter-spacing:0">Free relay accounts: metered.ca (Open Relay) or expressturn.com — paste the TURN address, username and password here. Only the host needs it: friends get it from the invite link (COPY) or when they join.</div></details>
       </details>
     </div>
     <div id="ppIn" class="hidden">
@@ -6333,11 +6334,20 @@ function iceServers() {
   if (/^turns?:/.test(u)) list.unshift({ urls: u.split(/[\s,]+/).filter(Boolean), username: String(settings.turnUser || ''), credential: String(settings.turnPass || '') });
   return list;
 }
-const peerOpts = () => Object.assign({ debug: 0, config: { iceServers: iceServers(), iceTransportPolicy: settings.netRelay ? 'relay' : 'all' } }, PEER_SERVER);
-function makePeer(id) {
+// the host's own relay server travels with the invite link and the party info, so friends never have to type it
+const turnShare = () => /^turns?:/.test(String(settings.turnUrl || '').trim()) ? { u: settings.turnUrl.trim(), n: settings.turnUser || '', p: settings.turnPass || '' } : null;
+function adoptTurn(t, force) {
+  if (!t || typeof t !== 'object' || !/^turns?:[^\s<>"']{3,300}$/.test(String(t.u || '').split(/[\s,]+/)[0])) return false;
+  if (settings.turnUrl && !force) return false;
+  settings.turnUrl = String(t.u).slice(0, 600); settings.turnUser = String(t.n || '').slice(0, 200); settings.turnPass = String(t.p || '').slice(0, 200); saveSettings();
+  for (const k of ['turnUrl', 'turnUser', 'turnPass']) if ($(k)) $(k).value = settings[k];
+  return true;
+}
+const peerOpts = relay => Object.assign({ debug: 0, config: { iceServers: iceServers(), iceTransportPolicy: relay || settings.netRelay ? 'relay' : 'all' } }, PEER_SERVER);
+function makePeer(id, relay) {
   if (NET_LOCAL) return new LocalPeer(id);
   if (typeof Peer === 'undefined') throw new Error('PeerJS not loaded');
-  return id ? new Peer(id, peerOpts()) : new Peer(peerOpts());
+  return id ? new Peer(id, peerOpts(relay)) : new Peer(peerOpts(relay));
 }
 // plain-language explanations for PeerJS error types
 /* --- network test: can we reach the game server, and which connection types work here? --- */
@@ -6813,12 +6823,12 @@ setInterval(() => {
   if (net.phase === 'select' && net.selAt && now >= net.selAt) autoLockAll();
   if (net.public && net.phase === 'lobby' && game.state === 'menu' && net.members.length === 1 && now - (net.mergeT || 0) > 8000) { net.mergeT = now; scanForBetterLobby(); }
 }, 500);
-function joinParty(code) {
+function joinParty(code, relayTry) {
   code = String(code || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{5}$/.test(code)) { setPartyStatus('Enter the 5-character party code.'); return; }
   if (net.role !== 'off' || net.peer) return;
-  setPartyStatus('Connecting…');
-  let peer; try { peer = makePeer(); } catch (e) { setPartyStatus('Online play is unavailable (PeerJS could not be loaded).'); return; }
+  setPartyStatus(relayTry ? 'Direct connection blocked — connecting through a relay…' : 'Connecting…');
+  let peer; try { peer = makePeer(undefined, relayTry); } catch (e) { setPartyStatus('Online play is unavailable (PeerJS could not be loaded).'); return; }
   net.peer = peer;
   const fail = msg => { if (net.peer !== peer) return; resetNet(); setPartyStatus(msg); };
   peer.on('open', id => {
@@ -6831,7 +6841,9 @@ function joinParty(code) {
     conn.on('error', () => { if (net.host === conn) onHostLost(); });
   });
   peer.on('error', err => { const type = err && err.type; if (net.role === 'off') fail(type === 'peer-unavailable' ? 'Party not found — check the code (the host must keep the game open).' : 'Could not connect. ' + netErrText(type)); });
-  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail(settings.netRelay ? 'Could not reach the host, even through the relay. Ask the host to turn on Relay mode too, or use TEST MY NETWORK.' : 'Could not reach the host. On school or office Wi-Fi, open "School / strict Wi-Fi?" below and turn on Relay mode (both players).'); }, 15000);
+  // no answer after a few seconds: the network is probably blocking direct connections, so retry through a relay automatically
+  if (!relayTry && !settings.netRelay && !NET_LOCAL) setTimeout(() => { if (net.peer === peer && net.role === 'off' && net.host && !net.host.open) { const p0 = peer; net.peer = null; resetNet(); try { p0.destroy(); } catch (e) { } joinParty(code, true); } }, 7000);
+  setTimeout(() => { if (net.peer === peer && net.role === 'off') fail(settings.netRelay || relayTry ? 'Could not reach the host, even through the relay. Check the code, or press TEST MY NETWORK under "School / strict Wi-Fi?".' : 'Could not reach the host. The party may be closed — check the code.'); }, 15000);
 }
 function leaveParty() {
   if (net.role === 'host') netBroadcast({ t: 'bye' });
@@ -6853,7 +6865,7 @@ function netProfileChanged() {
 function partyChanged() {
   if (net.role === 'host') {
     const me = net.members.find(m => m.id === net.myId); if (me) Object.assign(me, selfMember());
-    netBroadcast({ t: 'party', code: net.code, members: net.members, mode: playMode, diff: settings.diff, map: settings.map || 'dustwall', phase: net.phase, pub: net.public, auto: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0 });
+    netBroadcast({ t: 'party', turn: turnShare(), code: net.code, members: net.members, mode: playMode, diff: settings.diff, map: settings.map || 'dustwall', phase: net.phase, pub: net.public, auto: net.autoAt ? Math.max(0, (net.autoAt - Date.now()) / 1000) : 0 });
   }
   refreshPartyUI();
 }
@@ -7058,6 +7070,7 @@ function clientRecv(d) {
       net.phase = d.phase; net.public = !!d.pub; net.autoAt = d.auto > 0 ? Date.now() + d.auto * 1000 : 0;
       if (MODES.includes(d.mode)) { playMode = d.mode; document.querySelectorAll('#modeStrip .mode').forEach(x => x.classList.toggle('on', x.dataset.mode === playMode)); }
       if (DIFF[d.diff]) { net.hostDiff = d.diff; segSet('diffSeg', d.diff); }
+      if (d.turn) adoptTurn(d.turn);
       if (MAP_CHOICES.includes(d.map) && d.map !== net.hostMap) { net.hostMap = d.map; renderMapCard(); }
       refreshPartyUI(); break;
     case 'deny': { const msg = String(d.m || 'Could not join.'); resetNet(); setPartyStatus(msg); break; }
@@ -10810,9 +10823,11 @@ $('joinCode').onkeydown = e => { if (e.key === 'Enter') joinParty($('joinCode').
 $('btnLeave').onclick = () => { leaveParty(); };
 $('chatIn').onkeydown = e => { if (e.key === 'Enter') sendChat(); };
 $('btnCopyCode').onclick = () => {
-  const code = net.code || ''; if (!code) return;
-  const done = () => setPartyStatus(''), ok = () => { $('btnCopyCode').textContent = 'COPIED'; setTimeout(() => $('btnCopyCode').textContent = 'COPY', 1200); };
-  try { navigator.clipboard.writeText(code).then(ok, done); } catch (e) { done(); }
+  const code = net.code || ''; if (!code) return; const t = turnShare();
+  // with an own relay server, copy an invite link that carries it, so friends join without setting anything up
+  const text = t && /^https?:/.test(location.protocol) ? `${location.origin}${location.pathname}?join=${code}&relay=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(t)))))}` : code;
+  const done = () => setPartyStatus(''), ok = () => { $('btnCopyCode').textContent = text === code ? 'COPIED' : 'LINK COPIED'; setTimeout(() => $('btnCopyCode').textContent = 'COPY', 1400); };
+  try { navigator.clipboard.writeText(text).then(ok, done); } catch (e) { done(); }
 };
 
 profile.customAgents = profile.customAgents.map(d => { try { return registerCustomAgent(d).def; } catch (e) { return null; } }).filter(Boolean);
@@ -10824,7 +10839,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 84;
+const BUILD = 85;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
@@ -10876,6 +10891,7 @@ window.addEventListener('focus', () => checkForUpdate());
 buildCrosshair(); refreshAccount(); buildParty(); showNews(0); showTab('home'); refreshPartyUI();
 if (!profile.nameSet && profile.name === 'Player') openNameModal(true); else maybeDailyReward();
 ensureMissions();
+{ const rm = location.search.match(/[?&]relay=([^&]+)/); if (rm) try { adoptTurn(JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(rm[1]))))), true); } catch (e) { } }
 { const jm = location.search.match(/[?&]join=([A-Za-z0-9]{5})\b/); if (jm) { $('partyPanel').classList.remove('hidden'); joinParty(jm[1]); } }
 window.__vs = { game, get player() { return player; }, get bots() { return bots; }, entities: () => entities, castAbility, nextRound, endRound };
 requestAnimationFrame(loop);
