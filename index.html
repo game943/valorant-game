@@ -5314,6 +5314,7 @@ function finishReload(e) {
    ===================================================================== */
 const keys = {}, mouse = [false, false, false];
 const camRig = { yaw: 0, pitch: 0 };
+let knifeAnim = null; const W0k = p => WEAPONS[curWeapon(p).key].model; // first-person knife: alternating left/right slashes, right click = heavy stab
 let eyeH = 1.6, adsT = 0, vmKick = 0, vmEquip = 0, stepT = 0, triggerHeld = false, spectateIdx = 0, deathCam = 0;
 let shopOpen = false, boardOpen = false;
 
@@ -5382,7 +5383,7 @@ function playerFire() {
   if (RANGE() && w.model !== 'knife') rs.shots++;
   if (inst.key === 'blades') { throwBlades(p, false); return; }
   if (w.model === 'knife') { // melee
-    p.fireCD = .5; vmKick = 1; SND.shot('knife');
+    p.fireCD = .5; SND.shot('knife'); knifeAnim = { t: 0, heavy: !!mouse[2], dir: (knifeAnim && knifeAnim.dir) ? -knifeAnim.dir : 1 };
     const f = fwd(p), oy = eyeY(p); let best = null, bt = 2.6;
     for (const e of entities) { if (!e.alive || !isEnemy(e, p)) continue; const h = rayEntity(p.x, oy, p.z, f.x, f.y, f.z, e); if (h && h.t < bt) { bt = h.t; best = e; } }
     if (best) { dealDamage(best, mouse[2] ? 75 : 50, p, 'Knife', false); hitMarker(false); SND.hit(); }
@@ -6932,6 +6933,14 @@ function updateCamera(dt) {
     const ads = adsT;
     g.position.set(.17 * (1 - ads * .9) + Math.sin(t) * .008 * bob, -.15 + ads * .06 + Math.abs(Math.cos(t)) * .006 * bob - vmEquip * .2 - (p.reloadT > 0 ? .04 : 0), -.4 + vmKick * .03);
     g.rotation.set(vmKick * .12 - vmEquip * .8, ads * .0, 0);
+    if (knifeAnim && W0k(p) === 'knife') { // slash: wind up to one side, sweep across in front of the camera, recover
+      const A = knifeAnim, dur = A.heavy ? .55 : .38; A.t += dt; const f = Math.min(1, A.t / dur), sm = x => x * x * (3 - 2 * x);
+      if (A.heavy) { const wind = sm(clamp(f / .35, 0, 1)), thrust = sm(clamp((f - .35) / .2, 0, 1)), back = sm(clamp((f - .6) / .4, 0, 1));
+        g.position.z += .12 * wind - .32 * thrust * (1 - back); g.position.y += .06 * wind - .03 * thrust * (1 - back); g.position.x -= .08 * thrust * (1 - back); g.rotation.x += -.5 * wind + .9 * thrust * (1 - back); }
+      else { const d = A.dir, wind = sm(clamp(f / .22, 0, 1)), sweep = sm(clamp((f - .22) / .3, 0, 1)), back = sm(clamp((f - .55) / .45, 0, 1)), s2 = (wind - 2 * sweep) * (1 - back);
+        g.position.x += .1 * d * s2; g.position.y += .05 * wind * (1 - back) - .04 * sweep * (1 - back); g.position.z -= .08 * sweep * (1 - back); g.rotation.z += -.9 * d * s2; g.rotation.y += .6 * d * s2; g.rotation.x += .35 * sweep * (1 - back); }
+      if (f >= 1) knifeAnim = null;
+    }
     const ud = g.userData, W0 = WEAPONS[curWeapon(p).key];
     if (p.reloadT > 0 && W0.reload) { // tilt, drop the old mag, bring a new one up with the left hand, slap it in
       const f = 1 - p.reloadT / (W0.reload * (p.empressT > 0 ? .6 : 1)), sm = x => x * x * (3 - 2 * x), env = sm(clamp(f / .15, 0, 1)) * sm(clamp((1 - f) / .15, 0, 1));
@@ -12788,7 +12797,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 103;
+const BUILD = 104;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
