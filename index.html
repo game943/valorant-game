@@ -2883,6 +2883,7 @@ function breachArmSlam() {
     if (!f.boomed && t > .55) { f.boomed = 1; sndTone(55, .7, .7, 'sawtooth', 30); sndNoise(.6, 500, 1, .6); }
   }, vmScene).end = () => { const gun = vmRoot.userData.gun; if (gun) gun.visible = true; };
 }
+const AGENT_CUT = {"jett": "hoodie", "phoenix": "jacket", "sage": "robe", "sova": "armor", "brim": "armor", "reyna": "coat", "omen": "coat", "raze": "jacket", "killjoy": "hoodie", "cypher": "coat", "skye": "jacket", "viper": "coat", "neon": "tactical", "yoru": "jacket", "kayo": "tactical", "fade": "coat", "chamber": "suit", "clove": "jacket", "gekko": "hoodie", "breach": "armor", "astra": "robe", "harbor": "coat", "deadlock": "armor", "iso": "jacket", "vyse": "coat", "tejo": "armor", "waylay": "jacket"}, AGENT_HAIR = {"jett": "bob", "sage": "ponytail", "reyna": "ponytail", "fade": "ponytail"};
 const LOOKS = {
   jett: { skin: 0xf3d6c4, hair: 0xeef3f6, style: 'bun', top: 0xdfe9f0, top2: 0x4fa3c7, pants: 0x2f3a48, eye: 0x6fd0ff, gear: ['scarf'] },
   phoenix: { skin: 0x8a5a3c, hair: 0x241610, style: 'spiky', tip: 0xff8a3d, top: 0xf2efe9, top2: 0xff7a2a, pants: 0x2b2b30, eye: 0xffb070, gear: ['flameShoulder'] },
@@ -2938,7 +2939,7 @@ const OUTFITS = {
 const myOutfit = id => { const o = profile.outfit && profile.outfit[id]; return o && OUTFITS[o] && (profile.outfitsOwned || []).includes(id + ':' + o) ? o : ''; };
 function makeCharacter(agent, outfit) {
   const L0 = LOOKS[agent.id] || { skin: 0xe0b896, hair: 0x2a2a2a, style: 'short', top: agent.color, top2: agent.color, pants: 0x2b2f38, eye: 0x2a2a2a, gear: [] };
-  const O = OUTFITS[outfit], L = O ? { ...L0, top: O.top, top2: O.top2, pants: O.pants, ...(O.hair ? { hair: O.hair } : {}) } : L0;
+  const O = OUTFITS[outfit], L1 = O ? { ...L0, top: O.top, top2: O.top2, pants: O.pants, ...(O.hair ? { hair: O.hair } : {}) } : L0, L = AGENT_HAIR[agent.id] ? { ...L1, style: AGENT_HAIR[agent.id] } : L1, CUT = L.cut || AGENT_CUT[agent.id] || 'tactical';
   const g = new THREE.Group(); g.userData.outlines = [];
   const M = c => cm(c), skin = cm(L.skin, 14), top = M(L.top), acc = new THREE.MeshLambertMaterial({ color: L.top2, emissive: new THREE.Color(L.top2).multiplyScalar(.25) });
   const pants = M(L.pants), boots = cm(0x1b1d22, 30), hairM = cm(L.hair, 22), W = L.wide || 1, dark = M(0x23262c), glove = M(0x2a2d33);
@@ -2956,7 +2957,7 @@ function makeCharacter(agent, outfit) {
   for (const leg of [legL, legR]) {
     seg(V(0, 0, 0), V(0, -.42, -.015), .105 * W, .08 * W, pants, leg);
     seg(V(0, -.42, -.015), V(0, -.77, .01), .078 * W, .062 * W, pants, leg, false);
-    ball(.075 * W, acc, 0, -.42, -.07, leg, 1, 1.1, .55);                                                               // knee pad
+    if (CUT === 'tactical' || CUT === 'armor') ball(.075 * W, acc, 0, -.42, -.07, leg, 1, 1.1, .55);                    // knee pad
     addPart(g, new THREE.BoxGeometry(.15 * W, .12, .25), boots, 0, -.8, -.035, leg); ball(.075 * W, boots, 0, -.81, -.15, leg, 1, .75, 1.1);
     box(.16 * W, .025, .3, dark, 0, -.855, -.05, leg);                                                                // sole
     seg(V(0, -.7, .01), V(0, -.74, .01), .07 * W, .07 * W, dark, leg, false);                                         // boot cuff
@@ -2967,8 +2968,28 @@ function makeCharacter(agent, outfit) {
   box(.08, .06, .03, acc, 0, .9, -.155);
   for (const sx of [-1, 1]) box(.08, .1, .06, M(0x2f333a), sx * .15 * W, .86, -.11).rotation.y = sx * .5;          // hip pouches
   lathe([[.19, 0], [.205, .08], [.23, .2], [.26, .33], [.272, .42], [.26, .5], [.2, .55], [.11, .58], [.07, .6]], top, .9, W, .64);
-  box(.26 * W, .2, .03, acc, 0, 1.22, -.165); box(.2 * W, .04, .032, M(L.top), 0, 1.22, -.17);                      // chest plate
-  for (const sx of [-1, 1]) box(.035, .42, .03, acc, sx * .14 * W, 1.12, -.15).rotation.z = sx * -.12;            // jacket seams
+  // the cut of the outfit: every agent wears something of their own instead of the same tactical harness
+  const shirt = M(L.shirt || (CUT === 'suit' ? 0xf2efe6 : L.top2));
+  if (CUT === 'tactical' || CUT === 'armor') {
+    box(.26 * W, .2, .03, acc, 0, 1.22, -.165); box(.2 * W, .04, .032, M(L.top), 0, 1.22, -.17);                    // chest plate
+    for (const sx of [-1, 1]) box(.035, .42, .03, acc, sx * .14 * W, 1.12, -.15).rotation.z = sx * -.12;          // harness straps
+    if (CUT === 'armor') { const pl = AB.rbox(.36 * W, .3, .08, .03, M(L.top)); pl.position.set(0, 1.2, -.17); g.add(pl); box(.3 * W, .04, .085, acc, 0, 1.2, -.175); for (const sx of [-1, 1]) { const sp = AB.rbox(.16, .1, .2, .04, M(L.top)); sp.position.set(sx * .3 * W, 1.47, 0); g.add(sp); } }
+  } else {
+    if (CUT === 'jacket' || CUT === 'coat' || CUT === 'suit') { // open front: an inner shirt and two lapels in a V
+      box(.12 * W, .4, .02, shirt, 0, 1.18, -.17);
+      for (const sx of [-1, 1]) { const lp = box(.07, .38, .025, CUT === 'suit' ? M(0x1a1a1e) : acc, sx * .085 * W, 1.2, -.175); lp.rotation.z = sx * .32; }
+      if (CUT === 'suit') { box(.035, .22, .022, acc, 0, 1.2, -.185); ball(.022, acc, 0, 1.33, -.185); }          // tie
+    }
+    if (CUT === 'coat' || CUT === 'robe') { // long tails / skirt down to the knees
+      const len = CUT === 'robe' ? .55 : .5, tail = new THREE.Mesh(new THREE.CylinderGeometry(.22, CUT === 'robe' ? .34 : .3, len, 18, 1, true, CUT === 'robe' ? 0 : Math.PI * .22, CUT === 'robe' ? Math.PI * 2 : Math.PI * 1.56), new THREE.MeshLambertMaterial({ color: L.top, side: THREE.DoubleSide }));
+      tail.position.y = .9 - len / 2; tail.scale.set(W, 1, .78); tail.rotation.y = Math.PI; g.add(tail); g.userData.outlines && 0;
+      const hem = new THREE.Mesh(new THREE.TorusGeometry(CUT === 'robe' ? .34 : .3, .012, 6, 24, CUT === 'robe' ? Math.PI * 2 : Math.PI * 1.56), acc); hem.rotation.x = Math.PI / 2; hem.rotation.z = CUT === 'robe' ? 0 : Math.PI * .72; hem.position.y = .9 - len; hem.scale.set(W, .78, 1); g.add(hem);
+    }
+    if (CUT === 'robe') { const sh = box(.06, .7, .03, acc, 0, 1.12, -.17); sh.rotation.z = .55; box(.36 * W, .05, .3, acc, 0, .92, 0); } // sash + wide belt
+    if (CUT === 'hoodie') { const hood = new THREE.Mesh(new THREE.SphereGeometry(.17, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), top); hood.scale.set(1.15, .7, .9); hood.rotation.x = -1.9; hood.position.set(0, 1.5, .12); g.add(hood);
+      box(.22 * W, .1, .03, acc, 0, 1.0, -.165); for (const sx of [-1, 1]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .16, 6), acc); st.position.set(sx * .05, 1.38, -.17); g.add(st); } } // pocket + drawstrings
+    if (CUT === 'jacket') { const zip = box(.012, .4, .01, M(0xd0d0d0), .03, 1.18, -.18); zip.rotation.z = .04; }
+  }
   const collar = new THREE.Mesh(new THREE.CylinderGeometry(.1, .13, .07, 16, 1, true), M(L.top2 === L.top ? 0x23262c : L.top)); collar.position.y = 1.49; collar.material.side = THREE.DoubleSide; g.add(collar);
   for (const sx of [-1, 1]) ball(.1, top, sx * .26 * W, 1.38, 0, g, 1, .9, 1);                                     // shoulders
   // arms: solved so the hands sit on the weapon; separate poses for long guns, pistols and the blinded "hand over eyes"
@@ -3014,6 +3035,9 @@ function makeCharacter(agent, outfit) {
   if (L.style === 'long') { const h = new THREE.Mesh(new THREE.CylinderGeometry(.2, .17, .45, 18, 1, true, Math.PI * .6, Math.PI * .8), hairM); h.material.side = THREE.DoubleSide; h.position.set(0, 1.47, .02); h.rotation.y = Math.PI; g.add(h); }
   if (L.style === 'twin') for (const sx of [-1, 1]) { for (let i = 0; i < 4; i++) ball(.045 - i * .006, hairM, sx * (.19 + i * .03), 1.6 - i * .09, .1); const tip = new THREE.Mesh(new THREE.ConeGeometry(.03, .1, 8), new THREE.MeshBasicMaterial({ color: 0x46b6ff })); tip.position.set(sx * .3, 1.24, .1); tip.rotation.z = Math.PI + sx * .3; g.add(tip); }
   if (L.style === 'spiky') for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(.045, .17, 6), i % 2 ? M(L.tip) : hairM); const a = -1.1 + i * .37; s.position.set(Math.sin(a) * .13, 1.84, Math.cos(a) * .05 - .02); s.rotation.set(-.35, 0, -a * .55); g.add(s); }
+  if (L.style === 'bob') { const b = new THREE.Mesh(new THREE.CylinderGeometry(.21, .19, .2, 18, 1, true, Math.PI * .55, Math.PI * .9), hairM); b.material.side = THREE.DoubleSide; b.position.set(0, 1.62, .02); b.rotation.y = Math.PI; g.add(b);
+    for (const sx of [-1, 1]) { const tip = ball(.04, M(L.tip || L.top2), sx * .17, 1.53, -.02, g, .6, 1, .9); } const fl = ball(.06, hairM, .08, 1.79, -.1, g, 1.4, .5, .7); fl.rotation.z = -.5; }
+  if (L.style === 'ponytail') { ball(.06, acc, 0, 1.74, .19, g, 1, 1, .6); for (let i = 0; i < 7; i++) ball(.055 - i * .004, hairM, Math.sin(i * .5) * .02, 1.7 - i * .1, .22 + Math.min(i, 2) * .02, g, 1, 1.25, 1); }
   if (L.style === 'short') { const q = ball(.07, hairM, .06, 1.8, -.12, g, 1.6, .5, .8); q.rotation.z = -.3; }
   // gear
   const G = L.gear, HY = .03;
@@ -12749,7 +12773,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 101;
+const BUILD = 102;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
