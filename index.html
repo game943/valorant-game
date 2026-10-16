@@ -9676,7 +9676,7 @@ function caster(text, prio = 1) {
 const tName = e => `${e.name}${AGENT[e.agent] ? ' (' + AGENT[e.agent].name + ')' : ''}`;
 function specOnKill(src, t, label, head) {
   if (!spec || !src || src === t || !src.name || !src.agent) { if (spec) caster(`${t.name} goes down.`, 1); return; }
-  spec.focus = src; spec.focusT = 4;
+  spec.focus = src; spec.focusT = 2;
   if (spec.fb !== game.round) { spec.fb = game.round; caster(`First blood! ${tName(src)} opens it up${label ? ' with the ' + label : ''}.`, 2); return; }
   const n = src.roundKills, ace = n >= 5 || !entities.some(e => e.alive && isEnemy(e, src) && !e.spectator);
   if (n >= 5 || (ace && n >= 4)) caster(`ACE!! ${src.name} wipes out the entire team!`, 3);
@@ -9697,8 +9697,10 @@ function specTick(dt) {
     spec.autoT = 1.2; const alive = specEnts().filter(e => e.alive); let pickE = spec.focus && spec.focus.alive && spec.focusT > 0 ? spec.focus : null;
     const sp = game.spike;
     if (!pickE && sp && sp.defuser && sp.defuser.alive) pickE = sp.defuser;
+    // follow the spike: whoever carries it, or whoever is closest to it once it is dropped / planted
+    if (!pickE && sp && sp.carrier && sp.carrier.alive) pickE = sp.carrier;
+    if (!pickE && sp && (sp.state === 'planted' || sp.state === 'dropped') && sp.x !== undefined) { let bd = 1e9; for (const e of alive) { const d = Math.hypot(e.x - sp.x, e.z - sp.z); if (d < bd) { bd = d; pickE = e; } } }
     if (!pickE) { let bd = 1e9; for (const e of alive) for (const o of alive) if (isEnemyTeam(e, o)) { const d = Math.hypot(e.x - o.x, e.z - o.z); if (d < bd) { bd = d; pickE = e; } } }
-    if (!pickE && sp && sp.carrier) pickE = sp.carrier;
     if (pickE && pickE.id !== spec.follow) { spec.follow = pickE.id; renderSpecUI(); }
   }
   spec.uiT = (spec.uiT || 0) - dt; if (spec.uiT <= 0) { spec.uiT = .3; renderSpecUI(); }
@@ -12747,7 +12749,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 100;
+const BUILD = 101;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
