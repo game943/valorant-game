@@ -899,6 +899,9 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
 .clipRow{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:8px 0 14px}.clip{background:#0d131a;border:1px solid rgba(255,255,255,.08)}.clip img{width:100%;aspect-ratio:16/9;display:block;object-fit:cover;background:#000}.clip b{display:block;font:700 14px Oswald,sans-serif;letter-spacing:2px;padding:6px 8px 0;color:#ffd36a}.clip span{display:block;font-size:11px;color:#9aa4ad;padding:2px 8px 8px}
 .wkCard{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0 14px;padding:12px;background:linear-gradient(135deg,rgba(255,70,85,.12),rgba(47,224,182,.08));border:1px solid rgba(255,255,255,.1)}.wkCard div{padding:6px}.wkCard .ol{font-size:10px}.wkCard .v{font:700 22px Oswald,sans-serif}.wkCard .d{font-size:11px}.wkCard .up{color:#2fe0b6}.wkCard .dn{color:#ff4655}
 .achGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:8px 0 14px}.ach{display:flex;gap:10px;align-items:center;padding:8px 10px;background:#0d131a;border:1px solid rgba(255,255,255,.07);opacity:.55}.ach.on{opacity:1;border-color:rgba(255,211,106,.5);background:linear-gradient(90deg,rgba(255,211,106,.12),#0d131a)}.ach i{font-style:normal;font-size:24px}.ach b{display:block;font-size:13px}.ach span{display:block;font-size:11px;color:#9aa4ad}.ach .pg{height:3px;background:rgba(255,255,255,.1);margin-top:4px}.ach .pg u{display:block;height:100%;background:#ffd36a}
+#shopCols .giftBar,.giftBar{grid-column:1/-1;width:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0 10px}.giftBar button{background:#16202a;border:1px solid rgba(255,255,255,.12);color:#e8e8e8;padding:6px 10px;cursor:pointer;font:600 12px Inter,sans-serif;border-left:3px solid var(--ac,#2fe0b6)}.giftBar button.on{background:#2fe0b6;color:#0f1923}.giftBar small{opacity:.7;font-weight:400}
+.pcGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.pc{background:#0d131a;border:1px solid rgba(255,255,255,.08)}.pc.on{border-color:#2fe0b6}.pc img{width:100%;display:block;aspect-ratio:3/1}.pcI{display:flex;justify-content:space-between;align-items:center;padding:8px 10px}.pcI .btn{margin:0;width:auto}.pcI .eq{font:700 11px Inter,sans-serif;letter-spacing:2px;color:#2fe0b6}
+#agentGrid .agent.rouletteWin{animation:rlw .8s ease-out 2}@keyframes rlw{0%{box-shadow:0 0 0 0 #ffd36a}50%{box-shadow:0 0 0 8px rgba(255,211,106,.6)}100%{box-shadow:0 0 0 0 transparent}}
 #trStage{position:relative;height:min(62vh,560px);border-radius:10px;overflow:hidden;cursor:grab;touch-action:none}
 #trCv{width:100%;height:100%;display:block}
 </style>
@@ -1027,7 +1030,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </section>
 
   <section class="tab hidden" id="tab-store">
-    <div class="tabPanel"><div class="pHead"><h2>STORE</h2><div class="storeTabs" id="storeTabs"><button data-sv="offers" class="on">OFFERS</button><button data-sv="night" class="nmBtn">NIGHT MARKET</button><button data-sv="earn" class="earnBtn">EARN VP</button><button data-sv="gifts" class="giftBtn">🎁 GIFTS</button></div></div><div id="storeBox"></div></div>
+    <div class="tabPanel"><div class="pHead"><h2>STORE</h2><div class="storeTabs" id="storeTabs"><button data-sv="offers" class="on">OFFERS</button><button data-sv="night" class="nmBtn">NIGHT MARKET</button><button data-sv="earn" class="earnBtn">EARN VP</button><button data-sv="gifts" class="giftBtn">🎁 GIFTS</button><button data-sv="cards">🪪 CARDS</button></div></div><div id="storeBox"></div></div>
   </section>
 </div>
 <div id="matchFound" class="hidden"><div class="mfBand"><div class="mfT">MATCH FOUND</div><div class="mfS" id="mfSub">COMPETITIVE · DUSTWALL</div></div></div>
@@ -1257,6 +1260,7 @@ input[type=text]{background:#1c2631;border:1px solid #3b4856;color:var(--light);
   </div>
   <div style="width:min(1150px,94vw);display:flex;justify-content:flex-end;margin-top:16px;gap:10px">
     <button class="btn center" style="width:180px" id="btnBack">Back</button>
+    <button class="btn center" style="width:180px" id="btnRandom">🎲 Random</button>
     <button class="btn primary center" style="width:240px" id="btnLock">Lock In</button>
   </div>
 </div>
@@ -4287,6 +4291,42 @@ const thornTex = (() => { let t = null; return () => { if (t) return t; const c 
     for (let s = 0; s < 40; s++) { a += .18 + s * .004; r *= .97; px += Math.cos(a) * r * .18; py += Math.sin(a) * r * .18; x.lineTo(px, py); } x.stroke(); }
   t = new THREE.CanvasTexture(c); return t; }; })();
 /* --- easter eggs: three hidden tokens on every map; find them all for a title --- */
+/* --- ladders (climb onto tall crates: walk into them holding forward) and ziplines (press the use key at either end) --- */
+let ladders = [], ziplines = [], climbG = null;
+function climbSetup() {
+  if (climbG) scene.remove(climbG); climbG = new THREE.Group(); scene.add(climbG); ladders = []; ziplines = []; if (!grid || !MAPS[game.mapId] || RANGE()) return;
+  let seed = 11; for (const ch of 'climb' + game.mapId) seed = (seed * 37 + ch.charCodeAt(0)) >>> 0; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const wood = new THREE.MeshLambertMaterial({ color: 0x8a6a3a }), metal = new THREE.MeshLambertMaterial({ color: 0x6a7078 });
+  for (let tries = 0; tries < 3000 && ladders.length < 5; tries++) {
+    const c = 1 + Math.floor(rnd() * (GW - 2)), r = 1 + Math.floor(rnd() * (GH - 2)), h = hAt(c, r); if (h < 1.8 || h > 5 || zoneG[r * GW + c] >= 3) continue;
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dc, dr]) => hAt(c + dc, r + dr) === 0); if (!dirs.length) continue;
+    const [dc, dr] = dirs[Math.floor(rnd() * dirs.length)], q = cc(c, r), x = q.x + dc * (CELL / 2 + .08), z = q.z + dr * (CELL / 2 + .08);
+    if (ladders.some(l => Math.hypot(l.x - x, l.z - z) < 12)) continue;
+    const L = new THREE.Group(); for (const s2 of [-.32, .32]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(.06, h + .5, .06), metal); rail.position.set(dr ? s2 : 0, (h + .5) / 2, dc ? s2 : 0); L.add(rail); }
+    for (let y = .3; y < h + .3; y += .35) { const rung = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .64, 6), wood); rung.rotation.z = Math.PI / 2; if (dc) rung.rotation.y = Math.PI / 2; rung.position.y = y; L.add(rung); }
+    L.position.set(x, 0, z); climbG.add(L); ladders.push({ x, z, h, nx: dc, nz: dr });
+  }
+  for (let tries = 0; tries < 4000 && ziplines.length < 2; tries++) {
+    const a = { c: 2 + Math.floor(rnd() * (GW - 4)), r: 2 + Math.floor(rnd() * (GH - 4)) }, b = { c: 2 + Math.floor(rnd() * (GW - 4)), r: 2 + Math.floor(rnd() * (GH - 4)) };
+    if (hAt(a.c, a.r) !== 0 || hAt(b.c, b.r) !== 0 || zoneG[a.r * GW + a.c] >= 3 || zoneG[b.r * GW + b.c] >= 3) continue;
+    const A = cc(a.c, a.r), B = cc(b.c, b.r), d = Math.hypot(B.x - A.x, B.z - A.z); if (d < 18 || d > 36) continue;
+    const Y = 4.2; if (rayGrid(A.x, Y, A.z, (B.x - A.x) / d, 0, (B.z - A.z) / d, d) < d - .1) continue; if (ziplines.some(z2 => Math.hypot(z2.ax - A.x, z2.az - A.z) < 15)) continue;
+    for (const P of [A, B]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(.08, .1, Y + .4, 8), metal); post.position.set(P.x, (Y + .4) / 2, P.z); climbG.add(post); const hk = new THREE.Mesh(new THREE.TorusGeometry(.15, .03, 6, 12), new THREE.MeshBasicMaterial({ color: 0xffd36a })); hk.position.set(P.x, 1.6, P.z); hk.rotation.x = Math.PI / 2; climbG.add(hk); }
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, d, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a2a })); rope.position.set((A.x + B.x) / 2, Y, (A.z + B.z) / 2); rope.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(B.x - A.x, 0, B.z - A.z).normalize()); climbG.add(rope);
+    ziplines.push({ ax: A.x, az: A.z, bx: B.x, bz: B.z, y: Y, d });
+  }
+}
+function nearZip(p) { for (const z of ziplines) { if (Math.hypot(p.x - z.ax, p.z - z.az) < 1.6) return { z, from: 'a' }; if (Math.hypot(p.x - z.bx, p.z - z.bz) < 1.6) return { z, from: 'b' }; } return null; }
+function startZip(p) { const n = nearZip(p); if (!n || p.zip) return false; const z = n.z; p.zip = n.from === 'a' ? { sx: z.ax, sz: z.az, ex: z.bx, ez: z.bz, y: z.y - 1.9, t: 0, d: z.d } : { sx: z.bx, sz: z.bz, ex: z.ax, ez: z.az, y: z.y - 1.9, t: 0, d: z.d }; sndNoise(.4, 2500, 1, .2); return true; }
+function climbTick(p, dt) { // returns true when it handled the movement this frame
+  if (p.zip) { const Z = p.zip; Z.t += dt * 12 / Z.d; const k = Math.min(1, Z.t); p.x = Z.sx + (Z.ex - Z.sx) * k; p.z = Z.sz + (Z.ez - Z.sz) * k; p.y = Z.y + Math.sin(k * Math.PI) * -.4; p.vx = p.vz = 0; p.vy = 0; p.onGround = false;
+    if (k >= 1 || kd('jump') || !p.alive) { p.zip = null; p.vy = 0; } return true; }
+  if (!kd('fwd') || !p.alive) return false;
+  const f = fwd(p);
+  for (const L of ladders) { const dx = L.x - p.x, dz = L.z - p.z; if (Math.hypot(dx, dz) > .9 || p.y > L.h + .1) continue; if (dx * f.x + dz * f.z < 0 && Math.hypot(dx, dz) > .4) continue;
+    p.vy = 4.2; p.onGround = false; if (p.y > L.h - .6) { p.vx = -L.nx * 3; p.vz = -L.nz * 3; } return false; }
+  return false;
+}
 let eggs = [];
 function eggsSetup() {
   for (const e of eggs) scene.remove(e.m); eggs = []; if (!grid || !MAPS[game.mapId] || RANGE()) return;
@@ -5314,6 +5354,18 @@ function finishReload(e) {
    ===================================================================== */
 const keys = {}, mouse = [false, false, false];
 const camRig = { yaw: 0, pitch: 0 };
+const VMP = []; let vmpAcc = 0;
+function skinFxTick(g, line, dt) {
+  vmpAcc += dt * (line.tier === 'ultra' ? 26 : line.tier === 'exclusive' ? 18 : 11);
+  const kind = { elder: 'ember', magma: 'ember', rush: 'ember', tiger: 'ember', glitch: 'glitch', arcade: 'glitch', ion: 'spark', sing: 'void', reaver: 'void', kuro: 'void', sakura: 'petal', reef: 'bubble', aurora: 'spark', arctic: 'snow' }[line.id] || 'spark';
+  const col = line.acc || 0xffffff, mz = g.userData.muzzleZ || -.6;
+  while (vmpAcc > 1) { vmpAcc--; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: kind === 'glitch' ? null : glowTex, color: kind === 'snow' ? 0xffffff : kind === 'petal' ? 0xffb0d0 : col, transparent: true, depthWrite: false, blending: kind === 'glitch' || kind === 'petal' ? THREE.NormalBlending : THREE.AdditiveBlending }));
+    const v = new THREE.Vector3(rand(-.05, .05), rand(-.02, .08), mz * rand(.1, .95)); g.localToWorld(v); sp.position.copy(v); const s = kind === 'glitch' ? rand(.006, .018) : rand(.012, .03); sp.scale.setScalar(s); vmScene.add(sp);
+    VMP.push({ sp, t: 0, life: rand(.35, .8), kind, vx: rand(-.02, .02), vy: kind === 'ember' ? rand(.05, .12) : kind === 'snow' || kind === 'petal' ? -rand(.02, .06) : rand(-.02, .04), s }); }
+  for (let i = VMP.length - 1; i >= 0; i--) { const P = VMP[i]; P.t += dt; const k = P.t / P.life; P.sp.position.x += P.vx * dt; P.sp.position.y += P.vy * dt;
+    if (P.kind === 'glitch') P.sp.visible = Math.random() > .3; P.sp.material.opacity = 1 - k; P.sp.scale.setScalar(P.s * (P.kind === 'void' ? 1 - k : 1));
+    if (k >= 1) { vmScene.remove(P.sp); VMP.splice(i, 1); } }
+}
 let knifeAnim = null; const W0k = p => WEAPONS[curWeapon(p).key].model; // first-person knife: alternating left/right slashes, right click = heavy stab
 let eyeH = 1.6, adsT = 0, vmKick = 0, vmEquip = 0, stepT = 0, triggerHeld = false, spectateIdx = 0, deathCam = 0;
 let shopOpen = false, boardOpen = false;
@@ -5520,6 +5572,7 @@ function updatePlayer(dt) {
   if (p.dashT > 0) { p.dashT -= dt; p.vx = p.dashX; p.vz = p.dashZ; if (p.dashT <= 0) { const sp = Math.hypot(p.vx, p.vz) || 1, k = Math.min(1, 6 / sp); p.vx *= k; p.vz *= k; } } // stop sharply when the dash ends
   if (kd('jump') && p.onGround && !busy && !shopOpen) { p.vy = JUMP; p.onGround = false; }
   else if (kit(p, 'jett') && !p.onGround && kd('jump') && p.vy < -2.4 && p.dashT <= 0) { p.vy = -2.4; if (Math.random() < .3) spawnParticles(p.x, p.y + .2, p.z, 2, 0xdff4ff, .6, .4); } // Drift
+  if (climbTick(p, dt)) { /* riding a zipline */ } else
   physics(p, dt);
   // footsteps
   const spd = Math.hypot(p.vx, p.vz);
@@ -5549,6 +5602,7 @@ function updatePlayer(dt) {
   const near = nearestDrop(p);
   if (near) hint = `<b>${keyName(settings.binds.use)}</b> Pick up ${WEAPONS[near.inst.key].name}`;
   const orb = orbs.find(o => Math.hypot(o.x - p.x, o.z - p.z) < 1.8); if (orb) hint = `<b>${keyName(settings.binds.use)}</b> Collect ult orb`;
+  if (!hint && nearZip(p) && !p.zip) hint = `<b>${keyName(settings.binds.use)}</b> Ride the zipline`; if (p.zip) hint = `<b>${keyName(settings.binds.jump)}</b> Let go of the zipline`;
   if (game.phase === 'live' && p.hasSpike && isSite(zoneAt(p.x, p.z)) && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to plant the spike`;
   if (game.phase === 'planted' && sideOf(p) === 'def' && Math.hypot(p.x - sp2.x, p.z - sp2.z) < 2 && !doing) hint = `<b>${keyName(settings.binds.spike)}</b> Hold to defuse the spike`;
   if (game.phase === 'buy' && !shopOpen) hint = hint || `<b>${keyName(settings.binds.shop)}</b> Open shop`;
@@ -5580,6 +5634,7 @@ function spikeAction(p, holding4, dt) {
 }
 function nearestDrop(p) { let best = null, bd = 2; for (const d of drops) { const dd = Math.hypot(d.x - p.x, d.z - p.z); if (dd < bd) { bd = dd; best = d; } } return best; }
 function interact(p = player) {
+  if (p === player && p.alive && (p.zip || startZip(p))) return;
   if (net.role === 'client' && p === player) { netSend({ t: 'use' }); return; }
   if (!p.alive) return;
   { const di = doorInFront(p); if (di >= 0 && !nearestDrop(p)) { toggleDoor(di, undefined, p); return; } }
@@ -6028,7 +6083,7 @@ function bannerTeams(fn) { // a banner whose text depends on which team the view
 function setupMatch(agentId, humans = []) {
   game.firstKillRound = 0;
   ffVote = null; renderFF(null); game.ffUsed = {}; game.suddenDeath = false;
-  clearSprays(); clearInk(); setTimeout(eggsSetup, 0);
+  clearSprays(); clearInk(); setTimeout(eggsSetup, 0); setTimeout(climbSetup, 0);
   if (!MAPS[game.mapId]) game.mapId = resolveMap(settings.map);
   loadMap(game.mapId);
   // clean up previous match
@@ -6097,7 +6152,7 @@ function nextRound() {
     for (const w of [e.primary, e.secondary]) if (w) { w.mag = magOf(e, w.key); w.reserve = WEAPONS[w.key].reserve; w.att = attOf(e, w.key); }
     const ag = AGENT[e.agent];
     for (const k of ['C', 'Q', 'E']) if (ag.ab[k].free) e.charges[k] = Math.max(e.charges[k], ag.ab[k].free);
-    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, hitLog: [], jamT: 0, isoSh: 0, isoShT: 0, refract: null, netT: 0, dtapT: 0, duelT: 0, duelWith: null, rose: null, arenaBack: null, arenaWalls: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
+    Object.assign(e, { alive: true, hp: 100, vy: 0, vx: 0, vz: 0, flashT: 0, nearT: 0, slowT: 0, stimT: 0, healT: 0, dismissT: 0, empressT: 0, ribT: 0, ribPos: null, soulT: 0, revealedT: 0, dashT: 0, tailwindT: 0, twKills: 0, suppT: 0, driftT: 0, zip: null, hitLog: [], jamT: 0, isoSh: 0, isoShT: 0, refract: null, netT: 0, dtapT: 0, duelT: 0, duelWith: null, rose: null, arenaBack: null, arenaWalls: null, gate: null, fuel: 100, energy: 100, sprint: false, odT: 0, slideCD: 0, ready: null, viperCloud: null, viperWall: null, pitZone: null, pitSmoke: null, furyManual: 0, vState: null, hasSpike: false, damagedBy: {}, roundKills: 0, bladeMag: 0, tdfInst: null, hhOn: false, ndyT: 0, rdvCD: 0, decayT: 0, furyN: 0, reloadT: 0, fireCD: 0, deathPos: null, bought: [], plantT: 0, crouch: false });
     e.slot = e.primary ? 1 : 2;
     if (e.ribMesh) { scene.remove(e.ribMesh); e.ribMesh = null; }
     if (e.spectator) { e.alive = false; e.hp = 0; }
@@ -6497,13 +6552,19 @@ function renderShop() {
   $('shopPlan').innerHTML = planBarHTML() + econHTML();
   { const ab = $('ecoAuto'); if (ab) ab.onclick = () => { autoBuy(ab.dataset.kind); }; }
   $('shopPlan').querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { if (net.role === 'client') netSend({ t: 'plan', p: b.dataset.plan }); else applyPlan(player.team, b.dataset.plan, true); game.plan = game.plan || {}; game.plan[player.team] = b.dataset.plan; tick(); renderShop(); });
+  { // buying for a teammate: pick a bot, then click a weapon - your credits pay for it
+    const mates = net.role === 'client' || DM() ? [] : allyBots(p.team).filter(b => b.alive || game.phase === 'buy');
+    if (shopGift && !mates.includes(entities[shopGift])) shopGift = null;
+    if (mates.length) { const bar = document.createElement('div'); bar.className = 'giftBar'; bar.innerHTML = `<span class="ol">BUY FOR:</span><button data-gb="" class="${shopGift ? '' : 'on'}">Me</button>` + mates.map(b => `<button data-gb="${b.id}" class="${shopGift === b.id ? 'on' : ''}" style="--ac:${AGENT[b.agent].color}">${esc(b.name)} <small>¤${b.credits} · ${b.primary ? WEAPONS[b.primary.key].name : 'no rifle'}</small></button>`).join('');
+      cols.appendChild(bar); bar.querySelectorAll('[data-gb]').forEach(btn => btn.onclick = () => { shopGift = btn.dataset.gb === '' ? null : +btn.dataset.gb; tick(); renderShop(); }); }
+  }
   for (const [title, list] of SHOP_COLS) {
     const col = document.createElement('div'); col.className = 'col'; col.innerHTML = `<h4>${title}</h4>`;
     for (const k of list) {
       const w = WEAPONS[k], own = (p.primary && p.primary.key === k) || (p.secondary && p.secondary.key === k);
       const it = document.createElement('div'); it.className = 'item' + (own ? ' own' : '') + (!own && p.credits < w.price ? ' poor' : '');
       it.innerHTML = `<img class="gicon" src="${gunIcon(k)}" alt=""><div class="n">${w.name}</div><div class="p">${w.price}</div><div class="s">${w.cat} · Head ${w.dmg[0]} / Body ${w.dmg[1]}${w.pellets > 1 ? ' ×' + w.pellets : ''} · ${w.mag} rds</div>`;
-      it.onclick = () => buyWeapon(k); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('w:' + k); };
+      it.onclick = () => shopGift != null ? giftWeapon(k, entities[shopGift]) : buyWeapon(k); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('w:' + k); };
       if (w.price >= 1600 && allyBots(p.team).length && !DM()) { const rq = document.createElement('button'); rq.className = 'reqBtn'; rq.textContent = '🙋 Request'; rq.title = 'Ask a teammate to buy this for you'; rq.onclick = ev => { ev.stopPropagation(); requestWeapon(k); tick(); }; it.appendChild(rq); }
       col.appendChild(it);
     }
@@ -6524,6 +6585,15 @@ function renderShop() {
     it.onclick = () => buyAbility(key); it.oncontextmenu = ev => { ev.preventDefault(); sellItem('a:' + key); }; col.appendChild(it);
   }
   cols.appendChild(col);
+}
+let shopGift = null;
+function giftWeapon(k, b) {
+  const p = player, w = WEAPONS[k]; if (!b || !w) return;
+  if (p.credits < w.price) { SND.deny(); toast(`Not enough credits to buy ${w.name} for ${b.name}`); return; }
+  if ((w.slot === 1 ? b.primary : b.secondary)?.key === k) { toast(`${b.name} already has a ${w.name}`); return; }
+  p.credits -= w.price; const inst = mkWeapon(k); if (w.slot === 1) b.primary = inst; else b.secondary = inst; b.slot = w.slot; b.invSeq = (b.invSeq || 0) + 1;
+  SND.buy(); toast(`🎁 You bought ${b.name} a ${w.name}`); if (typeof gameChat === 'function') setTimeout(() => gameChat(b.name, b.team, ['ty!! 🙏', 'thanks for the drop!', `ty for the ${w.name}`, 'appreciate it 💚'][Math.floor(Math.random() * 4)]), 600);
+  renderShop();
 }
 function buyWeapon(k, p = player) {
   if (net.role === 'client' && p === player) { netSend({ t: 'buy', f: 'w', k }); return; }
@@ -6933,6 +7003,10 @@ function updateCamera(dt) {
     const ads = adsT;
     g.position.set(.17 * (1 - ads * .9) + Math.sin(t) * .008 * bob, -.15 + ads * .06 + Math.abs(Math.cos(t)) * .006 * bob - vmEquip * .2 - (p.reloadT > 0 ? .04 : 0), -.4 + vmKick * .03);
     g.rotation.set(vmKick * .12 - vmEquip * .8, ads * .0, 0);
+    { // higher-tier skins are alive: embers, sparkles or glitches keep drifting off the gun
+      const sk = g.userData.skin || (g.children[0] && g.children[0].userData && g.children[0].userData.skin), S = sk && SKINS[sk], tier = S && S.line ? S.line.tier : null;
+      if (S && (tier === 'premium' || tier === 'exclusive' || tier === 'ultra') && settings.particles > 0) skinFxTick(g, S.line, dt);
+    }
     if (knifeAnim && W0k(p) === 'knife') { // slash: wind up to one side, sweep across in front of the camera, recover
       const A = knifeAnim, dur = A.heavy ? .55 : .38; A.t += dt; const f = Math.min(1, A.t / dur), sm = x => x * x * (3 - 2 * x);
       if (A.heavy) { const wind = sm(clamp(f / .35, 0, 1)), thrust = sm(clamp((f - .35) / .2, 0, 1)), back = sm(clamp((f - .6) / .4, 0, 1));
@@ -8518,7 +8592,7 @@ function clientRecv(d) {
   }
 }
 function clientSetupMatch(d) {
-  clearSprays(); clearInk(); setTimeout(eggsSetup, 0);
+  clearSprays(); clearInk(); setTimeout(eggsSetup, 0); setTimeout(climbSetup, 0);
   matchStats = newMatchStats(); $('gameChat').innerHTML = '';
   if (d.mrec && typeof d.mrec === 'object' && /^cm[a-z0-9]+$/.test(String(d.map)) && typeof d.mrec.g === 'string') { try { registerCustomMap({ id: d.map, n: String(d.mrec.n || 'Custom').slice(0, 18), th: String(d.mrec.th || 'dustwall'), g: d.mrec.g.slice(0, 20000), sp: typeof d.mrec.sp === 'string' ? d.mrec.sp.slice(0, 20000) : '' }); } catch (e) { } }
   game.mapId = MAPS[d.map] ? d.map : 'dustwall'; loadMap(game.mapId);
@@ -8708,7 +8782,7 @@ async function makeProfileCard() {
   const topAg = (() => { const L = (profile.life && profile.life.agents) || {}; const k = Object.keys(L).sort((a, b) => L[b].m - L[a].m)[0]; return AGENT[k] ? AGENT[k].name : ag.name; })();
   const topGun = Object.keys(profile.mastery || {}).sort((a, b) => masteryKills(b) - masteryKills(a))[0];
   // background
-  const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0f1923'); bg.addColorStop(.55, '#16222e'); bg.addColorStop(1, col); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  if (profile.pcard && profile.pcard !== 'default') drawPCard(x, profile.pcard, W, H); else { const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#0f1923'); bg.addColorStop(.55, '#16222e'); bg.addColorStop(1, col); x.fillStyle = bg; x.fillRect(0, 0, W, H); }
   x.globalAlpha = .07; x.fillStyle = '#fff'; x.font = '900 520px "Noto Sans KR", sans-serif'; x.fillText(ag.glyph, 640, 560); x.globalAlpha = 1;
   x.fillStyle = col; x.beginPath(); x.moveTo(0, 0); x.lineTo(14, 0); x.lineTo(14, H); x.lineTo(0, H); x.fill();
   x.fillStyle = 'rgba(255,70,85,.9)'; x.beginPath(); x.moveTo(W - 300, 0); x.lineTo(W - 250, 0); x.lineTo(W - 560, H); x.lineTo(W - 610, H); x.fill();
@@ -8786,6 +8860,7 @@ function wireClanCard() {
   q('clJoinBtn').onclick = () => { const c = parseClanCode(q('clJoin').value); if (!c) { toastMenu('That is not a clan code'); return; } profile.clan = null; done(c); toastMenu(`You joined [${c.t}] ${c.n}`); };
 }
 function refreshAccount() {
+  applyPCard();
   $('nameTag').innerHTML = clanChip(myClanTag(), myClanCol()) + esc(profile.name); $('lvlNum').textContent = levelOf(profile.xp); if ($('vpNum')) $('vpNum').textContent = profile.vp.toLocaleString();
   $('xpFill').style.width = (profile.xp % 1000) / 10 + '%';
 }
@@ -10769,12 +10844,41 @@ function skinCard(id, price, extra = '') {
     <div class="skPrice">${own ? 'OWNED' : extra + '<b class="vpI"></b>' + price.toLocaleString()}</div></div>`;
 }
 let storeView = 'offers';
+/* --- player cards: banner art behind your name (lobby badge + shareable player card) --- */
+const PCARDS = [
+  ['default', 'Classic', 0, ['#0f1923', '#16222e', '#ff4655'], 'none'], ['sunset', 'Sunset Strip', 600, ['#2a0f2e', '#ff6a3d', '#ffd36a'], 'stripes'], ['ocean', 'Deep Tide', 600, ['#06202e', '#0e5a7a', '#2ab8c8'], 'waves'],
+  ['neon', 'Neon City', 900, ['#0a0820', '#3a0a6a', '#ff4fd8'], 'grid'], ['forest', 'Verdant', 600, ['#0a1a10', '#1e4a28', '#9be86b'], 'leaves'], ['gold', 'Gold Rush', 1500, ['#1a1408', '#6a5010', '#ffd36a'], 'diamonds'],
+  ['ice', 'Glacier', 900, ['#0e1a26', '#5a8ab0', '#e8f8ff'], 'shards'], ['ember', 'Ember', 900, ['#1a0806', '#6a1a08', '#ff7a22'], 'embers'], ['void', 'Void', 1200, ['#050508', '#1a1028', '#7b6bff'], 'stars'],
+  ['sakura', 'Sakura', 900, ['#2a1420', '#c86a8a', '#ffd0e0'], 'petals'], ['radiant', 'Radiant', 2500, ['#1a1a10', '#fff1a1', '#ffffff'], 'rays'], ['spike', 'Spike Planted', 1200, ['#0f1923', '#401018', '#ff4655'], 'hex'] ];
+const PCARD = Object.fromEntries(PCARDS.map(c => [c[0], { id: c[0], name: c[1], price: c[2], cols: c[3], pat: c[4] }]));
+function drawPCard(x, id, W, H) {
+  const C = PCARD[id] || PCARD.default, g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, C.cols[0]); g.addColorStop(.55, C.cols[1]); g.addColorStop(1, C.cols[2]); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.save(); x.globalAlpha = .18; x.strokeStyle = x.fillStyle = C.cols[2]; let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647, S = Math.max(W, H) / 40;
+  if (C.pat === 'stripes') for (let i = -H; i < W; i += S * 3) { x.lineWidth = S; x.beginPath(); x.moveTo(i, H); x.lineTo(i + H, 0); x.stroke(); }
+  if (C.pat === 'grid') { x.lineWidth = 1.5; for (let i = 0; i < W; i += S * 2) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, H); x.stroke(); } for (let i = 0; i < H; i += S * 2) { x.beginPath(); x.moveTo(0, i); x.lineTo(W, i); x.stroke(); } }
+  if (C.pat === 'waves') for (let r = 0; r < 8; r++) { x.lineWidth = S * .4; x.beginPath(); for (let i = 0; i <= W; i += 8) x.lineTo(i, H * (r + 1) / 9 + Math.sin(i / W * 12 + r) * S); x.stroke(); }
+  if (C.pat === 'diamonds' || C.pat === 'hex' || C.pat === 'shards' || C.pat === 'stars' || C.pat === 'embers' || C.pat === 'petals' || C.pat === 'leaves') for (let i = 0; i < 70; i++) { const px = R() * W, py = R() * H, r = S * (.2 + R() * .8); x.beginPath();
+    if (C.pat === 'diamonds' || C.pat === 'shards') { x.moveTo(px, py - r); x.lineTo(px + r * .6, py); x.lineTo(px, py + r); x.lineTo(px - r * .6, py); } else if (C.pat === 'hex') { for (let k = 0; k < 6; k++) x.lineTo(px + Math.cos(k * 1.047) * r, py + Math.sin(k * 1.047) * r); } else x.arc(px, py, C.pat === 'stars' ? r * .2 : r * .5, 0, 7);
+    x.closePath(); (C.pat === 'hex' ? x.stroke() : x.fill()); }
+  if (C.pat === 'rays') { x.globalAlpha = .25; for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; x.beginPath(); x.moveTo(W * .75, H * .5); x.lineTo(W * .75 + Math.cos(a) * W, H * .5 + Math.sin(a) * W); x.lineTo(W * .75 + Math.cos(a + .08) * W, H * .5 + Math.sin(a + .08) * W); x.fill(); } }
+  x.restore();
+}
+const pcardURL = (() => { const cache = {}; return (id, W = 300, H = 100) => { const k = id + W + 'x' + H; if (cache[k]) return cache[k]; const c = document.createElement('canvas'); c.width = W; c.height = H; drawPCard(c.getContext('2d'), id, W, H); return cache[k] = c.toDataURL(); }; })();
+function applyPCard() { const el = $('acctBtn'); if (!el) return; const id = profile.pcard || 'default'; el.style.backgroundImage = id === 'default' ? '' : `linear-gradient(90deg,rgba(15,25,35,.35),rgba(15,25,35,.1)),url(${pcardURL(id, 360, 80)})`; el.style.backgroundSize = 'cover'; }
+function renderCards(box) {
+  const own = profile.pcards = profile.pcards || ['default'];
+  box.innerHTML = `<div class="collCat">PLAYER CARDS · the banner behind your name and on your shareable player card</div><div class="pcGrid">` + PCARDS.map(([id, name, price]) => { const has = own.includes(id), on = (profile.pcard || 'default') === id;
+    return `<div class="pc ${on ? 'on' : ''}"><img src="${pcardURL(id)}"><div class="pcI"><b>${name}</b>${on ? '<span class="eq">EQUIPPED</span>' : has ? `<button class="btn small" data-pce="${id}">Equip</button>` : `<button class="btn small primary" data-pcb="${id}"><b class="vpI"></b>${price.toLocaleString()}</button>`}</div></div>`; }).join('') + '</div>';
+  box.querySelectorAll('[data-pcb]').forEach(b => b.onclick = () => { const C = PCARD[b.dataset.pcb]; if (profile.vp < C.price) { SND.deny(); toastMenu(`You need ${(C.price - profile.vp).toLocaleString()} more VP`); return; } profile.vp -= C.price; own.push(C.id); profile.pcard = C.id; saveProfile(); refreshVP(); applyPCard(); SND.buy(); toastMenu(`${C.name} card unlocked and equipped`); renderCards(box); });
+  box.querySelectorAll('[data-pce]').forEach(b => b.onclick = () => { profile.pcard = b.dataset.pce; saveProfile(); applyPCard(); tick(); renderCards(box); });
+}
 function renderStore() {
   refreshVP();
   document.querySelectorAll('#storeTabs button').forEach(b => b.classList.toggle('on', b.dataset.sv === storeView));
   const box = $('storeBox');
   if (storeView === 'earn') { renderEarn(box); return; }
   if (storeView === 'gifts') { renderGifts(box); return; }
+  if (storeView === 'cards') { renderCards(box); return; }
   profile.storeSeen = Math.floor(Date.now() / DAY); saveProfile(); storeBadge();
   if (storeView === 'offers') {
     const f = featuredLine(), d = dailyOffers(), L = f.line, bp = bundlePrice(L), rr = rerollsToday() < 1;
@@ -12710,6 +12814,14 @@ function goSelect(mode) {
   renderAgents();
   if (net.role !== 'off') sendPick(false);
 }
+$('btnRandom').onclick = () => { // roulette: the highlight races through the agents, slows down and lands on one
+  const inParty = net.role !== 'off'; if (inParty && net.picks[net.myId] && net.picks[net.myId].lock) return;
+  const pool = AGENTS.filter(a => !(inParty && takenBy(a.id))).map(a => a.id); if (!pool.length) return;
+  const final = pool[Math.floor(Math.random() * pool.length)], steps = 22 + Math.floor(Math.random() * 6); let i = 0; $('btnRandom').disabled = true;
+  const step = () => { i++; selectedAgent = i >= steps ? final : pool[Math.floor(Math.random() * pool.length)]; renderAgents(); sndTone(600 + i * 25, .04, .08, 'square', 0);
+    if (i < steps) setTimeout(step, 40 + i * i * .55); else { $('btnRandom').disabled = false; sndTone(880, .2, .15, 'triangle', 1320); const card = document.querySelector(`#agentGrid [data-id="${final}"]`); if (card) { card.classList.add('rouletteWin'); } if (inParty) sendPick(false); } };
+  step();
+};
 $('btnBack').onclick = () => { $('select').classList.add('hidden'); $('menu').classList.remove('hidden'); showTab('play'); };
 function renderAgents() {
   const g = $('agentGrid'); g.innerHTML = AGENTS.map(a => agentCard(a, a.id === selectedAgent)).join('');
@@ -12797,7 +12909,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 104;
+const BUILD = 105;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
