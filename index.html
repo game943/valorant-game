@@ -2700,37 +2700,65 @@ function skinMat(L, role, lv = SKIN_MAX_LV) {
 }
 function shimmerTick(t) { for (let i = 0; i < SHIMMER.length; i++) SHIMMER[i].emissiveIntensity = 1 + Math.sin(t * 3.2 + i) * .55; }
 // repaint a built gun with a skin line
-// every skin line gets a small 3D signature piece on the gun
+// every skin line gets real 3D signature parts on the gun, sized to the weapon
 function addSkinDeco(g, line) {
   if (!line || g.userData.deco) return; g.userData.deco = 1;
-  const b = new THREE.Box3().setFromObject(g); if (!isFinite(b.max.y)) return; const mz = g.userData.muzzleZ || -.6, top = b.max.y, sx = b.max.x;
-  const L = c => new THREE.MeshLambertMaterial({ color: c }), B = c => new THREE.MeshBasicMaterial({ color: c }), add = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); g.add(o); return o; };
-  const fin = (c, n = 3) => { for (let i = 0; i < n; i++) add(new THREE.BoxGeometry(.006, .05 + i * .012, .05), L(c), 0, top + .02 + i * .006, mz * (.3 + i * .08), 0, 0, 0); };
+  const bb = new THREE.Box3().setFromObject(g); if (!isFinite(bb.max.y)) return;
+  const mz = g.userData.muzzleZ || -.6, U = Math.max(.35, Math.abs(mz)), top = bb.max.y, bot = bb.min.y, sx = bb.max.x, H = top - bot;
+  const L = (c, e = 0) => new THREE.MeshLambertMaterial({ color: c, emissive: e }), B = c => new THREE.MeshBasicMaterial({ color: c }), T = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, side: THREE.DoubleSide, depthWrite: false });
+  const add = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, parent = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); parent.add(o); return o; };
+  const both = f => { f(1); f(-1); };
+  const Z = f => mz * f;                     // a point along the gun: 0 = back of the receiver, 1 = muzzle
+  const wing = (c, len, h, z, y, op = 1) => both(sd => { const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(len, h * .4); sh.lineTo(len * .85, h); sh.lineTo(len * .3, h * .55); sh.lineTo(0, h * .3); const m = add(new THREE.ShapeGeometry(sh), op < 1 ? T(c, op) : new THREE.MeshLambertMaterial({ color: c, side: THREE.DoubleSide }), sd * (sx + .004), y, z, 0, sd * Math.PI / 2, 0); m.scale.x = sd; });
   switch (line) {
-    case 'prime': fin(0xd4af37); add(new THREE.TorusGeometry(.03, .006, 6, 16), L(0xffd75e), 0, top - .02, mz * .75); break;
-    case 'glitch': for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(.02, .02, .02), B(i % 2 ? 0x15f0ff : 0xff2fa8), sx + .006, top - .03 - i * .025, mz * (.2 + i * .07)); break;
-    case 'reaver': for (let i = 0; i < 3; i++) add(new THREE.ConeGeometry(.012, .07, 4), L(0x2a1a30), 0, top + .03, mz * (.3 + i * .1), -.5); add(new THREE.SphereGeometry(.012, 8, 6), B(0xc23aff), sx + .004, top - .03, mz * .45); break;
-    case 'ion': add(new THREE.TorusGeometry(.035, .006, 6, 20), B(0xbff0ff), 0, top - .03, mz * .8); add(new THREE.BoxGeometry(.004, .012, Math.abs(mz) * .5), B(0x8fdcff), sx + .004, top - .03, mz * .5); break;
-    case 'elder': { const h = add(new THREE.ConeGeometry(.04, .12, 6), L(0xb07020), 0, top - .03, mz - .04, -Math.PI / 2); for (const s2 of [-1, 1]) add(new THREE.ConeGeometry(.012, .06, 4), L(0xe0a040), s2 * .03, top, mz + .02, -.6); add(new THREE.SphereGeometry(.01, 6, 4), B(0xff6a00), .02, top - .02, mz + .01); break; }
-    case 'oni': add(new THREE.BoxGeometry(.006, .05, .07), L(0xc02828), sx + .004, top - .04, mz * .35); for (const s2 of [-1, 1]) add(new THREE.ConeGeometry(.008, .04, 4), L(0xf0e6d0), sx + .006, top - .01, mz * .35 + s2 * .025); break;
-    case 'sing': add(new THREE.SphereGeometry(.022, 12, 10), B(0xb05aff), 0, top + .05, mz * .45); add(new THREE.TorusGeometry(.035, .004, 6, 20), B(0xe0b0ff), 0, top + .05, mz * .45, Math.PI / 2); break;
-    case 'spline': add(new THREE.BoxGeometry(.004, .03, Math.abs(mz) * .4), B(0x4aa8ff), sx + .004, top - .025, mz * .45); break;
-    case 'sakura': for (let i = 0; i < 5; i++) add(new THREE.CircleGeometry(.012, 5), new THREE.MeshBasicMaterial({ color: 0xffb8d0, side: THREE.DoubleSide }), sx + .005, top - .02 - (i % 2) * .02, mz * (.25 + i * .07), 0, Math.PI / 2); break;
-    case 'tiger': for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.005, .008, .06), L(0x1a1a1a), sx + .004, top - .02 - i * .016, mz * .35, .4); break;
-    case 'waste': add(new THREE.BoxGeometry(.008, .045, .09), L(0x8a5a30), sx + .005, top - .035, mz * .4); for (let i = 0; i < 3; i++) add(new THREE.CylinderGeometry(.005, .005, .006, 6), L(0xc0c0c0), sx + .01, top - .03, mz * .4 - .03 + i * .03, 0, 0, Math.PI / 2); break;
-    case 'rush': for (const s2 of [-1, 1]) add(new THREE.BoxGeometry(.06, .004, .05), L(0xd8dde4), s2 * .04, top + .005, mz * .25, 0, 0, s2 * -.3); break;
-    case 'sovereign': add(new THREE.TorusGeometry(.03, .007, 6, 16), L(0xffd36a), 0, top - .02, mz * .3); add(new THREE.OctahedronGeometry(.012), B(0x5ad0ff), 0, top + .015, mz * .3); break;
-    case 'glyph': for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.004, .014, .014), B(0x6af0c0), sx + .005, top - .03, mz * (.3 + i * .09), 0, 0, Math.PI / 4); break;
-    case 'kuro': add(new THREE.ConeGeometry(.015, .1, 4), L(0x14161c), 0, top + .04, mz * .4, -1.2); add(new THREE.BoxGeometry(.004, .01, .1), B(0x3a6aff), sx + .004, top - .03, mz * .4); break;
-    case 'champ': add(new THREE.CylinderGeometry(.012, .018, .03, 10), L(0xffd36a), sx + .03, top - .07, mz * .2); add(new THREE.SphereGeometry(.01, 8, 6), L(0xffd36a), sx + .03, top - .05, mz * .2); break;
-    case 'mage': for (let i = 0; i < 2; i++) add(new THREE.TorusGeometry(.018, .006, 4, 8), L(0xc89a50), sx + .006, top - .03, mz * (.3 + i * .1), 0, Math.PI / 2); break;
-    case 'reef': for (let i = 0; i < 4; i++) add(new THREE.SphereGeometry(.009, 6, 4), L(i % 2 ? 0xff8a8a : 0x5ae0d0), sx + .006, top - .02 - Math.random() * .03, mz * (.2 + i * .08)); break;
-    case 'magma': add(new THREE.BoxGeometry(.004, .03, Math.abs(mz) * .35), B(0xff5a00), sx + .004, top - .035, mz * .45, .2); break;
-    case 'aurora': add(new THREE.BoxGeometry(.004, .008, Math.abs(mz) * .55), B(0x6affc0), sx + .004, top - .02, mz * .45); break;
-    case 'arcade': for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.016, .016, .016), B([0xff4a4a, 0x4aff6a, 0x4a8aff][i]), 0, top + .015, mz * (.3 + i * .05)); break;
-    case 'jade': add(new THREE.TorusGeometry(.028, .008, 6, 14), L(0x3ab070), 0, top - .025, mz * .7); add(new THREE.SphereGeometry(.012, 8, 6), B(0xa0ffd0), 0, top - .025, mz * .7); break;
-    case 'kingdom': add(new THREE.BoxGeometry(.006, .04, .035), L(0xc8a24a), sx + .005, top - .03, mz * .35); break;
-    case 'arctic': for (let i = 0; i < 3; i++) add(new THREE.OctahedronGeometry(.014), new THREE.MeshLambertMaterial({ color: 0xd8f4ff, transparent: true, opacity: .85 }), 0, top + .015, mz * (.3 + i * .08)); break;
+    case 'prime': { const gold = L(0xd4af37, 0x3a2a00); both(sd => add(new THREE.BoxGeometry(.008, H * .35, U * .38), gold, sd * (sx + .004), top - H * .3, Z(.42)));
+      add(new THREE.CylinderGeometry(.034, .04, .05, 16), gold, 0, top - H * .2, Z(1) + .02, Math.PI / 2); for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.006, .045 - i * .01, U * .12), gold, 0, top + .02 - i * .004, Z(.3 + i * .05)); break; }
+    case 'glitch': { both(sd => { add(new THREE.PlaneGeometry(U * .3, H * .45), T(sd > 0 ? 0xff2fa8 : 0x15f0ff, .55), sd * (sx + .03), top - H * .25, Z(.45), 0, Math.PI / 2, 0); });
+      for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(.018, .018, .018), B(i % 2 ? 0x15f0ff : 0xff2fa8), (Math.random() - .5) * .08, top + .02 + Math.random() * .05, Z(.2 + Math.random() * .6));
+      add(new THREE.CylinderGeometry(.004, .004, .14, 6), L(0x2a1240), sx - .01, top + .07, Z(.15)); add(new THREE.SphereGeometry(.013, 8, 6), B(0xff2fa8), sx - .01, top + .14, Z(.15)); break; }
+    case 'reaver': { const dk = L(0x1c1222); for (let i = 0; i < 3; i++) add(new THREE.ConeGeometry(.02, .12 - i * .02, 4), dk, 0, top + .05, Z(.25 + i * .14), -.7);
+      add(new THREE.SphereGeometry(.03, 12, 10), B(0xc23aff), sx + .01, top - H * .35, Z(.38)); add(new THREE.TorusGeometry(.04, .006, 6, 18), dk, sx + .01, top - H * .35, Z(.38), 0, Math.PI / 2, 0);
+      add(new THREE.ConeGeometry(.025, U * .45, 4), L(0x2a1a30), 0, bot + H * .15, Z(.78), -Math.PI / 2 - .12); break; }
+    case 'ion': { for (const f of [.62, .8]) add(new THREE.TorusGeometry(.05, .008, 8, 24), B(0xbff0ff), 0, top - H * .25, Z(f)); both(sd => add(new THREE.BoxGeometry(.004, .01, U * .55), B(0x8fdcff), sd * (sx + .004), top - H * .35, Z(.5))); add(new THREE.SphereGeometry(.02, 10, 8), B(0xffffff), sx + .004, top - H * .5, Z(.2)); break; }
+    case 'elder': { const gold = L(0xc88a28, 0x401a00), dk = L(0x5a2a10); // dragon head on the muzzle, wings, a ridge of spines
+      const head = new THREE.Group(); head.position.set(0, top - H * .22, Z(1) + .03); g.add(head);
+      add(new THREE.ConeGeometry(.05, .16, 6), gold, 0, .015, -.04, -Math.PI / 2, 0, 0, head); add(new THREE.ConeGeometry(.04, .12, 6), dk, 0, -.025, -.03, -Math.PI / 2 + .25, 0, 0, head);
+      both(sd => { add(new THREE.ConeGeometry(.012, .09, 5), gold, sd * .03, .06, .04, -.6, 0, sd * .3, head); add(new THREE.SphereGeometry(.009, 6, 4), B(0xff6a00), sd * .028, .03, -.02, 0, 0, 0, head); });
+      for (let i = 0; i < 5; i++) add(new THREE.ConeGeometry(.01, .05, 4), gold, 0, top + .02, Z(.15 + i * .13), -.5); wing(0xd07020, U * .28, H * .5, Z(.32), top - H * .1); break; }
+    case 'oni': { const mask = new THREE.Group(); mask.position.set(sx + .012, top - H * .38, Z(.36)); mask.rotation.y = Math.PI / 2; g.add(mask);
+      add(new THREE.CircleGeometry(.05, 16), L(0xc02828), 0, 0, 0, 0, 0, 0, mask); both(sd => { add(new THREE.ConeGeometry(.012, .06, 5), L(0xf0e6d0), sd * .03, .055, 0, 0, 0, -sd * .4, mask); add(new THREE.CircleGeometry(.009, 8), B(0xffd36a), sd * .018, .012, .002, 0, 0, 0, mask); add(new THREE.ConeGeometry(.006, .02, 4), L(0xf0f0f0), sd * .015, -.025, .002, Math.PI, 0, 0, mask); }); break; }
+    case 'sing': { const o = add(new THREE.SphereGeometry(.035, 16, 12), B(0xb05aff), 0, top + .08, Z(.45)); add(new THREE.TorusGeometry(.055, .005, 6, 28), B(0xe0b0ff), 0, top + .08, Z(.45), Math.PI / 2.4); add(new THREE.SphereGeometry(.06, 12, 10), T(0x7a2aff, .25), 0, top + .08, Z(.45));
+      both(sd => { for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.004, .006, .03), B(0xb05aff), sd * (sx + .004), top - H * .3 - i * .015, Z(.55)); }); break; }
+    case 'spline': { add(new THREE.BoxGeometry(.006, .045, U * .7), new THREE.MeshLambertMaterial({ color: 0x4aa8ff, emissive: 0x0a2a6a }), 0, top + .025, Z(.5)); both(sd => add(new THREE.BoxGeometry(.004, .02, U * .5), B(0x8ad0ff), sd * (sx + .004), top - H * .3, Z(.5))); break; }
+    case 'sakura': { const br = L(0x5a3020); add(new THREE.CylinderGeometry(.006, .009, U * .55, 6), br, sx + .01, top - H * .3, Z(.5), Math.PI / 2 + .15);
+      for (let i = 0; i < 10; i++) { const fl = new THREE.Group(); fl.position.set(sx + .015, top - H * .3 + (Math.random() - .5) * .05, Z(.25 + i * .06)); g.add(fl); for (let k = 0; k < 5; k++) add(new THREE.CircleGeometry(.009, 6), new THREE.MeshBasicMaterial({ color: k ? 0xffb8d0 : 0xffe0ea, side: THREE.DoubleSide }), Math.cos(k * 1.26) * .01, Math.sin(k * 1.26) * .01, 0, 0, Math.PI / 2, 0, fl); } break; }
+    case 'tiger': { both(sd => { for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(.004, .012, U * .18), L(0x1a1a1a), sd * (sx + .004), top - .02 - i * .022, Z(.35 + (i % 2) * .05), .35); });
+      add(new THREE.ConeGeometry(.014, .06, 6), L(0xf0e6d0), sx + .02, bot + .02, Z(.2), Math.PI); break; }
+    case 'waste': { both(sd => { add(new THREE.BoxGeometry(.01, H * .4, U * .25), L(0x8a5a30), sd * (sx + .006), top - H * .35, Z(.4)); for (let i = 0; i < 4; i++) add(new THREE.CylinderGeometry(.006, .006, .008, 6), L(0xc0c0c0), sd * (sx + .012), top - H * .2 - (i % 2) * H * .3, Z(.3 + (i > 1 ? .2 : 0)), 0, 0, Math.PI / 2); });
+      add(new THREE.CylinderGeometry(.012, .016, .1, 8), L(0x3a3a34), sx - .01, top + .04, Z(.12)); break; }
+    case 'rush': wing(0xd8dde4, U * .26, Math.min(H * .45, .1), Z(.25), top - H * .2); add(new THREE.BoxGeometry(.03, .01, U * .3), L(0xffd36a), 0, top + .008, Z(.35)); break;
+    case 'sovereign': { const gold = L(0xffd36a, 0x3a2a00), cr = new THREE.Group(); cr.position.set(0, top + .01, Z(.35)); g.add(cr);
+      add(new THREE.CylinderGeometry(.04, .04, .02, 16, 1, true), gold, 0, .01, 0, 0, 0, 0, cr); for (let i = 0; i < 6; i++) add(new THREE.ConeGeometry(.008, .04, 4), gold, Math.cos(i * 1.05) * .04, .04, Math.sin(i * 1.05) * .04, 0, 0, 0, cr);
+      add(new THREE.OctahedronGeometry(.02), B(0x5ad0ff), 0, .04, 0, 0, 0, 0, cr); both(sd => add(new THREE.BoxGeometry(.006, H * .2, U * .4), gold, sd * (sx + .004), top - H * .45, Z(.5))); break; }
+    case 'glyph': { for (let i = 0; i < 5; i++) add(new THREE.BoxGeometry(.016, .016, .004), B(0x6af0c0), sx + .03, top - H * .2 + Math.sin(i) * .03, Z(.2 + i * .14), 0, Math.PI / 2, Math.PI / 4); add(new THREE.TorusGeometry(.045, .004, 4, 6), B(0x6af0c0), 0, top - H * .25, Z(.85)); break; }
+    case 'kuro': { add(new THREE.BoxGeometry(.005, .03, U * .75), L(0x14161c), 0, bot + H * .12, Z(.65)); add(new THREE.BoxGeometry(.006, .006, U * .75), B(0x3a6aff), 0, bot + H * .1 - .015, Z(.65));
+      add(new THREE.ConeGeometry(.012, .06, 4), L(0x14161c), 0, bot + H * .12, Z(1.02), -Math.PI / 2); both(sd => add(new THREE.BoxGeometry(.004, .01, U * .4), B(0x3a6aff), sd * (sx + .004), top - H * .3, Z(.45))); break; }
+    case 'champ': { const gold = L(0xffd36a, 0x2a1a00), ch = new THREE.Group(); ch.position.set(sx + .03, top - H * .55, Z(.2)); g.add(ch);
+      add(new THREE.CylinderGeometry(.002, .002, .05, 4), L(0x444444), 0, .03, 0, 0, 0, 0, ch); add(new THREE.CylinderGeometry(.02, .012, .03, 12), gold, 0, -.005, 0, 0, 0, 0, ch); add(new THREE.CylinderGeometry(.006, .01, .015, 8), gold, 0, -.027, 0, 0, 0, 0, ch);
+      both(sd => add(new THREE.BoxGeometry(.004, .012, U * .5), gold, sd * (sx + .004), top - H * .25, Z(.5))); break; }
+    case 'mage': { for (let i = 0; i < 3; i++) add(new THREE.TorusGeometry(.022 + i * .004, .007, 4, 8), L(0xc89a50), sx + .008, top - H * .35, Z(.25 + i * .12), 0, Math.PI / 2); add(new THREE.CylinderGeometry(.008, .008, U * .5, 8), L(0x8a6a3a), sx + .01, top - .01, Z(.5), Math.PI / 2); add(new THREE.SphereGeometry(.015, 8, 6), B(0x5ad0ff), sx + .01, top - .01, Z(.76)); break; }
+    case 'reef': { for (let i = 0; i < 5; i++) { const c = add(new THREE.CylinderGeometry(.004, .008, .05 + Math.random() * .04, 5), L(i % 2 ? 0xff8a8a : 0xffb05a), sx + .01, top - H * .1, Z(.2 + i * .1), 0, 0, -.4 - Math.random() * .4); }
+      add(new THREE.SphereGeometry(.022, 10, 8, 0, Math.PI), L(0xf8e0c0), sx + .01, top - H * .5, Z(.3), 0, Math.PI / 2); break; }
+    case 'magma': { both(sd => { for (let i = 0; i < 3; i++) add(new THREE.BoxGeometry(.004, .008, U * .25), B(0xff5a00), sd * (sx + .004), top - H * (.2 + i * .18), Z(.3 + i * .12), .3 * (i - 1)); });
+      for (let i = 0; i < 4; i++) add(new THREE.DodecahedronGeometry(.016), L(0x2a1810, 0x401000), (Math.random() - .5) * .04, top + .01, Z(.2 + i * .15)); break; }
+    case 'aurora': { both(sd => add(new THREE.BoxGeometry(.004, .012, U * .6), B(0x6affc0), sd * (sx + .004), top - H * .25, Z(.5))); for (let i = 0; i < 3; i++) add(new THREE.OctahedronGeometry(.016), T(0x9affe0, .8), 0, top + .025, Z(.3 + i * .15)); break; }
+    case 'arcade': { for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(.02, .02, .02), B([0xff4a4a, 0x4aff6a, 0x4a8aff, 0xffd34d][i]), 0, top + .015, Z(.25 + i * .12));
+      const hr = new THREE.Group(); hr.position.set(sx + .008, top - H * .4, Z(.35)); hr.rotation.y = Math.PI / 2; g.add(hr); for (const [x, y] of [[-1, 1], [1, 1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1], [0, -2]]) add(new THREE.PlaneGeometry(.011, .011), new THREE.MeshBasicMaterial({ color: 0xff3a5a, side: THREE.DoubleSide }), x * .012, y * .012, 0, 0, 0, 0, hr); break; }
+    case 'jade': { const jd = L(0x3ab070, 0x0a2a14); for (let i = 0; i < 7; i++) add(new THREE.TorusGeometry(.045, .01, 6, 10, Math.PI), jd, 0, top - H * .25, Z(.35 + i * .07), 0, 0, i * .9); add(new THREE.SphereGeometry(.018, 10, 8), B(0xa0ffd0), 0, top + .02, Z(.85)); break; }
+    case 'kingdom': { const sh = new THREE.Shape(); sh.moveTo(-.03, .03); sh.lineTo(.03, .03); sh.lineTo(.03, -.01); sh.lineTo(0, -.04); sh.lineTo(-.03, -.01); add(new THREE.ShapeGeometry(sh), new THREE.MeshLambertMaterial({ color: 0xc8a24a, side: THREE.DoubleSide }), sx + .006, top - H * .35, Z(.35), 0, Math.PI / 2, 0);
+      add(new THREE.CircleGeometry(.012, 12), B(0x2a4a8a), sx + .008, top - H * .35, Z(.35), 0, Math.PI / 2, 0); break; }
+    case 'arctic': { for (let i = 0; i < 5; i++) { const c = add(new THREE.OctahedronGeometry(.018 + Math.random() * .012), new THREE.MeshLambertMaterial({ color: 0xd8f4ff, emissive: 0x204060, transparent: true, opacity: .85 }), (Math.random() - .5) * .04, top + .02, Z(.2 + i * .14)); c.scale.y = 1.8; }
+      both(sd => add(new THREE.BoxGeometry(.004, H * .3, U * .3), T(0xe8f8ff, .45), sd * (sx + .005), top - H * .4, Z(.6))); break; }
   }
 }
 function applySkin(g, skinId) {
@@ -12909,7 +12937,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 105;
+const BUILD = 106;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
