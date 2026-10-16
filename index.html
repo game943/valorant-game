@@ -2955,8 +2955,8 @@ function makeCharacter(agent, outfit) {
   // legs: thigh, knee, shin and boot, pivoting at the hip
   const legL = new THREE.Group(), legR = new THREE.Group(); legL.position.set(-.115 * W, .86, 0); legR.position.set(.115 * W, .86, 0); g.add(legL, legR);
   for (const leg of [legL, legR]) {
-    seg(V(0, 0, 0), V(0, -.42, -.015), .105 * W, .08 * W, pants, leg);
-    seg(V(0, -.42, -.015), V(0, -.77, .01), .078 * W, .062 * W, pants, leg, false);
+    seg(V(0, 0, 0), V(0, -.42, -.015), .095 * W, .07 * W, pants, leg);
+    seg(V(0, -.42, -.015), V(0, -.77, .01), .068 * W, .05 * W, pants, leg, false); ball(.065 * W, pants, 0, -.55, .02, leg, 1, 1.6, 1); // calf
     if (CUT === 'tactical' || CUT === 'armor') ball(.075 * W, acc, 0, -.42, -.07, leg, 1, 1.1, .55);                    // knee pad
     addPart(g, new THREE.BoxGeometry(.15 * W, .12, .25), boots, 0, -.8, -.035, leg); ball(.075 * W, boots, 0, -.81, -.15, leg, 1, .75, 1.1);
     box(.16 * W, .025, .3, dark, 0, -.855, -.05, leg);                                                                // sole
@@ -2996,10 +2996,13 @@ function makeCharacter(agent, outfit) {
   const gunHolder = new THREE.Group(); gunHolder.position.set(.12, 1.3, -.3); g.add(gunHolder);
   const arm = (side, target, pole) => {
     const grp = new THREE.Group(), S = V(side * .27 * W, 1.38, 0), { E, T } = limbIK(S, target, .3, .29, pole);
-    seg(S, E, .072, .062, top, grp); seg(E, T, .06, .05, top, grp, false);
+    seg(S, E, .06, .05, top, grp); seg(E, T, .05, .04, top, grp, false); ball(.075, top, S.x, S.y - .02, S.z, grp, 1, .85, 1.05); // deltoid
     const cuffDir = T.clone().sub(E).normalize(), cuff = addPart(g, new THREE.CylinderGeometry(.056, .056, .05, 12), acc, 0, 0, 0, grp);
     cuff.position.copy(T.clone().sub(cuffDir.clone().multiplyScalar(.04))); cuff.quaternion.setFromUnitVectors(UP, cuffDir);
-    const hand = ball(.048, glove, T.x, T.y, T.z, grp, 1, .85, 1.25); hand.quaternion.setFromUnitVectors(V(0, 0, -1), cuffDir);
+    const hand = ball(.042, glove, T.x, T.y, T.z, grp, 1, .7, 1.15); hand.quaternion.setFromUnitVectors(V(0, 0, -1), cuffDir);
+    { const fg = new THREE.Group(); fg.position.copy(T); fg.quaternion.copy(hand.quaternion); grp.add(fg);                 // fingers curled round the grip + thumb
+      for (let i = 0; i < 4; i++) { const f = AB.rbox(.017, .017, .055, .008, glove); f.position.set(-.027 + i * .018, -.012, -.045); f.rotation.x = .9; fg.add(f); }
+      const th = AB.rbox(.018, .018, .045, .008, glove); th.position.set(side * .035, .012, -.02); th.rotation.set(.3, side * -.6, 0); fg.add(th); }
     ball(.052, acc, E.x, E.y, E.z, grp, 1, 1, 1);                                                                       // elbow pad
     g.add(grp); return grp;
   };
@@ -3022,7 +3025,13 @@ function makeCharacter(agent, outfit) {
     ball(L.glow ? .022 : .014, eyeM, ex, 1.66, L.glow ? -.175 : -.182, visor, L.glow ? 1.4 : 1, L.glow ? .55 : 1, .5);
   }
   if (!L.glow) for (const sx of [-1, 1]) box(.06, .012, .015, hairM, sx * .066, 1.7, -.178, visor).rotation.z = sx * -.12;
-  if (!L.glow && !L.gear.includes('mask') && !L.gear.includes('respirator')) box(.055, .012, .015, M(0x8a4a3e), 0, 1.57, -.172, visor);
+  if (!L.glow && !L.gear.includes('mask') && !L.gear.includes('respirator')) { // lips instead of a flat line
+    const lip = M(new THREE.Color(L.skin).lerp(new THREE.Color(0x9a4a48), .45).getHex()); ball(.03, lip, 0, 1.575, -.172, visor, 1, .32, .4); ball(.026, lip, 0, 1.561, -.17, visor, 1, .38, .42); }
+  { const sk2 = M(new THREE.Color(L.skin).multiplyScalar(.93).getHex());
+    if (!L.glow) for (const ex of eyeXs) ball(.03, skin, ex, 1.676, -.162, visor, 1.15, .45, .6);                         // upper eyelids
+    ball(.028, sk2, 0, 1.64, -.188, g, .55, 1.6, .7);                                                                     // nose bridge
+    ball(.06, skin, 0, 1.53, -.135, g, 1, .7, .8);                                                                        // chin
+    for (const sx of [-1, 1]) ball(.045, skin, sx * .1, 1.6, -.14, g, 1, .75, .7); }                                       // cheekbones
   // hair: skull cap shaped to the head, then style pieces
   const cap = (r, m, cut = .55) => { const c = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 10, 0, Math.PI * 2, 0, Math.PI * cut), m); c.position.set(0, 1.66, .012); c.scale.set(.95, 1.04, 1.02); g.add(c); return c; };
   if (L.style !== 'none') {
@@ -3095,6 +3104,12 @@ function makeCharacter(agent, outfit) {
   for (const y of [.35, .9, 1.45]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(.5, .025, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffe14a })); ring.rotation.x = Math.PI / 2; ring.position.y = y; cage.add(ring); }
   for (let i = 0; i < 4; i++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(.03, 1.3, .03), new THREE.MeshBasicMaterial({ color: 0xffe14a })); const a = i / 4 * Math.PI * 2; bar.position.set(Math.cos(a) * .5, .9, Math.sin(a) * .5); cage.add(bar); }
   const vuln = new THREE.Sprite(new THREE.SpriteMaterial({ map: FACE_TEX.vuln, transparent: true, depthTest: false })); vuln.scale.set(.32, .32, 1); vuln.position.y = 2.45; vuln.visible = false; vuln.renderOrder = 998; g.add(vuln);
+  { // realistic proportions: the head is about 1/7 of the body, not 1/4 - shrink everything built above the neck
+    const head = new THREE.Group(), PY = 1.5, keep = new Set([mk, cage, vuln, legL, legR, gunHolder, armL, armR, armLShort, armRBlind]);
+    head.position.set(0, PY, -.01); head.scale.setScalar(.8); g.add(head);
+    for (const c of [...g.children]) { if (c === head || keep.has(c)) continue; const b = new THREE.Box3().setFromObject(c); if (b.isEmpty()) continue; const cy = (b.min.y + b.max.y) / 2; if (cy < 1.535) continue; g.remove(c); c.position.y -= PY; c.position.z += .01; head.add(c); }
+    g.userData.head = head;
+  }
   Object.assign(g.userData, { legL, legR, gunHolder, marker: mk, gunModel: null, armL, armR, armLShort, armRBlind, visor, face, stars, cage, vuln });
   g.traverse(o => { if (o.isMesh && o.material !== MAT.outline) o.castShadow = true; });
   scene.add(g); return g;
@@ -12773,7 +12788,7 @@ if (!AGENT[profile.fav]) profile.fav = 'jett';
 if (!AGENT[selectedAgent]) selectedAgent = profile.fav; if (!AGENT[previewAgent]) previewAgent = profile.fav;
 setTimeout(startPresence, 3000); checkSeason(); loadMap('dustwall'); renderMapCard(); refreshRankUI(); storeBadge(); applyLobbyTheme(settings.lobbyTheme); if (dailyOffers().ids.some(id => wished(id) && !owns(id))) setTimeout(() => toastMenu('★ A skin on your wishlist is in today\'s store!'), 1500); $('rankIcon').onclick = () => showTab('career');
 // tell the player when a newer build of this page is online (GitHub Pages can serve an old copy for a while)
-const BUILD = 102;
+const BUILD = 103;
 // Checks often (every 15s, and whenever the tab comes back into focus), but cheaply.
 // On GitHub Pages the page itself is checked (HEAD/ETag first, full download only when it changed).
 // Anywhere else (e.g. a shared copy) the repo's version.json is read from GitHub instead.
